@@ -15,7 +15,7 @@ Referência rápida das tabelas. Migrations em `supabase/migrations/`. Tipos em 
 ### profiles
 - `id` uuid PK, `auth_user_id` (FK → auth.users), `phone` unique, `first_name` text, `surname` text, `email` text nullable, `crm` text nullable, `logo_url_full` text nullable, `logo_url_short` text nullable, `rqe` text nullable, `social_media_handle` text nullable, `website` text nullable, `report_template_id` uuid nullable FK → report_templates(id), `created_at` timestamptz, `updated_at` timestamptz
 - Uso: dados do médico/perfil; vínculo com Supabase Auth. Dashboard lê perfil por auth → profile; status e phone do canal em authenticated_users.
-- **Trigger signup:** `on_auth_user_created` chama `handle_new_auth_user()`: insere em `profiles` (first_name, surname a partir de full_name, email, phone) e em `authenticated_users` (profile_id, phone, status = 'unpaid'); só quando phone está presente. **Trigger delete:** `on_auth_user_deleted` chama `handle_auth_user_deleted()`: remove de `authenticated_users` (por profile_id) e de `profiles` onde auth_user_id = old.id.
+- **Trigger signup:** `on_auth_user_created` chama `handle_new_auth_user()`: insere em `profiles` (first_name, surname a partir de full_name, email, phone) e em `authenticated_users` (profile_id, phone, status = 'unpaid'); só quando phone está presente. **Trigger delete:** `on_auth_user_deleted` chama `handle_auth_user_deleted()`: em cascata remove phone_link_codes, cases (e case_messages por FK), patients, incoming_webhook_events, trigger_buffer_runs, authenticated_users; anula profile.report_template_id, remove report_templates do usuário e por fim profiles.
 
 ## Tabelas (migrations em supabase/migrations/)
 

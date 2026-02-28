@@ -7,6 +7,8 @@ export type Profile = {
   first_name: string | null
   surname: string | null
   email: string | null
+  crm: string | null
+  rqe: string | null
 }
 
 /**
@@ -19,7 +21,7 @@ export async function getProfileByAuthUserId(
 ): Promise<Profile | null> {
   const { data, error } = await supabase
     .from("profiles")
-    .select("id, auth_user_id, phone, first_name, surname, email")
+    .select("id, auth_user_id, phone, first_name, surname, email, crm, rqe")
     .eq("auth_user_id", authUserId)
     .maybeSingle()
 
