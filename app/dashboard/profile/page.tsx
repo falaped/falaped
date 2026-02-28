@@ -2,6 +2,8 @@ import { redirect } from "next/navigation"
 import { UserIcon } from "lucide-react"
 import { createClient } from "@/lib/supabase/server"
 import { getProfileByAuthUserId } from "@/modules/profiles/get-profile-by-auth-user-id"
+import { getAuthenticatedUserByProfileId } from "@/modules/authenticated-users/get-authenticated-user-by-profile-id"
+import type { AuthenticatedUserStatus } from "@/modules/authenticated-users/update-authenticated-user-status"
 import { ProfileContent } from "./profile-content"
 
 export default async function ProfilePage() {
@@ -13,6 +15,17 @@ export default async function ProfilePage() {
 
   const profile = await getProfileByAuthUserId(supabase, user.id)
   if (!profile) redirect("/auth/login")
+
+  const authenticatedUser = await getAuthenticatedUserByProfileId(
+    supabase,
+    profile.id
+  )
+  const status: AuthenticatedUserStatus =
+    authenticatedUser?.status === "paid" ||
+    authenticatedUser?.status === "unpaid" ||
+    authenticatedUser?.status === "blocked"
+      ? authenticatedUser.status
+      : "unpaid"
 
   return (
     <div className="flex flex-col gap-6">
@@ -26,7 +39,7 @@ export default async function ProfilePage() {
         </p>
       </div>
 
-      <ProfileContent profile={profile} />
+      <ProfileContent profile={profile} status={status} />
     </div>
   )
 }

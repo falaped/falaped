@@ -80,3 +80,23 @@ export function formatBrazilianPhone(digits: string): string {
   }
   return `(${d.slice(0, 2)}) ${d.slice(2, 6)}-${d.slice(6)}`;
 }
+
+/**
+ * Formats a full Brazilian number (with optional country code 55) for display.
+ * Example: "553197815503" → "+55 (31) 9781-5503"
+ */
+export function formatLinkedPhone(digits: string): string {
+  const d = digits.replace(/\D/g, "");
+  if (!d.length) return "";
+  const withCountry = d.startsWith("55") && d.length >= 12;
+  const local = withCountry ? d.slice(2) : d.slice(0, 11);
+  if (local.length <= 2) return d ? `+55 (${local}` : "";
+  if (local.length <= 6)
+    return withCountry ? `+55 (${local.slice(0, 2)}) ${local.slice(2)}` : `(${local.slice(0, 2)}) ${local.slice(2)}`;
+  const isCell = local[2] === "9" && local.length > 6;
+  const part =
+    isCell
+      ? `(${local.slice(0, 2)}) ${local.slice(2, 6)}-${local.slice(6)}`
+      : `(${local.slice(0, 2)}) ${local.slice(2, 6)}-${local.slice(6)}`;
+  return withCountry ? `+55 ${part}` : part;
+}

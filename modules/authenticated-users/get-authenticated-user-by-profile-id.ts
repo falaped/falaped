@@ -2,9 +2,10 @@ import type { SupabaseClient } from "@supabase/supabase-js"
 
 export type AuthenticatedUserRow = {
   id: string
-  phone: string
+  phone: string | null
   status: string
   profile_id: string
+  whatsapp_linked_at: string | null
 }
 
 /**
@@ -17,7 +18,7 @@ export async function getAuthenticatedUserByProfileId(
 ): Promise<AuthenticatedUserRow | null> {
   const { data, error } = await supabase
     .from("authenticated_users")
-    .select("id, phone, status, profile_id")
+    .select("id, phone, status, profile_id, whatsapp_linked_at")
     .eq("profile_id", profileId)
     .maybeSingle()
 

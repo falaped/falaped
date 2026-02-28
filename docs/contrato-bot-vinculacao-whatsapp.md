@@ -31,8 +31,9 @@ Documento para implementação no **falaped-bot**. O dashboard gera códigos e e
    - **Se encontrar um registro:**
      - Obter `profile_id` do registro.
      - **Vincular phone ao profile:** upsert em `authenticated_users`:
-       - Se já existir linha com esse `phone`: atualizar `profile_id` (e opcionalmente manter `status` ou setar conforme regra).
-       - Se não existir: inserir `(id, profile_id, phone, status)` — ex.: `status = 'unpaid'` ou o que o negócio definir.
+       - Setar/atualizar `profile_id`, `phone` (número do remetente), `status` (ex.: `'unpaid'`) e **`whatsapp_linked_at` = now()**. O dashboard só exibe "Conta vinculada" quando `whatsapp_linked_at` está preenchido.
+       - Se já existir linha com esse `phone`: atualizar `profile_id`, `whatsapp_linked_at`.
+       - Se não existir: inserir `(id, profile_id, phone, status, whatsapp_linked_at)`.
      - Marcar o código como usado: `update('phone_link_codes').eq('id', row.id).set({ used_at: new Date().toISOString() })`.
      - Responder ao usuário: ex. "WhatsApp vinculado com sucesso."
    - **Se não encontrar:** responder: "Código inválido ou expirado."
@@ -55,7 +56,7 @@ Após a vinculação, o bot continua validando da mesma forma:
 | Ação              | Onde              | Detalhe                                                                 |
 |-------------------|-------------------|-------------------------------------------------------------------------|
 | Buscar código     | `phone_link_codes` | code = texto, used_at is null, expires_at > now()                      |
-| Vincular          | `authenticated_users` | Upsert por phone; setar/atualizar profile_id (e status se aplicável) |
+| Vincular          | `authenticated_users` | Upsert por phone; setar profile_id, phone, status e **whatsapp_linked_at = now()** |
 | Marcar código usado | `phone_link_codes` | used_at = now() no registro encontrado                                  |
 
 ---

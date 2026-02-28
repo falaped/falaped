@@ -5,6 +5,14 @@ import { UserIcon, AlertTriangleIcon } from "lucide-react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
+import { Label } from "@/components/ui/label"
+import {
   AlertDialog,
   AlertDialogCancel,
   AlertDialogContent,
@@ -14,8 +22,9 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
-import { deleteMyAccountAction } from "./actions"
+import { deleteMyAccountAction, updateStatusAction } from "./actions"
 import type { Profile } from "@/modules/profiles/get-profile-by-auth-user-id"
+import type { AuthenticatedUserStatus } from "@/modules/authenticated-users/update-authenticated-user-status"
 
 function formatPhone(phone: string): string {
   if (!phone || phone.length < 10) return phone
@@ -25,19 +34,53 @@ function formatPhone(phone: string): string {
   return `(${ddd}) ${pre}`
 }
 
-type ProfileContentProps = {
-  profile: Profile
+const STATUS_OPTIONS: { value: AuthenticatedUserStatus; label: string }[] = [
+  { value: "paid", label: "Pago" },
+  { value: "unpaid", label: "Não pago" },
+  { value: "blocked", label: "Bloqueado" },
+]
+
+function normalizeStatus(
+  raw: string
+): AuthenticatedUserStatus {
+  if (raw === "paid" || raw === "unpaid" || raw === "blocked") return raw
+  return "unpaid"
 }
 
-export function ProfileContent({ profile }: ProfileContentProps) {
+type ProfileContentProps = {
+  profile: Profile
+  status: AuthenticatedUserStatus
+}
+
+export function ProfileContent({ profile, status }: ProfileContentProps) {
   const [deleteLoading, setDeleteLoading] = useState(false)
   const [deleteError, setDeleteError] = useState<string | null>(null)
+  const [statusValue, setStatusValue] = useState<AuthenticatedUserStatus>(
+    normalizeStatus(status)
+  )
+  const [statusUpdating, setStatusUpdating] = useState(false)
+  const [statusError, setStatusError] = useState<string | null>(null)
 
   const fullName = [profile.first_name, profile.surname].filter(Boolean).join(" ").trim() || "—"
   const email = profile.email?.trim() || "—"
   const phone = profile.phone ? formatPhone(profile.phone) : "—"
   const crm = profile.crm?.trim() || "—"
   const rqe = profile.rqe?.trim() || "—"
+
+  async function handleStatusChange(newStatus: AuthenticatedUserStatus) {
+    setStatusError(null)
+    setStatusUpdating(true)
+    try {
+      const result = await updateStatusAction(newStatus)
+      if (result.ok) {
+        setStatusValue(newStatus)
+        return
+      }
+      setStatusError(result.error)
+    } finally {
+      setStatusUpdating(false)
+    }
+  }
 
   async function handleConfirmDelete() {
     setDeleteError(null)
@@ -86,6 +129,32 @@ export function ProfileContent({ profile }: ProfileContentProps) {
           <div className="space-y-1">
             <p className="text-sm font-medium text-muted-foreground">RQE</p>
             <p className="text-sm">{rqe}</p>
+          </div>
+          <div className="space-y-2 sm:col-span-2">
+            <Label htmlFor="account-status" className="text-sm font-medium text-muted-foreground">
+              Status da conta
+            </Label>
+            <Select
+              value={statusValue}
+              onValueChange={(value) => handleStatusChange(value as AuthenticatedUserStatus)}
+              disabled={statusUpdating}
+            >
+              <SelectTrigger id="account-status" className="w-full max-w-xs">
+                <SelectValue placeholder="Status" />
+              </SelectTrigger>
+              <SelectContent>
+                {STATUS_OPTIONS.map((opt) => (
+                  <SelectItem key={opt.value} value={opt.value}>
+                    {opt.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {statusError && (
+              <p className="text-sm text-destructive" role="alert">
+                {statusError}
+              </p>
+            )}
           </div>
         </CardContent>
       </Card>
