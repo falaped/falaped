@@ -19,16 +19,17 @@ auth.users ← (auth_user_id) → profiles ← (profile_id) → authenticated_us
 1. No signup, um registro em `public.profiles` e um em `public.authenticated_users` são criados por trigger (`handle_new_auth_user()`): profiles com first_name, surname, email, phone; authenticated_users com profile_id, phone, status = 'unpaid'. Só quando phone está presente.
 2. Usuário autentica via Supabase Auth (email ou phone).
 3. Dashboard obtém `auth.user.id` da sessão.
-4. Resolve `user_phone` via `auth.user.id` → `getProfileByAuthUserId` → `getAuthenticatedUserByProfileId` → retorna phone se status = 'paid'.
-5. Queries usam `user_phone` para filtrar patients, cases, etc. Dados do médico (nome, email, etc.) vêm de `profiles`.
+4. Para validações e dados do usuário: `getAuthenticatedUser(supabase)` retorna o profile do usuário logado (ou null). Use em toda validação que dependa do usuário.
+5. Resolve `user_phone` via `getAuthenticatedUser(supabase)`: use `result.authenticatedUser?.status === 'paid'` e `result.authenticatedUser.phone`.
+6. Queries usam `user_phone` para filtrar patients, cases, etc. Dados do médico (nome, email, etc.) vêm do profile retornado por `getAuthenticatedUser`.
 
 ## Arquivos
 
 - `lib/supabase/client.ts` (browser) e `server.ts` (server).
 - `lib/supabase/middleware.ts` ou função no `middleware.ts` para refresh.
-- `lib/get-authenticated-user-phone.ts` → `getAuthenticatedUserPhone(supabase)` para resolver `user_phone`.
-- `modules/profiles/get-profile-by-auth-user-id.ts` → `getProfileByAuthUserId(supabase, authUserId)`.
-- `modules/authenticated-users/get-authenticated-user-by-profile-id.ts` → `getAuthenticatedUserByProfileId(supabase, profileId)`.
+- `modules/supabase/get-authenticated-user.ts` → `getAuthenticatedUser(supabase)` retorna `{ profile, authenticatedUser } | null`; use para validações e para obter user_phone (de authenticatedUser quando status = 'paid').
+- `modules/profiles/get-profile-by-auth-user-id.ts` → `getProfileByAuthUserId(supabase, authUserId)` (usado por getAuthenticatedUser).
+- `modules/authenticated-users/get-authenticated-user-by-profile-id.ts` → `getAuthenticatedUserByProfileId(supabase, profileId)` (usado internamente pelo embed em getProfileByAuthUserId).
 
 ## Rotas
 

@@ -23,8 +23,8 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
 import { deleteMyAccountAction, updateStatusAction } from "./actions"
-import type { Profile } from "@/modules/profiles/get-profile-by-auth-user-id"
 import type { AuthenticatedUserStatus } from "@/modules/authenticated-users/update-authenticated-user-status"
+import { AuthenticatedUserResult } from "@/modules/supabase/get-authenticated-user"
 
 function formatPhone(phone: string): string {
   if (!phone || phone.length < 10) return phone
@@ -40,24 +40,11 @@ const STATUS_OPTIONS: { value: AuthenticatedUserStatus; label: string }[] = [
   { value: "blocked", label: "Bloqueado" },
 ]
 
-function normalizeStatus(
-  raw: string
-): AuthenticatedUserStatus {
-  if (raw === "paid" || raw === "unpaid" || raw === "blocked") return raw
-  return "unpaid"
-}
 
-type ProfileContentProps = {
-  profile: Profile
-  status: AuthenticatedUserStatus
-}
-
-export function ProfileContent({ profile, status }: ProfileContentProps) {
+export function ProfileContent({ profile }: AuthenticatedUserResult) {
   const [deleteLoading, setDeleteLoading] = useState(false)
   const [deleteError, setDeleteError] = useState<string | null>(null)
-  const [statusValue, setStatusValue] = useState<AuthenticatedUserStatus>(
-    normalizeStatus(status)
-  )
+  const [statusValue, setStatusValue] = useState<AuthenticatedUserStatus>(profile.status as AuthenticatedUserStatus)
   const [statusUpdating, setStatusUpdating] = useState(false)
   const [statusError, setStatusError] = useState<string | null>(null)
 
@@ -96,6 +83,8 @@ export function ProfileContent({ profile, status }: ProfileContentProps) {
       setDeleteLoading(false)
     }
   }
+
+  console.log({ profile })
 
   return (
     <div className="flex flex-col gap-8 max-w-2xl">

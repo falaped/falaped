@@ -34,7 +34,7 @@ When making changes that affect shared context, update the relevant **skills**, 
 | **react-next-tailwind** | React, Next.js, Shadcn, Tailwind |
 | **server-actions** | Estrutura, revalidatePath, redirect, erros |
 | **state-management** | react-query, query keys, quando usar cada ferramenta |
-| **supabase-auth** | Client/server, middleware, get-authenticated-user-phone |
+| **supabase-auth** | Client/server, middleware, getAuthenticatedUser |
 | **supabase-queries** | Select explícito, single/maybeSingle, erros, N+1 |
 | **supabase-calls** | Nunca chamar Supabase em components; sempre em módulos dedicados |
 | **typescript** | Sem any, retorno explícito, type vs interface |

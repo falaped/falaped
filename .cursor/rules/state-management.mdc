@@ -75,14 +75,16 @@ Em Client Components que usam react-query para dados do Supabase:
 1. **Supabase client:** usar `createBrowserClient` de `lib/supabase/client.ts` (não o server).
 2. **user_phone:** obter de um destes:
    - **Context/hook** (ex.: `useUserPhone()`) – se o dashboard fornecer
-   - **Props** – Server Component pai busca `getAuthenticatedUserPhone(supabase)` e passa como prop
+   - **Props** – Server Component pai chama `getAuthenticatedUser(supabase)` e passa `user_phone` (de `result.authenticatedUser`) como prop
    - **Session + fetch** – ler da sessão e resolver no client (menos ideal; preferir server)
 
 ```tsx
 // Padrão com props (recomendado)
 export default async function PacientesPage() {
   const supabase = await createServerClient();
-  const userPhone = await getAuthenticatedUserPhone(supabase);
+  const result = await getAuthenticatedUser(supabase);
+  if (!result) redirect('/login');
+  const userPhone = result.authenticatedUser?.status === 'paid' ? result.authenticatedUser.phone : null;
   if (!userPhone) redirect('/login');
   return <PatientListClient userPhone={userPhone} />;
 }

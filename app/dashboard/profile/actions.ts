@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache"
 import { createClient } from "@/lib/supabase/server"
 import { createAdminClient } from "@/lib/supabase/server-admin"
-import { getProfileByAuthUserId } from "@/modules/profiles/get-profile-by-auth-user-id"
+import { getAuthenticatedUser } from "@/modules/supabase/get-authenticated-user"
 import {
   updateAuthenticatedUserStatus,
   type AuthenticatedUserStatus,
@@ -23,14 +23,8 @@ export async function updateStatusAction(
   status: AuthenticatedUserStatus
 ): Promise<UpdateStatusResult> {
   const supabase = await createClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-  if (!user) return { ok: false, error: "Sessão não encontrada." }
-
-  const profile = await getProfileByAuthUserId(supabase, user.id)
-  if (!profile)
-    return { ok: false, error: "Perfil não encontrado." }
+  const { profile } = await getAuthenticatedUser(supabase)
+  if (!profile) return { ok: false, error: "Sessão não encontrada." }
 
   try {
     await updateAuthenticatedUserStatus(supabase, profile.id, status)
@@ -49,16 +43,14 @@ export async function updateStatusAction(
  */
 export async function deleteMyAccountAction(): Promise<DeleteAccountResult> {
   const supabase = await createClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-  if (!user) {
+  const { profile } = await getAuthenticatedUser(supabase)
+  if (!profile) {
     return { ok: false, error: "Sessão não encontrada." }
   }
 
   try {
     const admin = createAdminClient()
-    const { error } = await admin.auth.admin.deleteUser(user.id)
+    const { error } = await admin.auth.admin.deleteUser(profile.auth_user_id)
     if (error) {
       return { ok: false, error: error.message }
     }

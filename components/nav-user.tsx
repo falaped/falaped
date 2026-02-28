@@ -24,7 +24,7 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar"
 import { createClient } from "@/lib/supabase/client"
-import { getCurrentUserForDisplay } from "@/modules/supabase/get-current-user-for-display"
+import { getAuthenticatedUser } from "@/modules/supabase/get-authenticated-user"
 import { signOut } from "@/modules/supabase/sign-out"
 import { Skeleton } from "@/components/ui/skeleton"
 
@@ -50,7 +50,17 @@ export function NavUser() {
   const supabase = createClient()
 
   useEffect(() => {
-    getCurrentUserForDisplay(supabase).then(setUser)
+    getAuthenticatedUser(supabase).then(({ profile }) => {
+      if (!profile) return setUser(null)
+      const name =
+        [profile.first_name, profile.surname].filter(Boolean).join(" ").trim() ||
+        "Usuário"
+      setUser({
+        name,
+        email: profile.email ?? "",
+        avatar: "",
+      })
+    })
   }, [])
 
   const handleLogout = async () => {

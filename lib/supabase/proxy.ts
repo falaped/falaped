@@ -41,9 +41,8 @@ export async function updateSession(request: NextRequest) {
   // Validate session with the server (getUser) so that deleted/invalid users
   // are not treated as logged in. getClaims() only reads the JWT from the cookie
   // and would still show the user as logged in after deletion from auth.users.
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const { data } = await supabase.auth.getUser();
+  const user = data?.user;
 
   const pathname = request.nextUrl.pathname;
   const isAuthRoute =

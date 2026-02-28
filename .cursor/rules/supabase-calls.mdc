@@ -23,7 +23,7 @@ modules/
 ├── supabase/
 │   ├── sign-up-with-email.ts    # supabase.auth.signUp
 │   ├── sign-out.ts              # supabase.auth.signOut
-│   ├── get-current-user-for-display.ts
+│   ├── get-authenticated-user.ts
 │   └── ...
 ├── patients/
 │   └── get-patients-by-user-phone.ts  # supabase.from('patients')
@@ -54,7 +54,7 @@ await signUpWithEmail(supabase, { email, password, fullName, phone });
 ## Exceções
 
 - **lib/supabase/** – setup do client (client.ts, server.ts, middleware.ts).
-- **lib/get-authenticated-user-phone.ts** – usa Supabase para resolver user_phone; pode permanecer em lib por ser infraestrutura de auth.
+- **modules/supabase/get-authenticated-user.ts** – usa Supabase para resolver sessão (profile + authenticated_users); use para validação e user_phone.
 
 ## Checklist
 

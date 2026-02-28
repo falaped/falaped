@@ -27,11 +27,11 @@ function formatCountdown(msLeft: number): string {
   return `${m}:${s.toString().padStart(2, "0")}`
 }
 
-type VincularWhatsAppContentProps = {
+type LinkWhatsAppContentProps = {
   linkedPhone: string | null
 }
 
-export function VincularWhatsAppContent({ linkedPhone }: VincularWhatsAppContentProps) {
+export function LinkWhatsAppContent({ linkedPhone }: LinkWhatsAppContentProps) {
   const [result, setResult] = useState<{ code: string; expiresAt: string } | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)

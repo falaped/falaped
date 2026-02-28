@@ -20,9 +20,9 @@ app/
     patients/, profile/
 lib/
   supabase/ client, server, middleware
-  get-authenticated-user-phone.ts   # Resolve user_phone do médico autenticado
   formatters.ts, parsers.ts, errors.ts
 modules/
+  supabase/get-authenticated-user.ts   # getAuthenticatedUser – profile + authenticatedUser
   patients/, cases/, case-messages/,
   authenticated-users/, report-templates/
 components/
@@ -47,7 +47,7 @@ Pages (`app/.../page.tsx`) são shells finos que importam:
 
 - **Módulos**: `modules/{domain}/`, um arquivo por query/action (kebab-case). Client Supabase sempre primeiro argumento.
 - **Rotas**: `dashboard/cases`, `dashboard/patients`, `dashboard/profile`. Proteção via middleware.
-- **user_phone**: chave para filtrar dados do médico; resolver via `getAuthenticatedUserPhone(supabase)`.
+- **user_phone**: chave para filtrar dados do médico; obter via `getAuthenticatedUser(supabase)` e `result.authenticatedUser` (status paid, phone).
 
 ## Referências
 

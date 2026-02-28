@@ -1,6 +1,6 @@
 ---
-description: Supabase Auth – client/server, middleware, get-authenticated-user-phone, protected routes
-globs: "lib/supabase/**/*.ts,lib/get-authenticated-user-phone.ts,middleware.ts,app/(auth)/**/*"
+description: Supabase Auth – client/server, middleware, getAuthenticatedUser, protected routes
+globs: "lib/supabase/**/*.ts,middleware.ts,app/(auth)/**/*,modules/supabase/get-authenticated-user.ts"
 alwaysApply: false
 ---
 
@@ -53,11 +53,10 @@ export async function middleware(req: NextRequest) {
 }
 ```
 
-## getAuthenticatedUserPhone
+## getAuthenticatedUser
 
-- `lib/get-authenticated-user-phone.ts`: função que recebe supabase e retorna `user_phone` ou null.
-- Resolve: `auth.user.id` → `getProfileByAuthUserId` → `getAuthenticatedUserByProfileId` → retorna phone se status = 'paid'.
-- Usar em Server Components, Server Actions e Route Handlers para obter o médico logado.
+- `modules/supabase/get-authenticated-user.ts`: `getAuthenticatedUser(supabase)` retorna `{ profile, authenticatedUser } | null`.
+- Use em Server Components, Server Actions e Route Handlers para validar sessão e obter dados do médico. Para `user_phone` (queries que exigem status paid): use `result.authenticatedUser?.status === 'paid'` e `result.authenticatedUser.phone`.
 
 ## Rotas de Auth
 
@@ -67,11 +66,11 @@ export async function middleware(req: NextRequest) {
 ## Proteção de Páginas
 
 - Middleware protege rotas; não é necessário checar sessão em cada página.
-- Para dados sensíveis: obter `userPhone` via `getAuthenticatedUserPhone` e retornar 403 se null.
+- Para dados sensíveis: obter `result` via `getAuthenticatedUser(supabase)` e redirecionar ou 403 se null; quando precisar de user_phone (paid), usar `result.authenticatedUser`.
 
 ## Checklist
 
 - [ ] Client para browser; Server para server
 - [ ] Middleware com refresh e redirect
-- [ ] getAuthenticatedUserPhone usado em Server Components/Actions
+- [ ] getAuthenticatedUser usado em Server Components/Actions
 - [ ] Callback route para OAuth/código

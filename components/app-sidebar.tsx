@@ -59,7 +59,7 @@ const navMain = [
     isActive: false,
     items: [
       { title: "Perfil", url: "/dashboard/profile" },
-      { title: "Vincular WhatsApp", url: "/dashboard/vinculacao-whatsapp" },
+      { title: "Vincular WhatsApp", url: "/dashboard/link-whatsapp" },
     ],
   },
 ]

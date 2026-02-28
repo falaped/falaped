@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache"
 import { createClient } from "@/lib/supabase/server"
-import { getProfileByAuthUserId } from "@/modules/profiles/get-profile-by-auth-user-id"
+import { getAuthenticatedUser } from "@/modules/supabase/get-authenticated-user"
 import { createLinkCode } from "@/modules/phone-link-codes/create-link-code"
 import { clearAuthenticatedUserPhone } from "@/modules/authenticated-users/clear-authenticated-user-phone"
 
@@ -14,20 +14,13 @@ export type UnlinkWhatsAppResult = { ok: true } | { ok: false; error: string }
 
 /**
  * Server Action: generates a 6-digit link code for the authenticated user's profile.
- * Call from "Vincular WhatsApp" UI; user then sends the code in WhatsApp to the Falaped bot.
+ * Call from Link WhatsApp UI; user then sends the code in WhatsApp to the Falaped bot.
  */
 export async function createWhatsAppLinkCodeAction(): Promise<CreateLinkCodeActionResult> {
   const supabase = await createClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-  if (!user) {
-    return { ok: false, error: "Sessão não encontrada. Faça login novamente." }
-  }
-
-  const profile = await getProfileByAuthUserId(supabase, user.id)
+  const { profile } = await getAuthenticatedUser(supabase)
   if (!profile) {
-    return { ok: false, error: "Perfil não encontrado." }
+    return { ok: false, error: "Sessão não encontrada. Faça login novamente." }
   }
 
   try {
@@ -44,21 +37,14 @@ export async function createWhatsAppLinkCodeAction(): Promise<CreateLinkCodeActi
  */
 export async function unlinkWhatsAppAction(): Promise<UnlinkWhatsAppResult> {
   const supabase = await createClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-  if (!user) {
-    return { ok: false, error: "Sessão não encontrada. Faça login novamente." }
-  }
-
-  const profile = await getProfileByAuthUserId(supabase, user.id)
+  const { profile } = await getAuthenticatedUser(supabase)
   if (!profile) {
-    return { ok: false, error: "Perfil não encontrado." }
+    return { ok: false, error: "Sessão não encontrada. Faça login novamente." }
   }
 
   try {
     await clearAuthenticatedUserPhone(supabase, profile.id)
-    revalidatePath("/dashboard/vinculacao-whatsapp")
+    revalidatePath("/dashboard/link-whatsapp")
     return { ok: true }
   } catch (e) {
     const message = e instanceof Error ? e.message : "Erro ao desvincular."

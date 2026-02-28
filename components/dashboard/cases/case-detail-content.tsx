@@ -1,7 +1,7 @@
 import { notFound, redirect } from "next/navigation"
 
 import { createClient } from "@/lib/supabase/server"
-import { getAuthenticatedUserPhone } from "@/lib/get-authenticated-user-phone"
+import { getAuthenticatedUser } from "@/modules/supabase/get-authenticated-user"
 import { getCaseById } from "@/modules/cases/get-case-by-id"
 import { CaseDetailHeader } from "@/components/dashboard/cases/case-detail-header"
 import { CasePatientInfo, CaseNoPatient } from "@/components/dashboard/cases/case-patient-info"
@@ -11,11 +11,11 @@ import { CaseSummary } from "@/components/dashboard/cases/case-summary"
 
 export async function CaseDetailContent({ id }: { id: string }) {
   const supabase = await createClient()
-  const userPhone = await getAuthenticatedUserPhone(supabase)
+  const { profile } = await getAuthenticatedUser(supabase)
+  if (!profile) redirect("/auth/login")
 
-  if (!userPhone) {
-    redirect("/auth/login")
-  }
+  const userPhone = profile.status === "paid" ? profile.phone ?? null : null
+  if (!userPhone) redirect("/auth/login")
 
   const caseDetail = await getCaseById(supabase, id, userPhone)
 

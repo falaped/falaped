@@ -25,11 +25,14 @@ alwaysApply: false
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { createServerClient } from '@/lib/supabase/server';
+import { getAuthenticatedUser } from '@/modules/supabase/get-authenticated-user';
 import { createPatient } from '@/modules/patients/create-patient';
 
 export async function createPatientAction(formData: FormData) {
   const supabase = await createServerClient();
-  const userPhone = await getAuthenticatedUserPhone(supabase);
+  const result = await getAuthenticatedUser(supabase);
+  if (!result) throw new Error('Unauthorized');
+  const userPhone = result.authenticatedUser?.status === 'paid' ? result.authenticatedUser.phone : null;
   if (!userPhone) throw new Error('Unauthorized');
 
   const parsed = parsePatientFormData(formData);
