@@ -3,74 +3,140 @@
 import * as React from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
+import Image from "next/image"
+import {
+  ChevronRightIcon,
+  HomeIcon,
+  MessagesSquareIcon,
+  UsersIcon,
+  UserIcon,
+  SettingsIcon,
+} from "lucide-react"
 
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible"
 import {
   Sidebar,
   SidebarContent,
   SidebarFooter,
   SidebarGroup,
+  SidebarGroupLabel,
   SidebarHeader,
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
-  SidebarSeparator,
+  SidebarMenuSub,
+  SidebarMenuSubButton,
+  SidebarMenuSubItem,
+  SidebarRail,
 } from "@/components/ui/sidebar"
-import {
-  HomeIcon,
-  MessagesSquareIcon,
-  UsersIcon,
-  UserIcon,
-} from "lucide-react"
 import { NavUser } from "@/components/nav-user"
-import Image from "next/image"
 
 const navMain = [
-  { title: "Início", url: "/dashboard", icon: HomeIcon },
-  { title: "Casos", url: "/dashboard/cases", icon: MessagesSquareIcon },
-  { title: "Pacientes", url: "/dashboard/patients", icon: UsersIcon },
-  { title: "Perfil", url: "/dashboard/profile", icon: UserIcon },
+  {
+    title: "Principal",
+    icon: HomeIcon,
+    isActive: true,
+    items: [
+      { title: "Início", url: "/dashboard" },
+    ],
+  },
+  {
+    title: "Atendimentos",
+    icon: MessagesSquareIcon,
+    isActive: true,
+    items: [
+      { title: "Casos", url: "/dashboard/cases" },
+      { title: "Pacientes", url: "/dashboard/patients" },
+    ],
+  },
+  {
+    title: "Configurações",
+    icon: SettingsIcon,
+    isActive: false,
+    items: [
+      { title: "Perfil", url: "/dashboard/profile" },
+    ],
+  },
 ]
 
 export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
   const pathname = usePathname()
 
   return (
-    <Sidebar variant="floating" {...props}>
+    <Sidebar {...props}>
       <SidebarHeader>
         <SidebarMenu>
           <SidebarMenuItem>
-            <SidebarMenuButton size="default" asChild>
-              <Link href="/dashboard" className="w-full h-full flex items-center justify-center">
-                <Image src="/full-logo.svg" alt="Logo FALAPED" width={140} height={60} />
+            <SidebarMenuButton size="lg" asChild>
+              <Link href="/dashboard">
+                <Image src="/full-logo.svg" alt="Logo FALAPED" width={120} height={48} />
               </Link>
             </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>
-        <SidebarSeparator />
       </SidebarHeader>
+
       <SidebarContent>
         <SidebarGroup>
-          <SidebarMenu className="gap-1">
-            {navMain.map((item) => {
-              const Icon = item.icon
-              const isActive = pathname === item.url
+          <SidebarGroupLabel>Plataforma</SidebarGroupLabel>
+          <SidebarMenu>
+            {navMain.map((group) => {
+              const hasActiveChild = group.items.some((item) =>
+                item.url === "/dashboard"
+                  ? pathname === "/dashboard"
+                  : pathname.startsWith(item.url),
+              )
+
               return (
-                <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton asChild isActive={isActive}>
-                    <Link href={item.url} className="font-medium">
-                      <Icon className="size-4" />
-                      {item.title}
-                    </Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
+                <Collapsible
+                  key={group.title}
+                  asChild
+                  defaultOpen={group.isActive || hasActiveChild}
+                  className="group/collapsible"
+                >
+                  <SidebarMenuItem>
+                    <CollapsibleTrigger asChild>
+                      <SidebarMenuButton tooltip={group.title}>
+                        <group.icon />
+                        <span>{group.title}</span>
+                        <ChevronRightIcon className="ml-auto transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
+                      </SidebarMenuButton>
+                    </CollapsibleTrigger>
+                    <CollapsibleContent>
+                      <SidebarMenuSub>
+                        {group.items.map((item) => {
+                          const isActive =
+                            item.url === "/dashboard"
+                              ? pathname === "/dashboard"
+                              : pathname.startsWith(item.url)
+                          return (
+                            <SidebarMenuSubItem key={item.title}>
+                              <SidebarMenuSubButton asChild isActive={isActive}>
+                                <Link href={item.url}>
+                                  <span>{item.title}</span>
+                                </Link>
+                              </SidebarMenuSubButton>
+                            </SidebarMenuSubItem>
+                          )
+                        })}
+                      </SidebarMenuSub>
+                    </CollapsibleContent>
+                  </SidebarMenuItem>
+                </Collapsible>
               )
             })}
           </SidebarMenu>
         </SidebarGroup>
       </SidebarContent>
+
       <SidebarFooter>
         <NavUser />
       </SidebarFooter>
+      <SidebarRail />
     </Sidebar>
   )
 }

@@ -25,7 +25,7 @@ auth.users ← (auth_user_id) → profiles ← (profile_id) → authenticated_us
 
 - `lib/supabase/client.ts` (browser) e `server.ts` (server).
 - `lib/supabase/middleware.ts` ou função no `middleware.ts` para refresh.
-- `lib/get-user-phone.ts` para resolver `user_phone` a partir do `supabase` client.
+- `lib/get-authenticated-user-phone.ts` → `getAuthenticatedUserPhone(supabase)` para resolver `user_phone`.
 
 ## Rotas
 

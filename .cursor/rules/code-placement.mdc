@@ -30,7 +30,7 @@ lib/
 ├── constants.ts      # Product constants
 ├── env.ts            # Env validation (Zod)
 ├── errors.ts         # Custom error classes
-├── get-user-phone.ts # Auth resolution (uses Supabase)
+├── get-authenticated-user-phone.ts # Auth resolution (uses Supabase)
 ├── supabase/         # Supabase client setup (client.ts, server.ts, middleware.ts)
 └── utils.ts          # cn(), other misc helpers (if needed)
 ```

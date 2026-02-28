@@ -16,6 +16,7 @@ When making changes that affect shared context, update the relevant **skills**, 
 | **auth-flow** | Login, middleware, user_phone, rotas protegidas | `SKILL.md` |
 | **storage-pdfs** | Bucket report-pdfs, signed URLs, paths | `SKILL.md` |
 | **dependency-stack** | Dependências, stack, libs do projeto | `SKILL.md` |
+| **pediatric-dashboard-design** | UX/UI de dashboard pediátrico, anatomia de páginas, PatientCard, CaseList, empty states | `SKILL.md`, `reference.md` |
 
 ## Rules do Projeto
 
@@ -33,7 +34,7 @@ When making changes that affect shared context, update the relevant **skills**, 
 | **react-next-tailwind** | React, Next.js, Shadcn, Tailwind |
 | **server-actions** | Estrutura, revalidatePath, redirect, erros |
 | **state-management** | react-query, query keys, quando usar cada ferramenta |
-| **supabase-auth** | Client/server, middleware, get-user-phone |
+| **supabase-auth** | Client/server, middleware, get-authenticated-user-phone |
 | **supabase-queries** | Select explícito, single/maybeSingle, erros, N+1 |
 | **supabase-calls** | Nunca chamar Supabase em components; sempre em módulos dedicados |
 | **typescript** | Sem any, retorno explícito, type vs interface |
@@ -52,7 +53,7 @@ When making changes that affect shared context, update the relevant **skills**, 
 | **Server Actions** | — | `server-actions` | — |
 | **Forms/validação** | — | `forms` | `validações-negocio.md` |
 | **State (react-query)** | — | `state-management` | — |
-| **Componentes/UI** | — | `design-system`, `radix`, `ux-ui-minimalist` | — |
+| **Componentes/UI** | `pediatric-dashboard-design/SKILL.md` | `design-system`, `radix`, `ux-ui-minimalist` | — |
 | **Convenções gerais** | — | `code-conventions`, `functions`, `typescript` | — |
 | **Erros** | — | `error-handling` | — |
 | **Dependências/libs** | `dependency-stack/SKILL.md` | — | `dependencias.md`, `shadcn-componentes.md` |

@@ -1,6 +1,6 @@
 ---
-description: Supabase Auth – client/server, middleware, get-user-phone, protected routes
-globs: "lib/supabase/**/*.ts,lib/get-user-phone.ts,middleware.ts,app/(auth)/**/*"
+description: Supabase Auth – client/server, middleware, get-authenticated-user-phone, protected routes
+globs: "lib/supabase/**/*.ts,lib/get-authenticated-user-phone.ts,middleware.ts,app/(auth)/**/*"
 alwaysApply: false
 ---
 
@@ -51,19 +51,20 @@ export async function middleware(req: NextRequest) {
 }
 ```
 
-## get-user-phone
+## getAuthenticatedUserPhone
 
-- `lib/get-user-phone.ts`: função que recebe supabase (ou session) e retorna `user_phone` ou null.
-- Resolve: `auth.user.id` → `profiles.auth_user_id` → `authenticated_users.profile_id` → `phone`.
+- `lib/get-authenticated-user-phone.ts`: função que recebe supabase e retorna `user_phone` ou null.
+- Resolve: `auth.user.id` → phone da metadata → `toDbPhoneFormat` → verifica em `authenticated_users`.
 - Usar em Server Components, Server Actions e Route Handlers para obter o médico logado.
 
 ```ts
-export async function getUserPhone(supabase: SupabaseClient): Promise<string | null> {
+export async function getAuthenticatedUserPhone(supabase: SupabaseClient): Promise<string | null> {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return null;
-  const { data: profile } = await supabase.from('profiles').select('id').eq('auth_user_id', user.id).maybeSingle();
-  if (!profile) return null;
-  const { data: au } = await supabase.from('authenticated_users').select('phone').eq('profile_id', profile.id).maybeSingle();
+  const rawPhone = user.user_metadata?.phone;
+  if (!rawPhone) return null;
+  const phoneDb = toDbPhoneFormat(rawPhone);
+  const { data: au } = await supabase.from('authenticated_users').select('phone').eq('phone', phoneDb).eq('status', 'paid').maybeSingle();
   return au?.phone ?? null;
 }
 ```
@@ -76,11 +77,11 @@ export async function getUserPhone(supabase: SupabaseClient): Promise<string | n
 ## Proteção de Páginas
 
 - Middleware protege rotas; não é necessário checar sessão em cada página.
-- Para dados sensíveis: obter `userPhone` via `getUserPhone` e retornar 403 se null.
+- Para dados sensíveis: obter `userPhone` via `getAuthenticatedUserPhone` e retornar 403 se null.
 
 ## Checklist
 
 - [ ] Client para browser; Server para server
 - [ ] Middleware com refresh e redirect
-- [ ] get-user-phone usado em Server Components/Actions
+- [ ] getAuthenticatedUserPhone usado em Server Components/Actions
 - [ ] Callback route para OAuth/código

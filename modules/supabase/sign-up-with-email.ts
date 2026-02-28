@@ -1,4 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { toDbPhoneFormat } from "@/lib/parsers";
 
 export type SignUpWithEmailPayload = {
   email: string;
@@ -10,7 +11,7 @@ export type SignUpWithEmailPayload = {
 
 /**
  * Registers a new user with email and password.
- * Passes full_name and phone to user_metadata (options.data).
+ * Stores full_name and phone (DB format: 55 + DDD + number) in user_metadata.
  * Use in Client Components: createClient() then signUpWithEmail(supabase, payload).
  * @throws AuthError on sign-up failure
  */
@@ -18,11 +19,16 @@ export async function signUpWithEmail(
   supabase: SupabaseClient,
   payload: SignUpWithEmailPayload
 ): Promise<void> {
+  const phoneDb = toDbPhoneFormat(payload.phone);
+
   const { error } = await supabase.auth.signUp({
     email: payload.email,
     password: payload.password,
     options: {
-      data: { full_name: payload.fullName, phone: payload.phone },
+      data: {
+        full_name: payload.fullName,
+        phone: phoneDb,
+      },
       emailRedirectTo: payload.emailRedirectTo ?? undefined,
     },
   });

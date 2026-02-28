@@ -29,7 +29,7 @@ import { createPatient } from '@/modules/patients/create-patient';
 
 export async function createPatientAction(formData: FormData) {
   const supabase = await createServerClient();
-  const userPhone = await getUserPhone(supabase);
+  const userPhone = await getAuthenticatedUserPhone(supabase);
   if (!userPhone) throw new Error('Unauthorized');
 
   const parsed = parsePatientFormData(formData);

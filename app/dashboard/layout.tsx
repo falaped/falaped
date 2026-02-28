@@ -1,3 +1,4 @@
+import { Suspense } from "react"
 import { AppSidebar } from "@/components/app-sidebar"
 import { Separator } from "@/components/ui/separator"
 import {
@@ -12,18 +13,16 @@ export default function DashboardLayout({
   children: React.ReactNode
 }) {
   return (
-    <SidebarProvider>
-      <AppSidebar />
-      <SidebarInset>
-        <header className="flex h-16 shrink-0 items-center gap-2 px-4">
-          <SidebarTrigger className="-ml-1" aria-label="Abrir menu" />
-          <Separator
-            orientation="vertical"
-            className="mr-2 h-4"
-          />
-        </header>
-        <div className="flex flex-1 flex-col gap-4 p-4 pt-0">{children}</div>
-      </SidebarInset>
-    </SidebarProvider>
+    <Suspense fallback={<div className="flex min-h-screen items-center justify-center bg-background">Carregando...</div>}>
+      <SidebarProvider>
+        <AppSidebar />
+        <SidebarInset>
+
+          <div className="flex flex-1 flex-col gap-4 p-8 relative">
+            <SidebarTrigger className="absolute top-4 right-4" aria-label="Abrir menu" />
+            {children}</div>
+        </SidebarInset>
+      </SidebarProvider>
+    </Suspense>
   )
 }

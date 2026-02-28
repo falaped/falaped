@@ -54,7 +54,7 @@ await signUpWithEmail(supabase, { email, password, fullName, phone });
 ## Exceções
 
 - **lib/supabase/** – setup do client (client.ts, server.ts, middleware.ts).
-- **lib/get-user-phone.ts** – usa Supabase para resolver user_phone; pode permanecer em lib por ser infraestrutura de auth.
+- **lib/get-authenticated-user-phone.ts** – usa Supabase para resolver user_phone; pode permanecer em lib por ser infraestrutura de auth.
 
 ## Checklist
 

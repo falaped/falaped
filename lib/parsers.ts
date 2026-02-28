@@ -10,3 +10,14 @@ export function parsePhone(value: string): string {
   }
   return digits;
 }
+
+export function toDbPhoneFormat(phone: string): string {
+  const digits = phone.replace(/\D/g, "");
+  if (digits.length === 12 && digits.startsWith("55")) {
+    return digits;
+  }
+  if (digits.length !== 10 && digits.length !== 11) {
+    throw new Error("Telefone deve ter 10 ou 11 dígitos");
+  }
+  return `55${digits}`;
+}
