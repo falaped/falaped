@@ -13,15 +13,16 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
+  SidebarSeparator,
 } from "@/components/ui/sidebar"
 import {
-  GalleryVerticalEndIcon,
   HomeIcon,
   MessagesSquareIcon,
   UsersIcon,
   UserIcon,
 } from "lucide-react"
 import { NavUser } from "@/components/nav-user"
+import Image from "next/image"
 
 const navMain = [
   { title: "Início", url: "/dashboard", icon: HomeIcon },
@@ -38,23 +39,18 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
       <SidebarHeader>
         <SidebarMenu>
           <SidebarMenuItem>
-            <SidebarMenuButton size="lg" asChild>
-              <Link href="/dashboard">
-                <div className="bg-sidebar-primary text-sidebar-primary-foreground flex aspect-square size-8 items-center justify-center rounded-lg">
-                  <GalleryVerticalEndIcon className="size-4" />
-                </div>
-                <div className="flex flex-col gap-0.5 leading-none">
-                  <span className="font-medium">FALAPED</span>
-                  <span className="text-xs text-muted-foreground">Dashboard</span>
-                </div>
+            <SidebarMenuButton size="default" asChild>
+              <Link href="/dashboard" className="w-full h-full flex items-center justify-center">
+                <Image src="/full-logo.svg" alt="Logo FALAPED" width={140} height={60} />
               </Link>
             </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>
+        <SidebarSeparator />
       </SidebarHeader>
       <SidebarContent>
         <SidebarGroup>
-          <SidebarMenu className="gap-2">
+          <SidebarMenu className="gap-1">
             {navMain.map((item) => {
               const Icon = item.icon
               const isActive = pathname === item.url
