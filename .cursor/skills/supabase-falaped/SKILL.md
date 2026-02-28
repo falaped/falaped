@@ -14,7 +14,7 @@ Ao criar ou alterar query, nova tabela ou migration; ou quando a tarefa menciona
 - **Queries:** `modules/{domain}/`, um arquivo por query (kebab-case), função em camelCase.
   - Ex.: `modules/patients/get-patients-by-user-phone.ts` → `getPatientsByUserPhone`
   - **Auth:** `modules/supabase/sign-up-with-email.ts`, `sign-out.ts`, `get-current-user-for-display.ts`
-  - Domínios: `supabase/queries` (auth), `patients`, `cases` (get-cases-by-user-phone, get-case-by-id, get-case-counts-by-user-phone), `case-messages`, `authenticated-users`, `report-templates`
+  - Domínios: `supabase` (auth), `profiles`, `authenticated-users`, `phone-link-codes` (create-link-code), `patients`, `cases`, `case-messages`, `report-templates`
 - **Regra:** nunca chamar Supabase (`supabase.from()`, `supabase.auth.*`) diretamente em componentes; sempre usar módulos.
 - **Tipos:** no próprio módulo (`types.ts`) ou `lib/types/`. Colunas no DB em snake_case.
 - **Client:** `createServerClient` / `createBrowserClient` em `lib/supabase/`. Nunca criar o client dentro da query; quem chama injeta.

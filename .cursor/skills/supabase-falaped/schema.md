@@ -5,19 +5,24 @@ Referência rápida das tabelas. Migrations em `supabase/migrations/`. Tipos em 
 ## Tabelas existentes
 
 ### authenticated_users
-- `id` uuid PK, `phone` text unique, `status` ('paid' | 'unpaid' | 'blocked'), `profile_id` (FK → profiles), `full_name`, `email`, `crm` text nullable, `rqe` text nullable, `social_media_handle` text nullable, `website` text nullable, `report_template_id` uuid nullable FK → report_templates(id), `logo_url_full` text nullable, `logo_url_short` text nullable, `created_at`, `updated_at`
-- Uso: validar usuário por telefone antes de processar mensagem. `crm`: CRM do médico. `rqe`: RQE (ex.: 67566). `social_media_handle`: rede social (ex.: @pediatragabrielamarinho). `website`: URL do site. `report_template_id`: template preferido; null = default. `logo_url_full` e `logo_url_short`: URLs .png para cabeçalho/rodapé do PDF. Futuramente migrar detalhes para profiles.
+- `id` uuid PK, `phone` text unique, `status` ('paid' | 'unpaid' | 'blocked'), `profile_id` uuid not null FK → profiles(id)
+- Uso: validar usuário por telefone no bot; dashboard resolve sessão por profile_id. Dados do médico ficam em profiles. Bot consulta por phone e status; paid = continua fluxo, unpaid/blocked = mensagem de pagamento/contato.
 
 ### report_templates
 - `id` uuid PK, `user_phone` text nullable, `name` text not null, `sections` jsonb not null, `is_default` boolean default false, `created_at`, `updated_at`
 - Índices: idx_report_templates_user_phone, idx_report_templates_is_default (unique where is_default = true). `sections`: array de `{ name, description, information_not_extracted_reason? }`. Template global quando user_phone = null. Seed com template padrão (is_default = true).
 
 ### profiles
-- `id` uuid PK, `auth_user_id` (FK → auth.users), `phone` unique, `full_name`, `email`, `created_at`, `updated_at`
-- Uso: vínculo com Supabase Auth quando houver login.
-- **Trigger:** ao signup, um registro é criado automaticamente via trigger `on_auth_user_created` (AFTER INSERT ON auth.users), que chama `public.handle_new_auth_user()` e insere em `public.profiles` com dados de `raw_user_meta_data` e `email`; só insere quando `phone` está presente (signup por e-mail envia phone e full_name em user_metadata). Ao excluir usuário em auth.users, o trigger `on_auth_user_deleted` (BEFORE DELETE) chama `public.handle_auth_user_deleted()` e remove o registro em `public.profiles` onde `auth_user_id = old.id`.
+- `id` uuid PK, `auth_user_id` (FK → auth.users), `phone` unique, `first_name` text, `surname` text, `email` text nullable, `crm` text nullable, `logo_url_full` text nullable, `logo_url_short` text nullable, `rqe` text nullable, `social_media_handle` text nullable, `website` text nullable, `report_template_id` uuid nullable FK → report_templates(id), `created_at` timestamptz, `updated_at` timestamptz
+- Uso: dados do médico/perfil; vínculo com Supabase Auth. Dashboard lê perfil por auth → profile; status e phone do canal em authenticated_users.
+- **Trigger signup:** `on_auth_user_created` chama `handle_new_auth_user()`: insere em `profiles` (first_name, surname a partir de full_name, email, phone) e em `authenticated_users` (profile_id, phone, status = 'unpaid'); só quando phone está presente. **Trigger delete:** `on_auth_user_deleted` chama `handle_auth_user_deleted()`: remove de `authenticated_users` (por profile_id) e de `profiles` onde auth_user_id = old.id.
 
 ## Tabelas (migrations em supabase/migrations/)
+
+### phone_link_codes
+- `id` uuid PK, `code` text not null (6 dígitos), `profile_id` uuid not null FK → profiles(id) on delete cascade, `expires_at` timestamptz not null, `used_at` timestamptz nullable
+- Índice: idx_phone_link_codes_code_unused (code) where used_at is null.
+- Uso: códigos de vinculação WhatsApp. Dashboard gera via `createLinkCode(supabase, profileId)`; bot busca por code (não expirado, não usado), vincula phone ao profile_id em authenticated_users e seta used_at. Ver docs/contrato-bot-vinculacao-whatsapp.md.
 
 ### cases
 - `id` uuid PK, `user_phone` text not null, `status` ('active' | 'closed') default 'active', `started_at` timestamptz default now(), `ended_at` timestamptz nullable, `awaiting_intent` boolean not null default false, `patient_id` uuid nullable FK → patients(id), `awaiting_patient_choice` boolean not null default false, `patient_registration_state` jsonb nullable

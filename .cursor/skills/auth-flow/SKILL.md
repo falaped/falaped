@@ -16,17 +16,19 @@ auth.users ← (auth_user_id) → profiles ← (profile_id) → authenticated_us
                                                               └── phone (user_phone)
 ```
 
-1. No signup, um registro em `public.profiles` é criado automaticamente por trigger (`on_auth_user_created` → `public.handle_new_auth_user()`), usando dados de `auth.users` (email) e `raw_user_meta_data` (phone, full_name). Só insere quando phone está presente.
+1. No signup, um registro em `public.profiles` e um em `public.authenticated_users` são criados por trigger (`handle_new_auth_user()`): profiles com first_name, surname, email, phone; authenticated_users com profile_id, phone, status = 'unpaid'. Só quando phone está presente.
 2. Usuário autentica via Supabase Auth (email ou phone).
 3. Dashboard obtém `auth.user.id` da sessão.
-4. Resolve `user_phone` via `profiles` → `authenticated_users`.
-5. Queries usam `user_phone` para filtrar patients, cases, etc.
+4. Resolve `user_phone` via `auth.user.id` → `getProfileByAuthUserId` → `getAuthenticatedUserByProfileId` → retorna phone se status = 'paid'.
+5. Queries usam `user_phone` para filtrar patients, cases, etc. Dados do médico (nome, email, etc.) vêm de `profiles`.
 
 ## Arquivos
 
 - `lib/supabase/client.ts` (browser) e `server.ts` (server).
 - `lib/supabase/middleware.ts` ou função no `middleware.ts` para refresh.
 - `lib/get-authenticated-user-phone.ts` → `getAuthenticatedUserPhone(supabase)` para resolver `user_phone`.
+- `modules/profiles/get-profile-by-auth-user-id.ts` → `getProfileByAuthUserId(supabase, authUserId)`.
+- `modules/authenticated-users/get-authenticated-user-by-profile-id.ts` → `getAuthenticatedUserByProfileId(supabase, profileId)`.
 
 ## Rotas
 
