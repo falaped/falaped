@@ -35,6 +35,7 @@ When making changes that affect shared context, update the relevant **skills**, 
 | **state-management** | react-query, query keys, quando usar cada ferramenta |
 | **supabase-auth** | Client/server, middleware, get-user-phone |
 | **supabase-queries** | Select explícito, single/maybeSingle, erros, N+1 |
+| **supabase-calls** | Nunca chamar Supabase em components; sempre em módulos dedicados |
 | **typescript** | Sem any, retorno explícito, type vs interface |
 | **ux-ui-minimalist** | Estilo Vercel/Supabase, layout, componentes |
 

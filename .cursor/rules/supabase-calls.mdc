@@ -1,0 +1,63 @@
+---
+description: Chamadas Supabase – nunca em components; sempre em módulos dedicados
+globs: "components/**/*.tsx,app/**/*.tsx,app/**/actions.ts"
+alwaysApply: false
+---
+
+# Chamadas Supabase – Isolamento em Módulos
+
+## Regra Central
+
+**Nunca** chamar `supabase.from()`, `supabase.auth.*` ou qualquer API do Supabase diretamente em:
+
+- Componentes (`components/**`, `app/**/*.tsx`)
+- Server Actions (exceto para obter o client e passar ao módulo)
+- Route Handlers (exceto para obter o client e passar ao módulo)
+
+## Onde Colocar
+
+Toda chamada ao Supabase deve ficar em um **arquivo dedicado** em `modules/{domain}/`:
+
+```
+modules/
+├── supabase/
+│   ├── sign-up-with-email.ts    # supabase.auth.signUp
+│   ├── sign-out.ts              # supabase.auth.signOut
+│   ├── get-current-user-for-display.ts
+│   └── ...
+├── patients/
+│   └── get-patients-by-user-phone.ts  # supabase.from('patients')
+└── ...
+```
+
+## Padrão
+
+- **Um arquivo por operação** (ou por query bem definida).
+- **Supabase client como primeiro argumento**: `(supabase: SupabaseClient, ...args)`.
+- **Componente/Action**: obtém o client, chama o módulo, trata o resultado.
+
+```typescript
+// ❌ BAD – chamada direta no componente
+const { error } = await supabase.auth.signUp({ email, password });
+
+// ✅ GOOD – módulo dedicado
+// modules/supabase/sign-up-with-email.ts
+export async function signUpWithEmail(supabase, payload) {
+  const { error } = await supabase.auth.signUp({ ... });
+  if (error) throw error;
+}
+
+// Componente
+await signUpWithEmail(supabase, { email, password, fullName, phone });
+```
+
+## Exceções
+
+- **lib/supabase/** – setup do client (client.ts, server.ts, middleware.ts).
+- **lib/get-user-phone.ts** – usa Supabase para resolver user_phone; pode permanecer em lib por ser infraestrutura de auth.
+
+## Checklist
+
+- [ ] Nenhuma chamada `supabase.from()` ou `supabase.auth.*` em components
+- [ ] Operações Supabase em `modules/{domain}/*.ts`
+- [ ] Componentes importam e usam os módulos

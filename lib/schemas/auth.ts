@@ -5,9 +5,20 @@ export const loginSchema = z.object({
   password: z.string().min(6, "Senha deve ter pelo menos 6 caracteres"),
 });
 
+const phoneRefine = (val: string) => {
+  const digits = val.replace(/\D/g, "");
+  return digits.length === 10 || digits.length === 11;
+};
+
 export const signUpSchema = z
   .object({
+    firstName: z.string().min(2, "Nome é obrigatório"),
+    lastName: z.string().min(2, "Sobrenome é obrigatório"),
     email: z.string().email("E-mail inválido"),
+    phone: z
+      .string()
+      .min(1, "Telefone é obrigatório")
+      .refine(phoneRefine, "Telefone deve ter 10 ou 11 dígitos"),
     password: z.string().min(6, "Senha deve ter pelo menos 6 caracteres"),
     repeatPassword: z.string().min(1, "Confirme sua senha"),
   })

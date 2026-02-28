@@ -1,12 +1,14 @@
 "use client";
 
-import { useForm } from "react-hook-form";
+import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { createClient } from "@/lib/supabase/client";
+import { signUpWithEmail } from "@/modules/supabase/sign-up-with-email";
 import {
   signUpSchema,
   type SignUpFormData,
 } from "@/lib/schemas/auth";
+import { parsePhone } from "@/lib/parsers";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -23,6 +25,7 @@ import {
   FieldLabel,
 } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
+import { PhoneInput } from "@/components/ui/phone-input";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
@@ -37,7 +40,14 @@ export function SignUpForm({
 
   const form = useForm<SignUpFormData>({
     resolver: zodResolver(signUpSchema),
-    defaultValues: { email: "", password: "", repeatPassword: "" },
+    defaultValues: {
+      firstName: "",
+      lastName: "",
+      email: "",
+      phone: "",
+      password: "",
+      repeatPassword: "",
+    },
   });
 
   const handleSubmit = async (data: SignUpFormData) => {
@@ -45,14 +55,13 @@ export function SignUpForm({
     setApiError(null);
 
     try {
-      const { error } = await supabase.auth.signUp({
+      await signUpWithEmail(supabase, {
         email: data.email,
         password: data.password,
-        options: {
-          emailRedirectTo: `${window.location.origin}/dashboard`,
-        },
+        fullName: `${data.firstName.trim()} ${data.lastName.trim()}`,
+        phone: parsePhone(data.phone),
+        emailRedirectTo: `${window.location.origin}/dashboard`,
       });
-      if (error) throw error;
       router.push("/auth/sign-up-success");
     } catch (error: unknown) {
       setApiError(
@@ -75,6 +84,35 @@ export function SignUpForm({
         <CardContent>
           <form onSubmit={form.handleSubmit(handleSubmit)}>
             <FieldGroup>
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                <Field data-invalid={!!form.formState.errors.firstName}>
+                  <FieldLabel htmlFor="firstName">Nome</FieldLabel>
+                  <FieldContent>
+                    <Input
+                      id="firstName"
+                      type="text"
+                      placeholder="Nome"
+                      aria-invalid={!!form.formState.errors.firstName}
+                      {...form.register("firstName")}
+                    />
+                    <FieldError errors={form.formState.errors.firstName ? [form.formState.errors.firstName] : undefined} />
+                  </FieldContent>
+                </Field>
+                <Field data-invalid={!!form.formState.errors.lastName}>
+                  <FieldLabel htmlFor="lastName">Sobrenome</FieldLabel>
+                  <FieldContent>
+                    <Input
+                      id="lastName"
+                      type="text"
+                      placeholder="Sobrenome"
+                      aria-invalid={!!form.formState.errors.lastName}
+                      {...form.register("lastName")}
+                    />
+                    <FieldError errors={form.formState.errors.lastName ? [form.formState.errors.lastName] : undefined} />
+                  </FieldContent>
+                </Field>
+              </div>
+
               <Field data-invalid={!!form.formState.errors.email}>
                 <FieldLabel htmlFor="email">E-mail</FieldLabel>
                 <FieldContent>
@@ -88,30 +126,55 @@ export function SignUpForm({
                   <FieldError errors={form.formState.errors.email ? [form.formState.errors.email] : undefined} />
                 </FieldContent>
               </Field>
-              <Field data-invalid={!!form.formState.errors.password}>
-                <FieldLabel htmlFor="password">Senha</FieldLabel>
+
+              <Field data-invalid={!!form.formState.errors.phone}>
+                <FieldLabel htmlFor="phone">Telefone</FieldLabel>
                 <FieldContent>
-                  <Input
-                    id="password"
-                    type="password"
-                    aria-invalid={!!form.formState.errors.password}
-                    {...form.register("password")}
+                  <Controller
+                    control={form.control}
+                    name="phone"
+                    render={({ field }) => (
+                      <PhoneInput
+                        ref={field.ref}
+                        id="phone"
+                        value={field.value}
+                        onChange={field.onChange}
+                        onBlur={field.onBlur}
+                        aria-invalid={!!form.formState.errors.phone}
+                      />
+                    )}
                   />
-                  <FieldError errors={form.formState.errors.password ? [form.formState.errors.password] : undefined} />
+                  <FieldError errors={form.formState.errors.phone ? [form.formState.errors.phone] : undefined} />
                 </FieldContent>
               </Field>
-              <Field data-invalid={!!form.formState.errors.repeatPassword}>
-                <FieldLabel htmlFor="repeat-password">Repetir senha</FieldLabel>
-                <FieldContent>
-                  <Input
-                    id="repeat-password"
-                    type="password"
-                    aria-invalid={!!form.formState.errors.repeatPassword}
-                    {...form.register("repeatPassword")}
-                  />
-                  <FieldError errors={form.formState.errors.repeatPassword ? [form.formState.errors.repeatPassword] : undefined} />
-                </FieldContent>
-              </Field>
+
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                <Field data-invalid={!!form.formState.errors.password}>
+                  <FieldLabel htmlFor="password">Senha</FieldLabel>
+                  <FieldContent>
+                    <Input
+                      id="password"
+                      type="password"
+                      aria-invalid={!!form.formState.errors.password}
+                      {...form.register("password")}
+                    />
+                    <FieldError errors={form.formState.errors.password ? [form.formState.errors.password] : undefined} />
+                  </FieldContent>
+                </Field>
+                <Field data-invalid={!!form.formState.errors.repeatPassword}>
+                  <FieldLabel htmlFor="repeat-password">Repetir senha</FieldLabel>
+                  <FieldContent>
+                    <Input
+                      id="repeat-password"
+                      type="password"
+                      aria-invalid={!!form.formState.errors.repeatPassword}
+                      {...form.register("repeatPassword")}
+                    />
+                    <FieldError errors={form.formState.errors.repeatPassword ? [form.formState.errors.repeatPassword] : undefined} />
+                  </FieldContent>
+                </Field>
+              </div>
+
               {apiError && (
                 <p className="text-sm text-destructive" role="alert">
                   {apiError}

@@ -13,7 +13,7 @@ Ao criar ou alterar query, nova tabela ou migration; ou quando a tarefa menciona
 
 - **Queries:** `modules/{domain}/`, um arquivo por query (kebab-case), função em camelCase.
   - Ex.: `modules/patients/get-patients-by-user-phone.ts` → `getPatientsByUserPhone`
-  - **Auth:** `modules/supabase/queries/sign-in-with-password.ts`, `exchange-code-for-session.ts`
+  - **Auth:** `modules/supabase/sign-up-with-email.ts`, `sign-out.ts`, `get-current-user-for-display.ts`
   - Domínios: `supabase/queries` (auth), `patients`, `cases`, `case-messages`, `authenticated-users`, `report-templates`
 - **Regra:** nunca chamar Supabase (`supabase.from()`, `supabase.auth.*`) diretamente em componentes; sempre usar módulos.
 - **Tipos:** no próprio módulo (`types.ts`) ou `lib/types/`. Colunas no DB em snake_case.
