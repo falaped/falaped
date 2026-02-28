@@ -1,0 +1,142 @@
+---
+description: State management – react-query for server state, when to use what
+globs: "**/*.tsx,lib/**/query*.ts"
+alwaysApply: false
+---
+
+# State Management
+
+## Princípio: Escolher pela origem do estado
+
+| Tipo de estado | Ferramenta | Exemplo |
+|----------------|------------|---------|
+| **Server state** (API, Supabase) | react-query | patients, cases, perfil |
+| **Form state** | react-hook-form | formulários de create/edit |
+| **UI local** (modal, tab, toggle) | useState / useReducer | isOpen, selectedTab |
+| **Global client** (raro) | zustand ou Context | tema, preferências |
+
+---
+
+## React Query (TanStack Query)
+
+### Quando usar
+
+- Dados do Supabase (patients, cases, case_messages, authenticated_users).
+- Cache, refetch, invalidation e loading/error states centralizados.
+
+### Configuração
+
+- `QueryClientProvider` no layout raiz (ou `(dashboard)`).
+- Preferir `@tanstack/react-query` (v5).
+
+### Query Keys
+
+Estrutura consistente e hierárquica para invalidation.
+
+```ts
+// lib/query-keys.ts
+export const queryKeys = {
+  patients: {
+    all: ['patients'] as const,
+    lists: () => [...queryKeys.patients.all, 'list'] as const,
+    list: (userPhone: string, search?: string) =>
+      [...queryKeys.patients.lists(), userPhone, search ?? ''] as const,
+    details: () => [...queryKeys.patients.all, 'detail'] as const,
+    detail: (id: string) => [...queryKeys.patients.details(), id] as const,
+  },
+  cases: {
+    all: ['cases'] as const,
+    lists: () => [...queryKeys.cases.all, 'list'] as const,
+    list: (userPhone: string, status?: 'active' | 'closed') =>
+      [...queryKeys.cases.lists(), userPhone, status ?? 'all'] as const,
+    detail: (id: string) => [...queryKeys.cases.all, 'detail', id] as const,
+  },
+};
+```
+
+### useQuery
+
+- Chamar funções dos `modules/` dentro da query fn.
+- `queryKey` do `queryKeys`.
+- `enabled` quando depender de `userPhone` ou outro dado.
+
+```tsx
+const { data, isLoading, error } = useQuery({
+  queryKey: queryKeys.patients.list(userPhone, search),
+  queryFn: () => getPatientsByUserPhone(supabase, userPhone),
+  enabled: !!userPhone,
+});
+```
+
+### Supabase + user_phone em Client Components
+
+Em Client Components que usam react-query para dados do Supabase:
+
+1. **Supabase client:** usar `createBrowserClient` de `lib/supabase/client.ts` (não o server).
+2. **user_phone:** obter de um destes:
+   - **Context/hook** (ex.: `useUserPhone()`) – se o dashboard fornecer
+   - **Props** – Server Component pai busca `getUserPhone(supabase)` e passa como prop
+   - **Session + fetch** – ler da sessão e resolver no client (menos ideal; preferir server)
+
+```tsx
+// Padrão com props (recomendado)
+export default async function PacientesPage() {
+  const supabase = await createServerClient();
+  const userPhone = await getUserPhone(supabase);
+  if (!userPhone) redirect('/login');
+  return <PatientListClient userPhone={userPhone} />;
+}
+
+'use client';
+function PatientListClient({ userPhone }: { userPhone: string }) {
+  const supabase = createBrowserClient();
+  const { data } = useQuery({
+    queryKey: queryKeys.patients.list(userPhone),
+    queryFn: () => getPatientsByUserPhone(supabase, userPhone),
+    enabled: !!userPhone,
+  });
+  // ...
+}
+```
+
+### useMutation
+
+- Para create/update/delete; invalidar queries após sucesso.
+- Chamar Server Action ou função do module conforme o padrão do projeto.
+
+```tsx
+const mutation = useMutation({
+  mutationFn: (payload: CreatePatientPayload) => createPatient(supabase, userPhone, payload),
+  onSuccess: () => {
+    queryClient.invalidateQueries({ queryKey: queryKeys.patients.all });
+  },
+});
+```
+
+### Invalidation
+
+- `invalidateQueries` com `queryKey` parcial para limpar cache relacionado.
+- Ex.: `queryKeys.patients.all` invalida todas as queries de patients.
+
+### Server Components vs react-query
+
+- **Server Components**: fetch direto; dados passados como props (sem cache client).
+- **Client Components**: react-query para cache e refetch no client.
+- Preferir react-query em páginas com interatividade (listagem com busca, tabs, mutations). Server Components para páginas estáticas ou iniciais.
+
+---
+
+## O que não usar com react-query
+
+- **Form state**: react-hook-form (já em uso).
+- **Dados que vêm só do Server Component**: não duplicar em react-query; passar via props.
+- **Estado trivial** (um boolean): `useState` é suficiente.
+
+---
+
+## Checklist
+
+- [ ] Server state → react-query
+- [ ] queryKeys centralizados e hierárquicos
+- [ ] Invalidation após mutations
+- [ ] `enabled` quando a query depende de dados ainda não disponíveis

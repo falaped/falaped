@@ -1,0 +1,130 @@
+---
+description: Radix UI usage – when to use, styling with Tailwind, alignment with design system
+alwaysApply: true
+---
+
+# Radix UI – Uso e Padrões
+
+**Aplicar sempre** ao criar ou customizar componentes UI. Shadcn (Radix-based) em `components/ui/`; nunca HTML nativo para controles.
+
+## Prioridade
+
+1. **Shadcn existe** → usar Shadcn (`@/components/ui/*`); Shadcn já é Radix + Tailwind.
+2. **Shadcn não existe** → instalar `@radix-ui/react-*` e criar wrapper estilizado em `components/ui/`.
+
+Esta regra aplica-se quando criamos ou customizamos componentes baseados em Radix.
+
+---
+
+## Alinhamento com Design System
+
+- **Local:** `components/ui/` (primitives) ou `components/` (composed/patterns).
+- **Tokens:** sempre `bg-primary`, `text-muted-foreground`, `border-border`, etc.; nunca hex/rgb.
+- **`cn()`** para merge de classes.
+- **`forwardRef`** e **`className`** em todos os partes que renderizam elementos nativos.
+- **Variants:** CVA quando houver 2+ variantes visuais.
+- **Copy:** PT-BR (labels, placeholders, aria-label).
+
+---
+
+## Alinhamento com React / Tailwind
+
+- **Functional components**; `"use client"` quando o Radix usa hooks/estado.
+- **Tailwind** para styling; sem inline styles para layout.
+- **Compound pattern** quando o Radix expõe subcomponentes (Dialog.Root, Dialog.Trigger, Dialog.Content).
+- **Spread de props** para `aria-*`, `data-*`, `onOpenChange`, etc.
+
+---
+
+## Estrutura de um Componente Radix Estilizado
+
+```tsx
+// components/ui/custom-dialog.tsx
+'use client';
+
+import * as React from 'react';
+import * as Dialog from '@radix-ui/react-dialog';
+import { cn } from '@/lib/utils';
+
+const DialogContent = React.forwardRef<
+  React.ElementRef<typeof Dialog.Content>,
+  React.ComponentPropsWithoutRef<typeof Dialog.Content>
+>(({ className, children, ...props }, ref) => (
+  <Dialog.Portal>
+    <Dialog.Overlay className="fixed inset-0 z-50 bg-black/50 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0" />
+    <Dialog.Content
+      ref={ref}
+      className={cn(
+        'fixed left-[50%] top-[50%] z-50 grid w-full max-w-lg translate-x-[-50%] translate-y-[-50%] gap-4 border border-border bg-background p-6 shadow-lg duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out',
+        className
+      )}
+      {...props}
+    >
+      {children}
+    </Dialog.Content>
+  </Dialog.Portal>
+));
+DialogContent.displayName = Dialog.Content.displayName;
+
+export { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter };
+```
+
+---
+
+## Padrões Obrigatórios
+
+### className em Partes
+
+- Todo `Part` do Radix que renderiza elemento deve aceitar `className`.
+- Usar `cn(baseStyles, className)` para permitir override sem quebrar o design.
+
+### forwardRef
+
+- Wrappers que encapsulam `Part` devem usar `forwardRef` e repassar `ref` ao Part.
+- Necessário para focus management, forms e acessibilidade.
+
+### data-attributes
+
+- Radix usa `data-state`, `data-orientation`, etc. para estilização condicional.
+- Ex.: `data-[state=open]:animate-in`, `data-[state=closed]:fade-out-0`.
+
+### asChild
+
+- Usar `asChild` quando o trigger/content deve ser um elemento custom (ex.: Button como trigger).
+- O Radix mescla props no filho único; o filho deve aceitar ref e spread.
+
+```tsx
+<Dialog.Trigger asChild>
+  <Button variant="outline">Abrir</Button>
+</Dialog.Trigger>
+```
+
+---
+
+## Tokens e Aparência
+
+- **Overlay:** `bg-black/50` ou `bg-background/80`; evitar opacity fixa demais.
+- **Content:** `bg-background`, `border-border`, `rounded-md` (ou `var(--radius)`).
+- **Focus:** `focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2`.
+- **Disabled:** `disabled:pointer-events-none disabled:opacity-50`.
+
+---
+
+## Acessibilidade
+
+- Radix já implementa ARIA; **não remover** props de acessibilidade.
+- Sempre fornecer `DialogTitle` (ou equivalente) para screen readers.
+- `aria-label` em ícones ou triggers sem texto.
+- Manter `focus-visible` ring; nunca `outline-solid: none` sem substituto.
+
+---
+
+## Checklist para Novo Componente Radix
+
+- [ ] Shadcn não tem equivalente; Radix é justificado
+- [ ] Componente em `components/ui/` com nome kebab-case
+- [ ] Tokens (bg-*, text-*, border-*) em vez de cores hardcoded
+- [ ] `className` aceito em todas as partes
+- [ ] `forwardRef` e `displayName` nos wrappers
+- [ ] Copy em PT-BR; `aria-label` em ícones
+- [ ] CVA para variants quando houver 2+ estilos

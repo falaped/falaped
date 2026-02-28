@@ -1,0 +1,116 @@
+---
+description: Forms – react-hook-form, Zod, Server Actions, validation messages PT-BR
+alwaysApply: false
+---
+
+# Forms (react-hook-form + Zod)
+
+## Stack
+
+- **react-hook-form** para estado e controle do formulário.
+- **Zod** para validação (schema reutilizável).
+- **@hookform/resolvers** para integração `zodResolver(schema)`.
+
+## Estrutura do Schema
+
+- Schemas em `lib/schemas/` ou colocalizados no módulo (`patients/schema.ts`).
+- Mensagens de erro em **PT-BR** via `.refine()` ou custom error map.
+
+```ts
+// lib/schemas/patient.ts
+import { z } from 'zod';
+
+const GENERIC_TERMS = ['mãe', 'pai', 'responsável', 'avó', 'avô', 'tio', 'tia'];
+
+export const createPatientSchema = z.object({
+  name: z.string().min(2, 'Nome deve ter pelo menos 2 caracteres'),
+  birth_date: z.string().optional(),
+  responsible: z
+    .string()
+    .min(3, 'Informe o nome completo do responsável')
+    .refine((val) => !GENERIC_TERMS.includes(val.toLowerCase().trim()), {
+      message: 'Use o nome completo (ex.: Maria Silva), não "mãe" ou "pai"',
+    }),
+  contact_phone: z.string().min(10, 'Telefone de contato é obrigatório'),
+  // ...
+});
+
+export type CreatePatientFormData = z.infer<typeof createPatientSchema>;
+```
+
+## Uso com react-hook-form
+
+```tsx
+'use client';
+
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { createPatientSchema, type CreatePatientFormData } from '@/lib/schemas/patient';
+
+export function PatientForm({ onSubmit }: { onSubmit: (data: CreatePatientFormData) => Promise<void> }) {
+  const form = useForm<CreatePatientFormData>({
+    resolver: zodResolver(createPatientSchema),
+    defaultValues: { name: '', responsible: '', contact_phone: '' },
+  });
+
+  return (
+    <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+      <FormField control={form.control} name="name" render={({ field }) => (
+        <FormItem>
+          <FormLabel>Nome</FormLabel>
+          <FormControl>
+            <Input {...field} placeholder="Nome do paciente" />
+          </FormControl>
+          <FormMessage />
+        </FormItem>
+      )} />
+      {/* ... */}
+      <Button type="submit" disabled={form.formState.isSubmitting}>
+        {form.formState.isSubmitting ? 'Salvando...' : 'Salvar'}
+      </Button>
+    </form>
+  );
+}
+```
+
+## FormField (Shadcn)
+
+Usar `FormField`, `FormItem`, `FormLabel`, `FormControl`, `FormMessage` do Shadcn quando disponível. `FormMessage` exibe erros de validação automaticamente em PT-BR.
+
+## Validações de Negócio
+
+- **responsible**: não aceitar termos genéricos; exigir nome completo.
+- **contact_phone**: obrigatório no contexto pediátrico.
+- Ver `docs/validações-negocio.md` para regras detalhadas.
+
+## Server Action no Submit
+
+```tsx
+async function handleSubmit(data: CreatePatientFormData) {
+  const formData = new FormData();
+  Object.entries(data).forEach(([k, v]) => formData.append(k, String(v ?? '')));
+  await createPatientAction(formData);
+}
+
+<form onSubmit={form.handleSubmit(handleSubmit)}>
+```
+
+Ou passar dados diretamente se a action aceitar objeto (sem FormData):
+
+```tsx
+await createPatientAction(form.getValues());
+```
+
+## Acessibilidade
+
+- `Label` associado a cada input (`htmlFor` / `id`).
+- `aria-invalid` e `aria-describedby` para campos com erro (react-hook-form + FormField cuidam disso).
+- `disabled` no submit durante `isSubmitting`.
+
+## Checklist
+
+- [ ] Schema Zod com mensagens em PT-BR
+- [ ] zodResolver no useForm
+- [ ] FormField + FormMessage para exibir erros
+- [ ] Validações de negócio (responsible, contact_phone)
+- [ ] Submit com feedback (isSubmitting, mensagem de erro)

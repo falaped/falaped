@@ -1,0 +1,101 @@
+---
+description: Where to place code – parsers, formatters, Supabase, modules, components, UI, theme
+alwaysApply: true
+---
+
+# Code Placement
+
+## Overview
+
+| Tipo | Local | Exemplo |
+|------|-------|---------|
+| Parsers | `lib/parsers.ts` ou `lib/{domain}-parsers.ts` | `parsePhone`, `parseDate` |
+| Formatters | `lib/formatters.ts` | `formatDate`, `formatPhone` |
+| Supabase queries | `modules/{domain}/` | `get-patients-by-user-phone.ts` |
+| Modules (business logic) | `modules/{domain}/` | `patients/`, `cases/`, `authenticated-users/` |
+| UI primitives (Shadcn) | `components/ui/` | `Button`, `Input`, `Card` |
+| Feature components | `components/` ou `app/.../components/` | `PatientForm`, `CaseList` |
+| Theme / styles | `app/globals.css`, `tailwind.config.ts` | CSS variables, tokens |
+
+---
+
+## lib/
+
+Pure utilities, no React, no I/O (except shared constants/env).
+
+```
+lib/
+├── parsers.ts        # parsePhone, parseDate, parsePayload (Zod schemas)
+├── formatters.ts     # formatDate, formatPhone, formatCrm
+├── constants.ts      # Product constants
+├── env.ts            # Env validation (Zod)
+├── errors.ts         # Custom error classes
+├── get-user-phone.ts # Auth resolution (uses Supabase)
+├── supabase/         # Supabase client setup (client.ts, server.ts, middleware.ts)
+└── utils.ts          # cn(), other misc helpers (if needed)
+```
+
+- **Parsers**: transform string/unknown → typed value; use Zod for validation.
+- **Formatters**: typed value → display string; pure, no I/O.
+
+---
+
+## modules/
+
+Business logic + Supabase queries. One domain per folder; one export per file.
+
+```
+modules/
+├── supabase/
+│   └── queries/      # Auth: sign-in-with-password.ts, exchange-code-for-session.ts
+├── patients/         # get-patients-by-user-phone.ts, create-patient.ts, etc.
+├── cases/
+├── case-messages/
+├── authenticated-users/
+└── report-templates/
+```
+
+- Each file: one main function (e.g. `getPatientsByUserPhone(supabase, userPhone)`).
+- Supabase client is always the first argument.
+- **Nunca** chamar Supabase diretamente em componentes; usar módulos em `modules/`.
+- Types can be colocated in `types.ts` inside the module or in a shared `types/` if used across modules.
+
+---
+
+## components/
+
+### components/ui/
+
+Shadcn UI primitives only (Radix-based). Do not add business logic here.
+
+- `Button`, `Input`, `Label`, `Card`, `Dialog`, `Select`, `Table`, etc.
+- **Obrigatório:** usar componentes de `components/ui/` em páginas e forms; nunca criar `<input>`, `<button>`, `<label>` manualmente.
+- Composable, generic, styled via Tailwind + CSS variables.
+- Ver regras: `ux-ui-minimalist`, `design-system`, `radix`.
+
+### components/ or app/.../components/
+
+Feature-specific components that use `components/ui` and modules.
+
+```
+components/
+├── ui/               # Shadcn primitives
+├── dashboard/        # Sidebar, Header, PatientForm, CaseList
+└── forms/            # Shared forms (PatientForm, etc.) – opcional
+```
+
+- Prefer `components/` for reusable pieces; `app/(dashboard)/pacientes/components/` for page-specific.
+- Use `"use client"` only when needed (hooks, events, browser APIs).
+
+---
+
+## Theme (Shadcn + Tailwind)
+
+- **Tailwind config**: `tailwind.config.ts` – theme colors, fonts.
+- **CSS variables**: `app/globals.css` – Shadcn theming (`--background`, `--foreground`, etc.).
+- **No separate theme folder** unless you have multiple themes or complex token systems.
+
+```
+app/globals.css       # :root { --background, --foreground, ... }
+tailwind.config.ts   # theme.extend.colors, etc.
+```

@@ -1,0 +1,105 @@
+---
+description: Server Actions – structure, revalidatePath, redirect, error handling
+globs: "app/**/*.tsx,app/**/actions.ts,lib/actions/**/*.ts"
+alwaysApply: false
+---
+
+# Server Actions
+
+## Quando Usar
+
+- **Mutations** (create, update, delete) em CRUD; evitar API routes para operações simples.
+- **Formulários** com submit direto via action.
+- **Ações pontuais** (ex.: fechar caso, vincular paciente).
+
+## Estrutura
+
+- Colocar em `actions.ts` no mesmo diretório da página ou em `app/(dashboard)/.../actions.ts`.
+- Ou em `lib/actions/` por domínio: `patients.ts`, `cases.ts`, `profile.ts`.
+- Funções assíncronas com `"use server"` no topo do arquivo.
+
+```ts
+// app/(dashboard)/pacientes/actions.ts
+'use server';
+
+import { revalidatePath } from 'next/cache';
+import { redirect } from 'next/navigation';
+import { createServerClient } from '@/lib/supabase/server';
+import { createPatient } from '@/modules/patients/create-patient';
+
+export async function createPatientAction(formData: FormData) {
+  const supabase = await createServerClient();
+  const userPhone = await getUserPhone(supabase);
+  if (!userPhone) throw new Error('Unauthorized');
+
+  const parsed = parsePatientFormData(formData);
+  if (!parsed.success) return { error: parsed.error.flatten().fieldErrors };
+
+  const patient = await createPatient(supabase, userPhone, parsed.data);
+  revalidatePath('/dashboard/patients');
+  redirect(`/dashboard/patients/${patient.id}/editar`);
+}
+```
+
+## revalidatePath e redirect
+
+- **revalidatePath** após mutation que altera dados exibidos na página.
+- **redirect** após create para levar à página de edição ou listagem.
+- Evitar `router.push` em Server Action; usar `redirect()`.
+
+## Tratamento de Erros
+
+- Módulos fazem `throw`; Server Action captura e converte em retorno amigável.
+- Para **formulários**: retornar `{ error: { field: string[] } }` (formato Zod) ou `{ error: string }`.
+- Para **ação sem form**: logar e redirect com query param ou toast via cookie/header.
+
+```ts
+// ✅ GOOD – retorno para formulário
+export async function createPatientAction(formData: FormData) {
+  try {
+    // ...
+  } catch (e) {
+    if (e instanceof ValidationError) {
+      return { error: e.message, fieldErrors: e.fieldErrors };
+    }
+    logger.error('[ACTIONS] createPatient failed', { error: e });
+    return { error: 'Não foi possível cadastrar o paciente. Tente novamente.' };
+  }
+}
+```
+
+## Parâmetros
+
+- `FormData` para submit de forms; parsear com Zod.
+- Objetos tipados quando a action é chamada com `startTransition` e payload JSON.
+- Nunca passar funções ou dados não serializáveis.
+
+## Chamada no Client
+
+```tsx
+'use client';
+import { useActionState } from 'react';
+
+const [state, formAction] = useActionState(createPatientAction, null);
+
+<form action={formAction}>
+  {/* campos */}
+  {state?.error && <p className="text-destructive text-sm">{state.error}</p>}
+  <Button type="submit">Salvar</Button>
+</form>
+```
+
+Ou com `useTransition` para ações sem form:
+
+```tsx
+const [isPending, startTransition] = useTransition();
+startTransition(() => closeCaseAction(caseId));
+```
+
+## Checklist
+
+- [ ] `"use server"` no topo do arquivo
+- [ ] `revalidatePath` após mutations
+- [ ] `redirect` quando fizer sentido
+- [ ] Erros capturados e retornados de forma amigável
+- [ ] Sem dados não serializáveis nos parâmetros

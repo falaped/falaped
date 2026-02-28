@@ -1,0 +1,15 @@
+---
+description: Pré-implementação – Antes de criar ou alterar código, leia e aplique as regras relevantes.
+alwaysApply: true
+---
+
+# Pré-implementação
+
+Antes de criar ou alterar qualquer arquivo:
+
+1. **Identifique** quais regras se aplicam (language-conventions, code-placement, design-system, forms, etc.).
+2. **Leia** as regras relevantes antes de escrever código.
+3. **Aplique** as regras durante a implementação.
+4. **Revise** o resultado contra as regras ao finalizar.
+
+As regras em `.cursor/rules/` são obrigatórias e não devem ser ignoradas.

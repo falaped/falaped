@@ -1,0 +1,93 @@
+---
+description: Keep skills and rules updated when Supabase, architecture, modules, auth, storage or conventions change
+alwaysApply: true
+---
+
+# Keep Skills and Rules Updated
+
+When making changes that affect shared context, update the relevant **skills**, **rules** and **docs** so the AI (and team) stays aligned.
+
+## Skills do Projeto
+
+| Skill | Cobre | Arquivos |
+|-------|-------|----------|
+| **supabase-falaped** | Queries, módulos Supabase, schema | `SKILL.md`, `schema.md` |
+| **dashboard-falaped** | Arquitetura, app, lib, modules, components | `SKILL.md` |
+| **auth-flow** | Login, middleware, user_phone, rotas protegidas | `SKILL.md` |
+| **storage-pdfs** | Bucket report-pdfs, signed URLs, paths | `SKILL.md` |
+| **dependency-stack** | Dependências, stack, libs do projeto | `SKILL.md` |
+
+## Rules do Projeto
+
+| Rule | Cobre |
+|------|-------|
+| **audience-context** | Usuário: pediatra; casos, pacientes, relatórios |
+| **code-conventions** | Naming, exports, Supabase, logs, erros |
+| **code-placement** | Onde colocar parsers, formatters, modules, components, theme |
+| **design-system** | Hierarquia de componentes, tokens, CVA, acessibilidade |
+| **error-handling** | Custom errors, HTTP, log/rethrow, Error Boundary, Next.js |
+| **forms** | react-hook-form, Zod, Server Actions, validações PT-BR |
+| **functions** | Assinatura, early return, pureza, erros |
+| **language-conventions** | Código em inglês, copy em PT-BR |
+| **radix** | Uso de Radix UI, styling, compound components |
+| **react-next-tailwind** | React, Next.js, Shadcn, Tailwind |
+| **server-actions** | Estrutura, revalidatePath, redirect, erros |
+| **state-management** | react-query, query keys, quando usar cada ferramenta |
+| **supabase-auth** | Client/server, middleware, get-user-phone |
+| **supabase-queries** | Select explícito, single/maybeSingle, erros, N+1 |
+| **typescript** | Sem any, retorno explícito, type vs interface |
+| **ux-ui-minimalist** | Estilo Vercel/Supabase, layout, componentes |
+
+## When to Update
+
+| Change | Skills | Rules | Docs |
+|--------|--------|-------|------|
+| **Supabase schema** | `supabase-falaped/schema.md` | — | `schema-supabase.md` |
+| **Supabase queries** | `supabase-falaped/SKILL.md` | `supabase-queries` | — |
+| **Auth** | `auth-flow/SKILL.md` | `supabase-auth` | — |
+| **Storage PDFs** | `storage-pdfs/SKILL.md` | — | — |
+| **Arquitetura/pastas** | `dashboard-falaped/SKILL.md` | `code-placement` | `estrutura-do-projeto.md` |
+| **Módulos** | `dashboard-falaped/SKILL.md` | `code-placement` | `estrutura-do-projeto.md` |
+| **Server Actions** | — | `server-actions` | — |
+| **Forms/validação** | — | `forms` | `validações-negocio.md` |
+| **State (react-query)** | — | `state-management` | — |
+| **Componentes/UI** | — | `design-system`, `radix`, `ux-ui-minimalist` | — |
+| **Convenções gerais** | — | `code-conventions`, `functions`, `typescript` | — |
+| **Erros** | — | `error-handling` | — |
+| **Dependências/libs** | `dependency-stack/SKILL.md` | — | `dependencias.md`, `shadcn-componentes.md` |
+
+## Regra para atualizar rules
+
+- Quando o **código** passar a seguir um padrão diferente do descrito na rule, **atualize a rule**.
+- Quando **criar** um padrão novo (ex.: nova lib, novo fluxo), **crie ou atualize** a rule correspondente.
+- Rules desatualizadas geram código inconsistente; manter em sync é prioridade.
+
+## Regra para atualizar docs
+
+- **Ao final de cada implementação**, atualizar os docs em `docs/` que foram impactados.
+- `plano-fases.md`: marcar checkboxes `[x]` das tarefas concluídas.
+- `estrutura-do-projeto.md`: incluir novos arquivos/pastas se a estrutura mudou.
+- `schema-supabase.md`: refletir alterações de schema quando houver migrations.
+- `setup.md`: atualizar se o fluxo de rodar o projeto mudar.
+- `dependencias.md`: incluir novas libs instaladas.
+- `shadcn-componentes.md`: ajustar se componentes forem adicionados/removidos.
+- Docs desatualizados confundem onboarding e manutenção; revisar ao fechar a tarefa.
+
+## Checklist ao final de cada implementação
+
+- [ ] **plano-fases.md** – marcar `[x]` nas tarefas concluídas
+- [ ] Schema alterado? → `schema-supabase.md`, `supabase-falaped/schema.md`
+- [ ] Queries/módulos novos? → `supabase-falaped/SKILL.md`, `estrutura-do-projeto.md`
+- [ ] Auth alterado? → `auth-flow/SKILL.md`
+- [ ] Storage alterado? → `storage-pdfs/SKILL.md`
+- [ ] Estrutura/pastas mudou? → `estrutura-do-projeto.md`, `dashboard-falaped/SKILL.md`
+- [ ] Nova lib? → `dependencias.md`, `dependency-stack/SKILL.md`
+- [ ] Padrão/convenção mudou? → rule correspondente
+
+## Quick Reference
+
+- **Skills:** `.cursor/skills/` – queries, arquitetura, auth, storage, dependencies
+- **Rules:** `.cursor/rules/` – convenções e padrões de código
+- **Docs:** `docs/` – referência legível
+
+**Ao final de cada implementação**, verificar: plano-fases atualizado, skills/rules/docs alinhados ao que foi implementado.

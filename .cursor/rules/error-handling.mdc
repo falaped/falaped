@@ -1,0 +1,115 @@
+---
+description: Error handling – custom errors, HTTP, logs, React Error Boundary, Next.js patterns
+alwaysApply: true
+---
+
+# Error Handling
+
+## Custom Errors
+
+Define domain-specific errors extending `Error`; use for structured handling and HTTP mapping.
+
+```typescript
+// lib/errors.ts
+export class ValidationError extends Error {
+  constructor(message: string, public readonly field?: string) {
+    super(message);
+    this.name = 'ValidationError';
+  }
+}
+export class AuthError extends Error {}
+export class NotFoundError extends Error {}
+```
+
+## Server-Side: Log and Rethrow
+
+- Modules and lib: `throw new Error(...)` or custom errors.
+- In catch: **log first**, then **re-throw**; never empty catch.
+- Only the **boundary** (route, Server Action) converts to HTTP status.
+
+```typescript
+// ❌ BAD
+try {
+  await doSomething();
+} catch (e) {}
+
+// ✅ GOOD
+try {
+  await doSomething();
+} catch (e) {
+  logger.error('[MODULE] Operation failed', { error: e });
+  throw e;
+}
+```
+
+## HTTP Mapping (Route Handlers / Server Actions)
+
+| Error type | Status |
+|------------|--------|
+| ValidationError | 400 |
+| AuthError | 401/403 |
+| NotFoundError | 404 |
+| Other | 500 |
+
+```typescript
+// app/api/patients/route.ts
+catch (e) {
+  if (e instanceof ValidationError) return Response.json({ error: e.message }, { status: 400 });
+  if (e instanceof AuthError) return Response.json({ error: 'Unauthorized' }, { status: 401 });
+  if (e instanceof NotFoundError) return Response.json({ error: 'Not found' }, { status: 404 });
+  logger.error('[API] Unexpected error', { error: e });
+  return Response.json({ error: 'Internal error' }, { status: 500 });
+}
+```
+
+## React: Error Boundary
+
+Use Error Boundary to catch render errors and show a fallback UI.
+
+```tsx
+// components/error-boundary.tsx
+'use client';
+export function ErrorBoundary({ children, fallback }: { children: React.ReactNode; fallback: React.ReactNode }) {
+  return (
+    <ErrorBoundaryInner fallback={fallback}>
+      {children}
+    </ErrorBoundaryInner>
+  );
+}
+// Use React's use() or a small library; wrap key sections.
+```
+
+## Next.js Conventions
+
+| File | Purpose |
+|------|---------|
+| `error.tsx` | Catches errors in route segment; must be Client Component |
+| `not-found.tsx` | Rendered when `notFound()` is called |
+| `global-error.tsx` | Catches root layout errors; replaces root layout |
+| `loading.tsx` | Loading UI ( Suspense ) |
+
+```tsx
+// app/dashboard/error.tsx
+'use client';
+export default function DashboardError({ error, reset }: { error: Error; reset: () => void }) {
+  return (
+    <div>
+      <p>Algo deu errado.</p>
+      <button onClick={reset}>Tentar novamente</button>
+    </div>
+  );
+}
+```
+
+```tsx
+// app/not-found.tsx
+export default function NotFound() {
+  return <h1>Página não encontrada</h1>;
+}
+```
+
+## Client-Side Forms and Mutations
+
+- Validate with Zod + react-hook-form; show field errors in PT-BR.
+- For mutations: catch in `onError` or `try/catch`; show toast or inline message.
+- Do not let unhandled promise rejections reach the user; always show a message.

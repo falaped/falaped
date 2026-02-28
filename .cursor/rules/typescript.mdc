@@ -1,0 +1,82 @@
+---
+description: TypeScript patterns – no any, explicit returns, type vs interface
+globs: "**/*.ts,**/*.tsx"
+alwaysApply: false
+---
+
+# TypeScript Patterns
+
+## No `any`
+
+Avoid `any`; use `unknown` + type guard or Zod for untrusted input.
+
+```typescript
+// ❌ BAD
+function parsePayload(data: any): Patient {
+  return data as Patient;
+}
+
+// ✅ GOOD – unknown + type guard
+function parsePayload(data: unknown): Patient {
+  const parsed = patientSchema.parse(data);
+  return parsed;
+}
+
+// ✅ GOOD – unknown + narrowing
+function isPatient(obj: unknown): obj is Patient {
+  return typeof obj === 'object' && obj !== null && 'id' in obj && 'name' in obj;
+}
+```
+
+## Explicit Return Types
+
+Use explicit return types on public functions and exported functions.
+
+```typescript
+// ✅ GOOD
+export function formatDate(date: Date): string {
+  return date.toLocaleDateString('pt-BR');
+}
+
+export async function getPatient(id: string): Promise<Patient | null> {
+  const { data } = await supabase.from('patients').select('*').eq('id', id).maybeSingle();
+  return data;
+}
+
+// ❌ BAD – inferência implícita em funções públicas
+export function formatDate(date: Date) {
+  return date.toLocaleDateString('pt-BR');
+}
+```
+
+Exception: simple callbacks and lambdas can rely on inference: `items.map(x => x.id)`.
+
+## `interface` vs `type`
+
+| Use | When |
+|-----|------|
+| `interface` | Object shapes; extends; declaration merging |
+| `type` | Unions, primitives, tuples, mapped types |
+
+```typescript
+// ✅ GOOD – interface para objetos
+interface Patient {
+  id: string;
+  name: string;
+  birth_date: string | null;
+}
+
+// ✅ GOOD – type para unions
+type Status = 'active' | 'closed';
+
+// ✅ GOOD – type para primitives
+type UserPhone = string;
+
+// ✅ GOOD – type para tuples
+type Coordinate = [number, number];
+
+// ✅ GOOD – interface quando precisa estender
+interface PatientWithCase extends Patient {
+  case_id: string;
+}
+```

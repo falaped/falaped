@@ -1,0 +1,26 @@
+---
+description: Dashboard audience – pediatricians managing cases, patients, and reports
+alwaysApply: true
+---
+
+# Audience Context
+
+## Primary User
+
+The dashboard user is **always a pediatrician** (médico pediatra) who uses the platform professionally to:
+- **Manage cases** — consultations/conversations with patients' guardians (casos = atendimentos por WhatsApp)
+- **Manage patients** — children under their care (pacientes pediátricos)
+- **Generate reports** — PDF medical reports for each case
+
+## Implications
+
+- **Terminology**: Use medical/pediatric context; "patient" = child, "responsible" = guardian (nome completo do responsável).
+- **Copy (PT-BR)**: Speak directly to the pediatrician; avoid generic SaaS language.
+- **UX**: Prioritize speed for frequent actions (e.g., quick access to active cases, patient search).
+- **Data**: `contact_phone` is essential in pediatrics (emergency contact); `responsible` requires full name, not generic terms like "mãe" or "pai".
+
+## Example tone
+
+- "Nenhum caso ativo" → clear, professional
+- "Associar paciente ao caso" → action-oriented for the workflow
+- "Relatório disponível para download" → straightforward for reports

@@ -1,0 +1,116 @@
+---
+description: Supabase query patterns – explicit select, single/maybeSingle, errors, N+1, insert/update
+globs: "modules/**/*.ts"
+alwaysApply: false
+---
+
+# Supabase Query Patterns
+
+## Estrutura
+
+- One query per file; function name in camelCase (ex.: `get-patients-by-user-phone.ts` → `getPatientsByUserPhone`).
+- Supabase client **always first argument**: `(supabase: SupabaseClient, ...args)`.
+- Never instantiate the client inside the query; caller injects it.
+
+```typescript
+// ✅ GOOD
+export async function getPatientById(supabase: SupabaseClient, id: string): Promise<Patient | null> {
+  const { data, error } = await supabase
+    .from('patients')
+    .select('id, name, birth_date, contact_phone, user_phone')
+    .eq('id', id)
+    .maybeSingle();
+  if (error) throw new Error(`Failed to get patient: ${error.message}`);
+  return data;
+}
+```
+
+## Select Explícito
+
+Use explicit column list; avoid `select('*')` unless all columns are needed.
+
+```typescript
+// ✅ GOOD
+.select('id, name, birth_date, contact_phone, user_phone')
+
+// ❌ AVOID (unless all cols truly needed)
+.select('*')
+```
+
+## Single vs MaybeSingle
+
+| Situação | Método | Retorno |
+|----------|--------|---------|
+| 0 ou 1 registro | `.maybeSingle()` | objeto ou null |
+| Exatamente 1 registro | `.single()` | objeto ou PGRST116 (not found) |
+| Lista | (nenhum) | array |
+
+```typescript
+// Um registro opcional
+const { data, error } = await supabase.from('patients').select('*').eq('id', id).maybeSingle();
+
+// Um registro obrigatório (404 se não existir)
+const { data, error } = await supabase.from('patients').select('*').eq('id', id).single();
+
+// Lista
+const { data, error } = await supabase.from('patients').select('*').eq('user_phone', phone);
+```
+
+## Erros
+
+Always check `error`; on failure, throw. Never ignore.
+
+```typescript
+// ✅ GOOD
+const { data, error } = await supabase.from('patients').select('*').eq('id', id).single();
+if (error) throw new Error(`Patient not found: ${error.message}`);
+return data;
+
+// ❌ BAD
+const { data } = await supabase...;  // error ignorado
+return data;
+```
+
+## Evitar N+1
+
+- Use `.select('*, relation(*)')` for related data.
+- Use batch `.insert([...])` instead of loop with single inserts.
+
+```typescript
+// ✅ GOOD – one query com join
+const { data } = await supabase
+  .from('cases')
+  .select('*, patients(*)')
+  .eq('user_phone', userPhone);
+
+// ❌ BAD – N+1
+const cases = await getCases(userPhone);
+for (const c of cases) {
+  const patient = await getPatient(c.patient_id);  // N queries
+}
+```
+
+## Insert / Update
+
+Use `.insert(...).select('...').single()` (or `.maybeSingle()`) to return the created/updated row without an extra round-trip.
+
+```typescript
+// ✅ GOOD
+const { data, error } = await supabase
+  .from('patients')
+  .insert({ user_phone, name, contact_phone })
+  .select('id, name, created_at')
+  .single();
+if (error) throw new Error(`Failed to create patient: ${error.message}`);
+return data;
+
+// ❌ BAD – precisa de outra query para pegar o registro
+await supabase.from('patients').insert({ ... });
+const { data } = await supabase.from('patients').select('*').eq('id', ???).single();
+```
+
+## Performance
+
+- Prefer indexed columns in filters (e.g. `user_phone`, `id`).
+- Use `.order('created_at', { ascending: false })` for lists.
+- Use `.limit()` or `.range()` for pagination.

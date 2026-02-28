@@ -1,0 +1,93 @@
+---
+description: React, Next.js, Tailwind and Shadcn UI patterns
+alwaysApply: true
+---
+
+# React, Next.js & Tailwind Patterns
+
+## React Components
+
+- **Functional components** only; no class components.
+- **Server Components** by default; add `"use client"` only when needed (hooks, events, browser APIs).
+- **One component per file** for complex components; small related components can colocate.
+- **Extract custom hooks** for reusable logic (`usePatient`, `useCases`); keep components presentational when possible.
+
+```tsx
+// ✅ GOOD – Server Component (default)
+export default async function PatientList({ userPhone }: { userPhone: string }) {
+  const patients = await getPatientsByUserPhone(supabase, userPhone);
+  return <PatientTable patients={patients} />;
+}
+
+// ✅ GOOD – Client only when needed
+'use client';
+export function PatientForm() {
+  const [loading, setLoading] = useState(false);
+  // ...
+}
+```
+
+## Shadcn UI & Tailwind
+
+- **Shadcn primitives** in `components/ui/`; do not add business logic there.
+- **Tailwind for styling**; use `cn()` for conditional classes.
+- **Prefer Shadcn components** over custom HTML when equivalent exists (Button, Input, Card, Dialog, Select, Table).
+- **No inline styles** for layout/spacing; use Tailwind classes.
+- **CSS variables** for theming; avoid hardcoded colors in components.
+
+```tsx
+// ✅ GOOD
+import { Button } from '@/components/ui/button';
+import { cn } from '@/lib/utils';
+
+<Button variant="default" className={cn('w-full', isActive && 'ring-2 ring-primary')}>
+  Salvar
+</Button>
+
+// ❌ BAD – inline style, custom button when Shadcn exists
+<button style={{ width: '100%' }} className="bg-blue-500">Salvar</button>
+```
+
+## Compound Components
+
+Use compound pattern for flexible, composable UI when a component has related parts.
+
+```tsx
+// ✅ GOOD – Card.CardHeader, Card.CardContent
+<Card>
+  <CardHeader>
+    <CardTitle>Paciente</CardTitle>
+  </CardHeader>
+  <CardContent>{children}</CardContent>
+</Card>
+
+// Pattern: export parent + subcomponents; children receive context via React.createContext if needed.
+```
+
+## Reutilização
+
+- **Primitives** in `components/ui/`; **feature components** in `components/dashboard/` or `components/forms/`.
+- **Compose** small pieces; avoid massive "god" components.
+- **Props over duplication**; extract shared layout (e.g. `DashboardLayout`) once.
+
+## Next.js Patterns
+
+- **App Router**; route groups `(auth)`, `(dashboard)`.
+- **Layouts** for shared structure; `loading.tsx` for Suspense; `error.tsx` for error boundary; `not-found.tsx` for 404.
+- **Server Components** for data fetching; pass data as props to Client Components.
+- **Server Actions** for mutations when appropriate; avoid API routes for simple CRUD.
+
+```tsx
+// ✅ GOOD – fetch in Server Component, pass down
+export default async function Page() {
+  const data = await getData();
+  return <ClientTable data={data} />;
+}
+```
+
+## Tailwind & Theme (Shadcn)
+
+- **Tokens** in `app/globals.css`: `--background`, `--foreground`, `--primary`, etc.
+- **Tailwind config** extends theme; reference CSS vars: `backgroundColor: 'hsl(var(--background))'`.
+- **No new colors in components**; use semantic tokens (`bg-primary`, `text-muted-foreground`).
+- **Dark mode** via `class` or `media` in `tailwind.config`; Shadcn uses `hsl(var(--...))` for automatic theming.

@@ -1,0 +1,57 @@
+---
+description: Code in English, copy/texts in Portuguese (Brazilian)
+alwaysApply: true
+---
+
+# Language Conventions
+
+## Code → English
+
+All code identifiers and technical content must be in **English**:
+- Function and variable names
+- folders
+- Component names, file names
+- Comments, documentation (JSDoc, README)
+- Error messages in logs (for developers)
+- Database identifiers (tables, columns)
+- API routes and keys
+
+```typescript
+// ✅ GOOD
+function getPatientsByUserPhone(userPhone: string) { }
+const patientList = [];
+<PatientForm onSubmit={handleSubmit} />
+
+// ❌ BAD
+function obterPacientesPorTelefone(telefoneUsuario: string) { }
+const listaDePacientes = [];
+<PacienteFormulario onSubmit={handleSubmit} />
+```
+
+## Copy → Português (Brasil)
+
+All user-facing text must be in **Brazilian Portuguese**:
+- UI labels, placeholders, buttons
+- Validation messages shown to users
+- Page titles, headings
+- Toast/notification messages
+- Email templates
+
+```tsx
+// ✅ GOOD
+<Button>Salvar</Button>
+<Input placeholder="Digite o nome do paciente" />
+<p>Nenhum paciente encontrado.</p>
+
+// ❌ BAD
+<Button>Save</Button>
+<Input placeholder="Enter patient name" />
+<p>No patients found.</p>
+```
+
+## Summary
+
+| Context | Language |
+|---------|----------|
+| Code (identifiers, comments) | English |
+| User-facing copy (UI, messages) | Português (Brasil) |

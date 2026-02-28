@@ -1,0 +1,130 @@
+---
+description: UX/UI minimalist – Vercel/Supabase style (clean, professional, content-first)
+alwaysApply: true
+---
+
+# UX/UI Minimalist – Vercel / Supabase Style
+
+**Aplicar sempre** em páginas (`app/**`), layouts, componentes (`components/**`), forms e qualquer UI.
+
+## Princípios Gerais
+
+1. **Content-first**: conteúdo em destaque; decoração mínima.
+2. **Clareza**: hierarquia visual óbvia; sem elementos competindo por atenção.
+3. **Whitespace**: espaço em branco generoso; não preencher a tela.
+4. **Restraint**: poucas cores, poucos estilos; consistência sobre novidade.
+5. **Profissional**: sensação de ferramenta séria, não "brincadeira".
+
+---
+
+## Referências Visuais
+
+- **Vercel**: fundo escuro/claro limpo, tipografia Geist, bordas sutis, gradientes discretos, foco em métricas e dados.
+- **Supabase**: cards bem definidos, tabelas legíveis, acento verde, dashboard clean; bom equilíbrio entre informação e respiro.
+
+---
+
+## Tipografia
+
+- **Sans-serif**: Inter, Geist ou similar; limpa e legível.
+- **Hierarquia clara**: `text-2xl` / `text-xl` para títulos; `text-base` para corpo; `text-sm text-muted-foreground` para secundário.
+- **Evitar**: muitas weights diferentes; 2–3 pesos bastam (normal, medium, semibold).
+- **Monospace** apenas para código, IDs, valores técnicos (ex.: `font-mono text-xs`).
+- **Line-height** confortável: `leading-relaxed` no corpo de texto.
+
+```tsx
+// ✅ GOOD – hierarquia limpa
+<h1 className="text-2xl font-semibold tracking-tight">Pacientes</h1>
+<p className="text-sm text-muted-foreground">Gerencie os pacientes cadastrados.</p>
+```
+
+---
+
+## Cores e Contraste
+
+- **Paleta restrita**: background, foreground, primary (ação), muted (secundário), destructive (erro). Evitar cores "de enfeite".
+- **Contraste suficiente**: `--foreground` sobre `--background` deve ser legível; `--muted-foreground` para texto secundário.
+- **Acento único**: primary para CTAs e links; usar com moderação.
+- **Evitar**: gradientes chamativos, sombras pesadas, muitas cores.
+- **Dark mode**: suportar; tokens HSL garantem transição suave.
+
+---
+
+## Layout e Espaçamento
+
+- **Max-width**: container principal com `max-w-5xl` ou `max-w-6xl`; não esticar em telas grandes.
+- **Padding**: `p-6` ou `p-8` em páginas; `p-4` em cards.
+- **Gap**: `gap-4`, `gap-6`, `space-y-4` para separar blocos; evitar `gap-1` ou `gap-12` sem motivo.
+- **Grid**: preferir `grid` ou `flex`; colunas consistentes (ex.: `grid-cols-1 md:grid-cols-2 lg:grid-cols-3`).
+- **Alinhamento**: left-aligned para texto; ícones alinhados com texto (ex.: `flex items-center gap-2`).
+
+---
+
+## Componentes
+
+### Cards
+
+- Borda sutil: `border border-border` ou sem borda com `bg-card`.
+- Padding interno: `p-4` ou `p-6`.
+- Sem sombras pesadas; `shadow-xs` no máximo para elevação discreta.
+- Evitar muitos cards aninhados; um nível de profundidade basta.
+
+### Tables / Data
+
+- Bordes discretas ou dividers; linhas alternadas sutis (`even:bg-muted/50`) opcional.
+- Cabeçalho claro: `font-medium text-muted-foreground` ou `text-sm`.
+- Espaçamento entre células: `px-4 py-3`; não apertar demais.
+- Empty state: mensagem centralizada, ícone sutil, CTA se fizer sentido.
+
+### Forms
+
+- Labels acima do input; `Label` + `Input` com `className="mt-2"`.
+- Placeholders discretos; não repetir o label.
+- Botões primários para ação principal; secundários (outline/ghost) para secundárias.
+- Erros: `text-destructive text-sm` abaixo do campo; não gritar.
+
+### Buttons
+
+- Primary para ação principal (1 por view quando possível).
+- Outline ou ghost para ações secundárias.
+- Tamanho consistente: `h-9` ou `h-10`; não misturar `h-8` e `h-12` sem critério.
+- `disabled` visível: `opacity-50`.
+
+---
+
+## Feedback e Estados
+
+- **Loading**: Skeleton ou spinner pequeno; não bloquear a tela inteira se possível.
+- **Success**: toast discreto ou feedback inline breve; não modal.
+- **Erro**: mensagem clara, ação de retry se aplicável; não pânico visual.
+- **Hover / focus**: transições suaves; `transition-colors`; `focus-visible:ring-2`.
+
+---
+
+## Motion
+
+- **Sutil**: `transition-colors`, `transition-opacity`; evitar animações longas.
+- **Purpose**: animações só quando ajudam a entender (ex.: dropdown abre, modal fade).
+- **Evitar**: bounce, spin desnecessário, parallax, efeitos decorativos.
+
+---
+
+## Navegação e Sidebar
+
+- Sidebar compacta: ícones + labels ou apenas ícones com tooltip.
+- Estado ativo claro: `bg-muted` ou `bg-primary/10` + `text-primary`.
+- Separação visual sutil entre seções.
+- Header com título da página; breadcrumbs se a hierarquia for profunda.
+
+---
+
+## Resumo de Checklist
+
+- [ ] Background limpo; sem texturas ou gradientes pesados
+- [ ] Tipografia hierárquica e legível
+- [ ] Máximo 2–3 cores além de neutros
+- [ ] Espaço em branco generoso
+- [ ] Bordas e sombras sutis
+- [ ] Empty states e loading claros
+- [ ] Dark mode funcional
+- [ ] Sensação de ferramenta profissional, não "toy"

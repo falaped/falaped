@@ -1,0 +1,179 @@
+---
+description: Design System – UI component hierarchy, tokens, anatomy, variants, accessibility
+alwaysApply: true
+---
+
+# Design System – UI Components
+
+**Aplicar sempre** em páginas, layouts, componentes UI e forms. Componentes em `components/ui/` (Shadcn); nunca HTML manual para inputs/buttons.
+
+## Princípios
+
+1. **Consistência**: mesma aparência e comportamento em toda a aplicação.
+2. **Composição**: componentes pequenos e atômicos; compor em vez de duplicar.
+3. **Acessibilidade**: semântica, ARIA, contraste, foco; componentes base devem ser acessíveis.
+4. **Tema**: tokens semânticos (nunca hex/rgb direto); suporte a dark mode via CSS vars.
+
+---
+
+## Hierarquia de Componentes
+
+| Nível | Local | O que contém | Exemplo |
+|-------|-------|--------------|---------|
+| **1. Primitives** | `components/ui/` | Base atômica, sem lógica de negócio | Button, Input, Label, Badge |
+| **2. Composed** | `components/ui/` ou `components/` | Combinação de primitives | InputWithLabel, SearchInput |
+| **3. Patterns** | `components/` | Padrões de UI recorrentes | EmptyState, DataTable, FormField |
+| **4. Feature** | `components/dashboard/`, `components/forms/` | Específicos do domínio | PatientCard, CaseList |
+
+**Regra:** Feature components importam apenas de `ui/` e `patterns/`; nunca al revés.
+
+---
+
+## Design Tokens
+
+### Onde definir
+
+- **Cores, background, foreground:** `app/globals.css` em `:root`
+- **Spacing, radius, font:** `tailwind.config.ts` em `theme.extend`
+- **Breakpoints:** Tailwind defaults ou custom em `screens`
+
+### Tokens de cor (Shadcn)
+
+```
+--background, --foreground
+--card, --card-foreground
+--popover, --popover-foreground
+--primary, --primary-foreground
+--secondary, --secondary-foreground
+--muted, --muted-foreground
+--accent, --accent-foreground
+--destructive, --destructive-foreground
+--border, --input, --ring
+--radius (border-radius base)
+```
+
+**Uso:** sempre `hsl(var(--primary))` ou classes Tailwind (`bg-primary`, `text-muted-foreground`). Nunca `#hex` ou `rgb()` em componentes.
+
+### Spacing
+
+- Usar escala Tailwind: `p-2`, `p-4`, `gap-4`, `space-y-2`
+- Evitar valores arbitrários (`p-[13px]`) a menos que necessário para pixel-perfect
+- Padrão de padding em cards: `p-4` ou `p-6`
+
+### Tipografia
+
+- `text-sm`, `text-base`, `text-lg`, `text-xl` para hierarchy
+- `font-medium`, `font-semibold` para peso; `text-muted-foreground` para secundário
+- Headings: `text-2xl font-semibold` (h1), `text-xl` (h2), `text-lg` (h3)
+
+---
+
+## Anatomia de um Componente UI
+
+### Estrutura de arquivo
+
+```tsx
+// components/ui/button.tsx
+'use client';
+
+import * as React from 'react';
+import { cva, type VariantProps } from 'class-variance-authority';
+import { cn } from '@/lib/utils';
+
+const buttonVariants = cva(
+  'inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50',
+  {
+    variants: {
+      variant: { default: 'bg-primary text-primary-foreground hover:bg-primary/90', destructive: '...', outline: '...' },
+      size: { default: 'h-9 px-4 py-2', sm: 'h-8 rounded-md px-3', lg: 'h-10 rounded-md px-8' },
+    },
+    defaultVariants: { variant: 'default', size: 'default' },
+  }
+);
+
+export interface ButtonProps
+  extends React.ButtonHTMLAttributes<HTMLButtonElement>,
+    VariantProps<typeof buttonVariants> {}
+
+const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
+  ({ className, variant, size, ...props }, ref) => (
+    <button className={cn(buttonVariants({ variant, size }), className)} ref={ref} {...props} />
+  )
+);
+Button.displayName = 'Button';
+
+export { Button, buttonVariants };
+```
+
+### Padrões obrigatórios
+
+- **`cn()`** para merge de classes (não concatenação manual)
+- **`React.forwardRef`** quando o componente encapsula um elemento nativo (formulários, acessibilidade)
+- **`displayName`** para debugging
+- **Spread de props** (`...props`) para permitir overrides (aria-*, data-*, etc.)
+- **`className` opcional** para permitir customização pontual sem quebrar o design
+
+### Variants com CVA
+
+Use `class-variance-authority` (CVA) para variantes tipadas e previsíveis.
+
+```tsx
+// Variants: variant (default, destructive, outline, ghost, link)
+// Size: size (default, sm, lg, icon)
+// Sempre definir defaultVariants
+```
+
+---
+
+## Quando Criar vs Reutilizar
+
+| Situação | Ação |
+|----------|------|
+| Equivalente Shadcn existe | Usar Shadcn; customizar via `className` ou variants |
+| Precisa de variação específica | Estender com `cn(buttonVariants(), 'min-w-[200px]')` no uso |
+| Padrão novo recorrente (3+ usos) | Extrair para `components/` como pattern |
+| Um caso único | Manter no feature component; não poluir ui/ |
+
+---
+
+## Acessibilidade
+
+- **Semântica:** `button` para ações, `a` para links, `nav` para navegação
+- **Labels:** sempre `Label` associado a inputs (`htmlFor` / `id`)
+- **Focus:** `focus-visible:ring-2`; nunca remover outline sem substituto
+- **ARIA:** `aria-label` em ícones sem texto; `aria-expanded`, `aria-controls` em dropdowns
+- **Contraste:** usar tokens (`--foreground` sobre `--background`); evitar combinações low-contrast
+
+---
+
+## Compound Components
+
+Padrão Shadcn: pai + subcomponentes exportados juntos.
+
+```tsx
+// Card.CardHeader, Card.CardTitle, Card.CardContent, Card.CardFooter
+// Collapsible.CollapsibleTrigger, Collapsible.CollapsibleContent
+```
+
+- Subcomponentes recebem `className` e `children`
+- Quando há estado compartilhado (aberto/fechado), usar `createContext` interno
+- Manter API mínima; evitar prop drilling desnecessário
+
+---
+
+## Empty State e Feedback
+
+- **EmptyState:** ícone + título + descrição opcional + ação (ex: "Nenhum paciente cadastrado" + botão "Cadastrar")
+- **Loading:** Skeleton do Shadcn ou spinner consistente
+- **Erro:** mensagem clara + ação de retry quando fizer sentido
+
+---
+
+## Resumo de Checklist
+
+- [ ] Componente usa tokens (cores, spacing) e não valores hardcoded
+- [ ] `forwardRef` quando encapsula elemento nativo
+- [ ] `className` aceito para customização
+- [ ] Variants via CVA quando há 2+ variantes
+- [ ] Acessibilidade: semântica, focus, labels
+- [ ] Copy em PT-BR (labels, placeholders, mensagens)

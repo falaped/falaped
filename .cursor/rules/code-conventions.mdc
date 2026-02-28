@@ -1,0 +1,82 @@
+---
+description: Code conventions – naming, exports, Supabase, logs, errors
+alwaysApply: true
+---
+
+# Code Conventions (FALAPED)
+
+## Naming
+
+| Element | Convention | Example |
+|---------|------------|---------|
+| Files | kebab-case | `get-authenticated-user.ts`, `send-message.ts` |
+| Functions | camelCase | `getAuthenticatedUser`, `sendMessage` |
+| Types/Interfaces | PascalCase | `AuthenticatedUser`, `CaseWithMessages` |
+| Constants/variables | Descriptive; no single letters or vague abbreviations | `linkedPatient`, `authenticatedUser`, `caseRow` — exception: loop index `i` in short scope |
+
+```typescript
+// ❌ BAD
+const p = await getPatient();
+const usr = getAuthUser();
+
+// ✅ GOOD
+const patient = await getPatient();
+const authenticatedUser = getAuthUser();
+```
+
+## TypeScript
+
+- Avoid `any`; use `unknown` + type guard or Zod for payloads.
+- Explicit return types on public functions.
+- `interface` for objects, `type` for unions.
+
+## Exports and Responsibility
+
+- **One main export** per action/query file (e.g., `get-authenticated-user.ts` exports `getAuthenticatedUser`).
+- Other exports: only types or auxiliary constants.
+- **One responsibility per file**; avoid mixing parsing, HTTP, and persistence.
+
+## Supabase
+
+- In query/mutation functions, **Supabase client is always the first argument**:
+  `getAuthenticatedUser(supabase, phone)`, `createCase(supabase, userPhone)`.
+- Do not instantiate the client inside the query.
+- Use explicit `select`, `.single()` / `.maybeSingle()` for single row; check `error` and throw.
+
+```typescript
+// ✅ GOOD
+export async function getPatient(supabase: SupabaseClient, id: string) {
+  const { data, error } = await supabase
+    .from('patients')
+    .select('*')
+    .eq('id', id)
+    .single();
+  if (error) throw new Error(`Patient not found: ${error.message}`);
+  return data;
+}
+```
+
+## Logs
+
+- Use module prefix: `[AUTH]`, `[PATIENTS]`, `[CASES]`, `[SUPABASE]`, `[ROUTE]`.
+- Example: `logger.error("[AUTH] Failed to resolve user_phone", { userId, error })`.
+
+## Errors
+
+- Modules and lib: `throw new Error(...)` or custom errors (`ValidationError`, `AuthError`).
+- Only the **route/handler** converts to HTTP status (400/403/404/500).
+- In catch: log and re-throw; never empty catch.
+
+## Constants and Env
+
+- Product constants (timeouts, URLs) in `lib/constants.ts` or module-specific `constants.ts`.
+- Environment variables validated with Zod in `lib/env.ts`.
+
+## Functions
+
+- Explicit return types on public functions.
+- Parameter order: client/context → ids → payload.
+- Verb in name; single responsibility; early return; one abstraction level.
+- Validate inputs at the start; do not swallow errors.
+- Pure formatters/parsers when possible; I/O in dedicated functions; do not mutate arguments.
+- Brief JSDoc on public functions when helpful.

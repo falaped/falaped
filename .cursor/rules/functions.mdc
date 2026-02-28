@@ -1,0 +1,95 @@
+---
+description: How to write functions – signature, early return, purity, errors
+alwaysApply: false
+---
+
+# Writing Functions
+
+## Signature
+
+- **Verb in name**: `getPatient`, `formatDate`, `validatePhone`.
+- **Explicit return type** on public functions.
+- **Parameter order**: client/context → ids → payload.
+
+```typescript
+// ✅ GOOD
+async function getPatientById(supabase: SupabaseClient, id: string): Promise<Patient | null> {
+  const { data } = await supabase.from('patients').select('*').eq('id', id).maybeSingle();
+  return data;
+}
+
+function formatBirthDate(date: Date): string {
+  return date.toLocaleDateString('pt-BR');
+}
+
+// ❌ BAD
+async function patient(supabase: SupabaseClient, id: string) {  // no verb, no return type
+```
+
+## Early Return
+
+- Exit early on invalid input or edge cases; avoid deep nesting.
+- Put the "happy path" at the top or after guards.
+
+```typescript
+// ✅ GOOD
+function processPatient(patient: Patient | null): string {
+  if (!patient) return '';
+  if (!patient.name?.trim()) return '';
+  return patient.name;
+}
+
+// ❌ BAD
+function processPatient(patient: Patient | null): string {
+  if (patient) {
+    if (patient.name?.trim()) {
+      return patient.name;
+    }
+  }
+  return '';
+}
+```
+
+## Purity
+
+- **Pure functions** when possible: same inputs → same output; no I/O, no mutation.
+- Separate I/O (fetch, Supabase, localStorage) from logic.
+- Do **not mutate** arguments; return new values.
+
+```typescript
+// ✅ GOOD – pure
+function fullName(first: string, last: string): string {
+  return `${first} ${last}`.trim();
+}
+
+// ✅ GOOD – I/O isolated
+async function fetchPatient(supabase: SupabaseClient, id: string): Promise<Patient> {
+  const { data, error } = await supabase.from('patients').select('*').eq('id', id).single();
+  if (error) throw new Error(error.message);
+  return data;
+}
+```
+
+## Errors
+
+- **Validate inputs** at the start; throw `ValidationError` for bad input.
+- Do **not swallow** errors; log and rethrow or return a typed result.
+- One responsibility; if validation fails, throw before doing I/O.
+
+```typescript
+// ✅ GOOD
+function createPatientPayload(input: unknown): CreatePatientPayload {
+  const parsed = createPatientSchema.safeParse(input);
+  if (!parsed.success) throw new ValidationError(parsed.error.message);
+  return parsed.data;
+}
+
+// ❌ BAD
+function doStuff(data: unknown) {
+  try {
+    return riskyOp(data);
+  } catch (e) {
+    return null;  // swallowing error
+  }
+}
+```
