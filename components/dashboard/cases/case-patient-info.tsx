@@ -27,16 +27,15 @@ export function CasePatientInfo({ patient }: { patient: CasePatientDetail }) {
   const formattedPhone = patient.contact_phone ? formatBrazilianPhone(patient.contact_phone) : null
 
   return (
-    <div className="rounded-xl border border-border bg-card p-5">
+    <div className="rounded-xl bg-card p-5">
       <div className="flex items-center justify-start gap-8 flex-wrap w-full">
 
         {patient.responsible && (
           <div>
             <div className="flex items-center gap-2 text-sm">
               <UserIcon className="h-4 w-4 text-muted-foreground" />
-              <p className="text-xs text-muted-foreground">Responsável</p>
+              <p className="font-medium">{patient.responsible}</p>
             </div>
-            <p className="font-medium">{patient.responsible}</p>
           </div>
         )}
         <div className="hidden h-8 w-px bg-border sm:block" />
@@ -45,11 +44,10 @@ export function CasePatientInfo({ patient }: { patient: CasePatientDetail }) {
           <div>
             <div className="flex items-center gap-2 text-sm">
               <PhoneIcon className="h-4 w-4 text-muted-foreground" />
-              <p className="text-xs text-muted-foreground">Telefone</p>
+              <p className="font-medium">
+                {formattedPhone}
+              </p>
             </div>
-            <p className="font-medium">
-              {formattedPhone}
-            </p>
           </div>
         )}
         <div className="hidden h-8 w-px bg-border sm:block" />
@@ -58,9 +56,8 @@ export function CasePatientInfo({ patient }: { patient: CasePatientDetail }) {
           <div>
             <div className="flex items-center gap-2 text-sm">
               <CakeIcon className="h-4 w-4 text-muted-foreground" />
-              <p className="text-xs text-muted-foreground">Nascimento</p>
+              <p className="font-medium">{formatDate(patient.birth_date)}</p>
             </div>
-            <p className="font-medium">{formatDate(patient.birth_date)}</p>
           </div>
         )}
         <div className="hidden h-8 w-px bg-border sm:block" />
@@ -69,11 +66,10 @@ export function CasePatientInfo({ patient }: { patient: CasePatientDetail }) {
           <div>
             <div className="flex items-center gap-2 text-sm">
               <UserIcon className="h-4 w-4 text-muted-foreground" />
-              <p className="text-xs text-muted-foreground">Sexo</p>
+              <p className="font-medium">
+                {patient.sex === "M" ? "Masculino" : patient.sex === "F" ? "Feminino" : patient.sex}
+              </p>
             </div>
-            <p className="font-medium">
-              {patient.sex === "M" ? "Masculino" : patient.sex === "F" ? "Feminino" : patient.sex}
-            </p>
           </div>
         )}
         <div className="hidden h-8 w-px bg-border sm:block" />
@@ -82,9 +78,8 @@ export function CasePatientInfo({ patient }: { patient: CasePatientDetail }) {
           <div>
             <div className="flex items-center gap-2 text-sm">
               <AlertTriangleIcon className="h-4 w-4 text-destructive" />
-              <p className="text-xs text-muted-foreground">Alergias</p>
+              <p className="font-medium text-destructive">{patient.allergies}</p>
             </div>
-            <p className="font-medium text-destructive">{patient.allergies}</p>
           </div>
         )}
       </div>

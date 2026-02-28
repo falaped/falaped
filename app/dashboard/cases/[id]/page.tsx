@@ -1,7 +1,7 @@
 import { Suspense } from "react"
 
-import { CaseDetailContent } from "@/components/dashboard/case-detail-content"
-import { CaseDetailLoading } from "@/components/dashboard/case-detail-loading"
+import { CaseDetailContent } from "@/components/dashboard/cases/case-detail-content"
+import { CaseDetailLoading } from "@/components/dashboard/cases/case-detail-loading"
 
 export default async function CaseDetailPage({
   params,

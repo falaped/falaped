@@ -28,7 +28,6 @@ export type CaseWithPatient = {
 export async function getCasesByUserPhone(
   supabase: SupabaseClient,
   userPhone: string,
-  statusFilter: CaseStatus = "active",
 ): Promise<CaseWithPatient[]> {
   let query = supabase
     .from("cases")
@@ -51,11 +50,6 @@ export async function getCasesByUserPhone(
     .eq("user_phone", userPhone)
     .order("started_at", { ascending: false })
 
-  if (statusFilter === "active") {
-    query = query.eq("status", "active")
-  } else if (statusFilter === "closed") {
-    query = query.eq("status", "closed")
-  }
 
   const { data, error } = await query
 

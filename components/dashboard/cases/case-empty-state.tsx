@@ -25,8 +25,8 @@ const emptyConfig = {
   },
 } as const
 
-export function CaseEmptyState({ statusFilter }: { statusFilter: CaseEmptyFilter }) {
-  const config = emptyConfig[statusFilter]
+export function CaseEmptyState() {
+  const config = emptyConfig.all
   const Icon = config.icon
 
   return (

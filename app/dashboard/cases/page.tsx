@@ -1,21 +1,11 @@
 import { Suspense } from "react"
 import { MessagesSquareIcon } from "lucide-react"
 
-import { type CaseStatus } from "@/modules/cases/get-cases-by-user-phone"
-import { CasesContent } from "@/components/dashboard/cases-content"
-import { CasesLoading } from "@/components/dashboard/cases-loading"
+import { CasesContent } from "@/components/dashboard/cases/cases-content"
+import { CasesLoading } from "@/components/dashboard/cases/cases-loading"
 import { Separator } from "@/components/ui/separator"
 
-export default async function CasesPage({
-  searchParams,
-}: {
-  searchParams: Promise<{ status?: string }>
-}) {
-  const params = await searchParams
-  const statusParam = params.status ?? "active"
-  const statusFilter: CaseStatus =
-    statusParam === "closed" || statusParam === "all" ? statusParam : "active"
-
+export default async function CasesPage() {
   return (
     <div className="flex flex-col gap-6">
       <div>
@@ -31,7 +21,7 @@ export default async function CasesPage({
       <Separator />
 
       <Suspense fallback={<CasesLoading />}>
-        <CasesContent statusFilter={statusFilter} />
+        <CasesContent />
       </Suspense>
     </div>
   )
