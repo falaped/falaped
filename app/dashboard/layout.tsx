@@ -18,8 +18,7 @@ export default function DashboardLayout({
         <AppSidebar />
         <SidebarInset>
 
-          <div className="flex flex-1 flex-col gap-4 p-8 relative">
-            <SidebarTrigger className="absolute top-4 right-4" aria-label="Abrir menu" />
+          <div className="flex flex-1 flex-col gap-4 p-8 relative border-t-8 border-t-primary">
             {children}</div>
         </SidebarInset>
       </SidebarProvider>

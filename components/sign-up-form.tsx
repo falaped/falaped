@@ -128,7 +128,9 @@ export function SignUpForm({
               </Field>
 
               <Field data-invalid={!!form.formState.errors.phone}>
-                <FieldLabel htmlFor="phone">Telefone</FieldLabel>
+                <FieldLabel htmlFor="phone" className="after:content-['*'] after:text-destructive after:ml-0.5">
+                  Telefone
+                </FieldLabel>
                 <FieldContent>
                   <Controller
                     control={form.control}
@@ -141,6 +143,8 @@ export function SignUpForm({
                         onChange={field.onChange}
                         onBlur={field.onBlur}
                         aria-invalid={!!form.formState.errors.phone}
+                        aria-required
+                        required
                       />
                     )}
                   />

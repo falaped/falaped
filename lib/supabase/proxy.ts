@@ -38,14 +38,12 @@ export async function updateSession(request: NextRequest) {
     },
   );
 
-  // Do not run code between createServerClient and
-  // supabase.auth.getClaims(). A simple mistake could make it very hard to debug
-  // issues with users being randomly logged out.
-
-  // IMPORTANT: If you remove getClaims() and you use server-side rendering
-  // with the Supabase client, your users may be randomly logged out.
-  const { data } = await supabase.auth.getClaims();
-  const user = data?.claims;
+  // Validate session with the server (getUser) so that deleted/invalid users
+  // are not treated as logged in. getClaims() only reads the JWT from the cookie
+  // and would still show the user as logged in after deletion from auth.users.
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
 
   const pathname = request.nextUrl.pathname;
   const isAuthRoute =
@@ -78,6 +76,7 @@ export async function updateSession(request: NextRequest) {
 
   // Unauthenticated user: redirect protected routes to login
   if (!user && !isHomePage && !pathname.startsWith("/auth")) {
+    await supabase.auth.signOut();
     const url = request.nextUrl.clone();
     url.pathname = "/auth/login";
     const redirectResponse = NextResponse.redirect(url);

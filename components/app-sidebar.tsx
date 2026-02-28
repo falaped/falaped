@@ -47,7 +47,7 @@ const navMain = [
   {
     title: "Atendimentos",
     icon: MessagesSquareIcon,
-    isActive: true,
+    isActive: false,
     items: [
       { title: "Casos", url: "/dashboard/cases" },
       { title: "Pacientes", url: "/dashboard/patients" },
@@ -68,12 +68,12 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
 
   return (
     <Sidebar {...props}>
-      <SidebarHeader>
-        <SidebarMenu>
-          <SidebarMenuItem>
+      <SidebarHeader className="flex justify-center items-center border-b border-b-border border-t-8 border-t-primary">
+        <SidebarMenu className=" flex justify-center items-center">
+          <SidebarMenuItem className="my-4 flex justify-center items-center">
             <SidebarMenuButton size="lg" asChild>
               <Link href="/dashboard">
-                <Image src="/full-logo.svg" alt="Logo FALAPED" width={120} height={48} />
+                <Image src="/full-logo.svg" alt="Logo FALAPED" width={150} height={48} />
               </Link>
             </SidebarMenuButton>
           </SidebarMenuItem>

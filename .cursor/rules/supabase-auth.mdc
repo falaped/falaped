@@ -19,6 +19,8 @@ authenticated_users
 
 Após login: `auth.user.id` → `profiles` → `authenticated_users` → `user_phone`. Todas as queries usam `user_phone`.
 
+**Signup:** ao criar conta em `auth.users`, um registro em `public.profiles` é criado automaticamente por trigger (`on_auth_user_created`, função `public.handle_new_auth_user()`), com dados de `raw_user_meta_data` (phone, full_name) e email; só insere quando phone está presente (signup por e-mail envia esses campos).
+
 ## Arquivos em lib/supabase/
 
 | Arquivo | Uso |

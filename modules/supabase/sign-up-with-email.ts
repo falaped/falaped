@@ -19,7 +19,11 @@ export async function signUpWithEmail(
   supabase: SupabaseClient,
   payload: SignUpWithEmailPayload
 ): Promise<void> {
-  const phoneDb = toDbPhoneFormat(payload.phone);
+  const phone = payload.phone?.trim();
+  if (!phone) {
+    throw new Error("Telefone é obrigatório");
+  }
+  const phoneDb = toDbPhoneFormat(phone);
 
   const { error } = await supabase.auth.signUp({
     email: payload.email,

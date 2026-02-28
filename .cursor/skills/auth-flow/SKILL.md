@@ -16,10 +16,11 @@ auth.users ← (auth_user_id) → profiles ← (profile_id) → authenticated_us
                                                               └── phone (user_phone)
 ```
 
-1. Usuário autentica via Supabase Auth (email ou phone).
-2. Dashboard obtém `auth.user.id` da sessão.
-3. Resolve `user_phone` via `profiles` → `authenticated_users`.
-4. Queries usam `user_phone` para filtrar patients, cases, etc.
+1. No signup, um registro em `public.profiles` é criado automaticamente por trigger (`on_auth_user_created` → `public.handle_new_auth_user()`), usando dados de `auth.users` (email) e `raw_user_meta_data` (phone, full_name). Só insere quando phone está presente.
+2. Usuário autentica via Supabase Auth (email ou phone).
+3. Dashboard obtém `auth.user.id` da sessão.
+4. Resolve `user_phone` via `profiles` → `authenticated_users`.
+5. Queries usam `user_phone` para filtrar patients, cases, etc.
 
 ## Arquivos
 

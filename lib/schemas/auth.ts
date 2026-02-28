@@ -5,20 +5,30 @@ export const loginSchema = z.object({
   password: z.string().min(6, "Senha deve ter pelo menos 6 caracteres"),
 });
 
-const phoneRefine = (val: string) => {
+/** Brazilian phone: 10 digits (DDD + 8) or 11 digits (DDD + 9 + 8). DDD = 11–99. */
+function isValidBrazilianPhone(val: string): boolean {
   const digits = val.replace(/\D/g, "");
-  return digits.length === 10 || digits.length === 11;
-};
+  if (digits.length !== 10 && digits.length !== 11) return false;
+  const ddd = parseInt(digits.slice(0, 2), 10);
+  if (ddd < 11 || ddd > 99) return false;
+  if (digits.length === 11 && digits[2] !== "9") return false; // mobile must start with 9
+  return true;
+}
+
+const phoneRefine = (val: string) => isValidBrazilianPhone(val);
 
 export const signUpSchema = z
   .object({
     firstName: z.string().min(2, "Nome é obrigatório"),
     lastName: z.string().min(2, "Sobrenome é obrigatório"),
-    email: z.string().email("E-mail inválido"),
+    email: z.email("E-mail inválido"),
     phone: z
       .string()
       .min(1, "Telefone é obrigatório")
-      .refine(phoneRefine, "Telefone deve ter 10 ou 11 dígitos"),
+      .refine(
+        phoneRefine,
+        "Use 10 dígitos (fixo, ex.: 3197815503) ou 11 dígitos (celular, ex.: 31997815503)"
+      ),
     password: z.string().min(6, "Senha deve ter pelo menos 6 caracteres"),
     repeatPassword: z.string().min(1, "Confirme sua senha"),
   })

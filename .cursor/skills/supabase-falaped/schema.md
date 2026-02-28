@@ -15,6 +15,7 @@ Referência rápida das tabelas. Migrations em `supabase/migrations/`. Tipos em 
 ### profiles
 - `id` uuid PK, `auth_user_id` (FK → auth.users), `phone` unique, `full_name`, `email`, `created_at`, `updated_at`
 - Uso: vínculo com Supabase Auth quando houver login.
+- **Trigger:** ao signup, um registro é criado automaticamente via trigger `on_auth_user_created` (AFTER INSERT ON auth.users), que chama `public.handle_new_auth_user()` e insere em `public.profiles` com dados de `raw_user_meta_data` e `email`; só insere quando `phone` está presente (signup por e-mail envia phone e full_name em user_metadata). Ao excluir usuário em auth.users, o trigger `on_auth_user_deleted` (BEFORE DELETE) chama `public.handle_auth_user_deleted()` e remove o registro em `public.profiles` onde `auth_user_id = old.id`.
 
 ## Tabelas (migrations em supabase/migrations/)
 
