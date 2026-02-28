@@ -1,7 +1,12 @@
 "use client";
 
-import { cn } from "@/lib/utils";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
 import { createClient } from "@/lib/supabase/client";
+import {
+  updatePasswordSchema,
+  type UpdatePasswordFormData,
+} from "@/lib/schemas/auth";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -10,35 +15,42 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import {
+  Field,
+  FieldContent,
+  FieldError,
+  FieldGroup,
+  FieldLabel,
+} from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { cn } from "@/lib/utils";
 
 export function UpdatePasswordForm({
   className,
   ...props
 }: React.ComponentPropsWithoutRef<"div">) {
-  const [password, setPassword] = useState("");
-  const [error, setError] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
+  const [apiError, setApiError] = useState<string | null>(null);
   const router = useRouter();
 
-  const handleForgotPassword = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const form = useForm<UpdatePasswordFormData>({
+    resolver: zodResolver(updatePasswordSchema),
+    defaultValues: { password: "" },
+  });
+
+  const handleSubmit = async (data: UpdatePasswordFormData) => {
     const supabase = createClient();
-    setIsLoading(true);
-    setError(null);
+    setApiError(null);
 
     try {
-      const { error } = await supabase.auth.updateUser({ password });
+      const { error } = await supabase.auth.updateUser({ password: data.password });
       if (error) throw error;
-      // Update this route to redirect to an authenticated route. The user already has an active session.
       router.push("/dashboard");
     } catch (error: unknown) {
-      setError(error instanceof Error ? error.message : "Ocorreu um erro.");
-    } finally {
-      setIsLoading(false);
+      setApiError(
+        error instanceof Error ? error.message : "Ocorreu um erro."
+      );
     }
   };
 
@@ -46,30 +58,44 @@ export function UpdatePasswordForm({
     <div className={cn("flex flex-col gap-6", className)} {...props}>
       <Card>
         <CardHeader>
-          <CardTitle className="text-2xl">Redefinir senha</CardTitle>
-          <CardDescription>
-            Digite sua nova senha abaixo.
+          <CardTitle className="text-2xl font-semibold tracking-tight">
+            Nova senha
+          </CardTitle>
+          <CardDescription className="text-sm text-muted-foreground">
+            Defina uma nova senha para acessar sua conta.
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <form onSubmit={handleForgotPassword}>
-            <div className="flex flex-col gap-6">
-              <div className="grid gap-2">
-                <Label htmlFor="password">Nova senha</Label>
-                <Input
-                  id="password"
-                  type="password"
-                  placeholder="Nova senha"
-                  required
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                />
-              </div>
-              {error && <p className="text-sm text-destructive">{error}</p>}
-              <Button type="submit" className="w-full" disabled={isLoading}>
-                {isLoading ? "Salvando..." : "Salvar nova senha"}
+          <form onSubmit={form.handleSubmit(handleSubmit)}>
+            <FieldGroup>
+              <Field data-invalid={!!form.formState.errors.password}>
+                <FieldLabel htmlFor="password">Nova senha</FieldLabel>
+                <FieldContent>
+                  <Input
+                    id="password"
+                    type="password"
+                    placeholder="Sua nova senha"
+                    aria-invalid={!!form.formState.errors.password}
+                    {...form.register("password")}
+                  />
+                  <FieldError errors={form.formState.errors.password ? [form.formState.errors.password] : undefined} />
+                </FieldContent>
+              </Field>
+              {apiError && (
+                <p className="text-sm text-destructive" role="alert">
+                  {apiError}
+                </p>
+              )}
+              <Button
+                type="submit"
+                className="w-full"
+                disabled={form.formState.isSubmitting}
+              >
+                {form.formState.isSubmitting
+                  ? "Salvando..."
+                  : "Salvar nova senha"}
               </Button>
-            </div>
+            </FieldGroup>
           </form>
         </CardContent>
       </Card>

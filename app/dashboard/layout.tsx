@@ -12,13 +12,7 @@ export default function DashboardLayout({
   children: React.ReactNode
 }) {
   return (
-    <SidebarProvider
-      style={
-        {
-          "--sidebar-width": "19rem",
-        } as React.CSSProperties
-      }
-    >
+    <SidebarProvider>
       <AppSidebar />
       <SidebarInset>
         <header className="flex h-16 shrink-0 items-center gap-2 px-4">

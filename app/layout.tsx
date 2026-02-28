@@ -4,7 +4,7 @@ import { ThemeProvider } from "next-themes";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import "./globals.css";
 
-const notoSans = Noto_Sans({variable:'--font-sans'});
+const notoSans = Noto_Sans({ variable: '--font-sans' });
 
 const defaultUrl = process.env.VERCEL_URL
   ? `https://${process.env.VERCEL_URL}`
@@ -12,8 +12,8 @@ const defaultUrl = process.env.VERCEL_URL
 
 export const metadata: Metadata = {
   metadataBase: new URL(defaultUrl),
-  title: "Next.js and Supabase Starter Kit",
-  description: "The fastest way to build apps with Next.js and Supabase",
+  title: "@falaped - IA para pediatras",
+  description: "Falaped te auxilia no seu dia a dia como pediatra",
 };
 
 const geistSans = Geist({

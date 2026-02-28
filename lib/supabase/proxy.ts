@@ -47,16 +47,52 @@ export async function updateSession(request: NextRequest) {
   const { data } = await supabase.auth.getClaims();
   const user = data?.claims;
 
-  if (
-    request.nextUrl.pathname !== "/" &&
-    !user &&
-    !request.nextUrl.pathname.startsWith("/login") &&
-    !request.nextUrl.pathname.startsWith("/auth")
-  ) {
-    // no user, potentially respond by redirecting the user to the login page
+  const pathname = request.nextUrl.pathname;
+  const isAuthRoute =
+    pathname === "/auth/login" ||
+    pathname === "/auth/sign-up" ||
+    pathname === "/auth/forgot-password" ||
+    pathname === "/auth/sign-up-success" ||
+    pathname === "/auth/error" ||
+    pathname === "/auth/update-password";
+  const isHomePage = pathname === "/";
+
+  // Authenticated user: redirect away from auth screens and home to dashboard
+  if (user && (isHomePage || isAuthRoute)) {
+    const url = request.nextUrl.clone();
+    url.pathname = "/dashboard";
+    const redirectResponse = NextResponse.redirect(url);
+    supabaseResponse.cookies.getAll().forEach((cookie) =>
+      redirectResponse.cookies.set(cookie.name, cookie.value, {
+        path: cookie.path,
+        domain: cookie.domain,
+        maxAge: cookie.maxAge,
+        expires: cookie.expires,
+        httpOnly: cookie.httpOnly,
+        secure: cookie.secure,
+        sameSite: cookie.sameSite,
+      }),
+    );
+    return redirectResponse;
+  }
+
+  // Unauthenticated user: redirect protected routes to login
+  if (!user && !isHomePage && !pathname.startsWith("/auth")) {
     const url = request.nextUrl.clone();
     url.pathname = "/auth/login";
-    return NextResponse.redirect(url);
+    const redirectResponse = NextResponse.redirect(url);
+    supabaseResponse.cookies.getAll().forEach((cookie) =>
+      redirectResponse.cookies.set(cookie.name, cookie.value, {
+        path: cookie.path,
+        domain: cookie.domain,
+        maxAge: cookie.maxAge,
+        expires: cookie.expires,
+        httpOnly: cookie.httpOnly,
+        secure: cookie.secure,
+        sameSite: cookie.sameSite,
+      }),
+    );
+    return redirectResponse;
   }
 
   // IMPORTANT: You *must* return the supabaseResponse object as it is.

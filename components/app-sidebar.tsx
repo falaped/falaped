@@ -7,6 +7,7 @@ import { usePathname } from "next/navigation"
 import {
   Sidebar,
   SidebarContent,
+  SidebarFooter,
   SidebarGroup,
   SidebarHeader,
   SidebarMenu,
@@ -20,6 +21,7 @@ import {
   UsersIcon,
   UserIcon,
 } from "lucide-react"
+import { NavUser } from "@/components/nav-user"
 
 const navMain = [
   { title: "Início", url: "/dashboard", icon: HomeIcon },
@@ -70,6 +72,9 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
           </SidebarMenu>
         </SidebarGroup>
       </SidebarContent>
+      <SidebarFooter>
+        <NavUser />
+      </SidebarFooter>
     </Sidebar>
   )
 }
