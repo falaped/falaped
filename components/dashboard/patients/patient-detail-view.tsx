@@ -27,6 +27,8 @@ import { PatientForm } from "@/components/dashboard/patients/patient-form"
 import { deletePatientAction } from "@/app/dashboard/patients/actions"
 import { formatDate, formatBrazilianPhone } from "@/lib/formatters"
 import type { Patient } from "@/modules/patients/types"
+import type { CaseForPatient } from "@/modules/cases/get-cases-by-patient-id"
+import { MessageSquareIcon } from "lucide-react"
 
 function formatSexForDisplay(sex: string | null | undefined): string {
   if (!sex?.trim()) return ""
@@ -36,7 +38,13 @@ function formatSexForDisplay(sex: string | null | undefined): string {
   return v
 }
 
-export function PatientDetailView({ patient }: { patient: Patient }) {
+export function PatientDetailView({
+  patient,
+  cases = [],
+}: {
+  patient: Patient
+  cases?: CaseForPatient[]
+}) {
   const router = useRouter()
   const [isEditing, setIsEditing] = useState(false)
   const [deleteLoading, setDeleteLoading] = useState(false)
@@ -266,6 +274,44 @@ export function PatientDetailView({ patient }: { patient: Patient }) {
                     Nenhum dado clínico cadastrado.
                   </p>
                 )}
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <MessageSquareIcon className="h-5 w-5" />
+                Casos associados
+              </CardTitle>
+              <CardDescription>
+                Atendimentos vinculados a este paciente
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {cases.length === 0 ? (
+                <p className="text-sm text-muted-foreground">
+                  Nenhum caso associado a este paciente.
+                </p>
+              ) : (
+                <ul className="space-y-2">
+                  {cases.map((c) => (
+                    <li key={c.id}>
+                      <Link
+                        href={`/dashboard/cases/${c.id}`}
+                        className="flex items-center justify-between rounded-md border border-border px-3 py-2 text-sm transition-colors hover:bg-muted/50"
+                      >
+                        <span>
+                          {c.status === "active" ? "Ativo" : "Encerrado"} ·{" "}
+                          {formatDate(c.started_at)}
+                        </span>
+                        <span className="text-muted-foreground">
+                          Ver atendimento →
+                        </span>
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              )}
             </CardContent>
           </Card>
         </div>
