@@ -34,13 +34,23 @@ export type CaseDetail = {
 
 /**
  * Fetches a single case with its patient and messages for the detail view.
- * Verifies ownership via user_phone.
+ * Verifies ownership via profile_id (resolves to user_phone from authenticated_users).
  */
 export async function getCaseById(
   supabase: SupabaseClient,
   caseId: string,
-  userPhone: string,
+  profileId: string,
 ): Promise<CaseDetail | null> {
+  const { data: auRow, error: auError } = await supabase
+    .from("authenticated_users")
+    .select("phone")
+    .eq("profile_id", profileId)
+    .maybeSingle()
+
+  if (auError) throw new Error(`[CASES] Failed to resolve phone: ${auError.message}`)
+  const phone = auRow?.phone ?? null
+  if (!phone) return null
+
   const { data: caseRow, error: caseError } = await supabase
     .from("cases")
     .select(`
@@ -65,7 +75,7 @@ export async function getCaseById(
       )
     `)
     .eq("id", caseId)
-    .eq("user_phone", userPhone)
+    .eq("user_phone", phone)
     .maybeSingle()
 
   if (caseError) throw new Error(`[CASES] Failed to fetch case: ${caseError.message}`)

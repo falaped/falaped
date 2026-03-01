@@ -7,7 +7,7 @@ import { cn } from "@/lib/utils"
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
 import { formatDate, formatRelativeTime, formatBrazilianPhone } from "@/lib/formatters"
-import type { CaseWithPatient } from "@/modules/cases/get-cases-by-user-phone"
+import type { CaseWithPatient } from "@/modules/cases/get-cases-by-profile-id"
 
 function StatusBadge({ status }: { status: "active" | "closed" }) {
   if (status === "active") {
@@ -53,7 +53,7 @@ export function CaseCard({ case_: c }: { case_: CaseWithPatient }) {
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-3">
             <h3 className="truncate text-lg font-semibold tracking-tight">
-              {primaryLabel}
+              Caso - {primaryLabel}
             </h3>
             <StatusBadge status={c.status} />
           </div>

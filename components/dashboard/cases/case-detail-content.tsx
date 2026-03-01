@@ -13,11 +13,9 @@ export async function CaseDetailContent({ id }: { id: string }) {
   const supabase = await createClient()
   const { profile } = await getAuthenticatedUser(supabase)
   if (!profile) redirect("/auth/login")
+  if (profile.status !== "paid") redirect("/dashboard/link-whatsapp")
 
-  const userPhone = profile.status === "paid" ? profile.phone ?? null : null
-  if (!userPhone) redirect("/auth/login")
-
-  const caseDetail = await getCaseById(supabase, id, userPhone)
+  const caseDetail = await getCaseById(supabase, id, profile.id)
 
   if (!caseDetail) {
     notFound()

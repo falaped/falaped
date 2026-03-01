@@ -2,10 +2,9 @@
 
 import { useMemo, useState } from "react"
 
-import { CaseStatusFilter, type CaseStatusFilterValue, type CaseCounts } from "@/components/dashboard/cases/case-status-filter"
 import { CaseSearchInput } from "@/components/dashboard/cases/case-search-input"
 import { CaseList } from "@/components/dashboard/cases/case-list"
-import type { CaseWithPatient } from "@/modules/cases/get-cases-by-user-phone"
+import type { CaseWithPatient } from "@/modules/cases/get-cases-by-profile-id"
 
 function filterBySearch(cases: CaseWithPatient[], search: string): CaseWithPatient[] {
   if (!search.trim()) return cases
@@ -18,26 +17,24 @@ function filterBySearch(cases: CaseWithPatient[], search: string): CaseWithPatie
 }
 
 export function CasesToolbarAndList({ cases }: { cases: CaseWithPatient[] }) {
-  const [statusFilter, setStatusFilter] = useState<CaseStatusFilterValue>("active")
   const [searchQuery, setSearchQuery] = useState("")
 
-  const counts: CaseCounts = useMemo(
-    () => ({
-      active: cases.filter((c) => c.status === "active").length,
-      closed: cases.filter((c) => c.status === "closed").length,
-    }),
-    [cases],
-  )
+  const sortedCases = useMemo(() => {
+    return [...cases].sort((a, b) => {
+      const order = (a.status === "active" ? 0 : 1) - (b.status === "active" ? 0 : 1)
+      if (order !== 0) return order
+      return new Date(b.started_at).getTime() - new Date(a.started_at).getTime()
+    })
+  }, [cases])
 
-  const filteredCases = useMemo(() => {
-    const byStatus = cases.filter((c) => c.status === statusFilter)
-    return filterBySearch(byStatus, searchQuery)
-  }, [cases, statusFilter, searchQuery])
+  const filteredCases = useMemo(
+    () => filterBySearch(sortedCases, searchQuery),
+    [sortedCases, searchQuery],
+  )
 
   return (
     <>
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <CaseStatusFilter value={statusFilter} onChange={setStatusFilter} counts={counts} />
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-end">
         <CaseSearchInput value={searchQuery} onChange={setSearchQuery} />
       </div>
       <CaseList cases={filteredCases} />

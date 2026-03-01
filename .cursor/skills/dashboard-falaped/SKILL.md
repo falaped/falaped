@@ -28,8 +28,8 @@ modules/
 components/
   ui/                        # Shadcn primitives
   dashboard/                 # Feature components:
-                             #   Cases list: CaseCard, CaseList, CaseStatusFilter,
-                             #     CaseEmptyState, CaseSearchInput, CasesToolbarAndList,
+                             #   Cases list: CaseCard, CaseList, CaseEmptyState, CaseSearchInput,
+                             #     CasesToolbarAndList (single list: active first, then closed by started_at),
                              #     CasesContent, CasesLoading
                              #   Case detail: CaseDetailHeader, CasePatientInfo,
                              #     CaseChat, CaseQuickActions, CaseSummary,

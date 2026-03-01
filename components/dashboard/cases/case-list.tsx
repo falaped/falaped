@@ -2,7 +2,7 @@
 
 import { CaseCard } from "@/components/dashboard/cases/case-card"
 import { CaseEmptyState } from "@/components/dashboard/cases/case-empty-state"
-import type { CaseWithPatient } from "@/modules/cases/get-cases-by-user-phone"
+import type { CaseWithPatient } from "@/modules/cases/get-cases-by-profile-id"
 
 export function CaseList({ cases }: { cases: CaseWithPatient[] }) {
   if (cases.length === 0) {

@@ -1,35 +1,20 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
+import type { CaseWithPatient } from "./types"
+import { AuthenticatedUserProfile } from "../supabase/get-authenticated-user"
 
-export type CaseStatus = "active" | "closed" | "all"
-
-export type CasePatient = {
-  id: string
-  name: string
-  responsible: string | null
-  contact_phone: string | null
-}
-
-export type CaseWithPatient = {
-  id: string
-  user_phone: string
-  status: "active" | "closed"
-  started_at: string
-  ended_at: string | null
-  patient_id: string | null
-  awaiting_intent: boolean
-  awaiting_patient_choice: boolean
-  patient: CasePatient | null
-}
+export type { CaseWithPatient } from "./types"
 
 /**
- * Fetches cases for a pediatrician, optionally filtered by status.
- * Joins with patients for contact info when patient_id is set.
+ * Fetches cases for a pediatrician by profile_id.
+ * Resolves phone from authenticated_users, then queries cases by user_phone.
  */
-export async function getCasesByUserPhone(
+export async function getCasesByProfileId(
   supabase: SupabaseClient,
-  userPhone: string,
+  profile: AuthenticatedUserProfile,
 ): Promise<CaseWithPatient[]> {
-  let query = supabase
+
+
+  const { data, error } = await supabase
     .from("cases")
     .select(`
       id,
@@ -47,11 +32,8 @@ export async function getCasesByUserPhone(
         contact_phone
       )
     `)
-    .eq("user_phone", userPhone)
+    .eq("profile_id", profile.id)
     .order("started_at", { ascending: false })
-
-
-  const { data, error } = await query
 
   if (error) throw new Error(`[CASES] Failed to fetch cases: ${error.message}`)
 
