@@ -2,7 +2,7 @@ import type { SupabaseClient } from "@supabase/supabase-js"
 import type { Patient } from "./types"
 
 const PATIENT_SELECT =
-  "id, user_phone, name, birth_date, responsible, contact_phone, sex, legal_guardian, blood_type, weight, height, head_circumference, allergies, current_medications, medical_history, created_at, updated_at"
+  "id, profile_id, user_phone, name, birth_date, responsible, contact_phone, sex, legal_guardian, blood_type, weight, height, head_circumference, allergies, current_medications, medical_history, created_at, updated_at"
 
 export type CreatePatientPayload = {
   name: string
@@ -21,16 +21,16 @@ export type CreatePatientPayload = {
 }
 
 /**
- * Creates a new patient for the given user_phone.
+ * Creates a new patient for the given profile_id (doctor).
  * Caller must validate payload (name, responsible, contact_phone required).
  */
 export async function createPatient(
   supabase: SupabaseClient,
-  userPhone: string,
+  profileId: string,
   payload: CreatePatientPayload
 ): Promise<Patient> {
   const row = {
-    user_phone: userPhone,
+    profile_id: profileId,
     name: payload.name.trim(),
     birth_date: payload.birth_date?.trim() || null,
     responsible: payload.responsible.trim() || null,

@@ -1,8 +1,7 @@
--- Seed: 5 pacientes para o profile_id 9eca2e99-c2f0-4717-bc20-d622f396013e
--- Requer que o perfil tenha telefone em authenticated_users ou profiles (user_phone do médico).
+-- Seed: 5 pacientes para o profile_id (profiles.id) do auth user 10385559-4e51-465c-8f4c-5c646268dc94
 
 INSERT INTO patients (
-  user_phone,
+  profile_id,
   name,
   birth_date,
   responsible,
@@ -18,10 +17,7 @@ INSERT INTO patients (
   medical_history
 )
 SELECT
-  COALESCE(
-    (SELECT au.phone FROM authenticated_users au WHERE au.profile_id = '9eca2e99-c2f0-4717-bc20-d622f396013e' LIMIT 1),
-    (SELECT p.phone FROM profiles p WHERE p.id = '9eca2e99-c2f0-4717-bc20-d622f396013e' LIMIT 1)
-  ),
+  '9eca2e99-c2f0-4717-bc20-d622f396013e'::uuid,
   v.name,
   v.birth_date::date,
   v.responsible,
@@ -125,8 +121,4 @@ FROM (VALUES
   allergies,
   current_medications,
   medical_history
-)
-WHERE COALESCE(
-  (SELECT au.phone FROM authenticated_users au WHERE au.profile_id = '9eca2e99-c2f0-4717-bc20-d622f396013e' LIMIT 1),
-  (SELECT p.phone FROM profiles p WHERE p.id = '9eca2e99-c2f0-4717-bc20-d622f396013e' LIMIT 1)
-) IS NOT NULL;
+);

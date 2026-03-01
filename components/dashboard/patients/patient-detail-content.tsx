@@ -8,12 +8,9 @@ export async function PatientDetailContent({ id }: { id: string }) {
   const supabase = await createClient()
   const { profile } = await getAuthenticatedUser(supabase)
   if (!profile) redirect("/auth/login")
+  if (profile.status !== "paid") redirect("/dashboard/link-whatsapp")
 
-  const userPhone =
-    profile.status === "paid" ? profile.phone ?? null : null
-  if (!userPhone) redirect("/auth/login")
-
-  const patient = await getPatientById(supabase, id, userPhone)
+  const patient = await getPatientById(supabase, id, profile.id)
   if (!patient) notFound()
 
   return <PatientDetailView patient={patient} />

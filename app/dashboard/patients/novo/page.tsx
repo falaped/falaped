@@ -9,10 +9,7 @@ export default async function NewPatientPage() {
   const supabase = await createClient()
   const { profile } = await getAuthenticatedUser(supabase)
   if (!profile) redirect("/auth/login")
-
-  const userPhone =
-    profile.status === "paid" ? profile.phone ?? null : null
-  if (!userPhone) redirect("/auth/login")
+  if (profile.status !== "paid") redirect("/dashboard/link-whatsapp")
 
   return (
     <div className="flex flex-col gap-6">

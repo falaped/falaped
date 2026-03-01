@@ -3,7 +3,8 @@
  */
 export type Patient = {
   id: string
-  user_phone: string
+  profile_id: string
+  user_phone: string | null
   name: string
   birth_date: string | null
   responsible: string | null

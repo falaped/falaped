@@ -16,9 +16,10 @@ begin
   delete from public.cases
   where user_phone in (select phone from public.profiles where auth_user_id = old.id);
 
-  -- 3. Patients
+  -- 3. Patients (by profile_id; user_phone for legacy rows)
   delete from public.patients
-  where user_phone in (select phone from public.profiles where auth_user_id = old.id);
+  where profile_id in (select id from public.profiles where auth_user_id = old.id)
+     or user_phone in (select phone from public.profiles where auth_user_id = old.id);
 
   -- 4. Incoming webhook events (by user phone)
   delete from public.incoming_webhook_events

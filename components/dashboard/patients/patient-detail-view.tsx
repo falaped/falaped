@@ -196,35 +196,35 @@ export function PatientDetailView({ patient }: { patient: Patient }) {
               {(patient.weight ||
                 patient.height ||
                 patient.head_circumference) && (
-                <div className="flex flex-wrap gap-4">
-                  {patient.weight && (
-                    <div>
-                      <span className="font-medium text-muted-foreground">
-                        Peso
-                      </span>
-                      <p className="mt-0.5">{patient.weight} kg</p>
-                    </div>
-                  )}
-                  {patient.height && (
-                    <div>
-                      <span className="font-medium text-muted-foreground">
-                        Altura
-                      </span>
-                      <p className="mt-0.5">{patient.height} cm</p>
-                    </div>
-                  )}
-                  {patient.head_circumference && (
-                    <div>
-                      <span className="font-medium text-muted-foreground">
-                        Perímetro cefálico
-                      </span>
-                      <p className="mt-0.5">
-                        {patient.head_circumference} cm
-                      </p>
-                    </div>
-                  )}
-                </div>
-              )}
+                  <div className="flex flex-wrap gap-4">
+                    {patient.weight && (
+                      <div>
+                        <span className="font-medium text-muted-foreground">
+                          Peso
+                        </span>
+                        <p className="mt-0.5">{patient.weight} kg</p>
+                      </div>
+                    )}
+                    {patient.height && (
+                      <div>
+                        <span className="font-medium text-muted-foreground">
+                          Altura
+                        </span>
+                        <p className="mt-0.5">{patient.height} cm</p>
+                      </div>
+                    )}
+                    {patient.head_circumference && (
+                      <div>
+                        <span className="font-medium text-muted-foreground">
+                          Perímetro cefálico
+                        </span>
+                        <p className="mt-0.5">
+                          {patient.head_circumference} cm
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                )}
               {patient.allergies && (
                 <div>
                   <span className="font-medium text-muted-foreground">

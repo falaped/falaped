@@ -6,7 +6,7 @@ import { getAuthenticatedUser } from "@/modules/supabase/get-authenticated-user"
 import { createPatient } from "@/modules/patients/create-patient"
 import { updatePatient } from "@/modules/patients/update-patient"
 import { deletePatient } from "@/modules/patients/delete-patient"
-import { findPatientByUserPhoneNameAndResponsible } from "@/modules/patients/find-patient-by-user-phone-name-responsible"
+import { findPatientByProfileIdNameAndResponsible } from "@/modules/patients/find-patient-by-profile-id-name-responsible"
 import {
   createPatientSchema,
   updatePatientSchema,
@@ -36,11 +36,8 @@ export async function createPatientAction(
   const { profile } = await getAuthenticatedUser(supabase)
   if (!profile)
     return { ok: false, error: "Sessão não encontrada." }
-
-  const userPhone =
-    profile.status === "paid" ? profile.phone ?? null : null
-  if (!userPhone)
-    return { ok: false, error: "Telefone não vinculado. Conecte o WhatsApp no perfil." }
+  if (profile.status !== "paid")
+    return { ok: false, error: "Perfil não ativo. Conecte o WhatsApp no perfil." }
 
   const parsed = createPatientSchema.safeParse(data)
   if (!parsed.success) {
@@ -49,9 +46,9 @@ export async function createPatientAction(
   }
 
   try {
-    const existing = await findPatientByUserPhoneNameAndResponsible(
+    const existing = await findPatientByProfileIdNameAndResponsible(
       supabase,
-      userPhone,
+      profile.id,
       parsed.data.name,
       parsed.data.responsible
     )
@@ -63,7 +60,7 @@ export async function createPatientAction(
       }
     }
 
-    const patient = await createPatient(supabase, userPhone, {
+    const patient = await createPatient(supabase, profile.id, {
       name: parsed.data.name,
       birth_date: parsed.data.birth_date ?? null,
       responsible: parsed.data.responsible,
@@ -97,14 +94,11 @@ export async function deletePatientAction(
   const { profile } = await getAuthenticatedUser(supabase)
   if (!profile)
     return { ok: false, error: "Sessão não encontrada." }
-
-  const userPhone =
-    profile.status === "paid" ? profile.phone ?? null : null
-  if (!userPhone)
-    return { ok: false, error: "Telefone não vinculado. Conecte o WhatsApp no perfil." }
+  if (profile.status !== "paid")
+    return { ok: false, error: "Perfil não ativo. Conecte o WhatsApp no perfil." }
 
   try {
-    await deletePatient(supabase, id, userPhone)
+    await deletePatient(supabase, id, profile.id)
     revalidatePath("/dashboard/patients")
     revalidatePath(`/dashboard/patients/${id}`)
     return { ok: true }
@@ -126,11 +120,8 @@ export async function updatePatientAction(
   const { profile } = await getAuthenticatedUser(supabase)
   if (!profile)
     return { ok: false, error: "Sessão não encontrada." }
-
-  const userPhone =
-    profile.status === "paid" ? profile.phone ?? null : null
-  if (!userPhone)
-    return { ok: false, error: "Telefone não vinculado. Conecte o WhatsApp no perfil." }
+  if (profile.status !== "paid")
+    return { ok: false, error: "Perfil não ativo. Conecte o WhatsApp no perfil." }
 
   const parsed = updatePatientSchema.safeParse(data)
   if (!parsed.success) {
@@ -167,7 +158,7 @@ export async function updatePatientAction(
     if (parsed.data.medical_history !== undefined)
       payload.medical_history = parsed.data.medical_history ?? null
 
-    await updatePatient(supabase, id, userPhone, payload)
+    await updatePatient(supabase, id, profile.id, payload)
     revalidatePath("/dashboard/patients")
     revalidatePath(`/dashboard/patients/${id}`)
     return { ok: true }

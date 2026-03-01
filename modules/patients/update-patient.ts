@@ -2,7 +2,7 @@ import type { SupabaseClient } from "@supabase/supabase-js"
 import type { Patient } from "./types"
 
 const PATIENT_SELECT =
-  "id, user_phone, name, birth_date, responsible, contact_phone, sex, legal_guardian, blood_type, weight, height, head_circumference, allergies, current_medications, medical_history, created_at, updated_at"
+  "id, profile_id, user_phone, name, birth_date, responsible, contact_phone, sex, legal_guardian, blood_type, weight, height, head_circumference, allergies, current_medications, medical_history, created_at, updated_at"
 
 export type UpdatePatientPayload = {
   name?: string
@@ -21,13 +21,13 @@ export type UpdatePatientPayload = {
 }
 
 /**
- * Updates a patient by id; only if it belongs to the given user_phone.
+ * Updates a patient by id; only if it belongs to the given profile_id.
  * Only provided fields are updated.
  */
 export async function updatePatient(
   supabase: SupabaseClient,
   id: string,
-  userPhone: string,
+  profileId: string,
   payload: UpdatePatientPayload
 ): Promise<Patient> {
   const updates: Record<string, unknown> = {
@@ -69,7 +69,7 @@ export async function updatePatient(
     .from("patients")
     .update(updates)
     .eq("id", id)
-    .eq("user_phone", userPhone)
+    .eq("profile_id", profileId)
     .select(PATIENT_SELECT)
     .single()
 
