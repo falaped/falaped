@@ -57,11 +57,11 @@ Copy da seção: **"Relatório do atendimento"**.
 
 ## Fase 3 – Server Actions
 
-Todas as actions de casos em **`app/dashboard/actions/cases/`** (ex.: set-case-patient-id.ts, delete-case.ts, update-case-status.ts; na Fase 3: generate-case-report, improve-report-section, update-case-report):
+Todas as actions de casos em **`actions/cases/`** (set-case-patient-id, delete-case, update-case-status; Fase 3: generate-case-report, improve-report-section, update-case-report).
 
-- [ ] **generateCaseReport:** obtém caso + mensagens + template efetivo; chama `generate-case-report` (Groq); monta `sections` com order; chama `createCaseReport` (já valida ownership); `revalidatePath` da rota do caso.
-- [ ] **improveReportSection:** recebe caseId, profileId, sectionName (ou index), conteúdo atual da seção. Chama `improve-report-section` (Groq) **apenas com o texto da seção** (sem conversa); retorna texto melhorado. Frontend atualiza a seção e chama updateCaseReport. Validar ownership.
-- [ ] **updateCaseReport:** recebe caseId, profileId, payload (sections e/ou is_finalized). Chama `updateCaseReport` de `modules/cases/update-case-report.ts` (valida ownership com getCaseById); `revalidatePath`. Usado para: salvar reordenação, finalizar edição, voltar a editar.
+- [x] **generateCaseReportAction:** obtém caso + mensagens + template efetivo; chama Groq; monta sections; createCaseReport; revalidatePath. `actions/cases/generate-case-report.ts`.
+- [x] **improveReportSectionAction:** caseId, sectionName, sectionDescription?, currentContent. Groq só com texto da seção; retorna improvedText. `actions/cases/improve-report-section.ts`.
+- [x] **updateCaseReportAction:** caseId, sections?, isFinalized?, finalizedAt?. Chama updateCaseReport (modules/cases); revalidatePath. `actions/cases/update-case-report.ts`.
 
 ---
 

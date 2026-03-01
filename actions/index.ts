@@ -2,6 +2,9 @@ export {
   setCasePatientIdAction,
   deleteCaseAction,
   updateCaseStatusAction,
+  generateCaseReportAction,
+  improveReportSectionAction,
+  updateCaseReportAction,
 } from "./cases"
 export {
   createWhatsAppLinkCodeAction,

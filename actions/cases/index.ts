@@ -1,3 +1,6 @@
 export { setCasePatientIdAction } from "./set-case-patient-id"
 export { deleteCaseAction } from "./delete-case"
 export { updateCaseStatusAction } from "./update-case-status"
+export { generateCaseReportAction } from "./generate-case-report"
+export { improveReportSectionAction } from "./improve-report-section"
+export { updateCaseReportAction } from "./update-case-report"
