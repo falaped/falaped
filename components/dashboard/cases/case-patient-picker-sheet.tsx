@@ -16,6 +16,8 @@ import { Button } from "@/components/ui/button"
 import { setCasePatientIdAction } from "@/app/dashboard/cases/actions"
 import { formatDate } from "@/lib/formatters"
 import type { Patient } from "@/modules/patients/types"
+import { CheckIcon } from "lucide-react"
+import { cn } from "@/lib/utils"
 
 type Mode = "associate" | "replace"
 
@@ -112,11 +114,6 @@ export function CasePatientPickerSheet({
         <Command
           className="rounded-none border-0"
           label={titleCopy[mode]}
-          value={selectedPatientId}
-          onValueChange={(value) => {
-            setSelectedPatientId(value ?? "")
-            setError(null)
-          }}
         >
           <CommandInput placeholder="Buscar por nome ou responsável..." />
           <CommandList>
@@ -130,29 +127,53 @@ export function CasePatientPickerSheet({
                 <React.Fragment key={letter}>
                   {groupIndex > 0 && <CommandSeparator />}
                   <CommandGroup heading={letter === "#" ? "Outros" : letter}>
-                    {groupPatients.map((p) => (
-                      <CommandItem
-                        key={p.id}
-                        value={p.id}
-                        keywords={[p.name ?? "", p.responsible ?? ""]}
-                        onSelect={() => {
-                          setSelectedPatientId(p.id)
-                          setError(null)
-                        }}
-                      >
-                        <div className="flex flex-col gap-0.5">
-                          <span className="font-medium">{p.name}</span>
-                          <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs text-muted-foreground">
-                            {p.birth_date && (
-                              <span>Nasc.: {formatDate(p.birth_date)}</span>
-                            )}
-                            {p.responsible && (
-                              <span>Responsável: {p.responsible}</span>
-                            )}
+                    {groupPatients.map((p) => {
+                      const isChosen = selectedPatientId === p.id
+                      return (
+                        <CommandItem
+                          key={p.id}
+                          value={p.id}
+                          keywords={[p.name ?? "", p.responsible ?? ""]}
+                          onSelect={() => {
+                            setSelectedPatientId(p.id)
+                            setError(null)
+                          }}
+                          className={cn(
+                            isChosen &&
+                              "bg-accent text-accent-foreground ring-1 ring-ring ring-inset",
+                          )}
+                        >
+                          <div className="flex w-full items-start gap-2">
+                            <span
+                              className={cn(
+                                "flex h-5 w-5 shrink-0 items-center justify-center rounded-sm border border-current",
+                                isChosen
+                                  ? "bg-primary text-primary-foreground"
+                                  : "bg-transparent",
+                              )}
+                              aria-hidden
+                            >
+                              {isChosen ? (
+                                <CheckIcon className="h-3 w-3" />
+                              ) : null}
+                            </span>
+                            <div className="flex flex-col gap-0.5 min-w-0">
+                              <span className="font-medium">{p.name}</span>
+                              <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs text-muted-foreground">
+                                {p.birth_date && (
+                                  <span>Nasc.: {formatDate(p.birth_date)}</span>
+                                )}
+                                {p.responsible && (
+                                  <span>
+                                    Responsável: {p.responsible}
+                                  </span>
+                                )}
+                              </div>
+                            </div>
                           </div>
-                        </div>
-                      </CommandItem>
-                    ))}
+                        </CommandItem>
+                      )
+                    })}
                   </CommandGroup>
                 </React.Fragment>
               ))
@@ -164,6 +185,15 @@ export function CasePatientPickerSheet({
             {error && (
               <p className="border-t px-3 py-2 text-sm text-destructive">
                 {error}
+              </p>
+            )}
+            {selectedPatientId && (
+              <p className="border-t px-3 py-2 text-sm text-muted-foreground">
+                Paciente selecionado:{" "}
+                <span className="font-medium text-foreground">
+                  {patients.find((p) => p.id === selectedPatientId)?.name ??
+                    "—"}
+                </span>
               </p>
             )}
             <div className="flex flex-row justify-end gap-2 border-t p-3">

@@ -1,7 +1,6 @@
 "use server"
 
 import { revalidatePath } from "next/cache"
-import { redirect } from "next/navigation"
 import { createClient } from "@/lib/supabase/server"
 import { getAuthenticatedUser } from "@/modules/supabase/get-authenticated-user"
 import { setCasePatientId } from "@/modules/cases/set-case-patient-id"
@@ -52,7 +51,7 @@ export async function deleteCaseAction(caseId: string): Promise<DeleteCaseResult
   try {
     await deleteCase(supabase, caseId, profile.id)
     revalidatePath("/dashboard/cases")
-    redirect("/dashboard/cases")
+    return { ok: true }
   } catch (e) {
     const message =
       e instanceof Error ? e.message : "Erro ao excluir caso. Tente novamente."

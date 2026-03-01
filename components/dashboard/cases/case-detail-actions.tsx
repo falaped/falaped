@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useTransition } from "react"
+import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import {
   AlertDialog,
@@ -23,6 +24,7 @@ type CaseDetailActionsProps = {
 }
 
 export function CaseDetailActions({ caseId, status }: CaseDetailActionsProps) {
+  const router = useRouter()
   const [isPendingStatus, startTransitionStatus] = useTransition()
   const [isPendingDelete, startTransitionDelete] = useTransition()
   const [reopenOpen, setReopenOpen] = useState(false)
@@ -45,15 +47,12 @@ export function CaseDetailActions({ caseId, status }: CaseDetailActionsProps) {
   function handleDeleteCase() {
     setDeleteError(null)
     startTransitionDelete(async () => {
-      try {
-        const result = await deleteCaseAction(caseId)
-        if (result?.ok) {
-          setDeleteOpen(false)
-        } else if (result && !result.ok) {
-          setDeleteError(result.error ?? "Erro ao excluir.")
-        }
-      } catch {
-        // redirect() throws on success; do not set error
+      const result = await deleteCaseAction(caseId)
+      if (result?.ok) {
+        setDeleteOpen(false)
+        router.push("/dashboard/cases")
+      } else if (result && !result.ok) {
+        setDeleteError(result.error ?? "Erro ao excluir.")
       }
     })
   }
