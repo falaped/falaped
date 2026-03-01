@@ -32,7 +32,7 @@ components/
                              #     CasesToolbarAndList (single list: active first, then closed by started_at),
                              #     CasesContent, CasesLoading
                              #   Case detail: CaseDetailHeader, CasePatientInfo,
-                             #     CaseChat, CaseQuickActions, CaseSummary,
+                             #     CaseChat, CaseQuickActions, CaseReport,
                              #     CaseDetailContent, CaseDetailLoading
 ```
 

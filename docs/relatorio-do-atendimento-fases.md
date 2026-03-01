@@ -67,13 +67,13 @@ Todas as actions de casos em **`actions/cases/`** (set-case-patient-id, delete-c
 
 ## Fase 4 – UI e integração na página do caso
 
-- [ ] **CaseDetailContent:** carregar template efetivo (get-report-template-by-id ou default) e `getCaseReport(supabase, caseId)`. Passar para o componente de relatório: template.sections, caseReport (ou null), caseId, messages, e se pode editar (`!caseReport?.is_finalized`).
-- [ ] **Substituir CaseSummary** por novo componente **CaseReport** (ou nome equivalente):
+- [x] **CaseDetailContent:** carregar template efetivo (get-report-template-by-id ou default) e `getCaseReport(supabase, caseId)`. Passar para o componente de relatório: template, caseReport (ou null), caseId, hasMessages; pode editar = `!caseReport?.is_finalized`.
+- [x] **Substituir CaseSummary** por novo componente **CaseReport** (`components/dashboard/cases/case-report.tsx`):
   - Título da Card: **"Relatório do atendimento"**
   - Exibir quando houver template efetivo; se não existir relatório, mostrar botão "Gerar relatório" (habilitado apenas quando houver mensagens; senão desabilitado com tooltip "Necessário ter conversa")
   - Um bloco por seção do template: label = section.name, placeholder/empty state = section.description ou "Sem … registrada"
   - Cada bloco: textarea editável (conteúdo da seção) + botão "Melhorar com IA" (envia somente o texto da seção para improveReportSection; depois updateCaseReport)
-  - Drag-and-drop para reordenar blocos (ex.: @dnd-kit/core + @dnd-kit/sortable); ao soltar, atualizar order em sections e chamar updateCaseReport
+  - Drag-and-drop para reordenar blocos (@dnd-kit/core + @dnd-kit/sortable); ao soltar, atualizar order em sections e chamar updateCaseReport
   - Checkbox "Finalizar edição": ao marcar, chamar updateCaseReport com is_finalized: true; desabilitar inputs, "Melhorar com IA" e drag handles
   - Botão "Voltar a editar": visível quando relatório finalizado; ao clicar, updateCaseReport com is_finalized: false; reabilitar edição
 - **(Opcional)** Ícones por seção: mapeamento name → ícone (lucide-react) ou ícone único para todas.
