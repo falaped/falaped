@@ -6,6 +6,9 @@ import { Button } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
 import { formatDateTime } from "@/lib/formatters"
 import type { CaseDetail } from "@/modules/cases/get-case-by-id"
+import type { Patient } from "@/modules/patients/types"
+import { CaseDetailActions } from "@/components/dashboard/cases/case-detail-actions"
+import { CasePatientPickerTrigger } from "@/components/dashboard/cases/case-patient-picker-trigger"
 
 function StatusBadge({ status }: { status: "active" | "closed" }) {
   if (status === "active") {
@@ -29,7 +32,12 @@ function getCaseTitle(detail: CaseDetail): string {
   return "Caso sem paciente"
 }
 
-export function CaseDetailHeader({ detail }: { detail: CaseDetail }) {
+type CaseDetailHeaderProps = {
+  detail: CaseDetail
+  patients: Patient[]
+}
+
+export function CaseDetailHeader({ detail, patients }: CaseDetailHeaderProps) {
   const title = getCaseTitle(detail)
 
   return (
@@ -41,11 +49,16 @@ export function CaseDetailHeader({ detail }: { detail: CaseDetail }) {
         </Link>
       </Button>
 
-      <div className="flex items-start justify-between gap-4">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div className="space-y-1">
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <h1 className="text-2xl font-semibold tracking-tight">{title}</h1>
             <StatusBadge status={detail.status} />
+            <CasePatientPickerTrigger
+              caseId={detail.id}
+              patients={patients}
+              hasPatient={!!detail.patient}
+            />
           </div>
           <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted-foreground">
             <span className="flex items-center gap-1.5">
@@ -60,6 +73,7 @@ export function CaseDetailHeader({ detail }: { detail: CaseDetail }) {
             )}
           </div>
         </div>
+        <CaseDetailActions caseId={detail.id} status={detail.status} />
       </div>
 
       {(detail.awaiting_patient_choice || detail.awaiting_intent) && (

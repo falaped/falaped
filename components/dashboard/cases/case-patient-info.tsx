@@ -99,7 +99,7 @@ export function CaseNoPatient() {
             Sem paciente associado
           </p>
           <p className="text-xs text-muted-foreground/70">
-            Este caso ainda não possui um paciente vinculado.
+            Este caso ainda não possui um paciente vinculado. Use &quot;Associar paciente&quot; ao lado do status para vincular.
           </p>
         </div>
       </div>
