@@ -4,6 +4,8 @@ Feature: substituir a seção "Resumo do atendimento" por **Relatório do atendi
 
 Copy da seção: **"Relatório do atendimento"**.
 
+**Decisão (Melhorar com IA):** ao usar a feature improveReportSection, enviar **somente o texto da seção** que o usuário está aprimorando (nome/descrição da seção + conteúdo atual). Não enviar a conversa do caso.
+
 ---
 
 ## Fase 1 – Schema e módulos de dados
@@ -39,16 +41,16 @@ Copy da seção: **"Relatório do atendimento"**.
 
 ## Fase 2 – Módulos Groq
 
-- [ ] **Geração do relatório completo:** criar `modules/groq/generate-case-report.ts`
+- [x] **Geração do relatório completo:** criar `modules/groq/generate-case-report.ts`
   - Modelo: **openai/gpt-oss-120b**
   - Input: `messages` (conversa), `sections` (template: name, description?)
   - Prompt: produzir texto por seção a partir da conversa (estruturar, PT-BR, gramática, pediatria, dosagens)
-  - Retorno: conteúdo por seção; seção vazia → "Sem … registrada"
+  - Retorno: conteúdo por seção; seção vazia → "Sem informação registrada."
   - Seguir rule `.cursor/rules/groq-prompting-mdc` (estrutura do prompt, limites explícitos, parâmetros)
-- [ ] **Melhorar uma seção:** criar `modules/groq/improve-report-section.ts`
+- [x] **Melhorar uma seção:** criar `modules/groq/improve-report-section.ts`
   - Modelo: **llama-3.1-8b-instant**
-  - Input: conversa + conteúdo atual da seção + nome/descrição da seção
-  - Retorno: texto melhorado (mais profissional, alongar, encurtar conforme necessário)
+  - Input: **somente o texto da seção** que o usuário está aprimorando (sectionName, sectionDescription?, currentContent). Não enviar conversa.
+  - Retorno: texto melhorado (mais profissional, PT-BR, terminologia pediátrica)
   - Seguir rule `groq-prompting-mdc`
 
 ---
@@ -58,7 +60,7 @@ Copy da seção: **"Relatório do atendimento"**.
 Todas as actions em **`app/dashboard/cases/actions.ts`**:
 
 - [ ] **generateCaseReport:** obtém caso + mensagens + template efetivo; chama `generate-case-report` (Groq); monta `sections` com order; chama `createCaseReport` (já valida ownership); `revalidatePath` da rota do caso.
-- [ ] **improveReportSection:** recebe caseId, sectionName (ou index), conteúdo atual; chama `improve-report-section` (Groq); retorna texto melhorado. Frontend usa esse retorno e chama updateCaseReport com sections atualizadas. Validar ownership.
+- [ ] **improveReportSection:** recebe caseId, profileId, sectionName (ou index), conteúdo atual da seção. Chama `improve-report-section` (Groq) **apenas com o texto da seção** (sem conversa); retorna texto melhorado. Frontend atualiza a seção e chama updateCaseReport. Validar ownership.
 - [ ] **updateCaseReport:** recebe caseId, profileId, payload (sections e/ou is_finalized). Chama `updateCaseReport` de `modules/cases/update-case-report.ts` (valida ownership com getCaseById); `revalidatePath`. Usado para: salvar reordenação, finalizar edição, voltar a editar.
 
 ---
@@ -70,7 +72,7 @@ Todas as actions em **`app/dashboard/cases/actions.ts`**:
   - Título da Card: **"Relatório do atendimento"**
   - Exibir quando houver template efetivo; se não existir relatório, mostrar botão "Gerar relatório" (habilitado apenas quando houver mensagens; senão desabilitado com tooltip "Necessário ter conversa")
   - Um bloco por seção do template: label = section.name, placeholder/empty state = section.description ou "Sem … registrada"
-  - Cada bloco: textarea editável (conteúdo da seção) + botão "Melhorar com IA" (chama improveReportSection e depois updateCaseReport)
+  - Cada bloco: textarea editável (conteúdo da seção) + botão "Melhorar com IA" (envia somente o texto da seção para improveReportSection; depois updateCaseReport)
   - Drag-and-drop para reordenar blocos (ex.: @dnd-kit/core + @dnd-kit/sortable); ao soltar, atualizar order em sections e chamar updateCaseReport
   - Checkbox "Finalizar edição": ao marcar, chamar updateCaseReport com is_finalized: true; desabilitar inputs, "Melhorar com IA" e drag handles
   - Botão "Voltar a editar": visível quando relatório finalizado; ao clicar, updateCaseReport com is_finalized: false; reabilitar edição
