@@ -1,7 +1,8 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { SmartphoneIcon, CopyIcon, CheckIcon, Link2OffIcon } from "lucide-react"
+import { LockIcon, CopyIcon, CheckIcon, Link2OffIcon, CheckCircle2 } from "lucide-react"
+import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import {
@@ -14,10 +15,9 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
-import { formatLinkedPhone } from "@/lib/formatters"
+import { formatLinkedPhone, formatDateTime } from "@/lib/formatters"
 import { createWhatsAppLinkCodeAction, unlinkWhatsAppAction } from "./actions"
 
-const CODE_VALIDITY_MS = 5 * 60 * 1000
 
 function formatCountdown(msLeft: number): string {
   if (msLeft <= 0) return "0:00"
@@ -29,9 +29,13 @@ function formatCountdown(msLeft: number): string {
 
 type LinkWhatsAppContentProps = {
   linkedPhone: string | null
+  whatsappLinkedAt: string | null
 }
 
-export function LinkWhatsAppContent({ linkedPhone }: LinkWhatsAppContentProps) {
+export function LinkWhatsAppContent({
+  linkedPhone,
+  whatsappLinkedAt,
+}: LinkWhatsAppContentProps) {
   const [result, setResult] = useState<{ code: string; expiresAt: string } | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
@@ -101,134 +105,176 @@ export function LinkWhatsAppContent({ linkedPhone }: LinkWhatsAppContentProps) {
 
   if (isLinked) {
     return (
-      <Card className="max-w-md">
-        <CardHeader>
-          <div className="flex items-center gap-2">
-            <SmartphoneIcon className="h-5 w-5 text-muted-foreground" />
-            <CardTitle>Conta vinculada</CardTitle>
-          </div>
-          <CardDescription>
-            Seu WhatsApp está associado à sua conta. Você recebe atendimentos pelo Falaped neste número.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="rounded-lg border border-border bg-muted/50 px-4 py-3">
-            <p className="text-xs font-medium text-muted-foreground">Número vinculado</p>
-            <p className="mt-1 font-mono text-sm font-medium">
-              {formatLinkedPhone(linkedPhoneState!)}
-            </p>
-          </div>
-          {unlinkError && (
-            <p className="text-sm text-destructive" role="alert">
-              {unlinkError}
-            </p>
-          )}
-          <AlertDialog>
-            <AlertDialogTrigger asChild>
-              <Button variant="outline" size="sm" className="text-destructive hover:bg-destructive/10 hover:text-destructive">
-                <Link2OffIcon className="mr-2 h-4 w-4" />
-                Desvincular WhatsApp
-              </Button>
-            </AlertDialogTrigger>
-            <AlertDialogContent className="max-w-md">
-              <AlertDialogHeader>
-                <AlertDialogTitle>Desvincular WhatsApp?</AlertDialogTitle>
-                <AlertDialogDescription>
-                  O número deixará de estar associado à sua conta. Para receber atendimentos pelo Falaped novamente, será necessário vincular um número outra vez.
-                </AlertDialogDescription>
-              </AlertDialogHeader>
-              {unlinkError && (
-                <p className="text-sm text-destructive" role="alert">
-                  {unlinkError}
+      <div className="max-w-4xl w-full flex flex-col gap-8">
+        <Card>
+          <CardHeader>
+            <div className="flex items-center gap-2">
+              <CheckCircle2 className="h-5 w-5 text-muted-foreground" />
+              <CardTitle>Conta vinculada</CardTitle>
+            </div>
+            <CardDescription>
+              Seu WhatsApp está associado à sua conta. Você recebe atendimentos pelo Falaped neste número. Este número está vinculado com segurança à sua conta.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="rounded-lg border border-border bg-muted/50 px-4 py-3">
+                <p className="text-xs font-medium text-muted-foreground">
+                  Número vinculado
                 </p>
+                <p className="mt-1 font-mono text-sm font-medium">
+                  {formatLinkedPhone(linkedPhoneState!)}
+                </p>
+              </div>
+              {whatsappLinkedAt && (
+                <div className="rounded-lg border border-border bg-muted/50 px-4 py-3">
+                  <p className="text-xs font-medium text-muted-foreground">
+                    Vinculado em
+                  </p>
+                  <p className="mt-1 text-sm font-medium">
+                    {formatDateTime(whatsappLinkedAt)}
+                  </p>
+                </div>
               )}
-              <AlertDialogFooter>
-                <AlertDialogCancel disabled={unlinkLoading}>Cancelar</AlertDialogCancel>
+            </div>
+            {unlinkError && (
+              <p className="text-sm text-destructive" role="alert">
+                {unlinkError}
+              </p>
+            )}
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
                 <Button
-                  variant="destructive"
-                  disabled={unlinkLoading}
-                  onClick={handleUnlink}
+                  variant="outline"
+                  size="sm"
+                  className="text-destructive hover:bg-destructive/10 hover:text-destructive"
                 >
-                  {unlinkLoading ? "Desvinculando…" : "Sim, desvincular"}
+                  <Link2OffIcon className="mr-2 h-4 w-4" />
+                  Desvincular WhatsApp
                 </Button>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
-        </CardContent>
-      </Card>
+              </AlertDialogTrigger>
+              <AlertDialogContent className="max-w-md">
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Desvincular WhatsApp?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    O número deixará de estar associado à sua conta. Para receber atendimentos pelo Falaped novamente, será necessário vincular um número outra vez.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                {unlinkError && (
+                  <p className="text-sm text-destructive" role="alert">
+                    {unlinkError}
+                  </p>
+                )}
+                <AlertDialogFooter>
+                  <AlertDialogCancel disabled={unlinkLoading}>
+                    Cancelar
+                  </AlertDialogCancel>
+                  <Button
+                    variant="destructive"
+                    disabled={unlinkLoading}
+                    onClick={handleUnlink}
+                  >
+                    {unlinkLoading ? "Desvinculando…" : "Sim, desvincular"}
+                  </Button>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          </CardContent>
+        </Card>
+      </div>
     )
   }
 
   return (
-    <Card className="max-w-md">
-      <CardHeader>
-        <div className="flex items-center gap-2">
-          <SmartphoneIcon className="h-5 w-5 text-muted-foreground" />
-          <CardTitle>Vincular WhatsApp</CardTitle>
-        </div>
-        <CardDescription>
-          Associe seu número do WhatsApp à sua conta para receber atendimentos pelo Falaped.
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        {!result ? (
-          <Button
-            onClick={handleGenerate}
-            disabled={loading}
-            className="w-full"
-          >
-            {loading ? "Gerando código…" : "Gerar código de vinculação"}
-          </Button>
-        ) : (
-          <div className="space-y-4">
-            <p className="text-sm text-muted-foreground">
-              Envie este código em uma mensagem no WhatsApp para o Falaped. O código é válido por 5 minutos.
-            </p>
-            <div className="flex items-center gap-2">
-              <div
-                className="flex-1 rounded-lg border border-border bg-muted/50 px-4 py-6 text-center font-mono text-2xl font-semibold tracking-[0.3em]"
-                aria-label={`Código: ${result.code}`}
-              >
-                {result.code}
-              </div>
-              <Button
-                type="button"
-                variant="outline"
-                size="icon"
-                onClick={handleCopy}
-                className="shrink-0"
-                aria-label="Copiar código"
-              >
-                {copied ? (
-                  <CheckIcon className="h-4 w-4 text-green-600" />
-                ) : (
-                  <CopyIcon className="h-4 w-4" />
-                )}
-              </Button>
-            </div>
-            {countdownMs !== null && (
-              <p className="text-xs text-muted-foreground">
-                {countdownMs > 0
-                  ? `Expira em ${formatCountdown(countdownMs)}`
-                  : "Código expirado. Gere um novo código."}
-              </p>
-            )}
+    <div className="max-w-4xl w-full">
+      <Card className="w-full max-w-md">
+        <CardHeader className="text-pretty text-sm text-muted-foreground w-full max-w-md">
+          <div className="flex items-center gap-2">
+            <LockIcon className="h-5 w-5 text-muted-foreground" />
+            <CardTitle>Vincular WhatsApp</CardTitle>
+          </div>
+          <CardDescription>
+            O código é único, temporário (5 minutos) e deve ser enviado apenas no WhatsApp oficial do Falaped para vincular seu número com segurança.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4 ">
+          {!result ? (
             <Button
-              variant="outline"
               onClick={handleGenerate}
               disabled={loading}
               className="w-full"
             >
-              {loading ? "Gerando…" : "Gerar novo código"}
+              {loading ? "Gerando código…" : "Gerar código de vinculação"}
             </Button>
-          </div>
-        )}
-        {error && (
-          <p className="text-sm text-destructive" role="alert">
-            {error}
-          </p>
-        )}
-      </CardContent>
-    </Card>
+          ) : (
+            <div className="space-y-6 flex flex-col items-center ">
+              <p className="text-sm text-muted-foreground w-full max-w-md">
+                Envie este código em uma mensagem no WhatsApp para o Falaped. Código de uso único. Use apenas no WhatsApp oficial do Falaped.
+              </p>
+              <div className="rounded-xl border border-border bg-muted/30 p-6 space-y-5 w-full max-w-md">
+                <div
+                  className="flex justify-center gap-3 "
+                  aria-label={`Código: ${result.code}`}
+                >
+                  {Array.from(result.code).map((digit, i) => (
+                    <div
+                      key={i}
+                      className="flex h-12 w-11 shrink-0 items-center justify-center rounded-lg border border-border bg-background font-mono text-xl font-semibold tabular-nums"
+                    >
+                      {digit}
+                    </div>
+                  ))}
+                </div>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={handleCopy}
+                  className="w-full gap-2"
+                  aria-label="Copiar código"
+                >
+                  {copied ? (
+                    <>
+                      <CheckIcon className="h-4 w-4 text-primary" />
+                      Copiado
+                    </>
+                  ) : (
+                    <>
+                      <CopyIcon className="h-4 w-4" />
+                      Copiar código
+                    </>
+                  )}
+                </Button>
+              </div>
+              {countdownMs !== null && (
+                <div className="flex flex-wrap items-center gap-2">
+                  {countdownMs > 0 ? (
+                    <Badge variant="secondary" className="text-muted-foreground font-normal">
+                      Válido por 5 min · Expira em {formatCountdown(countdownMs)}
+                    </Badge>
+                  ) : (
+                    <p className="text-xs text-muted-foreground">
+                      Código expirado. Gere um novo código.
+                    </p>
+                  )}
+                </div>
+              )}
+              <Button
+                variant="default"
+                onClick={handleGenerate}
+                disabled={loading}
+                className="w-full max-w-md cursor-pointer"
+              >
+                {loading ? "Gerando…" : "Gerar novo código"}
+              </Button>
+            </div>
+          )}
+          {error && (
+            <p className="text-sm text-destructive" role="alert">
+              {error}
+            </p>
+          )}
+        </CardContent>
+      </Card>
+    </div>
   )
 }

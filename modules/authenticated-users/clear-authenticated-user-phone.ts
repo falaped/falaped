@@ -1,20 +1,34 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
 
 /**
- * Clears the phone for the authenticated_users row linked to the given profile.
- * Used to "unlink" WhatsApp: after this, the user must link again via the code flow.
+ * Unlinks WhatsApp for the given profile: deletes rows in phone_link_codes for
+ * this profile_id, then sets linked_phone_status = false and whatsapp_linked_at = null
+ * in authenticated_users. The phone field is not cleared.
  */
 export async function clearAuthenticatedUserPhone(
   supabase: SupabaseClient,
   profileId: string
 ): Promise<void> {
-  const { error } = await supabase
-    .from("authenticated_users")
-    .update({ phone: null, whatsapp_linked_at: null })
+  const { error: deleteCodesError } = await supabase
+    .from("phone_link_codes")
+    .delete()
     .eq("profile_id", profileId)
 
-  if (error)
+  if (deleteCodesError)
     throw new Error(
-      `[AUTHENTICATED_USERS] Failed to clear phone: ${error.message}`
+      `[PHONE_LINK_CODES] Failed to delete codes: ${deleteCodesError.message}`
+    )
+
+  const { error: updateError } = await supabase
+    .from("authenticated_users")
+    .update({
+      linked_phone_status: false,
+      whatsapp_linked_at: null,
+    })
+    .eq("profile_id", profileId)
+
+  if (updateError)
+    throw new Error(
+      `[AUTHENTICATED_USERS] Failed to clear phone: ${updateError.message}`
     )
 }
