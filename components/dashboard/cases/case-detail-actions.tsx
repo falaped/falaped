@@ -14,8 +14,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
-import { updateCaseStatusAction } from "@/app/dashboard/cases/actions"
-import { deleteCaseAction } from "@/app/dashboard/cases/actions"
+import { updateCaseStatusAction, deleteCaseAction } from "@/actions"
 import { LockIcon, UnlockIcon, Trash2Icon } from "lucide-react"
 
 type CaseDetailActionsProps = {

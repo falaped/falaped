@@ -57,7 +57,7 @@ Copy da seção: **"Relatório do atendimento"**.
 
 ## Fase 3 – Server Actions
 
-Todas as actions em **`app/dashboard/cases/actions.ts`**:
+Todas as actions de casos em **`app/dashboard/actions/cases/`** (ex.: set-case-patient-id.ts, delete-case.ts, update-case-status.ts; na Fase 3: generate-case-report, improve-report-section, update-case-report):
 
 - [ ] **generateCaseReport:** obtém caso + mensagens + template efetivo; chama `generate-case-report` (Groq); monta `sections` com order; chama `createCaseReport` (já valida ownership); `revalidatePath` da rota do caso.
 - [ ] **improveReportSection:** recebe caseId, profileId, sectionName (ou index), conteúdo atual da seção. Chama `improve-report-section` (Groq) **apenas com o texto da seção** (sem conversa); retorna texto melhorado. Frontend atualiza a seção e chama updateCaseReport. Validar ownership.
@@ -83,7 +83,7 @@ Todas as actions em **`app/dashboard/cases/actions.ts`**:
 ## Fase 5 – Documentação e skills
 
 - [ ] Atualizar `docs/schema-supabase.md` com a tabela `case_reports` (id, case_id, profile_id, report_template_id, sections, is_finalized, finalized_at, created_at, updated_at) e nota sobre uso do `id` para path do report.pdf no storage.
-- [ ] Atualizar `docs/estrutura-do-projeto.md` com novos arquivos: `modules/cases/get-case-report.ts`, `modules/cases/create-case-report.ts`, `modules/cases/update-case-report.ts`, módulos em `modules/groq/`, `app/dashboard/cases/actions.ts`.
+- [ ] Atualizar `docs/estrutura-do-projeto.md` com novos arquivos: `modules/cases/*`, `modules/groq/*`, `app/dashboard/actions/` (cases/, link-whatsapp/, patients/, profile/).
 - [ ] Atualizar skill `supabase-falaped` (schema) e `dashboard-falaped` (módulos/estrutura) se aplicável.
 - [ ] Manter copy "Relatório do atendimento" consistente em docs e referências.
 

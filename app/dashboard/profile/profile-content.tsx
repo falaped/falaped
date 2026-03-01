@@ -42,13 +42,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
-import {
-  deleteMyAccountAction,
-  updateStatusAction,
-  updateProfileAction,
-  uploadProfileLogoAction,
-  clearProfileLogoAction,
-} from "./actions"
+import { deleteMyAccountAction, updateStatusAction, updateProfileAction, uploadProfileLogoAction, clearProfileLogoAction } from "@/actions"
 import type { AuthenticatedUserStatus } from "@/modules/authenticated-users/update-authenticated-user-status"
 import type { AuthenticatedUserResult } from "@/modules/supabase/get-authenticated-user"
 import type { ReportTemplateOption } from "@/modules/report-templates/get-report-templates-for-user-phone"
@@ -592,8 +586,8 @@ export function ProfileContent({ profile, reportTemplateOptions }: ProfileConten
                       aria-checked={isSelected}
                       onClick={() => setTheme(opt.value)}
                       className={`flex flex-col items-center gap-2 rounded-lg border p-4 text-sm transition-colors hover:bg-muted/50 ${isSelected
-                          ? "border-primary bg-primary/5 ring-2 ring-primary/20"
-                          : "border-border"
+                        ? "border-primary bg-primary/5 ring-2 ring-primary/20"
+                        : "border-border"
                         }`}
                     >
                       <Icon className="h-5 w-5 text-muted-foreground" />

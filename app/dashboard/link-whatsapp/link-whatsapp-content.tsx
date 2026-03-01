@@ -16,7 +16,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
 import { formatLinkedPhone, formatDateTime } from "@/lib/formatters"
-import { createWhatsAppLinkCodeAction, unlinkWhatsAppAction } from "./actions"
+import { createWhatsAppLinkCodeAction, unlinkWhatsAppAction } from "@/actions"
 
 
 function formatCountdown(msLeft: number): string {

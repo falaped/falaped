@@ -13,7 +13,7 @@ import {
   CommandSeparator,
 } from "@/components/ui/command"
 import { Button } from "@/components/ui/button"
-import { setCasePatientIdAction } from "@/app/dashboard/cases/actions"
+import { setCasePatientIdAction } from "@/actions"
 import { formatDate } from "@/lib/formatters"
 import type { Patient } from "@/modules/patients/types"
 import { CheckIcon } from "lucide-react"
@@ -140,7 +140,7 @@ export function CasePatientPickerSheet({
                           }}
                           className={cn(
                             isChosen &&
-                              "bg-accent text-accent-foreground ring-1 ring-ring ring-inset",
+                            "bg-accent text-accent-foreground ring-1 ring-ring ring-inset",
                           )}
                         >
                           <div className="flex w-full items-start gap-2">

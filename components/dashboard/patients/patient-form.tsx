@@ -33,22 +33,19 @@ import {
   type UpdatePatientFormData,
 } from "@/lib/schemas/patient"
 import type { Patient } from "@/modules/patients/types"
-import {
-  createPatientAction,
-  updatePatientAction,
-} from "@/app/dashboard/patients/actions"
+import { createPatientAction, updatePatientAction } from "@/actions"
 
 type PatientFormProps =
   | {
-      mode: "create"
-      patient?: never
-      onUpdateSuccess?: never
-    }
+    mode: "create"
+    patient?: never
+    onUpdateSuccess?: never
+  }
   | {
-      mode: "edit"
-      patient: Patient
-      onUpdateSuccess?: () => void
-    }
+    mode: "edit"
+    patient: Patient
+    onUpdateSuccess?: () => void
+  }
 
 function toFormValue(value: string | null | undefined): string {
   return value?.trim() ?? ""

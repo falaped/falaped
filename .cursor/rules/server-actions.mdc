@@ -1,6 +1,6 @@
 ---
 description: Server Actions – structure, revalidatePath, redirect, error handling
-globs: "app/**/*.tsx,app/**/actions.ts,lib/actions/**/*.ts"
+globs: "app/**/*.tsx,app/dashboard/actions/**/*.ts,lib/actions/**/*.ts"
 alwaysApply: false
 ---
 
@@ -14,8 +14,7 @@ alwaysApply: false
 
 ## Estrutura
 
-- Colocar em `actions.ts` no mesmo diretório da página ou em `app/(dashboard)/.../actions.ts`.
-- Ou em `lib/actions/` por domínio: `patients.ts`, `cases.ts`, `profile.ts`.
+- **Dashboard:** em `app/dashboard/actions/{module}/`, um arquivo por ação (kebab-case). Ex.: `actions/cases/set-case-patient-id.ts`, `actions/cases/delete-case.ts`, `actions/patients/create-patient.ts`, `actions/profile/update-profile.ts`. Cada arquivo tem `"use server"` no topo e exporta uma função (e tipos de retorno se necessário).
 - Funções assíncronas com `"use server"` no topo do arquivo.
 
 ```ts

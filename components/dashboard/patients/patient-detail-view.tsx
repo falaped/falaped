@@ -24,7 +24,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
 import { PatientForm } from "@/components/dashboard/patients/patient-form"
-import { deletePatientAction } from "@/app/dashboard/patients/actions"
+import { deletePatientAction } from "@/actions"
 import { formatDate, formatBrazilianPhone } from "@/lib/formatters"
 import type { Patient } from "@/modules/patients/types"
 import type { CaseForPatient } from "@/modules/cases/get-cases-by-patient-id"
