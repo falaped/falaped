@@ -31,6 +31,7 @@ Sempre `(supabase: SupabaseClient, ...args)`. Ex.: `getAuthenticatedUser(supabas
 - **Erro:** sempre checar `error`; em falha `throw new Error(...)`.
 - **Insert/update:** `.insert(...).select('...').single()` para retornar o registro sem round-trip extra.
 - **Evitar N+1:** `.select('*, relation(*)')` ou batch `.insert([...])`.
+- **Reutilizar funções de domínio:** para ownership/validação de caso, usar as funções já existentes (ex.: `getCaseById(supabase, caseId, profileId)`) em vez de repetir query em `authenticated_users` ou `cases` em outro módulo.
 
 ## Referências
 
