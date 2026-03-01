@@ -27,9 +27,8 @@ auth.users ← (auth_user_id) → profiles ← (profile_id) → authenticated_us
 
 - `lib/supabase/client.ts` (browser) e `server.ts` (server).
 - `lib/supabase/middleware.ts` ou função no `middleware.ts` para refresh.
-- `modules/supabase/get-authenticated-user.ts` → `getAuthenticatedUser(supabase)` retorna `{ profile, authenticatedUser } | null`; use para validações e para obter user_phone (de authenticatedUser quando status = 'paid').
-- `modules/profiles/get-profile-by-auth-user-id.ts` → `getProfileByAuthUserId(supabase, authUserId)` (usado por getAuthenticatedUser).
-- `modules/authenticated-users/get-authenticated-user-by-profile-id.ts` → `getAuthenticatedUserByProfileId(supabase, profileId)` (usado internamente pelo embed em getProfileByAuthUserId).
+- `modules/supabase/get-authenticated-user.ts` → `getAuthenticatedUser(supabase)` retorna `{ profile }`; faz query direta em `profiles` com embed de `authenticated_users`. Use para validações e para obter user_phone (profile.status, profile.phone). Tipo `Profile` em `modules/profiles/types.ts`.
+- `modules/authenticated-users/get-authenticated-user-by-profile-id.ts` → `getAuthenticatedUserByProfileId(supabase, profileId)` para obter linha de authenticated_users por profile_id quando necessário.
 
 ## Rotas
 

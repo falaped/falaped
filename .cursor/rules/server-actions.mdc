@@ -36,7 +36,7 @@ export async function createPatientAction(formData: FormData) {
   if (!userPhone) throw new Error('Unauthorized');
 
   const parsed = parsePatientFormData(formData);
-  if (!parsed.success) return { error: parsed.error.flatten().fieldErrors };
+  if (!parsed.success) return { error: z.flattenError(parsed.error).fieldErrors };
 
   const patient = await createPatient(supabase, userPhone, parsed.data);
   revalidatePath('/dashboard/patients');

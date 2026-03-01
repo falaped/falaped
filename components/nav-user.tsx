@@ -58,7 +58,7 @@ export function NavUser() {
       setUser({
         name,
         email: profile.email ?? "",
-        avatar: "",
+        avatar: profile.logo_url_short ?? "",
       })
     })
   }, [])

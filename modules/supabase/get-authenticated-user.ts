@@ -1,5 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import type { Profile } from "@/modules/profiles/get-profile-by-auth-user-id";
+import type { Profile } from "@/modules/profiles/types";
 import type { AuthenticatedUserRow } from "@/modules/authenticated-users/get-authenticated-user-by-profile-id";
 
 export type { Profile };
@@ -9,7 +9,7 @@ export type { AuthenticatedUserRow };
 export type AuthenticatedUserProfile = Profile & AuthenticatedUserRow;
 
 export type AuthenticatedUserResult = {
-  profile: AuthenticatedUserProfile | null;
+  profile: AuthenticatedUserProfile;
 };
 
 /**
@@ -21,7 +21,7 @@ export async function getAuthenticatedUser(
 ): Promise<AuthenticatedUserResult> {
   const { data: userData } = await supabase.auth.getUser();
   const user = userData?.user;
-  if (!user) return { profile: null };
+  if (!user) return { profile: {} as AuthenticatedUserProfile };
 
   const { data: profileData, error: profileError } = await supabase
     .from("profiles")
@@ -33,7 +33,7 @@ export async function getAuthenticatedUser(
 
   if (profileError)
     throw new Error(`[SUPABASE] Failed to get profile: ${profileError.message}`);
-  if (!profileData) return { profile: null };
+  if (!profileData) return { profile: {} as AuthenticatedUserProfile };
 
   const { authenticated_users: embedded, ...profileFields } = profileData;
   const row = embedded?.[0];
