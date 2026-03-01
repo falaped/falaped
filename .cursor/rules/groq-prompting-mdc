@@ -1,0 +1,54 @@
+---
+description: Boas práticas para criar e revisar prompts com a API Groq (role, instructions, patterns, parameters)
+globs: modules/groq/**
+alwaysApply: false
+---
+
+# Prompts Groq
+
+**Referência:** [Prompt Basics](https://console.groq.com/docs/prompting) · [Patterns](https://console.groq.com/docs/prompting/patterns) · [Model Migration](https://console.groq.com/docs/prompting/model-migration) · [Prefilling](https://console.groq.com/docs/prefilling)
+
+Aplicar ao criar ou alterar prompts em `src/modules/groq/` (system/user/assistant, body, parâmetros).
+
+## Estrutura do prompt
+
+- **Cinco blocos:** role, instructions, context, input, expected output. Role e instructions no **system**; input no **user**; expected output como exemplo ou no system.
+- **Canais:** system = persona e regras; user = pedido; assistant = histórico em multi-turno.
+- **Priming:** system conciso (300–600 tokens); instruções críticas **no topo**; modelo pondera mais os tokens iniciais.
+
+## Princípios
+
+- **Mostrar, não só dizer:** uma linha de schema/JSON de exemplo vale mais que parágrafo.
+- **Limites explícitos:** "Return **only** JSON", "less than N words".
+- **Verbos claros:** "Summarize in one bullet per metric" em vez de "analyze".
+- **Delimitar input longo:** usar \`\`\` ou <<< … >>>.
+- Evitar: instrução no meio do texto; contexto inchado; verbos vagos; JSON com chaves parciais no exemplo (mostrar schema completo).
+
+## Escolha de padrão (Patterns)
+
+Escolher pela **tarefa:** Q&A simples → zero shot. Extração/classificação (JSON, labels fixos) → **few shot** (1–3 exemplos; diversidade; exemplo mais complexo **por último**; 2–3 se token budget apertado). Math/lógica/análise multi-etapa → **Chain of Thought** ("think step by step"; temperature ≤ 0.3). Precisão crítica → Guided CoT + Self-Consistency. Ferramentas/dados externos → ReAct. Factos críticos → Chain of Verification. Resumos densos com limite → Chain of Density.
+
+Zero shot: para saída determinística use `temperature` ≤ 0.2; pedidos ambíguos → adicionar role + formato.
+
+## Parâmetros
+
+- **Temperature ou top-p** (não ambos): factual 0.2/0.9; extração JSON 0.0/0.9; criativo 0.8/1.0; código 0.3/0.85.
+- **max_completion_tokens:** cap ~10–20% acima do ideal. **stop:** ex. `###`, `"```"` para delimitar fim. **seed:** reprodutibilidade com temp baixa.
+
+## Migração / modelos abertos
+
+Tornar **explícito** no system o que modelos fechados fazem por padrão (persona, tom, recusas, formato). Primeiro igualar temperature/top_p/max_tokens; depois refinar prompt. Para raciocínio: pedir passos explícitos ("Let's solve step by step: 1. … 2. …").
+
+## Prefilling
+
+Para output estruturado (JSON, código): considerar **prefill** da mensagem assistant com o prefixo desejado (ex. `"```json"`) e **stop** (ex. `["```"]`) para limitar o fim; em alguns modelos newline após o prefill ajuda.
+
+## Exemplo (bom vs evitar)
+
+```text
+# Bom: role + formato + limite
+You are a classification bot. Return ONLY valid JSON with keys "label" and "confidence". No extra prose.
+
+# Evitar: pedido vago no meio do texto
+You are helpful. Sometimes the user will ask you to classify things; when that happens, try to respond with something like a label and maybe a number.
+```

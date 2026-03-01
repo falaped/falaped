@@ -1,5 +1,6 @@
 ---
 description: Code in English, copy/texts in Portuguese (Brazilian)
+globs: "**/*.ts"
 alwaysApply: true
 ---
 
