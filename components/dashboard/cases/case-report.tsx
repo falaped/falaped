@@ -49,6 +49,19 @@ function sortSections(sections: CaseReportSection[]): CaseReportSection[] {
   return [...sections].sort((a, b) => a.order - b.order)
 }
 
+function SectionPreview({ section }: { section: CaseReportSection }) {
+  return (
+    <div className="border-border border-b pb-4 last:border-0 last:pb-0">
+      <h3 className="text-sm font-semibold text-foreground tracking-tight">
+        {section.name}
+      </h3>
+      <div className="mt-1.5 text-sm leading-relaxed text-foreground whitespace-pre-wrap">
+        {section.content || "—"}
+      </div>
+    </div>
+  )
+}
+
 function SectionBlock({
   section,
   canEdit,
@@ -83,6 +96,10 @@ function SectionBlock({
 
   const placeholder = section.description || `Sem ${section.name.toLowerCase()} registrada.`
 
+  if (!canEdit) {
+    return <SectionPreview section={section} />
+  }
+
   return (
     <div
       ref={setNodeRef}
@@ -92,42 +109,37 @@ function SectionBlock({
         isDragging && "opacity-50 shadow-md",
       )}
     >
-      {canEdit && (
-        <button
-          type="button"
-          className="mt-8 shrink-0 touch-none cursor-grab rounded p-1 text-muted-foreground hover:bg-muted active:cursor-grabbing"
-          aria-label="Reordenar seção"
-          {...attributes}
-          {...listeners}
-        >
-          <GripVertical className="h-4 w-4" />
-        </button>
-      )}
+      <button
+        type="button"
+        className="mt-8 shrink-0 touch-none cursor-grab rounded p-1 text-muted-foreground hover:bg-muted active:cursor-grabbing"
+        aria-label="Reordenar seção"
+        {...attributes}
+        {...listeners}
+      >
+        <GripVertical className="h-4 w-4" />
+      </button>
       <div className="min-w-0 flex-1 space-y-2">
         <Label className="text-sm font-medium">{section.name}</Label>
         <Textarea
           value={section.content}
           onChange={(e) => onContentChange(section.name, e.target.value)}
           placeholder={placeholder}
-          disabled={!canEdit}
           className="min-h-24 resize-y"
         />
-        {canEdit && (
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            disabled={isImproving || !section.content.trim()}
-            onClick={() => onImprove(section.name)}
-          >
-            {isImproving ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              <Sparkles className="h-4 w-4" />
-            )}
-            <span className="ml-1.5">Melhorar com IA</span>
-          </Button>
-        )}
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          disabled={isImproving || !section.content.trim()}
+          onClick={() => onImprove(section.name)}
+        >
+          {isImproving ? (
+            <Loader2 className="h-4 w-4 animate-spin" />
+          ) : (
+            <Sparkles className="h-4 w-4" />
+          )}
+          <span className="ml-1.5">Melhorar com IA</span>
+        </Button>
       </div>
     </div>
   )
@@ -362,7 +374,12 @@ export function CaseReport({
             items={sections.map((s) => s.name)}
             strategy={verticalListSortingStrategy}
           >
-            <div className="space-y-3">
+            <div
+              className={cn(
+                "space-y-3",
+                !canEdit && "space-y-6",
+              )}
+            >
               {sections.map((section) => (
                 <SectionBlock
                   key={section.name}
