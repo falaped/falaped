@@ -43,6 +43,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip"
 import { Badge } from "@/components/ui/badge"
+import { Skeleton } from "@/components/ui/skeleton"
 import { cn } from "@/lib/utils"
 import { formatDateTime } from "@/lib/formatters"
 import { toast } from "sonner"
@@ -51,6 +52,33 @@ function reportSourceLabel(source: string): string {
   if (source === "web") return "Web"
   if (source === "whatsapp") return "WhatsApp"
   return source.charAt(0).toUpperCase() + source.slice(1)
+}
+
+function ReportCardSkeleton({
+  label,
+  ariaLabel,
+}: {
+  label: string
+  ariaLabel: string
+}) {
+  return (
+    <div
+      className="flex flex-col gap-2 rounded-lg border border-border bg-card p-4"
+      aria-busy="true"
+      aria-label={ariaLabel}
+    >
+      <div className="flex items-center gap-2">
+        <Skeleton className="h-5 w-5 shrink-0 rounded" />
+        <Skeleton className="h-5 w-14 rounded-md" />
+      </div>
+      <Skeleton className="h-4 w-full max-w-[180px] rounded" />
+      <Skeleton className="h-3 w-20 rounded" />
+      <p className="flex items-center gap-1.5 text-sm text-muted-foreground">
+        <Loader2 className="h-4 w-4 animate-spin shrink-0" aria-hidden />
+        {label}
+      </p>
+    </div>
+  )
 }
 
 type CaseReportProps = {
@@ -198,15 +226,22 @@ export function CaseReport({
   const [improvingSection, setImprovingSection] = useState<string | null>(null)
   const [isFinalizing, setIsFinalizing] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
+  const [deletingReportId, setDeletingReportId] = useState<string | null>(null)
 
   const canEdit = !selectedReport?.is_finalized
+  const hasWebReport = caseReports.some((r) => r.source === "web")
   const canGenerateReport =
-    hasMessages && (template.sections?.length ?? 0) > 0
-  const generateDisabledReason = !hasMessages
-    ? "Necessário ter conversa"
-    : (template.sections?.length ?? 0) === 0
-      ? "Nenhum template de relatório configurado."
-      : null
+    hasMessages &&
+    (template.sections?.length ?? 0) > 0 &&
+    !hasWebReport
+  const generateDisabledReason = hasWebReport
+    ? "Já existe um relatório gerado pela web para este caso."
+    : !hasMessages
+      ? "Necessário ter conversa"
+      : (template.sections?.length ?? 0) === 0
+        ? "Nenhum template de relatório configurado."
+        : null
   const hasUnsavedEdits =
     !!selectedReport && !sectionsEqual(sections, selectedReport.sections)
 
@@ -224,6 +259,15 @@ export function CaseReport({
       setSelectedReportId(null)
     }
   }, [caseReports, selectedReportId])
+
+  useEffect(() => {
+    if (
+      deletingReportId &&
+      !caseReports.some((r) => r.id === deletingReportId)
+    ) {
+      setDeletingReportId(null)
+    }
+  }, [caseReports, deletingReportId])
 
   const handleCardClick = useCallback((reportId: string) => {
     setSelectedReportId((prev) => (prev === reportId ? null : reportId))
@@ -350,16 +394,19 @@ export function CaseReport({
 
   const handleDeleteReport = useCallback(async () => {
     if (!selectedReport) return
+    setDeletingReportId(selectedReport.id)
     setIsDeleting(true)
     try {
       const result = await deleteCaseReportAction(selectedReport.id, caseId)
       if (result.ok) {
+        setDeleteDialogOpen(false)
         toast.success("Relatório excluído.")
         setSelectedReportId((prev) =>
           prev === selectedReport.id ? caseReports.find((r) => r.id !== selectedReport.id)?.id ?? null : prev,
         )
         router.refresh()
       } else {
+        setDeletingReportId(null)
         toast.error(result.error)
       }
     } finally {
@@ -447,6 +494,15 @@ export function CaseReport({
       <CardContent className="space-y-4">
         <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
           {caseReports.map((report) => {
+            if (report.id === deletingReportId) {
+              return (
+                <ReportCardSkeleton
+                  key={report.id}
+                  label="Excluindo…"
+                  ariaLabel="Excluindo relatório"
+                />
+              )
+            }
             const isSelected = selectedReportId === report.id
             const isWhatsApp = report.source === "whatsapp"
             return (
@@ -488,6 +544,13 @@ export function CaseReport({
               </button>
             )
           })}
+          {isGenerating && (
+            <ReportCardSkeleton
+              key="generating"
+              label="Gerando…"
+              ariaLabel="Gerando relatório"
+            />
+          )}
         </div>
 
         {selectedReport && (
@@ -541,7 +604,7 @@ export function CaseReport({
                     Voltar a editar
                   </Button>
                 )}
-                <AlertDialog>
+                <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
                   <AlertDialogTrigger asChild>
                     <Button
                       type="button"
