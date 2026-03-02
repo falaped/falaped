@@ -18,18 +18,25 @@ import {
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable"
 import { CSS } from "@dnd-kit/utilities"
-import { GripVertical, Sparkles, Loader2 } from "lucide-react"
+import { GripVertical, Sparkles, Loader2, AlertTriangle, Trash2 } from "lucide-react"
 
 import type { CaseReport as CaseReportType, CaseReportSection } from "@/modules/cases/get-case-report"
 import type { ReportTemplateWithSections } from "@/modules/report-templates/get-report-template-by-id"
-import { generateCaseReportAction } from "@/actions/cases/generate-case-report"
-import { improveReportSectionAction } from "@/actions/cases/improve-report-section"
-import { updateCaseReportAction } from "@/actions/cases/update-case-report"
+import { generateCaseReportAction, improveReportSectionAction, updateCaseReportAction, deleteCaseReportAction } from "@/actions"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Checkbox } from "@/components/ui/checkbox"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
+import {
+  AlertDialog,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog"
 import {
   Tooltip,
   TooltipContent,
@@ -37,6 +44,7 @@ import {
 } from "@/components/ui/tooltip"
 import { cn } from "@/lib/utils"
 import { toast } from "sonner"
+import { deleteCaseAction } from "@/actions"
 
 type CaseReportProps = {
   template: ReportTemplateWithSections
@@ -47,6 +55,21 @@ type CaseReportProps = {
 
 function sortSections(sections: CaseReportSection[]): CaseReportSection[] {
   return [...sections].sort((a, b) => a.order - b.order)
+}
+
+function sectionsEqual(
+  a: CaseReportSection[],
+  b: CaseReportSection[],
+): boolean {
+  const sa = sortSections(a)
+  const sb = sortSections(b)
+  if (sa.length !== sb.length) return false
+  return sa.every(
+    (s, i) =>
+      s.name === sb[i].name &&
+      s.content === sb[i].content &&
+      s.order === sb[i].order,
+  )
 }
 
 function SectionPreview({ section }: { section: CaseReportSection }) {
@@ -89,9 +112,9 @@ function SectionBlock({
 
   const style = transform
     ? {
-        transform: CSS.Transform.toString(transform),
-        transition,
-      }
+      transform: CSS.Transform.toString(transform),
+      transition,
+    }
     : undefined
 
   const placeholder = section.description || `Sem ${section.name.toLowerCase()} registrada.`
@@ -158,16 +181,24 @@ export function CaseReport({
   const [isGenerating, setIsGenerating] = useState(false)
   const [improvingSection, setImprovingSection] = useState<string | null>(null)
   const [isFinalizing, setIsFinalizing] = useState(false)
-  const [finalizeChecked, setFinalizeChecked] = useState(caseReport?.is_finalized ?? false)
+  const [isDeleting, setIsDeleting] = useState(false)
 
   const canEdit = !caseReport?.is_finalized
+  const canGenerateReport =
+    hasMessages && (template.sections?.length ?? 0) > 0
+  const generateDisabledReason = !hasMessages
+    ? "Necessário ter conversa"
+    : (template.sections?.length ?? 0) === 0
+      ? "Nenhum template de relatório configurado."
+      : null
+  const hasUnsavedEdits =
+    !!caseReport && !sectionsEqual(sections, caseReport.sections)
 
   useEffect(() => {
     if (caseReport) {
       setSections(sortSections(caseReport.sections))
-      setFinalizeChecked(caseReport.is_finalized)
     }
-  }, [caseReport?.id, caseReport?.updated_at, caseReport?.is_finalized, caseReport?.sections])
+  }, [caseReport?.id, caseReport?.updated_at, caseReport?.sections])
 
   const handleGenerateReport = useCallback(async () => {
     if (!hasMessages) return
@@ -265,7 +296,6 @@ export function CaseReport({
           finalizedAt: checked ? new Date().toISOString() : null,
         })
         if (result.ok) {
-          setFinalizeChecked(checked)
           toast.success(checked ? "Relatório finalizado." : "Edição reabilitada.")
           router.refresh()
         } else {
@@ -281,6 +311,21 @@ export function CaseReport({
   const handleBackToEdit = useCallback(() => {
     handleFinalizeChange(false)
   }, [handleFinalizeChange])
+
+  const handleDeleteReport = useCallback(async () => {
+    setIsDeleting(true)
+    try {
+      const result = await deleteCaseReportAction(caseId)
+      if (result.ok) {
+        toast.success("Relatório excluído.")
+        router.refresh()
+      } else {
+        toast.error(result.error)
+      }
+    } finally {
+      setIsDeleting(false)
+    }
+  }, [caseId, router])
 
   const sensors = useSensors(
     useSensor(MouseSensor, {
@@ -302,7 +347,7 @@ export function CaseReport({
           </CardTitle>
         </CardHeader>
         <CardContent>
-          {hasMessages ? (
+          {canGenerateReport ? (
             <Button
               onClick={handleGenerateReport}
               disabled={isGenerating}
@@ -325,7 +370,7 @@ export function CaseReport({
                 </span>
               </TooltipTrigger>
               <TooltipContent>
-                Necessário ter conversa
+                {generateDisabledReason ?? "Informações insuficientes para gerar o relatório."}
               </TooltipContent>
             </Tooltip>
           )}
@@ -344,16 +389,35 @@ export function CaseReport({
           </CardTitle>
           <div className="flex items-center gap-4">
             {canEdit ? (
-              <label className="flex cursor-pointer items-center gap-2 text-sm">
-                <Checkbox
-                  checked={finalizeChecked}
-                  disabled={isFinalizing}
-                  onCheckedChange={(checked) =>
-                    handleFinalizeChange(checked === true)
-                  }
-                />
-                <span>Finalizar edição</span>
-              </label>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    disabled={isFinalizing}
+                    onClick={() => handleFinalizeChange(true)}
+                    className={cn(
+                      hasUnsavedEdits &&
+                      "border-amber-500/50 text-amber-600 hover:bg-amber-500/10 hover:text-amber-600 dark:text-amber-400 dark:hover:bg-amber-500/10",
+                    )}
+                  >
+                    {hasUnsavedEdits ? (
+                      <>
+                        <AlertTriangle className="mr-2 h-4 w-4" />
+                        Salvar e finalizar edição
+                      </>
+                    ) : (
+                      "Voltar para visualização"
+                    )}
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  {hasUnsavedEdits
+                    ? "Há alterações não salvas. Clique para salvar e finalizar."
+                    : "Finaliza a edição e exibe o relatório em modo somente leitura."}
+                </TooltipContent>
+              </Tooltip>
             ) : (
               <Button
                 type="button"
@@ -365,6 +429,41 @@ export function CaseReport({
                 Voltar a editar
               </Button>
             )}
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  disabled={isDeleting}
+                  className="text-destructive hover:bg-destructive/10 hover:text-destructive"
+                >
+                  <Trash2 className="mr-2 h-4 w-4" />
+                  Excluir relatório
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent className="max-w-md">
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Excluir relatório?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    O relatório deste atendimento será removido. Você poderá gerar
+                    um novo relatório depois, se quiser.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel disabled={isDeleting}>
+                    Cancelar
+                  </AlertDialogCancel>
+                  <Button
+                    variant="destructive"
+                    disabled={isDeleting}
+                    onClick={handleDeleteReport}
+                  >
+                    {isDeleting ? "Excluindo…" : "Excluir"}
+                  </Button>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
           </div>
         </div>
       </CardHeader>

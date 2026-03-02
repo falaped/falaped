@@ -5,6 +5,7 @@ export {
   generateCaseReportAction,
   improveReportSectionAction,
   updateCaseReportAction,
+  deleteCaseReportAction,
 } from "./cases"
 export {
   createWhatsAppLinkCodeAction,
