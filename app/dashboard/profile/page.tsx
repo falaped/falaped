@@ -4,6 +4,8 @@ import { createClient } from "@/lib/supabase/server"
 import { getAuthenticatedUser } from "@/modules/supabase/get-authenticated-user"
 import { getReportTemplatesForUserPhone } from "@/modules/report-templates/get-report-templates-for-user-phone"
 import { ProfileContent } from "./profile-content"
+import { ProfileLoading } from "@/components/dashboard/profile/profile-loading"
+import { Suspense } from "react"
 
 export default async function ProfilePage() {
   const supabase = await createClient()
@@ -27,10 +29,12 @@ export default async function ProfilePage() {
         </p>
       </div>
 
-      <ProfileContent
-        profile={profile}
-        reportTemplateOptions={reportTemplateOptions}
-      />
+      <Suspense fallback={<ProfileLoading />}>
+        <ProfileContent
+          profile={profile}
+          reportTemplateOptions={reportTemplateOptions}
+        />
+      </Suspense>
     </div>
   )
 }

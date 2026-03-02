@@ -1,8 +1,10 @@
 import { redirect } from "next/navigation"
 import { LockIcon } from "lucide-react"
+import { Suspense } from "react"
 import { createClient } from "@/lib/supabase/server"
 import { getAuthenticatedUser } from "@/modules/supabase/get-authenticated-user"
 import { LinkWhatsAppContent } from "./link-whatsapp-content"
+import { LinkWhatsAppLoading } from "@/components/dashboard/link-whatsapp/link-whatsapp-loading"
 
 export default async function LinkWhatsAppPage() {
   const supabase = await createClient()
@@ -11,7 +13,6 @@ export default async function LinkWhatsAppPage() {
 
   const whatsappLinkedAt = profile.whatsapp_linked_at
 
-  console.log(profile)
   return (
     <div className="flex flex-col gap-6 items-center container mx-auto">
       <div className="max-w-4xl w-full">
@@ -24,10 +25,12 @@ export default async function LinkWhatsAppPage() {
         </p>
       </div>
 
-      <LinkWhatsAppContent
-        linkedPhone={profile.phone}
-        whatsappLinkedAt={whatsappLinkedAt}
-      />
+      <Suspense fallback={<LinkWhatsAppLoading />}>
+        <LinkWhatsAppContent
+          linkedPhone={profile.phone}
+          whatsappLinkedAt={whatsappLinkedAt}
+        />
+      </Suspense>
     </div>
   )
 }

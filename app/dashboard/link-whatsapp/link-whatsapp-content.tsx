@@ -45,7 +45,8 @@ export function LinkWhatsAppContent({
   const [unlinkError, setUnlinkError] = useState<string | null>(null)
   const [linkedPhoneState, setLinkedPhoneState] = useState<string | null>(linkedPhone)
 
-  const isLinked = !!linkedPhoneState?.trim()
+  console.log(whatsappLinkedAt)
+  const isLinked = !!whatsappLinkedAt
 
   useEffect(() => {
     setLinkedPhoneState(linkedPhone)
