@@ -25,6 +25,7 @@ When making changes that affect shared context, update the relevant **skills**, 
 | **audience-context** | Usuário: pediatra; casos, pacientes, relatórios |
 | **code-conventions** | Naming, exports, Supabase, logs, erros |
 | **code-placement** | Onde colocar parsers, formatters, modules, components, theme |
+| **database-modelagem** | Validar e basear implementações em docs/tipagens/modelagem (tabelas, enums, triggers, functions) |
 | **design-system** | Hierarquia de componentes, tokens, CVA, acessibilidade |
 | **error-handling** | Custom errors, HTTP, log/rethrow, Error Boundary, Next.js |
 | **forms** | react-hook-form, Zod, Server Actions, validações PT-BR |
@@ -44,7 +45,7 @@ When making changes that affect shared context, update the relevant **skills**, 
 
 | Change | Skills | Rules | Docs |
 |--------|--------|-------|------|
-| **Supabase schema** | `supabase-falaped/schema.md` | — | `schema-supabase.md` |
+| **Supabase schema** | `supabase-falaped/schema.md` | `database-modelagem` | `schema-supabase.md`, `docs/tipagens/modelagem/` |
 | **Supabase queries** | `supabase-falaped/SKILL.md` | `supabase-queries` | — |
 | **Auth** | `auth-flow/SKILL.md` | `supabase-auth` | — |
 | **Storage PDFs** | `storage-pdfs/SKILL.md` | — | — |
@@ -69,7 +70,7 @@ When making changes that affect shared context, update the relevant **skills**, 
 - **Ao final de cada implementação**, atualizar os docs em `docs/` que foram impactados.
 - `plano-fases.md`: marcar checkboxes `[x]` das tarefas concluídas.
 - `estrutura-do-projeto.md`: incluir novos arquivos/pastas se a estrutura mudou.
-- `schema-supabase.md`: refletir alterações de schema quando houver migrations.
+- `schema-supabase.md` e `docs/tipagens/modelagem/`: refletir alterações de schema (tabelas, enums, triggers, functions) quando houver migrations.
 - `setup.md`: atualizar se o fluxo de rodar o projeto mudar.
 - `dependencias.md`: incluir novas libs instaladas.
 - `shadcn-componentes.md`: ajustar se componentes forem adicionados/removidos.
@@ -78,7 +79,7 @@ When making changes that affect shared context, update the relevant **skills**, 
 ## Checklist ao final de cada implementação
 
 - [ ] **plano-fases.md** – marcar `[x]` nas tarefas concluídas
-- [ ] Schema alterado? → `schema-supabase.md`, `supabase-falaped/schema.md`
+- [ ] Schema alterado? → `schema-supabase.md`, `docs/tipagens/modelagem/` (arquivo da tabela/enums/triggers/functions), `supabase-falaped/schema.md`
 - [ ] Queries/módulos novos? → `supabase-falaped/SKILL.md`, `estrutura-do-projeto.md`
 - [ ] Auth alterado? → `auth-flow/SKILL.md`
 - [ ] Storage alterado? → `storage-pdfs/SKILL.md`

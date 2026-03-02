@@ -1,0 +1,36 @@
+---
+description: Validar e basear implementações na documentação do banco (tabelas, enums, triggers, functions)
+alwaysApply: true
+---
+
+# Database Modelagem – Validação e implementação
+
+A documentação do schema do Supabase (tipagens e modelagem) está em **`docs/tipagens/modelagem/`**.
+
+## Onde está o quê
+
+- **Tabelas:** um arquivo por tabela (ex.: `case_reports.md`, `patients.md`). Colunas, tipos, PKs, FKs, comentários, RLS.
+- **Enums:** `enums.md` — tipos enum do schema public (ex.: case_report_source).
+- **Triggers:** `triggers.md` — triggers por tabela e função executada.
+- **Functions:** `functions.md` — funções PL/pgSQL (triggers, auth).
+- **Índice:** `README.md` — lista de tabelas e links.
+
+Referência geral no projeto: [docs/schema-supabase.md](../docs/schema-supabase.md).
+
+## Regras para o agente
+
+1. **Antes de implementar** features que usem ou alterem o banco (novas queries, migrations, tipos TypeScript que espelham tabelas):
+   - Consultar o arquivo da tabela em `docs/tipagens/modelagem/<tabela>.md` e, se aplicável, `enums.md`, `triggers.md`, `functions.md`.
+   - Garantir que tipos, colunas e relacionamentos estejam alinhados com essa documentação.
+
+2. **Ao criar ou alterar** migrations (novas tabelas, colunas, enums, triggers, functions):
+   - Atualizar ou criar o arquivo correspondente em `docs/tipagens/modelagem/` (tabela, enums, triggers, functions).
+   - Atualizar o `README.md` da pasta se houver nova tabela ou artefato.
+
+3. **Tipos TypeScript** que espelham tabelas (ex.: `CaseReport`, `CasePatientDetail`) devem refletir as colunas e tipos descritos em `docs/tipagens/modelagem/`.
+
+4. **Queries Supabase** (select, insert, update): usar nomes de colunas e tipos conforme a documentação; em caso de dúvida, priorizar o que está em `docs/tipagens/modelagem/`.
+
+## Atualizar a documentação
+
+A documentação pode ser conferida/atualizada com o MCP do Supabase (list_tables, execute_sql para enums/triggers/functions). Ao final de alterações de schema, manter `docs/tipagens/modelagem/` em sync com o banco.
