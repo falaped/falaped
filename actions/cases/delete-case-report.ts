@@ -10,10 +10,10 @@ export type DeleteCaseReportResult =
   | { ok: false; error: string }
 
 /**
- * Deletes the case report for a case. Ownership is validated inside
- * deleteCaseReport (getCaseById) using profile from session.
+ * Deletes a case report by id. caseId is used for revalidation.
  */
 export async function deleteCaseReportAction(
+  reportId: string,
   caseId: string,
 ): Promise<DeleteCaseReportResult> {
   const supabase = await createClient()
@@ -23,7 +23,7 @@ export async function deleteCaseReportAction(
     return { ok: false, error: "Perfil não ativo. Conecte o WhatsApp no perfil." }
 
   try {
-    await deleteCaseReport(supabase, caseId, profile.id)
+    await deleteCaseReport(supabase, reportId, profile.id)
     revalidatePath("/dashboard/cases")
     revalidatePath(`/dashboard/cases/${caseId}`)
     return { ok: true }

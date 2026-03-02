@@ -3,7 +3,7 @@ import { notFound, redirect } from "next/navigation"
 import { createClient } from "@/lib/supabase/server"
 import { getAuthenticatedUser } from "@/modules/supabase/get-authenticated-user"
 import { getCaseById } from "@/modules/cases/get-case-by-id"
-import { getCaseReport } from "@/modules/cases/get-case-report"
+import { getCaseReports } from "@/modules/cases/get-case-report"
 import { getPatientsByProfileId } from "@/modules/patients/get-patients-by-profile-id"
 import { getReportTemplateById } from "@/modules/report-templates/get-report-template-by-id"
 import { getDefaultReportTemplate } from "@/modules/report-templates/get-default-report-template"
@@ -19,13 +19,13 @@ export async function CaseDetailContent({ id }: { id: string }) {
   if (!profile) redirect("/auth/login")
   if (profile.status !== "paid") redirect("/dashboard/link-whatsapp")
 
-  const [caseDetail, patients, template, caseReport] = await Promise.all([
+  const [caseDetail, patients, template, caseReports] = await Promise.all([
     getCaseById(supabase, id, profile.id),
     getPatientsByProfileId(supabase, profile.id),
     profile.report_template_id
       ? getReportTemplateById(supabase, profile.report_template_id)
       : getDefaultReportTemplate(supabase),
-    getCaseReport(supabase, id, profile.id),
+    getCaseReports(supabase, id, profile.id),
   ])
 
   if (!caseDetail) {
@@ -45,7 +45,7 @@ export async function CaseDetailContent({ id }: { id: string }) {
       {template && (
         <CaseReport
           template={template}
-          caseReport={caseReport}
+          caseReports={caseReports}
           caseId={id}
           hasMessages={caseDetail.messages.length > 0}
         />

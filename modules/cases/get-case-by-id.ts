@@ -14,6 +14,11 @@ export type CasePatientDetail = {
   responsible: string | null
   contact_phone: string | null
   sex: string | null
+  legal_guardian: string | null
+  blood_type: string | null
+  weight: string | null
+  height: string | null
+  head_circumference: string | null
   allergies: string | null
   current_medications: string | null
   medical_history: string | null
@@ -69,6 +74,11 @@ export async function getCaseById(
         responsible,
         contact_phone,
         sex,
+        legal_guardian,
+        blood_type,
+        weight,
+        height,
+        head_circumference,
         allergies,
         current_medications,
         medical_history

@@ -12,14 +12,52 @@ export type TemplateSectionInput = {
   description?: string
 }
 
+/** Patient data sent to the LLM for report sections (identity, demographics, clinical). Prefer over conversation; use "Não informado" only when not provided and not in conversation. */
+export type PatientReportContext = {
+  name?: string | null
+  birth_date?: string | null
+  responsible?: string | null
+  contact_phone?: string | null
+  sex?: string | null
+  legal_guardian?: string | null
+  blood_type?: string | null
+  weight?: string | null
+  height?: string | null
+  head_circumference?: string | null
+  allergies?: string | null
+  current_medications?: string | null
+  medical_history?: string | null
+}
+
+function buildPatientDataBlock(ctx: PatientReportContext): string {
+  const lines: string[] = []
+  if (ctx.name?.trim()) lines.push(`Nome: ${ctx.name.trim()}`)
+  if (ctx.birth_date?.trim()) lines.push(`Data de nascimento: ${ctx.birth_date.trim()}`)
+  if (ctx.responsible?.trim()) lines.push(`Responsável: ${ctx.responsible.trim()}`)
+  if (ctx.contact_phone?.trim()) lines.push(`Telefone de contato: ${ctx.contact_phone.trim()}`)
+  if (ctx.sex?.trim()) lines.push(`Sexo: ${ctx.sex.trim()}`)
+  if (ctx.legal_guardian?.trim()) lines.push(`Responsável legal: ${ctx.legal_guardian.trim()}`)
+  if (ctx.blood_type?.trim()) lines.push(`Tipo sanguíneo: ${ctx.blood_type.trim()}`)
+  if (ctx.weight?.trim()) lines.push(`Peso: ${ctx.weight.trim()}`)
+  if (ctx.height?.trim()) lines.push(`Altura: ${ctx.height.trim()}`)
+  if (ctx.head_circumference?.trim()) lines.push(`Perímetro cefálico: ${ctx.head_circumference.trim()}`)
+  if (ctx.allergies?.trim()) lines.push(`Alergias: ${ctx.allergies.trim()}`)
+  if (ctx.current_medications?.trim()) lines.push(`Medicamentos em uso: ${ctx.current_medications.trim()}`)
+  if (ctx.medical_history?.trim()) lines.push(`Histórico médico: ${ctx.medical_history.trim()}`)
+  if (lines.length === 0) return ""
+  return `Registered patient data (use these when filling the report; prefer over conversation extraction; use "Não informado" only for fields not provided here and not found in the conversation):\n${lines.map((l) => `- ${l}`).join("\n")}`
+}
+
 /**
  * Generates report content per section from a case conversation using the LLM.
+ * When patientContext is provided, the model should use it for patient-identity sections (e.g. title, patient data) before conversation extraction; fallback to "Não informado" only when neither source has the data.
  * Returns a record mapping each section name to its generated text.
  * Empty or missing sections get "Sem informação registrada.".
  */
 export async function generateCaseReport(
   messages: ConversationMessage[],
   sections: TemplateSectionInput[],
+  patientContext: PatientReportContext | null = null,
 ): Promise<Record<string, string>> {
   if (sections.length === 0) return {}
 
@@ -34,6 +72,12 @@ export async function generateCaseReport(
     .map((m) => `[${m.role}]: ${m.content}`)
     .join("\n\n")
 
+  const patientBlock = patientContext ? buildPatientDataBlock(patientContext) : ""
+  const priorityRule =
+    "Data priority for sections about patient identity or demographics: use registered patient data first when provided, then information from the conversation, then \"Não informado\" only for fields still missing."
+  const patientSectionRule =
+    "When filling a section that lists patient data (e.g. 'Dados do Paciente'): (1) Include only fields that have real data from the registered patient block or the conversation; omit any field that would be 'Não informado'—do not list it. (2) Format with one field per line for readability, e.g. 'Nome: Antonio Tacconi\\nData de nascimento: 01/02/2026\\nResponsável: Bárbara Tacconi\\n...' Use line breaks so long text does not stay on a single line."
+
   const systemPrompt = `You are a pediatric medical report assistant. Your task is to extract and structure information from a conversation between the pediatrician (user) and the Falaped assistant (assistant) into a clinical report. The patient is the child under care; the report is for the pediatrician's use.
 
 Rules:
@@ -42,6 +86,7 @@ Rules:
 - Use correct medical Portuguese, grammar, and pediatric terminology. Fix dosages and drug names if mentioned.
 - If the conversation has no information for a section, use the value "Sem informação registrada."
 - Keep each section concise but complete. Structure with short paragraphs or bullets when appropriate.
+${patientBlock ? `\n${priorityRule}\n${patientSectionRule}\n\n${patientBlock}\n` : ""}
 
 Sections to fill (use these exact keys):
 ${sectionList}

@@ -1,24 +1,23 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
-import { getCaseById } from "./get-case-by-id"
+import { getCaseReportById } from "./get-case-report"
 
 /**
- * Deletes the case report for a case. Verifies ownership via getCaseById;
- * if the user does not own the case, throws.
+ * Deletes a case report by id. Verifies ownership via getCaseReportById.
  */
 export async function deleteCaseReport(
   supabase: SupabaseClient,
-  caseId: string,
+  reportId: string,
   profileId: string,
 ): Promise<void> {
-  const caseDetail = await getCaseById(supabase, caseId, profileId)
-  if (!caseDetail) {
-    throw new Error("[CASES] Cannot delete case report: user does not own the case")
+  const existing = await getCaseReportById(supabase, reportId, profileId)
+  if (!existing) {
+    throw new Error("[CASES] Cannot delete case report: report not found or access denied")
   }
 
   const { error } = await supabase
     .from("case_reports")
     .delete()
-    .eq("case_id", caseId)
+    .eq("id", reportId)
     .eq("profile_id", profileId)
 
   if (error) {

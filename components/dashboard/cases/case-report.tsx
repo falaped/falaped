@@ -42,24 +42,32 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip"
+import { Badge } from "@/components/ui/badge"
 import { cn } from "@/lib/utils"
+import { formatDateTime } from "@/lib/formatters"
 import { toast } from "sonner"
-import { deleteCaseAction } from "@/actions"
+
+function reportSourceLabel(source: string): string {
+  if (source === "web") return "Web"
+  if (source === "whatsapp") return "WhatsApp"
+  return source.charAt(0).toUpperCase() + source.slice(1)
+}
 
 type CaseReportProps = {
   template: ReportTemplateWithSections
-  caseReport: CaseReportType | null
+  caseReports: CaseReportType[]
   caseId: string
   hasMessages: boolean
 }
 
-function sortSections(sections: CaseReportSection[]): CaseReportSection[] {
+function sortSections(sections: CaseReportSection[] | null | undefined): CaseReportSection[] {
+  if (!Array.isArray(sections)) return []
   return [...sections].sort((a, b) => a.order - b.order)
 }
 
 function sectionsEqual(
-  a: CaseReportSection[],
-  b: CaseReportSection[],
+  a: CaseReportSection[] | null | undefined,
+  b: CaseReportSection[] | null | undefined,
 ): boolean {
   const sa = sortSections(a)
   const sb = sortSections(b)
@@ -170,20 +178,26 @@ function SectionBlock({
 
 export function CaseReport({
   template,
-  caseReport,
+  caseReports,
   caseId,
   hasMessages,
 }: CaseReportProps) {
   const router = useRouter()
+  const [selectedReportId, setSelectedReportId] = useState<string | null>(
+    () => caseReports[0]?.id ?? null,
+  )
+  const selectedReport = selectedReportId
+    ? caseReports.find((r) => r.id === selectedReportId) ?? null
+    : null
   const [sections, setSections] = useState<CaseReportSection[]>(() =>
-    caseReport ? sortSections(caseReport.sections) : [],
+    selectedReport ? sortSections(selectedReport.sections ?? []) : [],
   )
   const [isGenerating, setIsGenerating] = useState(false)
   const [improvingSection, setImprovingSection] = useState<string | null>(null)
   const [isFinalizing, setIsFinalizing] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
 
-  const canEdit = !caseReport?.is_finalized
+  const canEdit = !selectedReport?.is_finalized
   const canGenerateReport =
     hasMessages && (template.sections?.length ?? 0) > 0
   const generateDisabledReason = !hasMessages
@@ -192,13 +206,23 @@ export function CaseReport({
       ? "Nenhum template de relatório configurado."
       : null
   const hasUnsavedEdits =
-    !!caseReport && !sectionsEqual(sections, caseReport.sections)
+    !!selectedReport && !sectionsEqual(sections, selectedReport.sections)
 
   useEffect(() => {
-    if (caseReport) {
-      setSections(sortSections(caseReport.sections))
+    if (selectedReport) {
+      setSections(sortSections(selectedReport.sections ?? []))
     }
-  }, [caseReport?.id, caseReport?.updated_at, caseReport?.sections])
+  }, [selectedReport?.id, selectedReport?.updated_at, selectedReport?.sections])
+
+  useEffect(() => {
+    if (
+      caseReports.length > 0 &&
+      selectedReportId &&
+      !caseReports.some((r) => r.id === selectedReportId)
+    ) {
+      setSelectedReportId(caseReports[0].id)
+    }
+  }, [caseReports, selectedReportId])
 
   const handleGenerateReport = useCallback(async () => {
     if (!hasMessages) return
@@ -207,6 +231,7 @@ export function CaseReport({
       const result = await generateCaseReportAction(caseId)
       if (result.ok) {
         toast.success("Relatório gerado.")
+        setSelectedReportId(result.reportId)
         router.refresh()
       } else {
         toast.error(result.error)
@@ -242,6 +267,7 @@ export function CaseReport({
           )
           setSections(nextSections)
           const updateResult = await updateCaseReportAction({
+            reportId: selectedReport!.id,
             caseId,
             sections: nextSections,
           })
@@ -258,7 +284,7 @@ export function CaseReport({
         setImprovingSection(null)
       }
     },
-    [caseId, sections, router],
+    [caseId, sections, selectedReport, router],
   )
 
   const handleDragEnd = useCallback(
@@ -273,7 +299,11 @@ export function CaseReport({
         order: i,
       }))
       setSections(reordered)
-      updateCaseReportAction({ caseId, sections: reordered }).then((result) => {
+      updateCaseReportAction({
+        reportId: selectedReport!.id,
+        caseId,
+        sections: reordered,
+      }).then((result) => {
         if (result.ok) {
           toast.success("Ordem atualizada.")
           router.refresh()
@@ -282,7 +312,7 @@ export function CaseReport({
         }
       })
     },
-    [caseId, sections, router],
+    [caseId, sections, selectedReport, router],
   )
 
   const handleFinalizeChange = useCallback(
@@ -290,6 +320,7 @@ export function CaseReport({
       setIsFinalizing(true)
       try {
         const result = await updateCaseReportAction({
+          reportId: selectedReport!.id,
           caseId,
           sections: checked ? sections : undefined,
           isFinalized: checked,
@@ -305,7 +336,7 @@ export function CaseReport({
         setIsFinalizing(false)
       }
     },
-    [caseId, sections, router],
+    [caseId, sections, selectedReport, router],
   )
 
   const handleBackToEdit = useCallback(() => {
@@ -313,11 +344,15 @@ export function CaseReport({
   }, [handleFinalizeChange])
 
   const handleDeleteReport = useCallback(async () => {
+    if (!selectedReport) return
     setIsDeleting(true)
     try {
-      const result = await deleteCaseReportAction(caseId)
+      const result = await deleteCaseReportAction(selectedReport.id, caseId)
       if (result.ok) {
         toast.success("Relatório excluído.")
+        setSelectedReportId((prev) =>
+          prev === selectedReport.id ? caseReports.find((r) => r.id !== selectedReport.id)?.id ?? null : prev,
+        )
         router.refresh()
       } else {
         toast.error(result.error)
@@ -325,7 +360,7 @@ export function CaseReport({
     } finally {
       setIsDeleting(false)
     }
-  }, [caseId, router])
+  }, [caseId, selectedReport, caseReports, router])
 
   const sensors = useSensors(
     useSensor(MouseSensor, {
@@ -337,7 +372,7 @@ export function CaseReport({
     useSensor(KeyboardSensor),
   )
 
-  if (!caseReport) {
+  if (caseReports.length === 0) {
     return (
       <Card>
         <CardHeader>
@@ -387,111 +422,223 @@ export function CaseReport({
             <Sparkles className="h-4 w-4 text-primary" />
             Relatório do atendimento
           </CardTitle>
-          <div className="flex items-center gap-4">
-            {canEdit ? (
-              <Tooltip>
-                <TooltipTrigger asChild>
+          {canGenerateReport && (
+            <Button
+              onClick={handleGenerateReport}
+              disabled={isGenerating}
+              variant="outline"
+              size="sm"
+            >
+              {isGenerating ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Sparkles className="h-4 w-4" />
+              )}
+              <span className="ml-1.5">Gerar relatório</span>
+            </Button>
+          )}
+        </div>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <div className="space-y-2">
+          <p className="text-sm font-medium text-muted-foreground">Relatórios</p>
+          <ul className="space-y-2">
+            {caseReports.map((report) => (
+              <li
+                key={report.id}
+                className={cn(
+                  "flex flex-wrap items-center gap-2 rounded-lg border border-border bg-card px-3 py-2",
+                  selectedReportId === report.id && "ring-2 ring-primary/50",
+                )}
+              >
+                <Badge variant="secondary" className="shrink-0">
+                  {reportSourceLabel(report.source)}
+                </Badge>
+                <span className="text-sm text-muted-foreground shrink-0">
+                  {formatDateTime(report.created_at)}
+                </span>
+                <div className="flex gap-2 ml-auto shrink-0">
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setSelectedReportId(report.id)}
+                  >
+                    Ver
+                  </Button>
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        disabled={isDeleting}
+                        className="text-destructive hover:bg-destructive/10 hover:text-destructive"
+                      >
+                        Excluir
+                      </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent className="max-w-md">
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>Excluir relatório?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          Este relatório será removido. Você poderá gerar um novo
+                          depois, se quiser.
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel disabled={isDeleting}>
+                          Cancelar
+                        </AlertDialogCancel>
+                        <Button
+                          variant="destructive"
+                          disabled={isDeleting}
+                          onClick={async () => {
+                            setSelectedReportId(report.id)
+                            setIsDeleting(true)
+                            try {
+                              const result = await deleteCaseReportAction(
+                                report.id,
+                                caseId,
+                              )
+                              if (result.ok) {
+                                toast.success("Relatório excluído.")
+                                setSelectedReportId((prev) =>
+                                  prev === report.id
+                                    ? caseReports.find((r) => r.id !== report.id)?.id ?? null
+                                    : prev,
+                                )
+                                router.refresh()
+                              } else {
+                                toast.error(result.error)
+                              }
+                            } finally {
+                              setIsDeleting(false)
+                            }
+                          }}
+                        >
+                          {isDeleting ? "Excluindo…" : "Excluir"}
+                        </Button>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
+                </div>
+              </li>
+            ))}
+          </ul>
+        </div>
+
+        {selectedReport && (
+          <div className="space-y-4 border-t border-border pt-4">
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+              <p className="text-sm font-medium text-muted-foreground">
+                Conteúdo do relatório
+              </p>
+              <div className="flex items-center gap-4">
+                {canEdit ? (
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        disabled={isFinalizing}
+                        onClick={() => handleFinalizeChange(true)}
+                        className={cn(
+                          hasUnsavedEdits &&
+                            "border-amber-500/50 text-amber-600 hover:bg-amber-500/10 hover:text-amber-600 dark:text-amber-400 dark:hover:bg-amber-500/10",
+                        )}
+                      >
+                        {hasUnsavedEdits ? (
+                          <>
+                            <AlertTriangle className="mr-2 h-4 w-4" />
+                            Salvar e finalizar edição
+                          </>
+                        ) : (
+                          "Voltar para visualização"
+                        )}
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      {hasUnsavedEdits
+                        ? "Há alterações não salvas. Clique para salvar e finalizar."
+                        : "Finaliza a edição e exibe o relatório em modo somente leitura."}
+                    </TooltipContent>
+                  </Tooltip>
+                ) : (
                   <Button
                     type="button"
                     variant="outline"
                     size="sm"
                     disabled={isFinalizing}
-                    onClick={() => handleFinalizeChange(true)}
-                    className={cn(
-                      hasUnsavedEdits &&
-                      "border-amber-500/50 text-amber-600 hover:bg-amber-500/10 hover:text-amber-600 dark:text-amber-400 dark:hover:bg-amber-500/10",
-                    )}
+                    onClick={handleBackToEdit}
                   >
-                    {hasUnsavedEdits ? (
-                      <>
-                        <AlertTriangle className="mr-2 h-4 w-4" />
-                        Salvar e finalizar edição
-                      </>
-                    ) : (
-                      "Voltar para visualização"
-                    )}
+                    Voltar a editar
                   </Button>
-                </TooltipTrigger>
-                <TooltipContent>
-                  {hasUnsavedEdits
-                    ? "Há alterações não salvas. Clique para salvar e finalizar."
-                    : "Finaliza a edição e exibe o relatório em modo somente leitura."}
-                </TooltipContent>
-              </Tooltip>
-            ) : (
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                disabled={isFinalizing}
-                onClick={handleBackToEdit}
-              >
-                Voltar a editar
-              </Button>
-            )}
-            <AlertDialog>
-              <AlertDialogTrigger asChild>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  disabled={isDeleting}
-                  className="text-destructive hover:bg-destructive/10 hover:text-destructive"
-                >
-                  <Trash2 className="mr-2 h-4 w-4" />
-                  Excluir relatório
-                </Button>
-              </AlertDialogTrigger>
-              <AlertDialogContent className="max-w-md">
-                <AlertDialogHeader>
-                  <AlertDialogTitle>Excluir relatório?</AlertDialogTitle>
-                  <AlertDialogDescription>
-                    O relatório deste atendimento será removido. Você poderá gerar
-                    um novo relatório depois, se quiser.
-                  </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                  <AlertDialogCancel disabled={isDeleting}>
-                    Cancelar
-                  </AlertDialogCancel>
-                  <Button
-                    variant="destructive"
-                    disabled={isDeleting}
-                    onClick={handleDeleteReport}
-                  >
-                    {isDeleting ? "Excluindo…" : "Excluir"}
-                  </Button>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
-          </div>
-        </div>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        <DndContext sensors={sensors} onDragEnd={handleDragEnd}>
-          <SortableContext
-            items={sections.map((s) => s.name)}
-            strategy={verticalListSortingStrategy}
-          >
-            <div
-              className={cn(
-                "space-y-3",
-                !canEdit && "space-y-6",
-              )}
-            >
-              {sections.map((section) => (
-                <SectionBlock
-                  key={section.name}
-                  section={section}
-                  canEdit={canEdit}
-                  isImproving={improvingSection === section.name}
-                  onContentChange={handleContentChange}
-                  onImprove={handleImproveSection}
-                />
-              ))}
+                )}
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      disabled={isDeleting}
+                      className="text-destructive hover:bg-destructive/10 hover:text-destructive"
+                    >
+                      <Trash2 className="mr-2 h-4 w-4" />
+                      Excluir relatório
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent className="max-w-md">
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Excluir relatório?</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        Este relatório será removido. Você poderá gerar um novo
+                        depois, se quiser.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel disabled={isDeleting}>
+                        Cancelar
+                      </AlertDialogCancel>
+                      <Button
+                        variant="destructive"
+                        disabled={isDeleting}
+                        onClick={handleDeleteReport}
+                      >
+                        {isDeleting ? "Excluindo…" : "Excluir"}
+                      </Button>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+              </div>
             </div>
-          </SortableContext>
-        </DndContext>
+            <DndContext sensors={sensors} onDragEnd={handleDragEnd}>
+              <SortableContext
+                items={sections.map((s) => s.name)}
+                strategy={verticalListSortingStrategy}
+              >
+                <div
+                  className={cn(
+                    "space-y-3",
+                    !canEdit && "space-y-6",
+                  )}
+                >
+                  {sections.map((section) => (
+                    <SectionBlock
+                      key={section.name}
+                      section={section}
+                      canEdit={canEdit}
+                      isImproving={improvingSection === section.name}
+                      onContentChange={handleContentChange}
+                      onImprove={handleImproveSection}
+                    />
+                  ))}
+                </div>
+              </SortableContext>
+            </DndContext>
+          </div>
+        )}
       </CardContent>
     </Card>
   )

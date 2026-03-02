@@ -1,9 +1,9 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
 import type { CaseReportSection } from "./get-case-report"
-import { getCaseById } from "./get-case-by-id"
+import { getCaseReportById } from "./get-case-report"
 
 export type UpdateCaseReportPayload = {
-  case_id: string
+  report_id: string
   profile_id: string
   sections?: CaseReportSection[]
   is_finalized?: boolean
@@ -11,19 +11,18 @@ export type UpdateCaseReportPayload = {
 }
 
 /**
- * Updates an existing case report. Only provided fields are updated.
- * Use for: reorder sections, finalize, or unfinalize.
- * Verifies ownership via getCaseById; if the user does not own the case, throws.
+ * Updates an existing case report by id. Only provided fields are updated.
+ * Verifies ownership via getCaseReportById.
  */
 export async function updateCaseReport(
   supabase: SupabaseClient,
   payload: UpdateCaseReportPayload,
 ): Promise<void> {
-  const { case_id, profile_id, sections, is_finalized, finalized_at } = payload
+  const { report_id, profile_id, sections, is_finalized, finalized_at } = payload
 
-  const caseDetail = await getCaseById(supabase, case_id, profile_id)
-  if (!caseDetail) {
-    throw new Error("[CASES] Cannot update case report: user does not own the case")
+  const existing = await getCaseReportById(supabase, report_id, profile_id)
+  if (!existing) {
+    throw new Error("[CASES] Cannot update case report: report not found or access denied")
   }
 
   const updatePayload: Record<string, unknown> = {
@@ -36,7 +35,8 @@ export async function updateCaseReport(
   const { error } = await supabase
     .from("case_reports")
     .update(updatePayload)
-    .eq("case_id", case_id)
+    .eq("id", report_id)
+    .eq("profile_id", profile_id)
 
   if (error) {
     throw new Error(

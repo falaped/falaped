@@ -11,6 +11,7 @@ export type UpdateCaseReportResult =
   | { ok: false; error: string }
 
 export type UpdateCaseReportPayload = {
+  reportId: string
   caseId: string
   sections?: CaseReportSection[]
   isFinalized?: boolean
@@ -18,8 +19,7 @@ export type UpdateCaseReportPayload = {
 }
 
 /**
- * Updates an existing case report (reorder sections, finalize, or unfinalize).
- * Ownership is validated inside updateCaseReport (getCaseById) using profile from session.
+ * Updates an existing case report by id (reorder sections, finalize, or unfinalize).
  */
 export async function updateCaseReportAction(
   payload: UpdateCaseReportPayload,
@@ -32,7 +32,7 @@ export async function updateCaseReportAction(
 
   try {
     await updateCaseReport(supabase, {
-      case_id: payload.caseId,
+      report_id: payload.reportId,
       profile_id: profile.id,
       sections: payload.sections,
       is_finalized: payload.isFinalized,

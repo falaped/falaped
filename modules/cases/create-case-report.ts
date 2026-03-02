@@ -7,34 +7,42 @@ export type CreateCaseReportPayload = {
   profile_id: string
   report_template_id: string
   sections: CaseReportSection[]
+  source: string
 }
 
 /**
- * Creates a case report. Use when generating the report for the first time.
+ * Creates a case report. Use when generating the report.
  * Verifies ownership via getCaseById; if the user does not own the case, throws.
+ * Returns the new report id.
  */
 export async function createCaseReport(
   supabase: SupabaseClient,
   payload: CreateCaseReportPayload,
-): Promise<void> {
-  const { case_id, profile_id, report_template_id, sections } = payload
+): Promise<string> {
+  const { case_id, profile_id, report_template_id, sections, source } = payload
 
   const caseDetail = await getCaseById(supabase, case_id, profile_id)
   if (!caseDetail) {
     throw new Error("[CASES] Cannot create case report: user does not own the case")
   }
 
-  const { error } = await supabase.from("case_reports").insert({
-    case_id,
-    profile_id,
-    report_template_id,
-    sections,
-    is_finalized: false,
-    finalized_at: null,
-  })
+  const { data, error } = await supabase
+    .from("case_reports")
+    .insert({
+      case_id,
+      profile_id,
+      report_template_id,
+      sections,
+      source,
+      is_finalized: true,
+      finalized_at: new Date().toISOString(),
+    })
+    .select("id")
+    .single()
   if (error) {
     throw new Error(
       `[CASES] Failed to create case report: ${error.message}`,
     )
   }
+  return data.id
 }
