@@ -18,7 +18,7 @@ import {
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable"
 import { CSS } from "@dnd-kit/utilities"
-import { GripVertical, Sparkles, Loader2, AlertTriangle, Trash2 } from "lucide-react"
+import { GripVertical, Sparkles, Loader2, AlertTriangle, Trash2, FileText, Eye } from "lucide-react"
 
 import type { CaseReport as CaseReportType, CaseReportSection } from "@/modules/cases/get-case-report"
 import type { ReportTemplateWithSections } from "@/modules/report-templates/get-report-template-by-id"
@@ -58,6 +58,8 @@ type CaseReportProps = {
   caseReports: CaseReportType[]
   caseId: string
   hasMessages: boolean
+  patientName: string
+  caseStatus: "active" | "closed"
 }
 
 function sortSections(sections: CaseReportSection[] | null | undefined): CaseReportSection[] {
@@ -120,9 +122,9 @@ function SectionBlock({
 
   const style = transform
     ? {
-      transform: CSS.Transform.toString(transform),
-      transition,
-    }
+        transform: CSS.Transform.toString(transform),
+        transition,
+      }
     : undefined
 
   const placeholder = section.description || `Sem ${section.name.toLowerCase()} registrada.`
@@ -181,11 +183,11 @@ export function CaseReport({
   caseReports,
   caseId,
   hasMessages,
+  patientName,
+  caseStatus,
 }: CaseReportProps) {
   const router = useRouter()
-  const [selectedReportId, setSelectedReportId] = useState<string | null>(
-    () => caseReports[0]?.id ?? null,
-  )
+  const [selectedReportId, setSelectedReportId] = useState<string | null>(null)
   const selectedReport = selectedReportId
     ? caseReports.find((r) => r.id === selectedReportId) ?? null
     : null
@@ -216,13 +218,16 @@ export function CaseReport({
 
   useEffect(() => {
     if (
-      caseReports.length > 0 &&
       selectedReportId &&
       !caseReports.some((r) => r.id === selectedReportId)
     ) {
-      setSelectedReportId(caseReports[0].id)
+      setSelectedReportId(null)
     }
   }, [caseReports, selectedReportId])
+
+  const handleCardClick = useCallback((reportId: string) => {
+    setSelectedReportId((prev) => (prev === reportId ? null : reportId))
+  }, [])
 
   const handleGenerateReport = useCallback(async () => {
     if (!hasMessages) return
@@ -440,100 +445,60 @@ export function CaseReport({
         </div>
       </CardHeader>
       <CardContent className="space-y-4">
-        <div className="space-y-2">
-          <p className="text-sm font-medium text-muted-foreground">Relatórios</p>
-          <ul className="space-y-2">
-            {caseReports.map((report) => (
-              <li
+        <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+          {caseReports.map((report) => {
+            const isSelected = selectedReportId === report.id
+            const isWhatsApp = report.source === "whatsapp"
+            return (
+              <button
                 key={report.id}
+                type="button"
+                onClick={() => handleCardClick(report.id)}
+                aria-pressed={isSelected}
+                aria-label={`Relatório de ${patientName}, ${formatDateTime(report.created_at)}, via ${reportSourceLabel(report.source)}. Clique para visualizar.`}
                 className={cn(
-                  "flex flex-wrap items-center gap-2 rounded-lg border border-border bg-card px-3 py-2",
-                  selectedReportId === report.id && "ring-2 ring-primary/50",
+                  "flex flex-col gap-2 rounded-lg border border-border bg-card p-4 text-left transition-colors hover:bg-muted/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
+                  isSelected && "ring-2 ring-primary bg-primary/5",
                 )}
               >
-                <Badge variant="secondary" className="shrink-0">
-                  {reportSourceLabel(report.source)}
-                </Badge>
-                <span className="text-sm text-muted-foreground shrink-0">
-                  {formatDateTime(report.created_at)}
-                </span>
-                <div className="flex gap-2 ml-auto shrink-0">
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setSelectedReportId(report.id)}
-                  >
-                    Ver
-                  </Button>
-                  <AlertDialog>
-                    <AlertDialogTrigger asChild>
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        disabled={isDeleting}
-                        className="text-destructive hover:bg-destructive/10 hover:text-destructive"
-                      >
-                        Excluir
-                      </Button>
-                    </AlertDialogTrigger>
-                    <AlertDialogContent className="max-w-md">
-                      <AlertDialogHeader>
-                        <AlertDialogTitle>Excluir relatório?</AlertDialogTitle>
-                        <AlertDialogDescription>
-                          Este relatório será removido. Você poderá gerar um novo
-                          depois, se quiser.
-                        </AlertDialogDescription>
-                      </AlertDialogHeader>
-                      <AlertDialogFooter>
-                        <AlertDialogCancel disabled={isDeleting}>
-                          Cancelar
-                        </AlertDialogCancel>
-                        <Button
-                          variant="destructive"
-                          disabled={isDeleting}
-                          onClick={async () => {
-                            setSelectedReportId(report.id)
-                            setIsDeleting(true)
-                            try {
-                              const result = await deleteCaseReportAction(
-                                report.id,
-                                caseId,
-                              )
-                              if (result.ok) {
-                                toast.success("Relatório excluído.")
-                                setSelectedReportId((prev) =>
-                                  prev === report.id
-                                    ? caseReports.find((r) => r.id !== report.id)?.id ?? null
-                                    : prev,
-                                )
-                                router.refresh()
-                              } else {
-                                toast.error(result.error)
-                              }
-                            } finally {
-                              setIsDeleting(false)
-                            }
-                          }}
-                        >
-                          {isDeleting ? "Excluindo…" : "Excluir"}
-                        </Button>
-                      </AlertDialogFooter>
-                    </AlertDialogContent>
-                  </AlertDialog>
+                <div className="flex items-center justify-between gap-2">
+                  <div className="flex min-w-0 flex-1 items-center gap-2">
+                    <FileText className="h-5 w-5 shrink-0 text-muted-foreground" />
+                    <Badge
+                      variant={isWhatsApp ? "secondary" : "default"}
+                      className={cn(
+                        "shrink-0 text-xs",
+                        isWhatsApp &&
+                          "border-0 bg-[#25D366] text-white hover:bg-[#20BD5A]",
+                      )}
+                    >
+                      {reportSourceLabel(report.source)}
+                    </Badge>
+                  </div>
+                  {isSelected && (
+                    <Eye className="h-4 w-4 shrink-0 text-primary" aria-hidden />
+                  )}
                 </div>
-              </li>
-            ))}
-          </ul>
+                <h3 className="line-clamp-1 text-sm font-semibold text-foreground">
+                  Relatório de {patientName}
+                </h3>
+                <p className="text-xs text-muted-foreground">
+                  {formatDateTime(report.created_at)}
+                </p>
+              </button>
+            )
+          })}
         </div>
 
         {selectedReport && (
           <div className="space-y-4 border-t border-border pt-4">
             <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-              <p className="text-sm font-medium text-muted-foreground">
-                Conteúdo do relatório
-              </p>
+              <div className="flex items-center gap-2">
+                <Eye className="h-4 w-4 shrink-0 text-primary" aria-hidden />
+                <p className="text-sm font-medium text-muted-foreground">
+                  Visualizando: Relatório de {patientName} — {formatDateTime(selectedReport.created_at)} · Via {reportSourceLabel(selectedReport.source)}
+                </p>
+              </div>
               <div className="flex items-center gap-4">
                 {canEdit ? (
                   <Tooltip>
