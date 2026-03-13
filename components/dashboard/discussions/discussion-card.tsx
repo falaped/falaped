@@ -118,39 +118,44 @@ export function DiscussionCard({ discussion }: { discussion: DiscussionWithMessa
 
         <Separator className="my-3" />
 
-        <div className="flex flex-wrap items-center gap-x-5 gap-y-1.5">
-          <span className="flex items-center gap-1.5 text-sm text-muted-foreground">
-            <CalendarIcon className="h-3.5 w-3.5 shrink-0" />
-            {formatDate(discussion.started_at)}
-          </span>
-          <span className="flex items-center gap-1.5 text-sm text-muted-foreground">
-            <ClockIcon className="h-3.5 w-3.5 shrink-0" />
-            {formatRelativeTime(discussion.started_at)}
-          </span>
-          <span className="flex items-center gap-1.5 text-sm text-muted-foreground">
-            <MessageCircleIcon className="h-3.5 w-3.5 shrink-0" />
-            {discussion.messages.length}{" "}
-            {discussion.messages.length === 1 ? "mensagem" : "mensagens"}
-          </span>
+        <div className="flex flex-wrap items-center justify-between gap-x-5 gap-y-1.5 ">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="flex items-center gap-1.5 text-sm text-muted-foreground">
+              <CalendarIcon className="h-3.5 w-3.5 shrink-0" />
+              {formatDate(discussion.started_at)}
+            </span>
+            <span className="flex items-center gap-1.5 text-sm text-muted-foreground">
+              <ClockIcon className="h-3.5 w-3.5 shrink-0" />
+              {formatRelativeTime(discussion.started_at)}
+            </span>
+            <span className="flex items-center gap-1.5 text-sm text-muted-foreground">
+              <MessageCircleIcon className="h-3.5 w-3.5 shrink-0" />
+              {discussion.messages.length}{" "}
+              {discussion.messages.length === 1 ? "mensagem" : "mensagens"}
+            </span>
+          </div>
+          <div
+            className="flex flex-wrap items-center gap-2"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <Button
+              variant="outline"
+              size="sm"
+              className="gap-2"
+              onClick={() => setEditTitleOpen(true)}
+              aria-label="Editar título"
+            >
+              <PencilIcon className="h-4 w-4" />
+              Editar título
+            </Button>
+            <DiscussionDetailActions discussionId={discussion.id} status={discussion.status} />
+          </div>
+
         </div>
+
       </CollapsibleTrigger>
 
-      <div
-        className="flex flex-wrap items-center gap-2 border-t border-border px-5 py-3"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <Button
-          variant="outline"
-          size="sm"
-          className="gap-2"
-          onClick={() => setEditTitleOpen(true)}
-          aria-label="Editar título"
-        >
-          <PencilIcon className="h-4 w-4" />
-          Editar título
-        </Button>
-        <DiscussionDetailActions discussionId={discussion.id} status={discussion.status} />
-      </div>
+
 
       <DiscussionEditTitleDialog
         open={editTitleOpen}
