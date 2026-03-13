@@ -96,48 +96,54 @@ export function DiscussionCard({ discussion }: { discussion: DiscussionWithMessa
       onOpenChange={setOpen}
       className="group relative rounded-xl border border-border/60 bg-card transition-all duration-200 hover:border-border hover:bg-accent/30 hover:shadow-md"
     >
-      <CollapsibleTrigger
-        className={cn(
-          "flex w-full flex-col gap-0 px-5 py-4 text-left",
-          "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
-        )}
-      >
-        <div className="flex w-full items-center justify-between gap-4">
-          <div className="min-w-0 flex-1">
-            <div className="flex items-center gap-3">
-              <h3 className="truncate text-lg font-semibold tracking-tight">
-                {discussion.title?.trim()
-                  ? `Discussão – ${discussion.title}`
-                  : `Discussão – ${formatDate(discussion.started_at)}`}
-              </h3>
-              <StatusBadge status={discussion.status} />
+      <div className="flex flex-col gap-0 px-5 py-4">
+        <CollapsibleTrigger asChild>
+          <div
+            className={cn(
+              "flex w-full cursor-pointer items-center justify-between gap-4 text-left",
+              "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 rounded-md",
+            )}
+          >
+            <div className="min-w-0 flex-1">
+              <div className="flex items-center gap-3">
+                <h3 className="truncate text-lg font-semibold tracking-tight">
+                  {discussion.title?.trim()
+                    ? `Discussão – ${discussion.title}`
+                    : `Discussão – ${formatDate(discussion.started_at)}`}
+                </h3>
+                <StatusBadge status={discussion.status} />
+              </div>
             </div>
+            <ChevronDownIcon className="h-5 w-5 shrink-0 text-muted-foreground transition-transform duration-300 group-data-[state=open]:rotate-180" />
           </div>
-          <ChevronDownIcon className="h-5 w-5 shrink-0 text-muted-foreground transition-transform duration-300 group-data-[state=open]:rotate-180" />
-        </div>
+        </CollapsibleTrigger>
 
         <Separator className="my-3" />
 
-        <div className="flex flex-wrap items-center justify-between gap-x-5 gap-y-1.5 ">
+        <div className="flex flex-wrap items-center justify-between gap-x-5 gap-y-2">
+          <CollapsibleTrigger asChild>
+            <div
+              className={cn(
+                "flex min-w-0 flex-1 cursor-pointer flex-wrap items-center gap-x-5 gap-y-1.5 text-left",
+                "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 rounded-md",
+              )}
+            >
+              <span className="flex items-center gap-1.5 text-sm text-muted-foreground">
+                <CalendarIcon className="h-3.5 w-3.5 shrink-0" />
+                {formatDate(discussion.started_at)}
+              </span>
+              <span className="flex items-center gap-1.5 text-sm text-muted-foreground">
+                <ClockIcon className="h-3.5 w-3.5 shrink-0" />
+                {formatRelativeTime(discussion.started_at)}
+              </span>
+              <span className="flex items-center gap-1.5 text-sm text-muted-foreground">
+                <MessageCircleIcon className="h-3.5 w-3.5 shrink-0" />
+                {discussion.messages.length}{" "}
+                {discussion.messages.length === 1 ? "mensagem" : "mensagens"}
+              </span>
+            </div>
+          </CollapsibleTrigger>
           <div className="flex flex-wrap items-center gap-2">
-            <span className="flex items-center gap-1.5 text-sm text-muted-foreground">
-              <CalendarIcon className="h-3.5 w-3.5 shrink-0" />
-              {formatDate(discussion.started_at)}
-            </span>
-            <span className="flex items-center gap-1.5 text-sm text-muted-foreground">
-              <ClockIcon className="h-3.5 w-3.5 shrink-0" />
-              {formatRelativeTime(discussion.started_at)}
-            </span>
-            <span className="flex items-center gap-1.5 text-sm text-muted-foreground">
-              <MessageCircleIcon className="h-3.5 w-3.5 shrink-0" />
-              {discussion.messages.length}{" "}
-              {discussion.messages.length === 1 ? "mensagem" : "mensagens"}
-            </span>
-          </div>
-          <div
-            className="flex flex-wrap items-center gap-2"
-            onClick={(e) => e.stopPropagation()}
-          >
             <Button
               variant="outline"
               size="sm"
@@ -150,12 +156,8 @@ export function DiscussionCard({ discussion }: { discussion: DiscussionWithMessa
             </Button>
             <DiscussionDetailActions discussionId={discussion.id} status={discussion.status} />
           </div>
-
         </div>
-
-      </CollapsibleTrigger>
-
-
+      </div>
 
       <DiscussionEditTitleDialog
         open={editTitleOpen}
