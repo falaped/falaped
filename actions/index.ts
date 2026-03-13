@@ -8,6 +8,11 @@ export {
   deleteCaseReportAction,
 } from "./cases"
 export {
+  updateDiscussionStatusAction,
+  updateDiscussionTitleAction,
+  deleteDiscussionAction,
+} from "./discussions"
+export {
   createWhatsAppLinkCodeAction,
   unlinkWhatsAppAction,
 } from "./link-whatsapp"

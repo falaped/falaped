@@ -50,6 +50,7 @@ const navMain = [
     isActive: false,
     items: [
       { title: "Casos", url: "/dashboard/cases" },
+      { title: "Discussões", url: "/dashboard/discussions" },
       { title: "Pacientes", url: "/dashboard/patients" },
     ],
   },

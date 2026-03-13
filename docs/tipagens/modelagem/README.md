@@ -12,6 +12,8 @@ Documentação da tipagem e modelagem do banco **public** do projeto FALAPED. Ge
 | profiles | [profiles.md](./profiles.md) |
 | cases | [cases.md](./cases.md) |
 | case_messages | [case_messages.md](./case_messages.md) |
+| discussions | [discussions.md](./discussions.md) |
+| discussion_messages | [discussion_messages.md](./discussion_messages.md) |
 | case_reports | [case_reports.md](./case_reports.md) |
 | patients | [patients.md](./patients.md) |
 | report_templates | [report_templates.md](./report_templates.md) |
