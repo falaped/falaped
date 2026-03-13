@@ -45,7 +45,7 @@ import {
 import { deleteMyAccountAction, updateStatusAction, updateProfileAction, uploadProfileLogoAction, clearProfileLogoAction } from "@/actions"
 import type { AuthenticatedUserStatus } from "@/modules/authenticated-users/update-authenticated-user-status"
 import type { AuthenticatedUserResult } from "@/modules/supabase/get-authenticated-user"
-import type { ReportTemplateOption } from "@/modules/report-templates/get-report-templates-for-user-phone"
+import type { ReportTemplateOption } from "@/modules/report-templates/get-report-templates-by-profile-id"
 import { z } from "zod"
 import {
   updateProfileSchema,

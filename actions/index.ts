@@ -28,3 +28,9 @@ export {
   uploadProfileLogoAction,
   clearProfileLogoAction,
 } from "./profile"
+export {
+  createReportTemplateAction,
+  updateReportTemplateAction,
+  deleteReportTemplateAction,
+  setActiveReportTemplateAction,
+} from "./report-templates"

@@ -2,7 +2,7 @@ import { redirect } from "next/navigation"
 import { UserIcon } from "lucide-react"
 import { createClient } from "@/lib/supabase/server"
 import { getAuthenticatedUser } from "@/modules/supabase/get-authenticated-user"
-import { getReportTemplatesForUserPhone } from "@/modules/report-templates/get-report-templates-for-user-phone"
+import { getReportTemplatesByProfileId } from "@/modules/report-templates/get-report-templates-by-profile-id"
 import { ProfileContent } from "./profile-content"
 import { ProfileLoading } from "@/components/dashboard/profile/profile-loading"
 import { Suspense } from "react"
@@ -12,9 +12,9 @@ export default async function ProfilePage() {
   const { profile } = await getAuthenticatedUser(supabase)
   if (!profile) redirect("/auth/login")
 
-  const reportTemplateOptions = await getReportTemplatesForUserPhone(
+  const reportTemplateOptions = await getReportTemplatesByProfileId(
     supabase,
-    profile.phone
+    profile.id
   )
 
   return (
