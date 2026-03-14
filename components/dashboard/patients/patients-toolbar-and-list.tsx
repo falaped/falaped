@@ -1,8 +1,6 @@
 "use client"
 
 import { useMemo, useState } from "react"
-import Link from "next/link"
-import { Button } from "@/components/ui/button"
 import { PatientCard } from "@/components/dashboard/patients/patient-card"
 import { PatientEmptyState } from "@/components/dashboard/patients/patient-empty-state"
 import { PatientSearchInput } from "@/components/dashboard/patients/patient-search-input"
@@ -32,11 +30,8 @@ export function PatientsToolbarAndList({ patients }: { patients: Patient[] }) {
 
   return (
     <>
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex w-full flex-col gap-3 sm:flex-row sm:items-center sm:justify-end">
         <PatientSearchInput value={searchQuery} onChange={setSearchQuery} />
-        <Button asChild>
-          <Link href="/dashboard/patients/novo">Cadastrar paciente</Link>
-        </Button>
       </div>
 
       {filteredPatients.length === 0 ? (

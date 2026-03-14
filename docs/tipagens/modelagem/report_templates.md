@@ -4,7 +4,7 @@
 
 ## Descrição
 
-Templates de relatório médico com seções configuráveis. user_phone null = template global.
+Templates de relatório médico com seções configuráveis. user_phone null = template global. O usuário pode criar templates manualmente ou usar a opção "Gerar com IA" (página `/dashboard/report-templates/gerar-com-ia`), que sugere nome e seções a partir de uma descrição em texto livre via Groq.
 
 ## Colunas
 

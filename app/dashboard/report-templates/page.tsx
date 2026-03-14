@@ -1,10 +1,10 @@
 import { redirect } from "next/navigation"
 import Link from "next/link"
-import { FileText, Plus } from "lucide-react"
+import { FileText, Plus, Sparkles } from "lucide-react"
 import { createClient } from "@/lib/supabase/server"
 import { getAuthenticatedUser } from "@/modules/supabase/get-authenticated-user"
 import { getReportTemplatesByProfileId } from "@/modules/report-templates/get-report-templates-by-profile-id"
-import { ReportTemplateList } from "@/components/dashboard/report-templates/report-template-list"
+import { ReportTemplatesToolbarAndList } from "@/components/dashboard/report-templates/report-templates-toolbar-and-list"
 import { Button } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
 
@@ -30,17 +30,25 @@ export default async function ReportTemplatesPage() {
             Perfil para usar por padrão.
           </p>
         </div>
-        <Button asChild className="shrink-0">
-          <Link href="/dashboard/report-templates/novo">
-            <Plus className="mr-2 h-4 w-4" />
-            Criar template
-          </Link>
-        </Button>
+        <div className="flex shrink-0 gap-2">
+          <Button variant="outline" asChild>
+            <Link href="/dashboard/report-templates/gerar-com-ia">
+              <Sparkles className="mr-2 h-4 w-4" />
+              Gerar com IA
+            </Link>
+          </Button>
+          <Button asChild>
+            <Link href="/dashboard/report-templates/novo">
+              <Plus className="mr-2 h-4 w-4" />
+              Criar template
+            </Link>
+          </Button>
+        </div>
       </div>
 
       <Separator />
 
-      <ReportTemplateList
+      <ReportTemplatesToolbarAndList
         templates={templates}
         activeTemplateId={profile.report_template_id ?? null}
       />

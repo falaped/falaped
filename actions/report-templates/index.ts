@@ -14,3 +14,7 @@ export {
   setActiveReportTemplateAction,
   type SetActiveReportTemplateResult,
 } from "./set-active-report-template"
+export {
+  generateReportTemplateSectionsAction,
+  type GenerateReportTemplateSectionsActionResult,
+} from "./generate-report-template-sections"

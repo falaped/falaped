@@ -23,6 +23,12 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet"
 import type { ReportTemplateOption } from "@/modules/report-templates/get-report-templates-by-profile-id"
 import { deleteReportTemplateAction, setActiveReportTemplateAction } from "@/actions"
 import { formatRelativeTime } from "@/lib/formatters"
@@ -77,6 +83,7 @@ function ReportTemplateCard({
   const [isDeleting, setIsDeleting] = useState(false)
   const [isActivating, setIsActivating] = useState(false)
   const [deleteOpen, setDeleteOpen] = useState(false)
+  const [previewOpen, setPreviewOpen] = useState(false)
 
   async function handleDelete() {
     setIsDeleting(true)
@@ -116,16 +123,18 @@ function ReportTemplateCard({
     >
       <CardContent className="p-4 pt-5">
         {/* Legend: badges acima do conteúdo */}
-        <div className="-mt-7 mb-3 flex flex-wrap gap-1.5" role="status">
-          <Badge variant={template.is_default ? "secondary" : "default"}>
-            {template.is_default ? "Padrão do projeto" : "Seu template"}
-          </Badge>
-          {isActive && (
-            <Badge variant="outline" className="border-primary text-primary">
-              Ativo
-            </Badge>
-          )}
-        </div>
+        {(template.is_default || isActive) && (
+          <div className="-mt-7 mb-3 flex flex-wrap gap-1.5" role="status">
+            {template.is_default && (
+              <Badge variant="secondary">Padrão do projeto</Badge>
+            )}
+            {isActive && (
+              <Badge variant="outline" className="border-primary text-primary">
+                Ativo
+              </Badge>
+            )}
+          </div>
+        )}
         {/* Título + ações na mesma linha */}
         <div className="flex flex-wrap items-center gap-2">
           <p className="min-w-0 flex-1 truncate text-base font-semibold">
@@ -133,14 +142,21 @@ function ReportTemplateCard({
           </p>
           <div className="flex shrink-0 items-center gap-1">
             {!isActive && (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleActivate}
-                disabled={isActivating}
-              >
-                {isActivating ? "Ativando…" : "Ativar"}
-              </Button>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleActivate}
+                    disabled={isActivating}
+                  >
+                    {isActivating ? "Ativando…" : "Ativar"}
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent side="left">
+                  Definir como template ativo para os relatórios
+                </TooltipContent>
+              </Tooltip>
             )}
             <Tooltip>
               <TooltipTrigger asChild>
@@ -148,21 +164,26 @@ function ReportTemplateCard({
                   variant="ghost"
                   size="icon"
                   className="text-muted-foreground"
-                  aria-label="Visualizar estrutura"
+                  aria-label="Ver estrutura do template"
+                  onClick={() => setPreviewOpen(true)}
                 >
                   <Eye className="h-4 w-4" />
                 </Button>
               </TooltipTrigger>
-              <TooltipContent
-                side="left"
-                className="max-w-sm bg-popover text-popover-foreground border border-border p-0"
-              >
-                <div className="p-3">
-                  <p className="mb-2 text-xs font-medium text-muted-foreground">
-                    Estrutura do template
-                  </p>
+              <TooltipContent side="left">
+                Ver estrutura do template
+              </TooltipContent>
+            </Tooltip>
+            <Sheet open={previewOpen} onOpenChange={setPreviewOpen}>
+              <SheetContent side="right" className="flex flex-col sm:max-w-md">
+                <SheetHeader>
+                  <SheetTitle>Estrutura do template</SheetTitle>
+                </SheetHeader>
+                <div className="min-h-0 flex-1 overflow-y-auto px-4 pb-4">
                   {sections.length === 0 ? (
-                    <p className="text-sm">Nenhuma seção definida.</p>
+                    <p className="text-sm text-muted-foreground">
+                      Nenhuma seção definida.
+                    </p>
                   ) : (
                     <div className="space-y-3">
                       {sections.map((section, i) => (
@@ -170,7 +191,7 @@ function ReportTemplateCard({
                           <p className="text-sm font-medium">
                             {section.name || "(sem título)"}
                           </p>
-                          <p className="mt-0.5 truncate text-xs text-muted-foreground">
+                          <p className="mt-0.5 text-xs text-muted-foreground">
                             {section.description || "(sem descrição)"}
                           </p>
                           {i < sections.length - 1 && (
@@ -181,49 +202,65 @@ function ReportTemplateCard({
                     </div>
                   )}
                 </div>
-              </TooltipContent>
-            </Tooltip>
+              </SheetContent>
+            </Sheet>
             {canEdit && (
               <>
-                <Button variant="ghost" size="icon" asChild aria-label="Editar">
-                  <Link href={`/dashboard/report-templates/${template.id}`}>
-                    <Pencil className="h-4 w-4" />
-                  </Link>
-                </Button>
-                <AlertDialog open={deleteOpen} onOpenChange={setDeleteOpen}>
-                  <AlertDialogTrigger asChild>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="text-muted-foreground hover:text-destructive"
-                      aria-label="Excluir"
-                    >
-                      <Trash2 className="h-4 w-4" />
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button variant="ghost" size="icon" asChild aria-label="Editar template">
+                      <Link href={`/dashboard/report-templates/${template.id}`}>
+                        <Pencil className="h-4 w-4" />
+                      </Link>
                     </Button>
-                  </AlertDialogTrigger>
-                  <AlertDialogContent>
-                    <AlertDialogHeader>
-                      <AlertDialogTitle>Excluir template?</AlertDialogTitle>
-                      <AlertDialogDescription>
-                        Este template será removido. Se estiver em uso no seu
-                        perfil, o relatório passará a usar o padrão do projeto.
-                      </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                      <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                      <AlertDialogAction
-                        onClick={(e) => {
-                          e.preventDefault()
-                          handleDelete()
-                        }}
-                        disabled={isDeleting}
-                        className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                      >
-                        {isDeleting ? "Excluindo…" : "Excluir"}
-                      </AlertDialogAction>
-                    </AlertDialogFooter>
-                  </AlertDialogContent>
-                </AlertDialog>
+                  </TooltipTrigger>
+                  <TooltipContent side="left">
+                    Editar template
+                  </TooltipContent>
+                </Tooltip>
+                {!isActive && (
+                  <AlertDialog open={deleteOpen} onOpenChange={setDeleteOpen}>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <AlertDialogTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="text-muted-foreground hover:text-destructive"
+                            aria-label="Excluir template"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </AlertDialogTrigger>
+                      </TooltipTrigger>
+                      <TooltipContent side="left">
+                        Excluir template
+                      </TooltipContent>
+                    </Tooltip>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>Excluir template?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          Este template será removido. Se estiver em uso no seu
+                          perfil, o relatório passará a usar o padrão do projeto.
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                        <AlertDialogAction
+                          onClick={(e) => {
+                            e.preventDefault()
+                            handleDelete()
+                          }}
+                          disabled={isDeleting}
+                          className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                        >
+                          {isDeleting ? "Excluindo…" : "Excluir"}
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
+                )}
               </>
             )}
           </div>

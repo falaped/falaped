@@ -7,10 +7,8 @@ import Image from "next/image"
 import {
   ChevronRightIcon,
   HomeIcon,
+  LayoutTemplateIcon,
   MessagesSquareIcon,
-  UsersIcon,
-  UserIcon,
-  SettingsIcon,
 } from "lucide-react"
 
 import {
@@ -55,13 +53,12 @@ const navMain = [
     ],
   },
   {
-    title: "Configurações",
-    icon: SettingsIcon,
+    title: "Templates",
+    icon: LayoutTemplateIcon,
     isActive: false,
     items: [
-      { title: "Perfil", url: "/dashboard/profile" },
       { title: "Templates de relatório", url: "/dashboard/report-templates" },
-      { title: "Vincular WhatsApp", url: "/dashboard/link-whatsapp" },
+      // Futuro: Template de receita, Template de atestado, etc.
     ],
   },
 ]

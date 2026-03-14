@@ -20,6 +20,7 @@ import type { ReportTemplateSection } from "@/modules/report-templates/get-repor
 
 type ReportTemplateFormProps = {
   mode: "create"
+  initialName?: string
   initialSections?: ReportTemplateSectionInput[]
 } | {
   mode: "edit"
@@ -44,10 +45,13 @@ export function ReportTemplateForm(props: ReportTemplateFormProps) {
 
   const [sections, setSections] = useState<ReportTemplateSectionInput[]>(initialSections)
 
+  const initialName =
+    props.mode === "edit" ? props.initialName : (props.mode === "create" ? props.initialName ?? "" : "")
+
   const form = useForm<CreateReportTemplateFormData>({
     resolver: zodResolver(createReportTemplateSchema),
     defaultValues: {
-      name: props.mode === "edit" ? props.initialName : "",
+      name: initialName,
       sections: initialSections.map(toSectionInput),
     },
   })

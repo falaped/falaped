@@ -33,4 +33,5 @@ export {
   updateReportTemplateAction,
   deleteReportTemplateAction,
   setActiveReportTemplateAction,
+  generateReportTemplateSectionsAction,
 } from "./report-templates"

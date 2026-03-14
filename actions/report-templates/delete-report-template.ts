@@ -27,7 +27,14 @@ export async function deleteReportTemplateAction(
     revalidatePath("/dashboard/profile")
     return { ok: true }
   } catch (e) {
-    const message = e instanceof Error ? e.message : "Erro ao excluir template. Tente novamente."
+    const raw = e instanceof Error ? e.message : ""
+    const isFkViolation =
+      /foreign key constraint|report_template_id_fkey|case_reports_report_template_id_fkey/i.test(
+        raw,
+      )
+    const message = isFkViolation
+      ? "Não é possível excluir um template ativo ou que já foi usado em relatórios."
+      : raw || "Erro ao excluir template. Tente novamente."
     return { ok: false, error: message }
   }
 }
