@@ -77,7 +77,11 @@ export function GenerateWithAiContent() {
             <ReportTemplateForm
               mode="create"
               initialName={suggestedName}
-              initialSections={sections.length > 0 ? sections : [{ name: "", description: "" }]}
+              initialSections={
+                sections.length > 0
+                  ? sections.map((s) => ({ name: s.name, description: s.description ?? "" }))
+                  : [{ name: "", description: "" }]
+              }
             />
           </CardContent>
         </Card>

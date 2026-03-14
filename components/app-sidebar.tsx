@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation"
 import Image from "next/image"
 import {
   ChevronRightIcon,
+  FileCheckIcon,
   HomeIcon,
   LayoutTemplateIcon,
   MessagesSquareIcon,
@@ -58,7 +59,14 @@ const navMain = [
     isActive: false,
     items: [
       { title: "Templates de relatório", url: "/dashboard/report-templates" },
-      // Futuro: Template de receita, Template de atestado, etc.
+    ],
+  },
+  {
+    title: "Serviços",
+    icon: FileCheckIcon,
+    isActive: false,
+    items: [
+      { title: "Atestados", url: "/dashboard/medical-certificates" },
     ],
   },
 ]

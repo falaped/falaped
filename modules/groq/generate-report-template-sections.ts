@@ -56,7 +56,7 @@ Return the JSON object with "suggestedName" and "sections" as described in the s
 
   const parsed = parseJsonResponse(raw)
   if (parsed) {
-    const sections = normalizeSections(parsed.sections)
+    const sections = normalizeSections(parsed.sections ?? [])
     if (sections.length > 0) {
       return {
         suggestedName: typeof parsed.suggestedName === "string" && parsed.suggestedName.trim()

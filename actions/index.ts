@@ -35,3 +35,7 @@ export {
   setActiveReportTemplateAction,
   generateReportTemplateSectionsAction,
 } from "./report-templates"
+export {
+  generateMedicalCertificateAction,
+  type GenerateMedicalCertificateResult,
+} from "./medical-certificates"

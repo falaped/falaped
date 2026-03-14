@@ -51,3 +51,12 @@ Ordem de exclusão/atualização:
 9. profiles (auth_user_id = old.id)
 
 Return old.
+
+---
+
+## set_updated_at_medical_certificates()
+
+- **Retorno:** trigger
+- **Uso:** trigger BEFORE UPDATE em medical_certificates (trg_medical_certificates_set_updated_at)
+
+Atribui `new.updated_at = now()` e retorna new.
