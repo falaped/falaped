@@ -60,3 +60,12 @@ Return old.
 - **Uso:** trigger BEFORE UPDATE em medical_certificates (trg_medical_certificates_set_updated_at)
 
 Atribui `new.updated_at = now()` e retorna new.
+
+---
+
+## set_updated_at_prescriptions()
+
+- **Retorno:** trigger
+- **Uso:** trigger BEFORE UPDATE em prescriptions (trg_prescriptions_set_updated_at)
+
+Atribui `new.updated_at = now()` e retorna new.

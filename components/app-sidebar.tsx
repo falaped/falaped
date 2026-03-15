@@ -67,6 +67,7 @@ const navMain = [
     isActive: false,
     items: [
       { title: "Atestados", url: "/dashboard/medical-certificates" },
+      { title: "Receitas", url: "/dashboard/prescriptions" },
     ],
   },
 ]

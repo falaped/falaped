@@ -37,3 +37,15 @@ Quando um código é usado (used_at e linked_phone preenchidos), atualiza authen
 **Definição:** `CREATE TRIGGER trg_medical_certificates_set_updated_at BEFORE UPDATE ON medical_certificates FOR EACH ROW EXECUTE FUNCTION set_updated_at_medical_certificates()`
 
 Atualiza `updated_at` com `now()` antes de qualquer UPDATE em medical_certificates.
+
+---
+
+## trg_prescriptions_set_updated_at
+
+| Tabela | Evento | Função |
+|--------|--------|--------|
+| prescriptions | BEFORE UPDATE | set_updated_at_prescriptions() |
+
+**Definição:** `CREATE TRIGGER trg_prescriptions_set_updated_at BEFORE UPDATE ON prescriptions FOR EACH ROW EXECUTE FUNCTION set_updated_at_prescriptions()`
+
+Atualiza `updated_at` com `now()` antes de qualquer UPDATE em prescriptions.

@@ -39,3 +39,7 @@ export {
   generateMedicalCertificateAction,
   type GenerateMedicalCertificateResult,
 } from "./medical-certificates"
+export {
+  generatePrescriptionAction,
+  type GeneratePrescriptionResult,
+} from "./prescriptions"
