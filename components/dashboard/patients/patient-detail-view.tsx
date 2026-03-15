@@ -28,7 +28,16 @@ import { deletePatientAction } from "@/actions"
 import { formatDate, formatBrazilianPhone } from "@/lib/formatters"
 import type { Patient } from "@/modules/patients/types"
 import type { CaseForPatient } from "@/modules/cases/get-cases-by-patient-id"
-import { MessageSquareIcon } from "lucide-react"
+import { FileCheckIcon, MessageSquareIcon, Pill } from "lucide-react"
+import type { MedicalCertificateListItem } from "@/modules/medical-certificates/get-medical-certificates-by-profile-id"
+import type { PrescriptionListItem } from "@/modules/prescriptions/types"
+
+const CERTIFICATE_TYPE_LABELS: Record<string, string> = {
+  comparecimento: "Comparecimento",
+  aptidao_fisica: "Aptidão Física",
+  medico: "Médico (afastamento)",
+  acompanhante: "Acompanhante",
+}
 
 function formatSexForDisplay(sex: string | null | undefined): string {
   if (!sex?.trim()) return ""
@@ -41,9 +50,13 @@ function formatSexForDisplay(sex: string | null | undefined): string {
 export function PatientDetailView({
   patient,
   cases = [],
+  certificates = [],
+  prescriptions = [],
 }: {
   patient: Patient
   cases?: CaseForPatient[]
+  certificates?: MedicalCertificateListItem[]
+  prescriptions?: PrescriptionListItem[]
 }) {
   const router = useRouter()
   const [isEditing, setIsEditing] = useState(false)
@@ -132,41 +145,51 @@ export function PatientDetailView({
               <CardTitle>Dados pessoais</CardTitle>
               <CardDescription>Identificação e contato</CardDescription>
             </CardHeader>
-            <CardContent className="space-y-3 text-sm">
-              <div>
-                <span className="font-medium text-muted-foreground">Nome</span>
-                <p className="mt-0.5">{patient.name}</p>
+            <CardContent className="space-y-0 [&>div:last-child]:border-b-0">
+              <div className="border-b border-border py-3 first:pt-0">
+                <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                  Nome
+                </p>
+                <p className="mt-1 text-base font-semibold text-foreground">
+                  {patient.name}
+                </p>
               </div>
               {patient.birth_date && (
-                <div>
-                  <span className="font-medium text-muted-foreground">
+                <div className="border-b border-border py-3">
+                  <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
                     Data de nascimento
-                  </span>
-                  <p className="mt-0.5">
+                  </p>
+                  <p className="mt-1 text-sm font-medium text-foreground">
                     {formatDate(patient.birth_date)}
                   </p>
                 </div>
               )}
               {patient.sex && (
-                <div>
-                  <span className="font-medium text-muted-foreground">Sexo</span>
-                  <p className="mt-0.5">{formatSexForDisplay(patient.sex)}</p>
+                <div className="border-b border-border py-3">
+                  <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                    Sexo
+                  </p>
+                  <p className="mt-1 text-sm font-medium text-foreground">
+                    {formatSexForDisplay(patient.sex)}
+                  </p>
                 </div>
               )}
               {patient.responsible && (
-                <div>
-                  <span className="font-medium text-muted-foreground">
+                <div className="border-b border-border py-3">
+                  <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
                     Responsável
-                  </span>
-                  <p className="mt-0.5">{patient.responsible}</p>
+                  </p>
+                  <p className="mt-1 text-sm font-medium text-foreground">
+                    {patient.responsible}
+                  </p>
                 </div>
               )}
               {patient.contact_phone && (
-                <div>
-                  <span className="font-medium text-muted-foreground">
+                <div className="border-b border-border py-3">
+                  <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
                     Telefone de contato
-                  </span>
-                  <p className="mt-0.5">
+                  </p>
+                  <p className="mt-1 text-sm font-medium text-foreground">
                     <a
                       href={`tel:${patient.contact_phone}`}
                       className="text-primary hover:underline"
@@ -177,13 +200,26 @@ export function PatientDetailView({
                 </div>
               )}
               {patient.legal_guardian && (
-                <div>
-                  <span className="font-medium text-muted-foreground">
+                <div className="border-b border-border py-3">
+                  <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
                     Responsável legal
-                  </span>
-                  <p className="mt-0.5">{patient.legal_guardian}</p>
+                  </p>
+                  <p className="mt-1 text-sm font-medium text-foreground">
+                    {patient.legal_guardian}
+                  </p>
                 </div>
               )}
+              {!patient.birth_date &&
+                !patient.sex &&
+                !patient.responsible &&
+                !patient.contact_phone &&
+                !patient.legal_guardian && (
+                  <div className="py-3">
+                    <p className="text-sm text-muted-foreground">
+                      Apenas o nome está cadastrado. Edite para preencher mais dados.
+                    </p>
+                  </div>
+                )}
             </CardContent>
           </Card>
 
@@ -277,6 +313,7 @@ export function PatientDetailView({
             </CardContent>
           </Card>
 
+          <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
@@ -314,6 +351,96 @@ export function PatientDetailView({
               )}
             </CardContent>
           </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <FileCheckIcon className="h-5 w-5" />
+                Atestados
+              </CardTitle>
+              <CardDescription>
+                Atestados gerados e associados a este paciente.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {certificates.length === 0 ? (
+                <p className="text-sm text-muted-foreground">
+                  Nenhum atestado associado a este paciente.
+                </p>
+              ) : (
+                <ul className="space-y-2">
+                  {certificates.map((cert) => (
+                    <li key={cert.id}>
+                      <div className="flex items-center justify-between rounded-md border border-border px-3 py-2 text-sm transition-colors hover:bg-muted/50">
+                        <span>
+                          {CERTIFICATE_TYPE_LABELS[cert.type] ?? cert.type} ·{" "}
+                          {formatDate(cert.issued_at)}
+                        </span>
+                        {cert.pdf_storage_path ? (
+                          <Link
+                            href={`/api/medical-certificates/${cert.id}/download`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-primary hover:underline"
+                          >
+                            Baixar PDF
+                          </Link>
+                        ) : (
+                          <span className="text-muted-foreground">
+                            PDF não disponível
+                          </span>
+                        )}
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Pill className="h-5 w-5" />
+                Receitas
+              </CardTitle>
+              <CardDescription>
+                Receitas geradas e associadas a este paciente.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {prescriptions.length === 0 ? (
+                <p className="text-sm text-muted-foreground">
+                  Nenhuma receita associada a este paciente.
+                </p>
+              ) : (
+                <ul className="space-y-2">
+                  {prescriptions.map((rx) => (
+                    <li key={rx.id}>
+                      <div className="flex items-center justify-between rounded-md border border-border px-3 py-2 text-sm transition-colors hover:bg-muted/50">
+                        <span>{formatDate(rx.issued_at)}</span>
+                        {rx.pdf_storage_path ? (
+                          <Link
+                            href={`/api/prescriptions/${rx.id}/download`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-primary hover:underline"
+                          >
+                            Baixar PDF
+                          </Link>
+                        ) : (
+                          <span className="text-muted-foreground">
+                            PDF não disponível
+                          </span>
+                        )}
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </CardContent>
+          </Card>
+          </div>
         </div>
       )}
     </div>
