@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation"
-import Link from "next/link"
 import { Pill, Plus } from "lucide-react"
+import { NewPrescriptionLink } from "./novo/new-prescription-link"
 import { createClient } from "@/lib/supabase/server"
 import { getAuthenticatedUser } from "@/modules/supabase/get-authenticated-user"
 import { getPrescriptionsByProfileId } from "@/modules/prescriptions/get-prescriptions-by-profile-id"
@@ -31,10 +31,10 @@ export default async function PrescriptionsPage() {
           </p>
         </div>
         <Button asChild className="shrink-0">
-          <Link href="/dashboard/prescriptions/novo">
+          <NewPrescriptionLink>
             <Plus className="mr-2 h-4 w-4" />
             Criar receita
-          </Link>
+          </NewPrescriptionLink>
         </Button>
       </div>
 
@@ -51,10 +51,10 @@ export default async function PrescriptionsPage() {
               Crie uma receita para gerar o PDF e fazer o download.
             </p>
             <Button asChild className="mt-5">
-              <Link href="/dashboard/prescriptions/novo">
+              <NewPrescriptionLink>
                 <Plus className="mr-2 h-4 w-4" />
                 Criar receita
-              </Link>
+              </NewPrescriptionLink>
             </Button>
           </CardContent>
         </Card>

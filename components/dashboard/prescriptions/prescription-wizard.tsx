@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from "react"
 import Link from "next/link"
-import { useRouter } from "next/navigation"
+import { useRouter, usePathname } from "next/navigation"
 import { toast } from "sonner"
 import { format } from "date-fns"
 import { ptBR } from "date-fns/locale"
@@ -80,7 +80,7 @@ function applySnapshotToMedications(
   snapshot: PrescriptionTemplateSnapshot,
 ): Array<{ name: string; dosage: string; posology: string; duration: string; observations: string }> {
   const meds = snapshot.medications ?? []
-  if (meds.length === 0) return [initialMedication()]
+  if (meds.length === 0) return []
   return meds.map((m) => ({
     name: m.name ?? "",
     dosage: m.dosage ?? "",
@@ -90,6 +90,8 @@ function applySnapshotToMedications(
   }))
 }
 
+const NEW_PRESCRIPTION_PATH = "/dashboard/prescriptions/novo"
+
 export function PrescriptionWizard({
   patients,
   profile,
@@ -97,6 +99,9 @@ export function PrescriptionWizard({
   initialTemplate,
 }: PrescriptionWizardProps) {
   const router = useRouter()
+  const pathname = usePathname()
+  const prevPathnameRef = useRef(pathname)
+
   const [step, setStep] = useState<Step>(1)
   const [dataSource, setDataSource] = useState<"patient" | "manual" | "template" | null>(null)
   const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null)
@@ -105,9 +110,9 @@ export function PrescriptionWizard({
   const [manualConfirmed, setManualConfirmed] = useState(false)
   const [patientName, setPatientName] = useState("")
   const [birthDate, setBirthDate] = useState("")
-  const [medications, setMedications] = useState<Array<{ name: string; dosage: string; posology: string; duration: string; observations: string }>>([
-    initialMedication(),
-  ])
+  const [medications, setMedications] = useState<Array<{ name: string; dosage: string; posology: string; duration: string; observations: string }>>(
+    [],
+  )
   const [issuedAt] = useState(format(new Date(), "yyyy-MM-dd"))
   const [orientations, setOrientations] = useState("")
   const [warningSigns, setWarningSigns] = useState("")
@@ -119,6 +124,31 @@ export function PrescriptionWizard({
   const [templatePickerOpen, setTemplatePickerOpen] = useState(false)
 
   const initialTemplateApplied = useRef(false)
+
+  useEffect(() => {
+    const isOnNewPrescriptionPage = pathname === NEW_PRESCRIPTION_PATH
+    const wasOnOtherPage = prevPathnameRef.current !== NEW_PRESCRIPTION_PATH
+    if (isOnNewPrescriptionPage && wasOnOtherPage) {
+      setStep(1)
+      setDataSource(null)
+      setSelectedPatient(null)
+      setPickerOpen(false)
+      setManualSheetOpen(false)
+      setManualConfirmed(false)
+      setPatientName("")
+      setBirthDate("")
+      setMedications([])
+      setOrientations("")
+      setWarningSigns("")
+      setAdditionalNotes("")
+      setSaveAsTemplateOpen(false)
+      setTemplateName("")
+      setTemplatePickerOpen(false)
+      initialTemplateApplied.current = false
+    }
+    prevPathnameRef.current = pathname
+  }, [pathname])
+
   useEffect(() => {
     if (!initialTemplate?.snapshot || initialTemplateApplied.current) return
     initialTemplateApplied.current = true
@@ -171,7 +201,7 @@ export function PrescriptionWizard({
   }
 
   function removeMedication(index: number) {
-    setMedications((prev) => (prev.length > 1 ? prev.filter((_, i) => i !== index) : prev))
+    setMedications((prev) => prev.filter((_, i) => i !== index))
   }
 
   function updateMedication(index: number, field: string, value: string) {
@@ -355,7 +385,114 @@ export function PrescriptionWizard({
               </div>
             ) : null}
 
-          {/* Medicamentos e Orientações: layout removido temporariamente; funcionalidade preservada para reorganização */}
+            {(dataSource === "patient" && selectedPatient) ||
+            ((dataSource === "manual" || dataSource === "template") && manualConfirmed) ? (
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-sm font-medium text-foreground">Medicamentos</h3>
+                  <Button type="button" variant="outline" size="sm" onClick={addMedication}>
+                    <Plus className="mr-2 h-4 w-4" />
+                    Adicionar medicamento
+                  </Button>
+                </div>
+                {medications.length === 0 ? (
+                  <div className="rounded-lg border border-dashed border-border bg-muted/20 px-4 py-8 text-center">
+                    <p className="text-sm text-muted-foreground">
+                      Nenhum medicamento adicionado. Clique no botão acima para adicionar.
+                    </p>
+                  </div>
+                ) : (
+                  <ul className="space-y-4">
+                    {medications.map((med, index) => (
+                      <li
+                        key={index}
+                        className="rounded-lg border border-border bg-muted/20 p-4 space-y-3"
+                      >
+                        <div className="flex items-center justify-between gap-2">
+                          <span className="text-sm font-medium text-muted-foreground">
+                            Medicamento {index + 1}
+                          </span>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                            onClick={() => removeMedication(index)}
+                            aria-label="Remover medicamento"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                        <div className="grid gap-3 sm:grid-cols-2">
+                          <Field>
+                            <FieldLabel>Nome</FieldLabel>
+                            <FieldContent>
+                              <Input
+                                value={med.name}
+                                onChange={(e) => updateMedication(index, "name", e.target.value)}
+                                placeholder="Ex.: Paracetamol"
+                              />
+                            </FieldContent>
+                          </Field>
+                          <Field>
+                            <FieldLabel>Dosagem</FieldLabel>
+                            <FieldContent>
+                              <Input
+                                value={med.dosage}
+                                onChange={(e) => updateMedication(index, "dosage", e.target.value)}
+                                placeholder="Ex.: 500mg"
+                              />
+                            </FieldContent>
+                          </Field>
+                          <Field className="sm:col-span-2">
+                            <FieldLabel>Posologia</FieldLabel>
+                            <FieldContent>
+                              <Input
+                                value={med.posology}
+                                onChange={(e) =>
+                                  updateMedication(index, "posology", e.target.value)
+                                }
+                                placeholder="Ex.: 1 comprimido de 8 em 8 horas"
+                              />
+                            </FieldContent>
+                          </Field>
+                          <Field>
+                            <FieldLabel>Duração</FieldLabel>
+                            <FieldContent>
+                              <Input
+                                value={med.duration}
+                                onChange={(e) =>
+                                  updateMedication(index, "duration", e.target.value)
+                                }
+                                placeholder="Ex.: 7 dias"
+                              />
+                            </FieldContent>
+                          </Field>
+                          <Field>
+                            <FieldLabel>Observações</FieldLabel>
+                            <FieldContent>
+                              <Input
+                                value={med.observations}
+                                onChange={(e) =>
+                                  updateMedication(index, "observations", e.target.value)
+                                }
+                                placeholder="Opcional"
+                              />
+                            </FieldContent>
+                          </Field>
+                        </div>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+                {medications.length > 0 ? (
+                  <Button type="button" variant="outline" size="sm" onClick={addMedication}>
+                    <Plus className="mr-2 h-4 w-4" />
+                    Adicionar medicamento
+                  </Button>
+                ) : null}
+              </div>
+            ) : null}
         </CardContent>
 
         <div className="mt-4 flex flex-wrap items-center gap-2">
