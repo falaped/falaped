@@ -4,7 +4,7 @@ import { FileCheck, Plus } from "lucide-react"
 import { createClient } from "@/lib/supabase/server"
 import { getAuthenticatedUser } from "@/modules/supabase/get-authenticated-user"
 import { getMedicalCertificatesByProfileId } from "@/modules/medical-certificates/get-medical-certificates-by-profile-id"
-import { MedicalCertificateCard } from "@/components/dashboard/medical-certificates/medical-certificate-card"
+import { MedicalCertificateTable } from "@/components/dashboard/medical-certificates/medical-certificate-table"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Separator } from "@/components/ui/separator"
@@ -14,7 +14,10 @@ export default async function MedicalCertificatesPage() {
   const { profile } = await getAuthenticatedUser(supabase)
   if (!profile?.id) redirect("/auth/login")
 
-  const certificates = await getMedicalCertificatesByProfileId(supabase, profile.id)
+  const certificates = await getMedicalCertificatesByProfileId(
+    supabase,
+    profile.id,
+  )
 
   return (
     <div className="flex flex-col gap-6">
@@ -27,7 +30,8 @@ export default async function MedicalCertificatesPage() {
             </h1>
           </div>
           <p className="mt-1 text-sm text-muted-foreground">
-            Gere atestados de comparecimento, aptidão física, médico e acompanhante.
+            Gere atestados de comparecimento, aptidão física, médico e
+            acompanhante.
           </p>
         </div>
         <Button asChild className="shrink-0">
@@ -59,11 +63,11 @@ export default async function MedicalCertificatesPage() {
           </CardContent>
         </Card>
       ) : (
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {certificates.map((cert) => (
-            <MedicalCertificateCard key={cert.id} certificate={cert} />
-          ))}
-        </div>
+        <Card>
+          <CardContent className="p-0">
+            <MedicalCertificateTable certificates={certificates} />
+          </CardContent>
+        </Card>
       )}
     </div>
   )

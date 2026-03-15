@@ -37,7 +37,9 @@ export {
 } from "./report-templates"
 export {
   generateMedicalCertificateAction,
+  deleteMedicalCertificateAction,
   type GenerateMedicalCertificateResult,
+  type DeleteMedicalCertificateResult,
 } from "./medical-certificates"
 export {
   generatePrescriptionAction,

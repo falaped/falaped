@@ -1,10 +1,13 @@
 import { redirect } from "next/navigation"
-import { FileText } from "lucide-react"
+import { FileText, Plus } from "lucide-react"
 import { createClient } from "@/lib/supabase/server"
-import { Separator } from "@/components/ui/separator"
 import { getAuthenticatedUser } from "@/modules/supabase/get-authenticated-user"
 import { getPrescriptionTemplatesByProfileId } from "@/modules/prescription-templates/get-prescription-templates-by-profile-id"
-import { PrescriptionTemplatesToolbarAndList } from "@/components/dashboard/prescription-templates/prescription-templates-toolbar-and-list"
+import { PrescriptionTemplatesTableSection } from "@/components/dashboard/prescription-templates/prescription-templates-table-section"
+import { Button } from "@/components/ui/button"
+import { Card, CardContent } from "@/components/ui/card"
+import { Separator } from "@/components/ui/separator"
+import { NewPrescriptionLink } from "@/app/dashboard/prescriptions/novo/new-prescription-link"
 
 export default async function PrescriptionTemplatesPage() {
   const supabase = await createClient()
@@ -35,7 +38,28 @@ export default async function PrescriptionTemplatesPage() {
 
       <Separator />
 
-      <PrescriptionTemplatesToolbarAndList templates={templates} />
+      {templates.length === 0 ? (
+        <Card className="border-dashed">
+          <CardContent className="flex flex-col items-center justify-center py-14 text-center">
+            <div className="flex h-14 w-14 items-center justify-center rounded-full bg-muted/50">
+              <FileText className="h-7 w-7 text-muted-foreground" />
+            </div>
+            <p className="mt-4 text-sm font-medium">Nenhum template de receita</p>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Ao criar uma receita, use &quot;Salvar como template&quot; para
+              guardar um modelo e reutilizá-lo depois.
+            </p>
+            <Button asChild className="mt-5">
+              <NewPrescriptionLink>
+                <Plus className="mr-2 h-4 w-4" />
+                Criar receita
+              </NewPrescriptionLink>
+            </Button>
+          </CardContent>
+        </Card>
+      ) : (
+        <PrescriptionTemplatesTableSection templates={templates} />
+      )}
     </div>
   )
 }
