@@ -6,7 +6,7 @@ import { getAuthenticatedUser } from "@/modules/supabase/get-authenticated-user"
 import { getPatientsByProfileId } from "@/modules/patients/get-patients-by-profile-id"
 import { getPrescriptionTemplatesByProfileId } from "@/modules/prescription-templates/get-prescription-templates-by-profile-id"
 import { getPrescriptionTemplateByIdForProfile } from "@/modules/prescription-templates/get-prescription-template-by-id-for-profile"
-import { PrescriptionWizard } from "@/components/dashboard/prescriptions/prescription-wizard"
+import { PrescriptionWizardWrapper } from "./prescription-wizard-wrapper"
 import { Button } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
 
@@ -56,7 +56,7 @@ export default async function NewPrescriptionPage({ searchParams }: PageProps) {
 
       <Separator />
 
-      <PrescriptionWizard
+      <PrescriptionWizardWrapper
         patients={patients}
         profile={profile}
         prescriptionTemplates={prescriptionTemplates}
