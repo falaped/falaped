@@ -11,6 +11,8 @@ export type UpdateProfilePayload = {
   social_media_handle?: string | null
   website?: string | null
   report_template_id?: string | null
+  default_location_state?: string | null
+  default_location_city?: string | null
 }
 
 /**

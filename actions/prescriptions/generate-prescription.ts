@@ -5,6 +5,7 @@ import { ptBR } from "date-fns/locale"
 import { createClient } from "@/lib/supabase/server"
 import { formatDate } from "@/lib/formatters"
 import { getAuthenticatedUser } from "@/modules/supabase/get-authenticated-user"
+import { getProfileDefaultLocation } from "@/modules/profiles/get-profile-default-location"
 import { generatePrescriptionPdf } from "@/modules/prescriptions/generate-prescription-pdf"
 import { insertPrescription } from "@/modules/prescriptions/insert-prescription"
 import { uploadPrescriptionPdf } from "@/modules/prescriptions/upload-prescription-pdf"
@@ -33,7 +34,7 @@ function formatIssuedAt(issuedAt: string): string {
  */
 export async function generatePrescriptionAction(params: {
   payload: unknown
-  locationState: string
+  locationState?: string
   issuedAt?: string
   patientId?: string | null
   caseId?: string | null
@@ -49,23 +50,23 @@ export async function generatePrescriptionAction(params: {
   })
   if (!parsed.success) {
     const msg =
-      parsed.error.flatten().fieldErrors?.locationState?.[0] ??
-      parsed.error.flatten().fieldErrors?.payload?.[0] ??
-      parsed.error.message
+      parsed.error.flatten().fieldErrors?.payload?.[0] ?? parsed.error.message
     return { ok: false, error: msg }
   }
 
+  const locationState =
+    parsed.data.locationState?.trim() || getProfileDefaultLocation(profile)
   const doctor: DoctorInfo = {
     firstName: profile.first_name ?? "",
     surname: profile.surname ?? "",
     crm: profile.crm ?? null,
   }
-  const issuedAtFormatted = formatIssuedAt(
-    parsed.data.issuedAt ?? new Date().toISOString().slice(0, 10),
-  )
-  const issuedAtDate = parsed.data.issuedAt
+  const today = format(new Date(), "yyyy-MM-dd")
+  let issuedAtDate = parsed.data.issuedAt
     ? new Date(parsed.data.issuedAt + "T12:00:00").toISOString().slice(0, 10)
-    : format(new Date(), "yyyy-MM-dd")
+    : today
+  if (issuedAtDate > today) issuedAtDate = today
+  const issuedAtFormatted = formatIssuedAt(issuedAtDate)
 
   try {
     const rawPayload = parsed.data.payload as PrescriptionPayload
@@ -79,7 +80,7 @@ export async function generatePrescriptionAction(params: {
     const buffer = await generatePrescriptionPdf({
       payload,
       doctor,
-      locationState: parsed.data.locationState,
+      locationState,
       issuedAt: issuedAtFormatted,
     })
 
@@ -88,7 +89,7 @@ export async function generatePrescriptionAction(params: {
       patientId: params.patientId ?? null,
       caseId: params.caseId ?? null,
       payload: parsed.data.payload as Record<string, unknown>,
-      locationState: parsed.data.locationState,
+      locationState,
       issuedAt: issuedAtDate,
       orientations: rawPayload.orientations?.trim() || null,
       warningSigns: rawPayload.warningSigns?.trim() || null,

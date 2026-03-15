@@ -5,6 +5,7 @@ import { ptBR } from "date-fns/locale"
 import { createClient } from "@/lib/supabase/server"
 import { formatDate } from "@/lib/formatters"
 import { getAuthenticatedUser } from "@/modules/supabase/get-authenticated-user"
+import { getProfileDefaultLocation } from "@/modules/profiles/get-profile-default-location"
 import { generateMedicalCertificatePdf } from "@/modules/medical-certificates/generate-medical-certificate-pdf"
 import { insertMedicalCertificate } from "@/modules/medical-certificates/insert-medical-certificate"
 import { uploadMedicalCertificatePdf } from "@/modules/medical-certificates/upload-medical-certificate-pdf"
@@ -89,7 +90,7 @@ export async function generateMedicalCertificateAction(
   params: {
     type: "comparecimento" | "aptidao_fisica" | "medico" | "acompanhante"
     payload: unknown
-    locationState: string
+    locationState?: string
     issuedAt?: string
     patientId?: string | null
     caseId?: string | null
@@ -106,9 +107,12 @@ export async function generateMedicalCertificateAction(
     issuedAt: params.issuedAt,
   })
   if (!parsed.success) {
-    const msg = parsed.error.flatten().fieldErrors?.locationState?.[0] ?? parsed.error.message
+    const msg = parsed.error.message
     return { ok: false, error: msg }
   }
+
+  const locationState =
+    parsed.data.locationState?.trim() || getProfileDefaultLocation(profile)
 
   const payloadResult = parsePayloadByType(parsed.data.type, parsed.data.payload)
   if (!payloadResult.ok) return { ok: false, error: payloadResult.error }
@@ -118,12 +122,12 @@ export async function generateMedicalCertificateAction(
     surname: profile.surname ?? "",
     crm: profile.crm ?? null,
   }
-  const issuedAtFormatted = formatIssuedAt(
-    parsed.data.issuedAt ?? new Date().toISOString(),
-  )
-  const issuedAtDate = parsed.data.issuedAt
+  const today = format(new Date(), "yyyy-MM-dd")
+  let issuedAtDate = parsed.data.issuedAt
     ? new Date(parsed.data.issuedAt).toISOString().slice(0, 10)
-    : format(new Date(), "yyyy-MM-dd")
+    : today
+  if (issuedAtDate > today) issuedAtDate = today
+  const issuedAtFormatted = formatIssuedAt(issuedAtDate)
 
   try {
     const raw = payloadResult.payload
@@ -151,7 +155,7 @@ export async function generateMedicalCertificateAction(
       type: parsed.data.type,
       payload: payloadWithFormattedDates,
       doctor,
-      locationState: parsed.data.locationState,
+      locationState,
       issuedAt: issuedAtFormatted,
     })
 
@@ -161,7 +165,7 @@ export async function generateMedicalCertificateAction(
       patientId: params.patientId ?? null,
       caseId: params.caseId ?? null,
       payload: parsed.data.payload as Record<string, unknown>,
-      locationState: parsed.data.locationState,
+      locationState,
       issuedAt: issuedAtDate,
     })
 

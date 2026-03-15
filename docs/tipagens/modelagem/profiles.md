@@ -25,6 +25,8 @@ Perfil do médico (dashboard); ligado a auth.users. Referenciado por authenticat
 | social_media_handle | text | NULL | — | |
 | website | text | NULL | — | |
 | report_template_id | uuid | NULL | — | FK → report_templates.id |
+| default_location_state | text | NULL | — | Estado padrão (relatórios, atestados, receitas) |
+| default_location_city | text | NULL | — | Cidade padrão (ex.: Estado - Cidade) |
 
 ## Chaves
 

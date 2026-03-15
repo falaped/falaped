@@ -12,7 +12,6 @@ import {
   Stethoscope,
   UserCircle,
   ChevronLeft,
-  MapPin,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -30,8 +29,8 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { MedicalCertificatePatientPickerSheet } from "./medical-certificate-patient-picker-sheet"
 import { DatePickerField } from "./date-picker-field"
 import { TimePickerField } from "./time-picker-field"
-import { useLocationState } from "./use-location-state"
 import { formatDate } from "@/lib/formatters"
+import { getProfileDefaultLocation } from "@/modules/profiles/get-profile-default-location"
 import { generateMedicalCertificateAction } from "@/actions"
 import type { Patient } from "@/modules/patients/types"
 import type { MedicalCertificateType } from "@/modules/medical-certificates/types"
@@ -153,6 +152,8 @@ type MedicalCertificateWizardProfile = {
   first_name: string | null
   surname: string | null
   crm: string | null
+  default_location_state?: string | null
+  default_location_city?: string | null
 }
 
 type MedicalCertificateWizardProps = {
@@ -168,11 +169,8 @@ export function MedicalCertificateWizard({ patients, profile }: MedicalCertifica
   const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null)
   const [pickerOpen, setPickerOpen] = useState(false)
   const [payload, setPayload] = useState<WizardPayload>(initialPayload)
-  const [locationState, setLocationState] = useState("")
-  const [issuedAt, setIssuedAt] = useState(format(new Date(), "yyyy-MM-dd"))
+  const [issuedAt] = useState(format(new Date(), "yyyy-MM-dd"))
   const [generating, setGenerating] = useState(false)
-
-  const { state: geoState, loading: geoLoading, error: geoError, requestLocation } = useLocationState((s) => setLocationState(s))
 
   const currentPayload = type ? payload[type] : null
 
@@ -207,16 +205,10 @@ export function MedicalCertificateWizard({ patients, profile }: MedicalCertifica
 
   function handleGenerate() {
     if (!type || !currentPayload) return
-    const location = locationState || geoState
-    if (!location.trim()) {
-      toast.error("Informe o Estado (ex.: São Paulo).")
-      return
-    }
     setGenerating(true)
     generateMedicalCertificateAction({
       type,
       payload: currentPayload as unknown as Record<string, unknown>,
-      locationState: location.trim(),
       issuedAt: issuedAt ? new Date(issuedAt).toISOString() : undefined,
       patientId: selectedPatient?.id ?? null,
       caseId: null,
@@ -764,39 +756,6 @@ export function MedicalCertificateWizard({ patients, profile }: MedicalCertifica
           )}
           </section>
 
-          <Separator />
-
-          <section className="space-y-4">
-            <h4 className="text-sm font-medium text-muted-foreground">
-              Local e data
-            </h4>
-            <Field>
-              <FieldLabel>Estado (local do atestado)</FieldLabel>
-              <FieldContent className="flex gap-2">
-                <Input
-                  value={locationState || geoState}
-                  onChange={(e) => setLocationState(e.target.value)}
-                  placeholder="Ex.: São Paulo"
-                />
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={requestLocation}
-                  disabled={geoLoading}
-                >
-                  <MapPin className="mr-2 h-4 w-4" />
-                  {geoLoading ? "Obtendo…" : "Usar minha localização"}
-                </Button>
-              </FieldContent>
-              {geoError && <FieldError errors={[{ message: geoError }]} />}
-            </Field>
-            <DatePickerField
-              label="Data de emissão"
-              value={issuedAt}
-              onChange={setIssuedAt}
-              placeholder="Selecione a data"
-            />
-          </section>
         </CardContent>
         <div className="mt-4 flex gap-2">
           <Button variant="ghost" onClick={() => setStep(2)}>
@@ -810,7 +769,7 @@ export function MedicalCertificateWizard({ patients, profile }: MedicalCertifica
   }
 
   if (step === 4 && type && currentPayload) {
-    const location = locationState || geoState || ""
+    const location = getProfileDefaultLocation(profile)
     const issuedAtFormatted = issuedAt
       ? format(new Date(issuedAt + "T12:00:00"), "d 'de' MMMM 'de' yyyy", { locale: ptBR })
       : ""

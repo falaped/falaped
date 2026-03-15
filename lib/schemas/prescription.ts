@@ -21,7 +21,7 @@ export const prescriptionPayloadSchema = z.object({
 
 export const generatePrescriptionSchema = z.object({
   payload: prescriptionPayloadSchema,
-  locationState: z.string().min(1, "Estado é obrigatório"),
+  locationState: z.string().optional(),
   issuedAt: z.string().optional(),
 })
 

@@ -37,6 +37,14 @@ const updateProfileFormSchema = z.object({
       .transform((v) => (v.trim() === "" ? undefined : v.trim()))
       .pipe(z.string().uuid("Selecione um template válido").optional())
   ),
+  default_location_state: z
+    .string()
+    .max(100, "Use no máximo 100 caracteres")
+    .transform((v) => (v.trim() === "" ? undefined : v.trim())),
+  default_location_city: z
+    .string()
+    .max(100, "Use no máximo 100 caracteres")
+    .transform((v) => (v.trim() === "" ? undefined : v.trim())),
 })
 
 export const updateProfileSchema = updateProfileFormSchema

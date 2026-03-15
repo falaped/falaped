@@ -36,7 +36,7 @@ export async function getAuthenticatedUser(
   const { data: profileData, error: profileError } = await supabase
     .from("profiles")
     .select(
-      "id, auth_user_id, phone, first_name, surname, email, crm, rqe, logo_url_full, logo_url_short, social_media_handle, website, report_template_id, authenticated_users(id, phone, status, profile_id, whatsapp_linked_at, linked_phone_status)"
+      "id, auth_user_id, phone, first_name, surname, email, crm, rqe, logo_url_full, logo_url_short, social_media_handle, website, report_template_id, default_location_state, default_location_city, authenticated_users(id, phone, status, profile_id, whatsapp_linked_at, linked_phone_status)"
     )
     .eq("auth_user_id", user.id)
     .maybeSingle();

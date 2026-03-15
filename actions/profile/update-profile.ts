@@ -41,6 +41,8 @@ export async function updateProfileAction(
       social_media_handle: parsed.data.social_media_handle ?? null,
       website: parsed.data.website ?? null,
       report_template_id: parsed.data.report_template_id ?? null,
+      default_location_state: parsed.data.default_location_state ?? null,
+      default_location_city: parsed.data.default_location_city ?? null,
     }
     await updateProfile(supabase, profile.id, payload)
     revalidatePath("/dashboard/profile")

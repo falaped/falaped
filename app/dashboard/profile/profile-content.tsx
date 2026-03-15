@@ -14,6 +14,7 @@ import {
   Moon,
   Laptop,
   Trash2Icon,
+  MapPin,
 } from "lucide-react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -87,6 +88,7 @@ export function ProfileContent({ profile, reportTemplateOptions }: ProfileConten
   const [logoShortLoading, setLogoShortLoading] = useState(false)
   const [logoClearLoading, setLogoClearLoading] = useState<"full" | "short" | null>(null)
   const [logoError, setLogoError] = useState<string | null>(null)
+  const [geoLoading, setGeoLoading] = useState(false)
   const fullInputRef = useRef<HTMLInputElement>(null)
   const shortInputRef = useRef<HTMLInputElement>(null)
 
@@ -104,6 +106,8 @@ export function ProfileContent({ profile, reportTemplateOptions }: ProfileConten
       social_media_handle: profile.social_media_handle ?? "",
       website: profile.website ?? "",
       report_template_id: profile.report_template_id ?? "",
+      default_location_state: profile.default_location_state ?? "",
+      default_location_city: profile.default_location_city ?? "",
     },
   })
 
@@ -122,6 +126,54 @@ export function ProfileContent({ profile, reportTemplateOptions }: ProfileConten
     } finally {
       setStatusUpdating(false)
     }
+  }
+
+  async function handleUseGeolocation() {
+    if (!navigator.geolocation) {
+      toast.error("Geolocalização não é suportada neste navegador.")
+      return
+    }
+    setGeoLoading(true)
+    navigator.geolocation.getCurrentPosition(
+      async (position) => {
+        try {
+          const { latitude, longitude } = position.coords
+          const res = await fetch(
+            `https://nominatim.openstreetmap.org/reverse?lat=${latitude}&lon=${longitude}&format=json&addressdetails=1`,
+            { headers: { "Accept-Language": "pt-BR", "User-Agent": "FalapedApp/1.0" } },
+          )
+          if (!res.ok) throw new Error("Falha ao obter endereço.")
+          const data = (await res.json()) as {
+            address?: {
+              state?: string
+              city?: string
+              town?: string
+              village?: string
+              municipality?: string
+            }
+          }
+          const state = data.address?.state?.trim()
+          const city =
+            data.address?.city?.trim() ||
+            data.address?.town?.trim() ||
+            data.address?.village?.trim() ||
+            data.address?.municipality?.trim()
+          if (state) form.setValue("default_location_state", state)
+          if (city) form.setValue("default_location_city", city ?? "")
+          if (state || city) toast.success("Estado e cidade preenchidos pela sua localização.")
+          else toast.error("Não foi possível identificar estado ou cidade para esta localização.")
+        } catch {
+          toast.error("Não foi possível obter o endereço. Tente novamente.")
+        } finally {
+          setGeoLoading(false)
+        }
+      },
+      () => {
+        setGeoLoading(false)
+        toast.error("Permissão de localização negada ou localização indisponível.")
+      },
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 },
+    )
   }
 
   async function handleProfileSubmit(data: UpdateProfileFormValues) {
@@ -411,8 +463,72 @@ export function ProfileContent({ profile, reportTemplateOptions }: ProfileConten
                         : undefined
                     }
                   />
-                </FieldContent>
+                  </FieldContent>
               </Field>
+              <div className="border-t border-border pt-4 mt-4 space-y-4">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <div className="flex items-center gap-2">
+                    <MapPin className="h-5 w-5 text-muted-foreground" />
+                    <div>
+                      <p className="text-sm font-medium">Localização padrão</p>
+                      <p className="text-xs text-muted-foreground">
+                        Será utilizada nos relatórios, atestados e receitas (ex.: São Paulo - Osasco).
+                      </p>
+                    </div>
+                  </div>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={handleUseGeolocation}
+                    disabled={geoLoading}
+                    aria-label="Usar minha localização para preencher estado e cidade"
+                  >
+                    <MapPin className="mr-2 h-4 w-4" />
+                    {geoLoading ? "Obtendo…" : "Usar minha localização"}
+                  </Button>
+                </div>
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <Field data-invalid={!!form.formState.errors.default_location_state}>
+                    <FieldLabel htmlFor="default_location_state">Estado</FieldLabel>
+                    <FieldContent>
+                      <Input
+                        id="default_location_state"
+                        type="text"
+                        placeholder="Ex.: São Paulo"
+                        aria-invalid={!!form.formState.errors.default_location_state}
+                        {...form.register("default_location_state")}
+                      />
+                      <FieldError
+                        errors={
+                          form.formState.errors.default_location_state
+                            ? [form.formState.errors.default_location_state]
+                            : undefined
+                        }
+                      />
+                    </FieldContent>
+                  </Field>
+                  <Field data-invalid={!!form.formState.errors.default_location_city}>
+                    <FieldLabel htmlFor="default_location_city">Cidade</FieldLabel>
+                    <FieldContent>
+                      <Input
+                        id="default_location_city"
+                        type="text"
+                        placeholder="Ex.: Osasco"
+                        aria-invalid={!!form.formState.errors.default_location_city}
+                        {...form.register("default_location_city")}
+                      />
+                      <FieldError
+                        errors={
+                          form.formState.errors.default_location_city
+                            ? [form.formState.errors.default_location_city]
+                            : undefined
+                        }
+                      />
+                    </FieldContent>
+                  </Field>
+                </div>
+              </div>
             </FieldGroup>
             {profileError && (
               <p className="text-sm text-destructive" role="alert">

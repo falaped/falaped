@@ -45,7 +45,7 @@ export const medicalCertificateTypeSchema = z.enum([
 export const generateMedicalCertificateSchema = z.object({
   type: medicalCertificateTypeSchema,
   payload: z.unknown(),
-  locationState: z.string().min(1, "Estado é obrigatório"),
+  locationState: z.string().optional(),
   issuedAt: z.string().optional(),
 })
 
