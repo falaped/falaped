@@ -17,6 +17,9 @@ Receitas de medicamentos geradas pelo perfil (médico). Usado para histórico e 
 | payload | jsonb | NOT NULL | '{}' | patientName, birthDate, medications[] |
 | location_state | text | NULL | — | Estado (local) da receita |
 | issued_at | date | NOT NULL | — | Data de emissão |
+| orientations | text | NULL | — | Orientações gerais da receita |
+| warning_signs | text | NULL | — | Sinais de alerta para o paciente/responsável |
+| additional_notes | text | NULL | — | Anotações adicionais do médico |
 | pdf_storage_path | text | NULL | — | Caminho do PDF no storage (opcional) |
 | created_at | timestamptz | NOT NULL | now() | |
 | updated_at | timestamptz | NOT NULL | now() | (trigger set_updated_at_prescriptions) |

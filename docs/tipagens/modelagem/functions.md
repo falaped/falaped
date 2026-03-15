@@ -69,3 +69,12 @@ Atribui `new.updated_at = now()` e retorna new.
 - **Uso:** trigger BEFORE UPDATE em prescriptions (trg_prescriptions_set_updated_at)
 
 Atribui `new.updated_at = now()` e retorna new.
+
+---
+
+## set_updated_at_prescription_templates()
+
+- **Retorno:** trigger
+- **Uso:** trigger BEFORE UPDATE em prescription_templates (trg_prescription_templates_set_updated_at)
+
+Atribui `new.updated_at = now()` e retorna new.

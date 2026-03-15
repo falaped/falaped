@@ -49,3 +49,15 @@ Atualiza `updated_at` com `now()` antes de qualquer UPDATE em medical_certificat
 **Definição:** `CREATE TRIGGER trg_prescriptions_set_updated_at BEFORE UPDATE ON prescriptions FOR EACH ROW EXECUTE FUNCTION set_updated_at_prescriptions()`
 
 Atualiza `updated_at` com `now()` antes de qualquer UPDATE em prescriptions.
+
+---
+
+## trg_prescription_templates_set_updated_at
+
+| Tabela | Evento | Função |
+|--------|--------|--------|
+| prescription_templates | BEFORE UPDATE | set_updated_at_prescription_templates() |
+
+**Definição:** `CREATE TRIGGER trg_prescription_templates_set_updated_at BEFORE UPDATE ON prescription_templates FOR EACH ROW EXECUTE FUNCTION set_updated_at_prescription_templates()`
+
+Atualiza `updated_at` com `now()` antes de qualquer UPDATE em prescription_templates.

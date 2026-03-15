@@ -19,6 +19,7 @@ Documentação da tipagem e modelagem do banco **public** do projeto FALAPED. Ge
 | report_templates | [report_templates.md](./report_templates.md) |
 | medical_certificates | [medical_certificates.md](./medical_certificates.md) |
 | prescriptions | [prescriptions.md](./prescriptions.md) |
+| prescription_templates | [prescription_templates.md](./prescription_templates.md) |
 | phone_link_codes | [phone_link_codes.md](./phone_link_codes.md) |
 | incoming_webhook_events | [incoming_webhook_events.md](./incoming_webhook_events.md) |
 | leads | [leads.md](./leads.md) |

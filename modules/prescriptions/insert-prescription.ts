@@ -7,6 +7,9 @@ export type InsertPrescriptionParams = {
   payload: Record<string, unknown>
   locationState: string
   issuedAt: string
+  orientations?: string | null
+  warningSigns?: string | null
+  additionalNotes?: string | null
 }
 
 /**
@@ -25,6 +28,9 @@ export async function insertPrescription(
       payload: params.payload,
       location_state: params.locationState,
       issued_at: params.issuedAt,
+      orientations: params.orientations ?? null,
+      warning_signs: params.warningSigns ?? null,
+      additional_notes: params.additionalNotes ?? null,
       pdf_storage_path: null,
     })
     .select("id")

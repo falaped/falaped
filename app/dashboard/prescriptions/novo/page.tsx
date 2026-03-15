@@ -4,16 +4,34 @@ import { Pill, ChevronLeft } from "lucide-react"
 import { createClient } from "@/lib/supabase/server"
 import { getAuthenticatedUser } from "@/modules/supabase/get-authenticated-user"
 import { getPatientsByProfileId } from "@/modules/patients/get-patients-by-profile-id"
+import { getPrescriptionTemplatesByProfileId } from "@/modules/prescription-templates/get-prescription-templates-by-profile-id"
+import { getPrescriptionTemplateByIdForProfile } from "@/modules/prescription-templates/get-prescription-template-by-id-for-profile"
 import { PrescriptionWizard } from "@/components/dashboard/prescriptions/prescription-wizard"
 import { Button } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
 
-export default async function NewPrescriptionPage() {
+type PageProps = { searchParams: Promise<{ templateId?: string }> }
+
+export default async function NewPrescriptionPage({ searchParams }: PageProps) {
   const supabase = await createClient()
   const { profile } = await getAuthenticatedUser(supabase)
   if (!profile?.id) redirect("/auth/login")
 
-  const patients = await getPatientsByProfileId(supabase, profile.id)
+  const [patients, prescriptionTemplates] = await Promise.all([
+    getPatientsByProfileId(supabase, profile.id),
+    getPrescriptionTemplatesByProfileId(supabase, profile.id),
+  ])
+
+  const resolved = await searchParams
+  const templateId = resolved.templateId
+  const initialTemplate =
+    templateId && typeof templateId === "string"
+      ? await getPrescriptionTemplateByIdForProfile(
+          supabase,
+          templateId,
+          profile.id,
+        )
+      : null
 
   return (
     <div className="flex flex-col gap-6">
@@ -38,7 +56,12 @@ export default async function NewPrescriptionPage() {
 
       <Separator />
 
-      <PrescriptionWizard patients={patients} profile={profile} />
+      <PrescriptionWizard
+        patients={patients}
+        profile={profile}
+        prescriptionTemplates={prescriptionTemplates}
+        initialTemplate={initialTemplate}
+      />
     </div>
   )
 }

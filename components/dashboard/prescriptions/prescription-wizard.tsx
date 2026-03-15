@@ -1,12 +1,12 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect, useRef } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { toast } from "sonner"
 import { format } from "date-fns"
 import { ptBR } from "date-fns/locale"
-import { UserPlus, ClipboardList, ChevronLeft, MapPin, Plus, Trash2 } from "lucide-react"
+import { UserPlus, ClipboardList, ChevronLeft, MapPin, Plus, Trash2, Save, LayoutTemplate } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Separator } from "@/components/ui/separator"
@@ -18,14 +18,24 @@ import {
   FieldError,
   FieldLabel,
 } from "@/components/ui/field"
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog"
 import { MedicalCertificatePatientPickerSheet } from "@/components/dashboard/medical-certificates/medical-certificate-patient-picker-sheet"
 import { DatePickerField } from "@/components/dashboard/medical-certificates/date-picker-field"
 import { useLocationState } from "@/components/dashboard/medical-certificates/use-location-state"
 import { formatDate } from "@/lib/formatters"
-import { generatePrescriptionAction } from "@/actions"
+import { generatePrescriptionAction, createPrescriptionTemplateAction } from "@/actions"
 import type { Patient } from "@/modules/patients/types"
 import type { PrescriptionPayload } from "@/modules/prescriptions/types"
 import { getPrescriptionPreviewParagraphs } from "@/modules/prescriptions/get-prescription-preview-paragraphs"
+import type { PrescriptionTemplateSnapshot } from "@/modules/prescription-templates/types"
+import type { PrescriptionTemplateOption } from "@/modules/prescription-templates/get-prescription-templates-by-profile-id"
 import { cn } from "@/lib/utils"
 
 function WizardStepper({ currentStep }: { currentStep: Step }) {
@@ -56,9 +66,30 @@ type PrescriptionWizardProfile = {
 type PrescriptionWizardProps = {
   patients: Patient[]
   profile: PrescriptionWizardProfile
+  prescriptionTemplates?: PrescriptionTemplateOption[]
+  initialTemplate?: { snapshot: PrescriptionTemplateSnapshot } | null
 }
 
-export function PrescriptionWizard({ patients, profile }: PrescriptionWizardProps) {
+function applySnapshotToMedications(
+  snapshot: PrescriptionTemplateSnapshot,
+): Array<{ name: string; dosage: string; posology: string; duration: string; observations: string }> {
+  const meds = snapshot.medications ?? []
+  if (meds.length === 0) return [initialMedication()]
+  return meds.map((m) => ({
+    name: m.name ?? "",
+    dosage: m.dosage ?? "",
+    posology: m.posology ?? "",
+    duration: m.duration ?? "",
+    observations: m.observations ?? "",
+  }))
+}
+
+export function PrescriptionWizard({
+  patients,
+  profile,
+  prescriptionTemplates = [],
+  initialTemplate,
+}: PrescriptionWizardProps) {
   const router = useRouter()
   const [step, setStep] = useState<Step>(1)
   const [dataSource, setDataSource] = useState<"patient" | "manual" | null>(null)
@@ -71,9 +102,40 @@ export function PrescriptionWizard({ patients, profile }: PrescriptionWizardProp
   ])
   const [locationState, setLocationState] = useState("")
   const [issuedAt, setIssuedAt] = useState(format(new Date(), "yyyy-MM-dd"))
+  const [orientations, setOrientations] = useState("")
+  const [warningSigns, setWarningSigns] = useState("")
+  const [additionalNotes, setAdditionalNotes] = useState("")
   const [generating, setGenerating] = useState(false)
+  const [saveAsTemplateOpen, setSaveAsTemplateOpen] = useState(false)
+  const [templateName, setTemplateName] = useState("")
+  const [savingTemplate, setSavingTemplate] = useState(false)
+  const [templatePickerOpen, setTemplatePickerOpen] = useState(false)
 
   const { state: geoState, loading: geoLoading, error: geoError, requestLocation } = useLocationState((s) => setLocationState(s))
+
+  const initialTemplateApplied = useRef(false)
+  useEffect(() => {
+    if (!initialTemplate?.snapshot || initialTemplateApplied.current) return
+    initialTemplateApplied.current = true
+    const s = initialTemplate.snapshot
+    setMedications(applySnapshotToMedications(s))
+    setOrientations(s.orientations ?? "")
+    setWarningSigns(s.warningSigns ?? "")
+    setAdditionalNotes(s.additionalNotes ?? "")
+    if (s.locationState?.trim()) setLocationState(s.locationState.trim())
+    setDataSource("template")
+    setStep(2)
+  }, [initialTemplate])
+
+  function applyTemplateSnapshot(snapshot: PrescriptionTemplateSnapshot) {
+    setMedications(applySnapshotToMedications(snapshot))
+    setOrientations(snapshot.orientations ?? "")
+    setWarningSigns(snapshot.warningSigns ?? "")
+    setAdditionalNotes(snapshot.additionalNotes ?? "")
+    if (snapshot.locationState?.trim()) setLocationState(snapshot.locationState.trim())
+    setDataSource("template")
+    setStep(2)
+  }
 
   function handleSelectPatient(patient: Patient) {
     setSelectedPatient(patient)
@@ -119,6 +181,53 @@ export function PrescriptionWizard({ patients, profile }: PrescriptionWizardProp
           duration: m.duration.trim() || undefined,
           observations: m.observations.trim() || undefined,
         })),
+      orientations: orientations.trim() || undefined,
+      warningSigns: warningSigns.trim() || undefined,
+      additionalNotes: additionalNotes.trim() || undefined,
+    }
+  }
+
+  function buildTemplateSnapshot() {
+    const meds = medications
+      .filter((m) => m.name.trim() && m.posology.trim())
+      .map((m) => ({
+        name: m.name.trim(),
+        dosage: m.dosage.trim() || undefined,
+        posology: m.posology.trim(),
+        duration: m.duration.trim() || undefined,
+        observations: m.observations.trim() || undefined,
+      }))
+    if (meds.length === 0) return null
+    return {
+      medications: meds,
+      orientations: orientations.trim() || undefined,
+      warningSigns: warningSigns.trim() || undefined,
+      additionalNotes: additionalNotes.trim() || undefined,
+      locationState: (locationState || geoState).trim() || undefined,
+    }
+  }
+
+  async function handleSaveAsTemplate() {
+    const snapshot = buildTemplateSnapshot()
+    if (!snapshot) {
+      toast.error("Adicione pelo menos um medicamento com nome e posologia para salvar como template.")
+      return
+    }
+    const name = templateName.trim()
+    if (!name) {
+      toast.error("Informe o nome do template.")
+      return
+    }
+    setSavingTemplate(true)
+    const result = await createPrescriptionTemplateAction({ name, snapshot })
+    setSavingTemplate(false)
+    if (result.ok) {
+      toast.success("Template salvo.")
+      setTemplateName("")
+      setSaveAsTemplateOpen(false)
+      router.refresh()
+    } else {
+      toast.error(result.error)
     }
   }
 
@@ -170,11 +279,11 @@ export function PrescriptionWizard({ patients, profile }: PrescriptionWizardProp
             <WizardStepper currentStep={1} />
             <CardTitle className="mt-2">Como deseja preencher os dados?</CardTitle>
             <CardDescription>
-              Associe a um paciente para usar nome e data de nascimento do cadastro, ou preencha manualmente.
+              Associe a um paciente, use um template ou preencha manualmente.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
               <Card
                 className={cn(
                   "cursor-pointer border transition-colors hover:border-primary/20 hover:bg-muted/30",
@@ -234,6 +343,49 @@ export function PrescriptionWizard({ patients, profile }: PrescriptionWizardProp
                   </div>
                 </CardContent>
               </Card>
+              {prescriptionTemplates.length > 0 && (
+                <Dialog open={templatePickerOpen} onOpenChange={setTemplatePickerOpen}>
+                  <Card
+                    className="cursor-pointer border transition-colors hover:border-primary/20 hover:bg-muted/30"
+                    onClick={() => setTemplatePickerOpen(true)}
+                  >
+                    <CardContent className="p-5">
+                      <div className="flex flex-col gap-2">
+                        <LayoutTemplate className="h-5 w-5 text-muted-foreground" />
+                        <h3 className="font-medium text-foreground">
+                          Usar um template
+                        </h3>
+                        <p className="text-sm text-muted-foreground">
+                          Preencher com um modelo que você salvou.
+                        </p>
+                      </div>
+                    </CardContent>
+                  </Card>
+                  <DialogContent>
+                    <DialogHeader>
+                      <DialogTitle>Escolher template</DialogTitle>
+                    </DialogHeader>
+                    <p className="text-sm text-muted-foreground">
+                      Selecione um template para preencher medicamentos e orientações.
+                    </p>
+                    <div className="flex flex-col gap-2 py-2">
+                      {prescriptionTemplates.map((t) => (
+                        <Button
+                          key={t.id}
+                          variant="outline"
+                          className="justify-start text-left"
+                          onClick={() => {
+                            applyTemplateSnapshot(t.snapshot)
+                            setTemplatePickerOpen(false)
+                          }}
+                        >
+                          {t.name}
+                        </Button>
+                      ))}
+                    </div>
+                  </DialogContent>
+                </Dialog>
+              )}
             </div>
           </CardContent>
         </Card>
@@ -427,12 +579,98 @@ export function PrescriptionWizard({ patients, profile }: PrescriptionWizardProp
               placeholder="Selecione a data"
             />
           </section>
+
+          <Separator />
+
+          <section className="space-y-4">
+            <h4 className="text-sm font-medium text-muted-foreground">
+              Orientações e anotações
+            </h4>
+            <Field>
+              <FieldLabel>Orientações</FieldLabel>
+              <FieldContent>
+                <Textarea
+                  value={orientations}
+                  onChange={(e) => setOrientations(e.target.value)}
+                  placeholder="Orientações gerais para o paciente/responsável"
+                  rows={3}
+                  className="resize-none"
+                />
+              </FieldContent>
+            </Field>
+            <Field>
+              <FieldLabel>Sinais de alerta</FieldLabel>
+              <FieldContent>
+                <Textarea
+                  value={warningSigns}
+                  onChange={(e) => setWarningSigns(e.target.value)}
+                  placeholder="Sinais de alerta para retornar ao médico"
+                  rows={3}
+                  className="resize-none"
+                />
+              </FieldContent>
+            </Field>
+            <Field>
+              <FieldLabel>Anotações adicionais</FieldLabel>
+              <FieldContent>
+                <Textarea
+                  value={additionalNotes}
+                  onChange={(e) => setAdditionalNotes(e.target.value)}
+                  placeholder="Opcional"
+                  rows={2}
+                  className="resize-none"
+                />
+              </FieldContent>
+            </Field>
+          </section>
         </CardContent>
-        <div className="mt-4 flex gap-2">
+        <div className="mt-4 flex flex-wrap items-center gap-2">
           <Button variant="ghost" onClick={() => setStep(1)}>
             <ChevronLeft className="mr-2 h-4 w-4" />
             Voltar
           </Button>
+          <Dialog open={saveAsTemplateOpen} onOpenChange={setSaveAsTemplateOpen}>
+            <DialogTrigger asChild>
+              <Button type="button" variant="outline">
+                <Save className="mr-2 h-4 w-4" />
+                Salvar como template
+              </Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Salvar como template</DialogTitle>
+              </DialogHeader>
+              <p className="text-sm text-muted-foreground">
+                Salve os medicamentos, orientações e anotações atuais para usar em outras receitas.
+              </p>
+              <Field>
+                <FieldLabel>Nome do template</FieldLabel>
+                <FieldContent>
+                  <Input
+                    value={templateName}
+                    onChange={(e) => setTemplateName(e.target.value)}
+                    placeholder="Ex.: Receita resfriado comum"
+                  />
+                </FieldContent>
+              </Field>
+              <DialogFooter>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setSaveAsTemplateOpen(false)}
+                >
+                  Cancelar
+                </Button>
+                <Button
+                  type="button"
+                  onClick={handleSaveAsTemplate}
+                  disabled={savingTemplate}
+                >
+                  {savingTemplate ? "Salvando…" : "Salvar"}
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
           <Button onClick={() => setStep(3)}>Revisar</Button>
         </div>
       </Card>

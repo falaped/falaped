@@ -59,6 +59,7 @@ const navMain = [
     isActive: false,
     items: [
       { title: "Templates de relatório", url: "/dashboard/report-templates" },
+      { title: "Templates de receita", url: "/dashboard/prescription-templates" },
     ],
   },
   {

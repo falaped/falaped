@@ -90,6 +90,9 @@ export async function generatePrescriptionAction(params: {
       payload: parsed.data.payload as Record<string, unknown>,
       locationState: parsed.data.locationState,
       issuedAt: issuedAtDate,
+      orientations: rawPayload.orientations?.trim() || null,
+      warningSigns: rawPayload.warningSigns?.trim() || null,
+      additionalNotes: rawPayload.additionalNotes?.trim() || null,
     })
 
     const pdfStoragePath = await uploadPrescriptionPdf(

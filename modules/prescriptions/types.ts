@@ -10,6 +10,9 @@ export type PrescriptionPayload = {
   patientName?: string
   birthDate?: string
   medications: PrescriptionMedication[]
+  orientations?: string
+  warningSigns?: string
+  additionalNotes?: string
 }
 
 export type PrescriptionListItem = {

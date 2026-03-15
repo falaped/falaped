@@ -43,3 +43,9 @@ export {
   generatePrescriptionAction,
   type GeneratePrescriptionResult,
 } from "./prescriptions"
+export {
+  createPrescriptionTemplateAction,
+  deletePrescriptionTemplateAction,
+  type CreatePrescriptionTemplateResult,
+  type DeletePrescriptionTemplateResult,
+} from "./prescription-templates"

@@ -14,6 +14,9 @@ export const prescriptionPayloadSchema = z.object({
   medications: z
     .array(prescriptionMedicationSchema)
     .min(1, "Adicione pelo menos um medicamento"),
+  orientations: z.string().optional(),
+  warningSigns: z.string().optional(),
+  additionalNotes: z.string().optional(),
 })
 
 export const generatePrescriptionSchema = z.object({

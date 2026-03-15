@@ -44,6 +44,16 @@ export function getPrescriptionPreviewParagraphs(
     lines.push(parts.join(" - "), "")
   })
 
+  if (payload.orientations?.trim()) {
+    lines.push("Orientações: " + payload.orientations.trim(), "")
+  }
+  if (payload.warningSigns?.trim()) {
+    lines.push("Sinais de alerta: " + payload.warningSigns.trim(), "")
+  }
+  if (payload.additionalNotes?.trim()) {
+    lines.push("Anotações adicionais: " + payload.additionalNotes.trim(), "")
+  }
+
   lines.push(locationDate, sig, doctorLine)
   return lines
 }
