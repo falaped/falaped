@@ -6,12 +6,12 @@ import { useRouter, usePathname } from "next/navigation"
 import { toast } from "sonner"
 import { format } from "date-fns"
 import { ptBR } from "date-fns/locale"
-import { UserPlus, ClipboardList, ChevronLeft, Plus, Trash2, Save } from "lucide-react"
+import { UserPlus, ClipboardList, ChevronLeft, Plus, Trash2, Save, FileText } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Separator } from "@/components/ui/separator"
 import { Input } from "@/components/ui/input"
-import { Textarea } from "@/components/ui/textarea"
+import { RichTextEditor } from "@/components/ui/rich-text-editor"
 import {
   Field,
   FieldContent,
@@ -67,6 +67,8 @@ type PrescriptionWizardProfile = {
   first_name: string | null
   surname: string | null
   crm: string | null
+  default_location_state?: string | null
+  default_location_city?: string | null
 }
 
 type PrescriptionWizardProps = {
@@ -158,6 +160,7 @@ export function PrescriptionWizard({
     setWarningSigns(s.warningSigns ?? "")
     setAdditionalNotes(s.additionalNotes ?? "")
     setDataSource("template")
+    setManualConfirmed(true)
     setStep(1)
   }, [initialTemplate])
 
@@ -167,6 +170,13 @@ export function PrescriptionWizard({
     setWarningSigns(snapshot.warningSigns ?? "")
     setAdditionalNotes(snapshot.additionalNotes ?? "")
     setDataSource("template")
+    setManualConfirmed(true)
+  }
+
+  function handleSelectTemplate(template: PrescriptionTemplateOption) {
+    applyTemplateSnapshot(template.snapshot)
+    setTemplatePickerOpen(false)
+    toast.success(`Template "${template.name}" aplicado.`)
   }
 
   function handleSelectPatient(patient: Patient) {
@@ -194,6 +204,14 @@ export function PrescriptionWizard({
 
   function handleOpenPatientPicker() {
     setPickerOpen(true)
+  }
+
+  function handleRemovePatient() {
+    setSelectedPatient(null)
+    setDataSource(null)
+    setManualConfirmed(false)
+    setPatientName("")
+    setBirthDate("")
   }
 
   function addMedication() {
@@ -307,94 +325,129 @@ export function PrescriptionWizard({
       .finally(() => setGenerating(false))
   }
 
+  const hasPatient =
+    (dataSource === "patient" && selectedPatient) ||
+    ((dataSource === "manual" || dataSource === "template") && manualConfirmed)
+
   if (step === 1) {
     return (
       <>
-        <Card>
-          <CardHeader className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-            <div>
-              <WizardStepper currentStep={1} />
-            </div>
-            <div className="flex shrink-0 gap-2">
-              <Button
-                type="button"
-                variant={dataSource === "patient" && selectedPatient ? "default" : "outline"}
-                size="sm"
-                onClick={handleOpenPatientPicker}
-              >
-                <UserPlus className="mr-2 h-4 w-4" />
-                Associar paciente
-              </Button>
-              <Button
-                type="button"
-                variant={dataSource === "manual" || dataSource === "template" ? "default" : "outline"}
-                size="sm"
-                onClick={handleDataSourceManual}
-              >
-                <ClipboardList className="mr-2 h-4 w-4" />
-                Preencher manualmente
-              </Button>
-            </div>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            {dataSource === "patient" && selectedPatient ? (
-              <div className="rounded-lg border border-border bg-muted/30 px-5 py-4 shadow-sm">
-                <div className="flex flex-wrap items-center justify-between gap-3">
-                  <div className="flex flex-wrap items-baseline gap-2">
-                    <p className="font-semibold text-foreground">{selectedPatient.name}</p>
-                    <span className="text-muted-foreground">·</span>
-                    <p className="text-sm text-muted-foreground">
-                      {selectedPatient.birth_date
-                        ? format(new Date(selectedPatient.birth_date + "T12:00:00"), "dd/MM/yyyy", { locale: ptBR })
-                        : "Data de nascimento não informada"}
-                    </p>
-                  </div>
+        <div className="space-y-6">
+          {/* Passo 1 - Associar ou preencher manualmente um paciente */}
+          <Card>
+            <CardHeader className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <CardTitle className="text-base">Passo 1 — Associar ou preencher paciente</CardTitle>
+                <CardDescription className="mt-1">
+                  Associe um paciente cadastrado ou preencha os dados manualmente.
+                </CardDescription>
+              </div>
+              <div className="flex shrink-0 flex-wrap gap-2">
+                {!hasPatient ? (
+                  <>
+                    <Button
+                      type="button"
+                      variant={dataSource === "patient" && selectedPatient ? "default" : "outline"}
+                      size="sm"
+                      onClick={handleOpenPatientPicker}
+                    >
+                      <UserPlus className="mr-2 h-4 w-4" />
+                      Associar paciente
+                    </Button>
+                    <Button
+                      type="button"
+                      variant={dataSource === "manual" ? "default" : "outline"}
+                      size="sm"
+                      onClick={handleDataSourceManual}
+                    >
+                      <ClipboardList className="mr-2 h-4 w-4" />
+                      Preencher manualmente
+                    </Button>
+                  </>
+                ) : null}
+                {hasPatient ? (
                   <Button
                     type="button"
-                    variant="secondary"
+                    variant="outline"
                     size="sm"
-                    onClick={handleOpenPatientPicker}
+                    onClick={() => setTemplatePickerOpen(true)}
+                    disabled={prescriptionTemplates.length === 0}
                   >
-                    Trocar paciente
+                    <FileText className="mr-2 h-4 w-4" />
+                    Usar template
                   </Button>
-                </div>
+                ) : null}
               </div>
-            ) : (dataSource === "manual" || dataSource === "template") && manualConfirmed ? (
-              <div className="rounded-lg border border-border bg-muted/30 px-5 py-4 shadow-sm">
-                <div className="flex flex-wrap items-center justify-between gap-3">
-                  <div className="flex flex-wrap items-baseline gap-2">
-                    <p className="font-semibold text-foreground">
-                      {patientName.trim() || "Nome não informado"}
-                    </p>
-                    <span className="text-muted-foreground">·</span>
-                    <p className="text-sm text-muted-foreground">
-                      {birthDate.trim()
-                        ? format(new Date(birthDate + "T12:00:00"), "dd/MM/yyyy", { locale: ptBR })
-                        : "Data de nascimento não informada"}
-                    </p>
+            </CardHeader>
+            <CardContent>
+              {dataSource === "patient" && selectedPatient ? (
+                <div className="rounded-lg border border-border bg-muted/30 px-5 py-4 shadow-sm">
+                  <div className="flex flex-wrap items-center justify-between gap-3">
+                    <div className="flex flex-wrap items-baseline gap-2">
+                      <p className="font-semibold text-foreground">{selectedPatient.name}</p>
+                      <span className="text-muted-foreground">·</span>
+                      <p className="text-sm text-muted-foreground">
+                        {selectedPatient.birth_date
+                          ? format(new Date(selectedPatient.birth_date + "T12:00:00"), "dd/MM/yyyy", { locale: ptBR })
+                          : "Data de nascimento não informada"}
+                      </p>
+                    </div>
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      size="sm"
+                      onClick={handleRemovePatient}
+                    >
+                      Remover paciente
+                    </Button>
                   </div>
-                  <Button
-                    type="button"
-                    variant="secondary"
-                    size="sm"
-                    onClick={() => setManualSheetOpen(true)}
-                  >
-                    Editar
-                  </Button>
                 </div>
-              </div>
-            ) : null}
+              ) : hasPatient ? (
+                <div className="rounded-lg border border-border bg-muted/30 px-5 py-4 shadow-sm">
+                  <div className="flex flex-wrap items-center justify-between gap-3">
+                    <div className="flex flex-wrap items-baseline gap-2">
+                      <p className="font-semibold text-foreground">
+                        {patientName.trim() || "Nome não informado"}
+                      </p>
+                      <span className="text-muted-foreground">·</span>
+                      <p className="text-sm text-muted-foreground">
+                        {birthDate.trim()
+                          ? format(new Date(birthDate + "T12:00:00"), "dd/MM/yyyy", { locale: ptBR })
+                          : "Data de nascimento não informada"}
+                      </p>
+                    </div>
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      size="sm"
+                      onClick={handleRemovePatient}
+                    >
+                      Remover paciente
+                    </Button>
+                  </div>
+                </div>
+              ) : null}
+            </CardContent>
+          </Card>
 
-            {(dataSource === "patient" && selectedPatient) ||
-            ((dataSource === "manual" || dataSource === "template") && manualConfirmed) ? (
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <h3 className="text-sm font-medium text-foreground">Medicamentos</h3>
+          {/* Passo 2 - Adicionar medicamentos */}
+          {hasPatient ? (
+            <Card>
+              <CardHeader className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <CardTitle className="text-base">Passo 2 — Adicionar medicamentos</CardTitle>
+                  <CardDescription className="mt-1">
+                    Inclua os medicamentos da receita com dosagem e posologia.
+                  </CardDescription>
+                </div>
+                {medications.length === 0 ? (
                   <Button type="button" variant="outline" size="sm" onClick={addMedication}>
                     <Plus className="mr-2 h-4 w-4" />
                     Adicionar medicamento
                   </Button>
-                </div>
+                ) : null}
+              </CardHeader>
+              <CardContent className="space-y-4">
                 {medications.length === 0 ? (
                   <div className="rounded-lg border border-dashed border-border bg-muted/20 px-4 py-8 text-center">
                     <p className="text-sm text-muted-foreground">
@@ -402,108 +455,148 @@ export function PrescriptionWizard({
                     </p>
                   </div>
                 ) : (
-                  <ul className="space-y-4">
-                    {medications.map((med, index) => (
-                      <li
-                        key={index}
-                        className="rounded-lg border border-border bg-muted/20 p-4 space-y-3"
-                      >
-                        <div className="flex items-center justify-between gap-2">
-                          <span className="text-sm font-medium text-muted-foreground">
-                            Medicamento {index + 1}
-                          </span>
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="icon"
-                            className="h-8 w-8 text-muted-foreground hover:text-destructive"
-                            onClick={() => removeMedication(index)}
-                            aria-label="Remover medicamento"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </div>
-                        <div className="grid gap-3 sm:grid-cols-2">
-                          <Field>
-                            <FieldLabel>Nome</FieldLabel>
-                            <FieldContent>
-                              <Input
-                                value={med.name}
-                                onChange={(e) => updateMedication(index, "name", e.target.value)}
-                                placeholder="Ex.: Paracetamol"
-                              />
-                            </FieldContent>
-                          </Field>
-                          <Field>
-                            <FieldLabel>Dosagem</FieldLabel>
-                            <FieldContent>
-                              <Input
-                                value={med.dosage}
-                                onChange={(e) => updateMedication(index, "dosage", e.target.value)}
-                                placeholder="Ex.: 500mg"
-                              />
-                            </FieldContent>
-                          </Field>
-                          <Field className="sm:col-span-2">
-                            <FieldLabel>Posologia</FieldLabel>
-                            <FieldContent>
-                              <Input
-                                value={med.posology}
-                                onChange={(e) =>
-                                  updateMedication(index, "posology", e.target.value)
-                                }
-                                placeholder="Ex.: 1 comprimido de 8 em 8 horas"
-                              />
-                            </FieldContent>
-                          </Field>
-                          <Field>
-                            <FieldLabel>Duração</FieldLabel>
-                            <FieldContent>
-                              <Input
-                                value={med.duration}
-                                onChange={(e) =>
-                                  updateMedication(index, "duration", e.target.value)
-                                }
-                                placeholder="Ex.: 7 dias"
-                              />
-                            </FieldContent>
-                          </Field>
-                          <Field>
-                            <FieldLabel>Observações</FieldLabel>
-                            <FieldContent>
-                              <Input
-                                value={med.observations}
-                                onChange={(e) =>
-                                  updateMedication(index, "observations", e.target.value)
-                                }
-                                placeholder="Opcional"
-                              />
-                            </FieldContent>
-                          </Field>
-                        </div>
-                      </li>
-                    ))}
-                  </ul>
+                  <>
+                    <ul className="space-y-4">
+                      {medications.map((med, index) => (
+                        <li
+                          key={index}
+                          className="rounded-lg border border-border bg-muted/20 p-4 space-y-3"
+                        >
+                          <div className="flex items-center justify-between gap-2">
+                            <span className="text-sm font-medium text-muted-foreground">
+                              Medicamento {index + 1}
+                            </span>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                              onClick={() => removeMedication(index)}
+                              aria-label="Remover medicamento"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
+                          <div className="grid gap-3">
+                            <Field>
+                              <FieldLabel>Nome</FieldLabel>
+                              <FieldContent>
+                                <Input
+                                  value={med.name}
+                                  onChange={(e) => updateMedication(index, "name", e.target.value)}
+                                  placeholder="Ex.: Paracetamol"
+                                />
+                              </FieldContent>
+                            </Field>
+                            <div className="grid gap-3 sm:grid-cols-3">
+                              <Field>
+                                <FieldLabel>Dosagem</FieldLabel>
+                                <FieldContent>
+                                  <Input
+                                    value={med.dosage}
+                                    onChange={(e) =>
+                                      updateMedication(index, "dosage", e.target.value)
+                                    }
+                                    placeholder="Ex.: 500mg"
+                                  />
+                                </FieldContent>
+                              </Field>
+                              <Field>
+                                <FieldLabel>Posologia</FieldLabel>
+                                <FieldContent>
+                                  <Input
+                                    value={med.posology}
+                                    onChange={(e) =>
+                                      updateMedication(index, "posology", e.target.value)
+                                    }
+                                    placeholder="Ex.: 1 comprimido de 8 em 8 horas"
+                                  />
+                                </FieldContent>
+                              </Field>
+                              <Field>
+                                <FieldLabel>Duração</FieldLabel>
+                                <FieldContent>
+                                  <Input
+                                    value={med.duration}
+                                    onChange={(e) =>
+                                      updateMedication(index, "duration", e.target.value)
+                                    }
+                                    placeholder="Ex.: 7 dias"
+                                  />
+                                </FieldContent>
+                              </Field>
+                            </div>
+                            <Field>
+                              <FieldLabel>Observações</FieldLabel>
+                              <FieldContent>
+                                <RichTextEditor
+                                  value={med.observations}
+                                  onChange={(value) =>
+                                    updateMedication(index, "observations", value)
+                                  }
+                                  placeholder="Opcional"
+                                  minHeight="60px"
+                                />
+                              </FieldContent>
+                            </Field>
+                          </div>
+                        </li>
+                      ))}
+                    </ul>
+                    <Button type="button" variant="outline" size="sm" onClick={addMedication}>
+                      <Plus className="mr-2 h-4 w-4" />
+                      Adicionar medicamento
+                    </Button>
+                  </>
                 )}
-                {medications.length > 0 ? (
-                  <Button type="button" variant="outline" size="sm" onClick={addMedication}>
-                    <Plus className="mr-2 h-4 w-4" />
-                    Adicionar medicamento
-                  </Button>
-                ) : null}
-              </div>
-            ) : null}
-        </CardContent>
+              </CardContent>
+            </Card>
+          ) : null}
 
-        <div className="mt-4 flex flex-wrap items-center gap-2">
-          <Button variant="ghost" asChild>
-            <Link href="/dashboard/prescriptions">
-              <ChevronLeft className="mr-2 h-4 w-4" />
-              Voltar
-            </Link>
-          </Button>
-          {(dataSource === "patient" && selectedPatient) ||
-          ((dataSource === "manual" || dataSource === "template") && manualConfirmed) ? (
+          {/* Passo 3 - Instruções e informações adicionais */}
+          {hasPatient ? (
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base">Passo 3 — Instruções e informações adicionais</CardTitle>
+                <CardDescription className="mt-1">
+                  Orientações, sinais de alerta e anotações do médico.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <FieldLabel>Orientações</FieldLabel>
+                  <RichTextEditor
+                    value={orientations}
+                    onChange={setOrientations}
+                    placeholder="Orientações gerais para o paciente/responsável"
+                    minHeight="80px"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <FieldLabel>Sinais de alerta</FieldLabel>
+                  <RichTextEditor
+                    value={warningSigns}
+                    onChange={setWarningSigns}
+                    placeholder="Sinais de alerta para retorno ou urgência"
+                    minHeight="80px"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <FieldLabel>Anotações adicionais</FieldLabel>
+                  <RichTextEditor
+                    value={additionalNotes}
+                    onChange={setAdditionalNotes}
+                    placeholder="Anotações do médico (opcional)"
+                    minHeight="80px"
+                  />
+                </div>
+              </CardContent>
+            </Card>
+          ) : null}
+        </div>
+
+        <div className="mt-6 flex flex-wrap items-center gap-2">
+          {hasPatient ? (
             <>
               <Dialog open={saveAsTemplateOpen} onOpenChange={setSaveAsTemplateOpen}>
                 <DialogTrigger asChild>
@@ -551,7 +644,6 @@ export function PrescriptionWizard({
             </>
           ) : null}
         </div>
-      </Card>
 
       <Sheet open={manualSheetOpen} onOpenChange={setManualSheetOpen}>
         <SheetContent side="right" className="flex flex-col sm:max-w-md">
@@ -582,6 +674,35 @@ export function PrescriptionWizard({
             >
               Concluir
             </Button>
+          </div>
+        </SheetContent>
+      </Sheet>
+
+      <Sheet open={templatePickerOpen} onOpenChange={setTemplatePickerOpen}>
+        <SheetContent side="right" className="flex flex-col sm:max-w-md">
+          <SheetHeader className="px-6">
+            <SheetTitle>Usar template</SheetTitle>
+          </SheetHeader>
+          <div className="flex flex-1 flex-col gap-1 overflow-auto px-6 py-4">
+            {prescriptionTemplates.length === 0 ? (
+              <p className="text-sm text-muted-foreground">
+                Nenhum template salvo. Crie uma receita e use &quot;Salvar como template&quot; para
+                reutilizar depois.
+              </p>
+            ) : (
+              prescriptionTemplates.map((template) => (
+                <Button
+                  key={template.id}
+                  type="button"
+                  variant="ghost"
+                  className="h-auto justify-start py-3 text-left font-normal"
+                  onClick={() => handleSelectTemplate(template)}
+                >
+                  <FileText className="mr-3 h-4 w-4 shrink-0 text-muted-foreground" />
+                  <span className="truncate">{template.name}</span>
+                </Button>
+              ))
+            )}
           </div>
         </SheetContent>
       </Sheet>
