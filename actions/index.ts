@@ -42,6 +42,8 @@ export {
 export {
   generatePrescriptionAction,
   type GeneratePrescriptionResult,
+  deletePrescriptionAction,
+  type DeletePrescriptionResult,
 } from "./prescriptions"
 export {
   createPrescriptionTemplateAction,

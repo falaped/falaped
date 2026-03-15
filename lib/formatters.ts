@@ -82,6 +82,20 @@ export function formatBrazilianPhone(digits: string): string {
 }
 
 /**
+ * Strips HTML tags and decodes common entities to plain text.
+ * Use for displaying rich-text content as plain text (e.g. in PDF preview).
+ */
+export function stripHtml(html: string): string {
+  if (!html?.trim()) return ""
+  const withoutTags = html.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim()
+  return withoutTags
+    .replace(/&amp;/g, "&")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&nbsp;/g, " ")
+}
+
+/**
  * Formats a full Brazilian number (with optional country code 55) for display.
  * Example: "553197815503" → "+55 (31) 9781-5503"
  */

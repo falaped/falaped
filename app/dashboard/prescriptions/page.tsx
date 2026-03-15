@@ -4,7 +4,7 @@ import { NewPrescriptionLink } from "./novo/new-prescription-link"
 import { createClient } from "@/lib/supabase/server"
 import { getAuthenticatedUser } from "@/modules/supabase/get-authenticated-user"
 import { getPrescriptionsByProfileId } from "@/modules/prescriptions/get-prescriptions-by-profile-id"
-import { PrescriptionCard } from "@/components/dashboard/prescriptions/prescription-card"
+import { PrescriptionTable } from "@/components/dashboard/prescriptions/prescription-table"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Separator } from "@/components/ui/separator"
@@ -59,14 +59,11 @@ export default async function PrescriptionsPage() {
           </CardContent>
         </Card>
       ) : (
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {prescriptions.map((prescription) => (
-            <PrescriptionCard
-              key={prescription.id}
-              prescription={prescription}
-            />
-          ))}
-        </div>
+        <Card>
+          <CardContent className="p-0">
+            <PrescriptionTable prescriptions={prescriptions} />
+          </CardContent>
+        </Card>
       )}
     </div>
   )

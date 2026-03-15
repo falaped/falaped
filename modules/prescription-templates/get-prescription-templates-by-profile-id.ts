@@ -1,6 +1,8 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
 import type { PrescriptionTemplateOption } from "./types"
 
+export type { PrescriptionTemplateOption }
+
 /**
  * Returns prescription templates for the given profile, ordered by name.
  */

@@ -24,20 +24,23 @@ export function NewPrescriptionLink({
 }: NewPrescriptionLinkProps) {
   const router = useRouter()
 
-  const href =
+  const baseHref =
     NEW_PRESCRIPTION_PATH +
-    "?_t=" +
-    Date.now() +
-    (templateId ? "&templateId=" + encodeURIComponent(templateId) : "")
+    (templateId ? "?templateId=" + encodeURIComponent(templateId) : "")
+
+  function handleClick(e: React.MouseEvent<HTMLAnchorElement>) {
+    e.preventDefault()
+    const params = new URLSearchParams()
+    params.set("_t", String(Date.now()))
+    if (templateId) params.set("templateId", templateId)
+    router.push(`${NEW_PRESCRIPTION_PATH}?${params.toString()}`)
+  }
 
   return (
     <a
-      href={href}
+      href={baseHref}
       className={cn(className)}
-      onClick={(e) => {
-        e.preventDefault()
-        router.push(href)
-      }}
+      onClick={handleClick}
       {...props}
     >
       {children}

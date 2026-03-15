@@ -2,6 +2,7 @@
  * Returns the same paragraph texts used in the PDF, for preview.
  * No dependency on PdfBuilder so this can be used in client components.
  */
+import { stripHtml } from "@/lib/formatters"
 import type { DoctorInfo, PrescriptionPayload } from "./types"
 
 function doctorSignature(doctor: DoctorInfo): string {
@@ -40,18 +41,19 @@ export function getPrescriptionPreviewParagraphs(
     if (m.dosage?.trim()) parts.push(m.dosage.trim())
     parts.push(`   Posologia: ${m.posology}`)
     if (m.duration?.trim()) parts.push(`   Duração: ${m.duration}`)
-    if (m.observations?.trim()) parts.push(`   Observações: ${m.observations}`)
+    if (m.observations?.trim())
+      parts.push(`   Observações: ${stripHtml(m.observations).trim()}`)
     lines.push(parts.join(" - "), "")
   })
 
   if (payload.orientations?.trim()) {
-    lines.push("Orientações: " + payload.orientations.trim(), "")
+    lines.push("Orientações: " + stripHtml(payload.orientations).trim(), "")
   }
   if (payload.warningSigns?.trim()) {
-    lines.push("Sinais de alerta: " + payload.warningSigns.trim(), "")
+    lines.push("Sinais de alerta: " + stripHtml(payload.warningSigns).trim(), "")
   }
   if (payload.additionalNotes?.trim()) {
-    lines.push("Anotações adicionais: " + payload.additionalNotes.trim(), "")
+    lines.push("Anotações adicionais: " + stripHtml(payload.additionalNotes).trim(), "")
   }
 
   lines.push(locationDate, sig, doctorLine)
