@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache"
 import { createClient } from "@/lib/supabase/server"
+import { createAdminClient } from "@/lib/supabase/server-admin"
 import { getAuthenticatedUser } from "@/modules/supabase/get-authenticated-user"
 import { deletePrescription } from "@/modules/prescriptions/delete-prescription"
 
@@ -21,7 +22,13 @@ export async function deletePrescriptionAction(
     return { ok: false, error: "ID da receita inválido." }
 
   try {
-    await deletePrescription(supabase, prescriptionId, pdfStoragePath)
+    let storageClient: Awaited<ReturnType<typeof createAdminClient>> | undefined
+    try {
+      storageClient = createAdminClient()
+    } catch {
+      // SUPABASE_SERVICE_ROLE_KEY not set; use user client for storage (may fail with RLS)
+    }
+    await deletePrescription(supabase, prescriptionId, pdfStoragePath, storageClient)
     revalidatePath("/dashboard/prescriptions")
     return { ok: true }
   } catch (e) {

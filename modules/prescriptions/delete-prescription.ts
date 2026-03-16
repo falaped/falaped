@@ -3,15 +3,18 @@ import { PRESCRIPTIONS_BUCKET } from "@/lib/constants"
 
 /**
  * Deletes a prescription by id. RLS ensures only the profile owner can delete.
- * Removes the PDF from storage if pdf_storage_path is set.
+ * Removes the PDF from storage if pdf_storage_path is set. Use storageClient
+ * (e.g. admin) when the user client cannot delete due to RLS.
  */
 export async function deletePrescription(
   supabase: SupabaseClient,
   prescriptionId: string,
   pdfStoragePath: string | null,
+  storageClient?: SupabaseClient,
 ): Promise<void> {
   if (pdfStoragePath?.trim()) {
-    const { error: storageError } = await supabase.storage
+    const client = storageClient ?? supabase
+    const { error: storageError } = await client.storage
       .from(PRESCRIPTIONS_BUCKET)
       .remove([pdfStoragePath])
 
@@ -19,7 +22,9 @@ export async function deletePrescription(
       console.error(
         `[PRESCRIPTIONS] Failed to remove PDF from storage: ${storageError.message}`,
       )
-      // Continue to delete the row so the record is removed
+      throw new Error(
+        `[PRESCRIPTIONS] Falha ao remover PDF do storage: ${storageError.message}`,
+      )
     }
   }
 
