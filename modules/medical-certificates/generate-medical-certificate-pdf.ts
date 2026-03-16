@@ -2,7 +2,7 @@
  * Generates a medical certificate PDF buffer.
  * Uses PdfBuilder (lib/pdf) and buildMedicalCertificatePdfContent (this module).
  */
-import { PdfBuilder } from "@/lib/pdf/pdf-builder"
+import { PdfBuilder, CERT_LAYOUT } from "@/lib/pdf/pdf-builder"
 import { buildMedicalCertificatePdfContent } from "./build-medical-certificate-pdf-content"
 import type {
   DoctorInfo,
@@ -19,6 +19,10 @@ export type GenerateMedicalCertificatePdfParams = {
   doctor: DoctorInfo
   locationState: string
   issuedAt: string
+  /** Footer location string (e.g. "Osasco - São Paulo"). */
+  locationDisplay: string
+  logoBuffer?: Buffer | null
+  patientResponsible?: string | null
 }
 
 /**
@@ -27,8 +31,30 @@ export type GenerateMedicalCertificatePdfParams = {
 export async function generateMedicalCertificatePdf(
   params: GenerateMedicalCertificatePdfParams,
 ): Promise<Buffer> {
-  const { type, payload, doctor, locationState, issuedAt } = params
-  const builder = new PdfBuilder({ margin: 50 })
-  buildMedicalCertificatePdfContent(builder, type, payload, doctor, locationState, issuedAt)
+  const {
+    type,
+    payload,
+    doctor,
+    locationState,
+    issuedAt,
+    locationDisplay,
+    logoBuffer,
+    patientResponsible,
+  } = params
+  const builder = new PdfBuilder({
+    margin: 36,
+    footerReservedHeight: CERT_LAYOUT.footerReservedHeight,
+  })
+  buildMedicalCertificatePdfContent({
+    builder,
+    type,
+    payload,
+    doctor,
+    locationState,
+    issuedAt,
+    locationDisplay,
+    logoBuffer,
+    patientResponsible,
+  })
   return builder.build()
 }

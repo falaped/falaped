@@ -18,9 +18,9 @@ function doctorSignature(doctor: DoctorInfo): string {
   return crm ? `${name}\n${crm}` : name
 }
 
-function observationsText(obs: string): string {
+function observationsLine(obs: string): string | null {
   const t = stripHtml(obs ?? "").trim()
-  return `Observações: ${t || "-"}`
+  return t ? `Observações: ${t}` : null
 }
 
 type PayloadUnion =
@@ -48,50 +48,70 @@ export function getMedicalCertificatePreviewParagraphs(
     case "comparecimento": {
       const p = payload as ComparecimentoPayload
       const periodText = p.timeStart?.trim() ? ` no período de ${p.timeStart}.` : "."
-      return [
+      const lines = [
         `Atesto, para os devidos fins, que ${p.patientName}, nascido(a) em ${p.birthDate}, esteve sob meus cuidados médicos no dia ${p.attendanceDate},${periodText}`,
-        observationsText(p.observations),
         locationDate,
         sig,
         doctorLine,
       ]
+      const obs = observationsLine(p.observations)
+      if (obs) lines.splice(1, 0, obs)
+      return lines
     }
     case "aptidao_fisica": {
       const p = payload as AptidaoFisicaPayload
-      return [
+      const lines = [
         `Atesto que ${p.patientName}, nascido(a) em ${p.birthDate}, encontra-se APTO(A) para a prática de ${p.activities}.`,
-        `Validade: ${p.validityDate}.`,
-        observationsText(p.observations),
+        `Validade: ${p.validity}.`,
         locationDate,
         sig,
         doctorLine,
       ]
+      const obs = observationsLine(p.observations)
+      if (obs) lines.splice(2, 0, obs)
+      return lines
     }
     case "medico": {
       const p = payload as MedicoPayload
       const canLeave = p.canLeaveHome ? "SIM" : "NÃO"
-      return [
-        `Atesto que ${p.patientName}, nascido(a) em ${p.birthDate}, necessita de afastamento das atividades escolares pelo período de ${p.daysAway} dias, a contar de ${p.startDate}.`,
-        `CID-10: ${p.cid10}`,
-        `Pode sair de casa: ${canLeave}`,
-        observationsText(p.observations),
+      const lines = [
+        `Atesto que ${p.patientName}, nascido(a) em ${p.birthDate}, necessita de afastamento pelo período de ${p.daysAway} dias, a contar de ${p.startDate}.`,
+        `Apto à retornar para as atividades: ${canLeave}`,
         locationDate,
         sig,
         doctorLine,
       ]
+      if (p.cid10?.trim()) lines.splice(1, 0, `CID-10: ${p.cid10.trim()}`)
+      const obs = observationsLine(p.observations ?? "")
+      if (obs) lines.splice(lines.indexOf(locationDate), 0, obs)
+      return lines
     }
     case "acompanhante": {
       const p = payload as AcompanhantePayload
-      const periodText = p.timeStart?.trim() ? ` no período de ${p.timeStart}.` : "."
+      const hasTime = !!p.timeStart?.trim()
+      const hasPeriodo =
+        !!p.periodo?.trim() && p.periodo !== "atual_data"
+      const periodLabel =
+        p.periodo === "matutino"
+          ? "Matutino"
+          : p.periodo === "vespertino"
+            ? "Vespertino"
+            : p.periodo === "noturno"
+              ? "Noturno"
+              : null
+      const periodText = hasTime
+        ? ` no período de ${p.timeStart}.`
+        : hasPeriodo && periodLabel
+          ? ` no período ${periodLabel}.`
+          : "."
       const lines = [
-        `Atesto, para os devidos fins, que ${p.companionName} acompanhou ${p.patientName} em consulta médica no dia ${p.consultationDate},${periodText}`,
+        `Atesto, para os devidos fins, que ${p.companionName} acompanhou ${p.patientName} em consulta médica no dia ${p.consultationDate} ${periodText}`,
         locationDate,
         sig,
         doctorLine,
       ]
-      if (p.observations?.trim()) {
-        lines.splice(lines.length - 2, 0, observationsText(p.observations))
-      }
+      const obs = observationsLine(p.observations ?? "")
+      if (obs) lines.splice(1, 0, obs)
       return lines
     }
   }

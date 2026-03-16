@@ -32,6 +32,8 @@ type DateRangePickerFieldProps = {
   placeholder?: string
   id?: string
   disabled?: boolean
+  /** When set (e.g. today in yyyy-MM-dd), disables dates before it and ensures start date is not before it. */
+  minStartDate?: string
 }
 
 export function DateRangePickerField({
@@ -42,19 +44,32 @@ export function DateRangePickerField({
   placeholder = "Selecione o período",
   id,
   disabled,
+  minStartDate,
 }: DateRangePickerFieldProps) {
   const [open, setOpen] = React.useState(false)
+  const minDate = minStartDate ? new Date(minStartDate + "T12:00:00") : undefined
+
+  React.useEffect(() => {
+    if (!minStartDate) return
+    const start = startDate ? new Date(startDate + "T12:00:00") : null
+    if (!start || start < minDate!) {
+      onChange({ startDate: minStartDate, daysAway: 1 })
+    }
+  }, [minStartDate]) // eslint-disable-line react-hooks/exhaustive-deps -- only when minStartDate is set
+
   const from = startDate ? new Date(startDate + "T12:00:00") : undefined
+  const fromClamped =
+    from && minDate && from < minDate ? minDate : from
   const to =
-    from && daysAway >= 1
+    fromClamped && daysAway >= 1
       ? (() => {
-          const end = new Date(from)
+          const end = new Date(fromClamped)
           end.setDate(end.getDate() + daysAway - 1)
           return end
         })()
       : undefined
   const range: DateRange | undefined =
-    from && to ? { from, to } : from ? { from, to: from } : undefined
+    fromClamped && to ? { from: fromClamped, to } : fromClamped ? { from: fromClamped, to: fromClamped } : undefined
 
   const displayText =
     range?.from && range?.to
@@ -88,16 +103,20 @@ export function DateRangePickerField({
               selected={range}
               onSelect={(selected) => {
                 if (selected?.from) {
-                  const fromStr = format(selected.from, "yyyy-MM-dd")
+                  let fromDate = selected.from
+                  if (minDate && fromDate < minDate) fromDate = minDate
+                  const fromStr = format(fromDate, "yyyy-MM-dd")
                   const toDate = selected.to ?? selected.from
-                  const days = differenceInCalendarDays(toDate, selected.from) + 1
+                  const endDate = toDate < fromDate ? fromDate : toDate
+                  const days = differenceInCalendarDays(endDate, fromDate) + 1
                   onChange({ startDate: fromStr, daysAway: days })
                   if (selected.to) setOpen(false)
                 }
               }}
-              defaultMonth={from}
+              defaultMonth={fromClamped ?? minDate}
               locale={ptBR}
               numberOfMonths={1}
+              disabled={minStartDate ? (date) => format(date, "yyyy-MM-dd") < minStartDate : undefined}
             />
           </PopoverContent>
         </Popover>

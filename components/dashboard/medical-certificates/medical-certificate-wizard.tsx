@@ -12,6 +12,7 @@ import {
   Stethoscope,
   UserCircle,
   ChevronLeft,
+  Loader2,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -39,8 +40,18 @@ import { formatDate } from "@/lib/formatters"
 import { getProfileDefaultLocation } from "@/modules/profiles/get-profile-default-location"
 import { generateMedicalCertificateAction } from "@/actions"
 import type { Patient } from "@/modules/patients/types"
-import type { MedicalCertificateType } from "@/modules/medical-certificates/types"
-import { getMedicalCertificatePreviewParagraphs } from "@/modules/medical-certificates/get-medical-certificate-preview-paragraphs"
+import type {
+  MedicalCertificateType,
+  AcompanhantePeriodo,
+} from "@/modules/medical-certificates/types"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
+import { getMedicalCertificatePreviewContent } from "@/modules/medical-certificates/get-medical-certificate-preview-content"
 import { cn } from "@/lib/utils"
 
 const TYPES: {
@@ -75,16 +86,6 @@ const TYPES: {
     },
   ]
 
-function WizardStepper({ currentStep }: { currentStep: Step }) {
-  return (
-    <p className="text-sm text-muted-foreground">
-      Passo {currentStep} de 3
-    </p>
-  )
-}
-
-type Step = 1 | 2 | 3
-
 type WizardPayload = {
   comparecimento?: {
     patientName: string
@@ -98,7 +99,7 @@ type WizardPayload = {
     patientName: string
     birthDate: string
     activities: string
-    validityDate: string
+    validity: string
     observations: string
   }
   medico?: {
@@ -116,6 +117,7 @@ type WizardPayload = {
     consultationDate: string
     timeStart: string
     timeEnd: string
+    periodo: AcompanhantePeriodo
     observations: string
   }
 }
@@ -133,14 +135,14 @@ const initialPayload: WizardPayload = {
     patientName: "",
     birthDate: "",
     activities: "",
-    validityDate: "",
+    validity: "",
     observations: "",
   },
   medico: {
     patientName: "",
     birthDate: "",
     daysAway: 1,
-    startDate: "",
+    startDate: format(new Date(), "yyyy-MM-dd"),
     cid10: "",
     canLeaveHome: true,
     observations: "",
@@ -151,6 +153,7 @@ const initialPayload: WizardPayload = {
     consultationDate: "",
     timeStart: "",
     timeEnd: "",
+    periodo: "",
     observations: "",
   },
 }
@@ -264,20 +267,24 @@ function CertificateFormCard({
                       />
                     </FieldContent>
                   </Field>
-                  <DatePickerField
-                    label="Validade"
-                    value={(currentPayload as { validityDate?: string }).validityDate ?? ""}
-                    onChange={(v) =>
-                      setPayload((prev) => ({
-                        ...prev,
-                        aptidao_fisica: {
-                          ...prev.aptidao_fisica!,
-                          validityDate: v,
-                        },
-                      }))
-                    }
-                    placeholder="Selecione a data"
-                  />
+                  <Field>
+                    <FieldLabel>Validade</FieldLabel>
+                    <FieldContent>
+                      <Input
+                        value={(currentPayload as { validity?: string }).validity ?? ""}
+                        onChange={(e) =>
+                          setPayload((prev) => ({
+                            ...prev,
+                            aptidao_fisica: {
+                              ...prev.aptidao_fisica!,
+                              validity: e.target.value,
+                            },
+                          }))
+                        }
+                        placeholder="3 meses, 6 meses ou 12 meses"
+                      />
+                    </FieldContent>
+                  </Field>
                 </div>
               </div>
               <Field>
@@ -320,6 +327,7 @@ function CertificateFormCard({
                       }))
                     }
                     placeholder="Selecione o período"
+                    minStartDate={format(new Date(), "yyyy-MM-dd")}
                   />
                   <Field>
                     <FieldLabel>CID-10</FieldLabel>
@@ -353,7 +361,7 @@ function CertificateFormCard({
                   }
                 />
                 <Label htmlFor="canLeaveHome" className="cursor-pointer font-normal">
-                  Pode sair de casa
+                  Apto à retornar para as atividades
                 </Label>
               </div>
               <Field>
@@ -379,7 +387,7 @@ function CertificateFormCard({
           )}
           {isAcompanhante && (
             <>
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-4">
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <Field>
                   <div className="flex flex-wrap items-center justify-between gap-2">
                     <FieldLabel>Nome do acompanhante</FieldLabel>
@@ -437,6 +445,8 @@ function CertificateFormCard({
                     />
                   </FieldContent>
                 </Field>
+              </div>
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
                 <DatePickerField
                   label="Data da consulta"
                   value={(currentPayload as { consultationDate?: string }).consultationDate ?? ""}
@@ -451,24 +461,62 @@ function CertificateFormCard({
                   }
                   placeholder="Selecione a data"
                 />
-                <Field>
-                  <FieldLabel>Horário</FieldLabel>
-                  <FieldContent>
-                    <Input
-                      value={(currentPayload as { timeStart?: string }).timeStart ?? ""}
-                      onChange={(e) =>
-                        setPayload((prev) => ({
-                          ...prev,
-                          acompanhante: {
-                            ...prev.acompanhante!,
-                            timeStart: e.target.value,
-                          },
-                        }))
-                      }
-                      placeholder="Ex: 09:00 às 11:00"
-                    />
-                  </FieldContent>
-                </Field>
+                {!(currentPayload as { periodo?: string }).periodo?.trim() ? (
+                  <Field>
+                    <FieldLabel>Horário</FieldLabel>
+                    <FieldContent>
+                      <Input
+                        value={(currentPayload as { timeStart?: string }).timeStart ?? ""}
+                        onChange={(e) => {
+                          const v = e.target.value
+                          setPayload((prev) => ({
+                            ...prev,
+                            acompanhante: {
+                              ...prev.acompanhante!,
+                              timeStart: v,
+                              periodo: "",
+                            },
+                          }))
+                        }}
+                        placeholder="Ex: 09:00 às 11:00"
+                      />
+                    </FieldContent>
+                  </Field>
+                ) : null}
+                {!(currentPayload as { timeStart?: string }).timeStart?.trim() ? (
+                  <Field>
+                    <FieldLabel>Período</FieldLabel>
+                    <FieldContent>
+                      <Select
+                        value={
+                          (currentPayload as { periodo?: AcompanhantePeriodo }).periodo || "__none__"
+                        }
+                        onValueChange={(v) =>
+                          setPayload((prev) => ({
+                            ...prev,
+                            acompanhante: {
+                              ...prev.acompanhante!,
+                              periodo: (v === "__none__" ? "" : v) as AcompanhantePeriodo,
+                              timeStart: "",
+                              timeEnd: "",
+                            },
+                          }))
+                        }
+                      >
+                        <SelectTrigger className="w-full">
+                          <SelectValue placeholder="Selecione ou limpe" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="__none__">Nenhum</SelectItem>
+                          <SelectItem value="matutino">Matutino</SelectItem>
+                          <SelectItem value="vespertino">Vespertino</SelectItem>
+                          <SelectItem value="noturno">Noturno</SelectItem>
+                          <SelectItem value="atual_data">Atual data</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </FieldContent>
+                  </Field>
+                ) : null}
               </div>
               <Field>
                 <FieldLabel>Observações</FieldLabel>
@@ -497,11 +545,115 @@ function CertificateFormCard({
   )
 }
 
+type CertificatePreviewShortProfile = {
+  first_name: string | null
+  surname: string | null
+  crm: string | null
+  rqe?: string | null
+  default_location_state?: string | null
+  default_location_city?: string | null
+}
+
+function CertificatePreviewShort({
+  type,
+  currentPayload,
+  profile,
+  issuedAt,
+  selectedPatient,
+}: {
+  type: MedicalCertificateType
+  currentPayload: NonNullable<WizardPayload[MedicalCertificateType]>
+  profile: CertificatePreviewShortProfile
+  issuedAt: string
+  selectedPatient: Patient | null
+}) {
+  const location = getProfileDefaultLocation(profile)
+  const issuedAtFormatted = issuedAt
+    ? format(new Date(issuedAt + "T12:00:00"), "d 'de' MMMM 'de' yyyy", { locale: ptBR })
+    : ""
+  const doctor = {
+    firstName: profile.first_name ?? "",
+    surname: profile.surname ?? "",
+    crm: profile.crm ?? null,
+    rqe: profile.rqe ?? null,
+  }
+  const formattedPayload = { ...currentPayload } as Record<string, unknown>
+  if (typeof formattedPayload.birthDate === "string" && formattedPayload.birthDate)
+    formattedPayload.birthDate = formatDate(formattedPayload.birthDate as string)
+  if (typeof formattedPayload.attendanceDate === "string" && formattedPayload.attendanceDate)
+    formattedPayload.attendanceDate = formatDate(formattedPayload.attendanceDate as string)
+  if (typeof formattedPayload.startDate === "string" && formattedPayload.startDate)
+    formattedPayload.startDate = formatDate(formattedPayload.startDate as string)
+  if (typeof formattedPayload.consultationDate === "string" && formattedPayload.consultationDate)
+    formattedPayload.consultationDate = formatDate(formattedPayload.consultationDate as string)
+
+  const preview = getMedicalCertificatePreviewContent(
+    type,
+    formattedPayload as Parameters<typeof getMedicalCertificatePreviewContent>[1],
+    doctor,
+    location || "—",
+    issuedAtFormatted,
+    selectedPatient?.responsible ?? null,
+  )
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="text-base">Passo 4 — Preview</CardTitle>
+        <CardDescription className="mt-1">
+          Visualização resumida do atestado. O PDF gerado seguirá o mesmo conteúdo.
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        <div className="space-y-2 rounded-md border border-border bg-muted/30 p-4 text-xs leading-relaxed text-foreground">
+          <p className="font-semibold uppercase tracking-wide">{preview.title}</p>
+          <p>
+            <span className="font-semibold">Nome: </span>
+            {preview.patientBlock.patientName}
+          </p>
+          {preview.patientBlock.birthDate ? (
+            <p>
+              <span className="font-semibold">Data de Nascimento: </span>
+              {preview.patientBlock.birthDate}
+            </p>
+          ) : null}
+          {preview.patientBlock.responsible?.trim() ? (
+            <p>
+              <span className="font-semibold">Responsável: </span>
+              {preview.patientBlock.responsible.trim()}
+            </p>
+          ) : null}
+          <div className="mt-2 space-y-1 border-t border-border pt-2">
+            {preview.bodyParagraphs.map((segments, i) =>
+              segments.length > 0 ? (
+                <p key={i}>
+                  {segments.map((seg, j) =>
+                    seg.bold ? (
+                      <strong key={j}>{seg.text}</strong>
+                    ) : (
+                      <span key={j}>{seg.text}</span>
+                    ),
+                  )}
+                </p>
+              ) : null,
+            )}
+          </div>
+          <div className="mt-2 border-t border-border pt-2 text-muted-foreground">
+            <p>{preview.footerLines[0]}</p>
+            <p>{preview.footerLines[1]}</p>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  )
+}
+
 type MedicalCertificateWizardProfile = {
   id: string
   first_name: string | null
   surname: string | null
   crm: string | null
+  rqe?: string | null
   default_location_state?: string | null
   default_location_city?: string | null
 }
@@ -513,7 +665,6 @@ type MedicalCertificateWizardProps = {
 
 export function MedicalCertificateWizard({ patients, profile }: MedicalCertificateWizardProps) {
   const router = useRouter()
-  const [step, setStep] = useState<Step>(1)
   const [type, setType] = useState<MedicalCertificateType | null>(null)
   const [dataSource, setDataSource] = useState<"patient" | "manual" | null>(null)
   const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null)
@@ -614,15 +765,13 @@ export function MedicalCertificateWizard({ patients, profile }: MedicalCertifica
       .finally(() => setGenerating(false))
   }
 
-  if (step === 1) {
-    return (
-      <>
-        <div className="space-y-6">
+  return (
+    <>
+      <div className="space-y-6">
           <Card>
             <CardHeader className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
               <div>
-                <WizardStepper currentStep={1} />
-                <CardTitle className="mt-2 text-base">Passo 1 — Associar ou preencher paciente</CardTitle>
+                <CardTitle className="text-base">Passo 1 — Associar ou preencher paciente</CardTitle>
                 <CardDescription className="mt-1">
                   Associe um paciente cadastrado ou preencha os dados manualmente.
                 </CardDescription>
@@ -725,13 +874,22 @@ export function MedicalCertificateWizard({ patients, profile }: MedicalCertifica
           ) : null}
 
           {hasPatient && type && currentPayload ? (
-            <CertificateFormCard
-              type={type}
-              currentPayload={currentPayload}
-              payload={payload}
-              setPayload={setPayload}
-              selectedPatient={selectedPatient}
-            />
+            <>
+              <CertificateFormCard
+                type={type}
+                currentPayload={currentPayload}
+                payload={payload}
+                setPayload={setPayload}
+                selectedPatient={selectedPatient}
+              />
+              <CertificatePreviewShort
+                type={type}
+                currentPayload={currentPayload}
+                profile={profile}
+                issuedAt={issuedAt}
+                selectedPatient={selectedPatient}
+              />
+            </>
           ) : null}
         </div>
 
@@ -743,7 +901,16 @@ export function MedicalCertificateWizard({ patients, profile }: MedicalCertifica
             </Link>
           </Button>
           {hasPatient && type ? (
-            <Button onClick={() => setStep(2)}>Revisar</Button>
+            <Button onClick={handleGenerate} disabled={generating}>
+              {generating ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden />
+                  Gerando…
+                </>
+              ) : (
+                "Confirmar e gerar"
+              )}
+            </Button>
           ) : null}
         </div>
 
@@ -784,113 +951,4 @@ export function MedicalCertificateWizard({ patients, profile }: MedicalCertifica
         />
       </>
     )
-  }
-
-  if (step === 2 && type && currentPayload) {
-    const location = getProfileDefaultLocation(profile)
-    const issuedAtFormatted = issuedAt
-      ? format(new Date(issuedAt + "T12:00:00"), "d 'de' MMMM 'de' yyyy", { locale: ptBR })
-      : ""
-    const doctor = {
-      firstName: profile.first_name ?? "",
-      surname: profile.surname ?? "",
-      crm: profile.crm ?? null,
-    }
-    const formattedPayload = { ...currentPayload } as Record<string, unknown>
-    if (typeof formattedPayload.birthDate === "string" && formattedPayload.birthDate)
-      formattedPayload.birthDate = formatDate(formattedPayload.birthDate as string)
-    if (typeof formattedPayload.attendanceDate === "string" && formattedPayload.attendanceDate)
-      formattedPayload.attendanceDate = formatDate(formattedPayload.attendanceDate as string)
-    if (typeof formattedPayload.validityDate === "string" && formattedPayload.validityDate)
-      formattedPayload.validityDate = formatDate(formattedPayload.validityDate as string)
-    if (typeof formattedPayload.startDate === "string" && formattedPayload.startDate)
-      formattedPayload.startDate = formatDate(formattedPayload.startDate as string)
-    if (typeof formattedPayload.consultationDate === "string" && formattedPayload.consultationDate)
-      formattedPayload.consultationDate = formatDate(formattedPayload.consultationDate as string)
-
-    const paragraphs = getMedicalCertificatePreviewParagraphs(
-      type,
-      formattedPayload as Parameters<typeof getMedicalCertificatePreviewParagraphs>[1],
-      doctor,
-      location || "—",
-      issuedAtFormatted,
-    )
-
-    return (
-      <Card>
-        <CardHeader>
-          <WizardStepper currentStep={2} />
-          <CardTitle className="mt-2">Preview do atestado</CardTitle>
-          <CardDescription>
-            Confira como ficará o atestado. Ao confirmar, o PDF será gerado, salvo e disponível para download.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div
-            className="mx-auto max-w-[21cm] rounded-md border border-border bg-zinc-50/80 p-6 shadow-sm dark:bg-zinc-900/50 print:shadow-none"
-            style={{ aspectRatio: "210/297" }}
-          >
-            <p className="mb-4 text-xs uppercase tracking-wide text-muted-foreground">
-              Atestado médico
-            </p>
-            <div className="space-y-3 text-sm leading-relaxed text-foreground">
-              {paragraphs.map((line, i) =>
-                line === "_________________________" ? (
-                  <div
-                    key={i}
-                    className="my-4 border-b border-border"
-                    aria-hidden
-                  />
-                ) : (
-                  <p
-                    key={i}
-                    className={cn(
-                      "whitespace-pre-wrap",
-                      line.includes("\n") && "font-medium",
-                    )}
-                  >
-                    {line}
-                  </p>
-                ),
-              )}
-            </div>
-          </div>
-          <div className="flex gap-2">
-            <Button variant="ghost" onClick={() => setStep(1)}>
-              <ChevronLeft className="mr-2 h-4 w-4" />
-              Voltar
-            </Button>
-            <Button onClick={() => setStep(3)}>Confirmar e gerar</Button>
-          </div>
-        </CardContent>
-      </Card>
-    )
-  }
-
-  if (step === 3 && type && currentPayload) {
-    return (
-      <Card>
-        <CardHeader>
-          <WizardStepper currentStep={3} />
-          <CardTitle className="mt-2">Confirmar e gerar</CardTitle>
-          <CardDescription>
-            Clique em &quot;Confirmar e gerar&quot; para gerar o PDF, salvar e fazer o download.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="flex gap-2">
-            <Button variant="ghost" onClick={() => setStep(2)}>
-              <ChevronLeft className="mr-2 h-4 w-4" />
-              Voltar
-            </Button>
-            <Button onClick={handleGenerate} disabled={generating}>
-              {generating ? "Gerando…" : "Confirmar e gerar"}
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
-    )
-  }
-
-  return null
 }

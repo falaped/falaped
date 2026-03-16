@@ -12,6 +12,7 @@ export type DoctorInfo = {
   firstName: string
   surname: string
   crm: string | null
+  rqe: string | null
 }
 
 export type ComparecimentoPayload = {
@@ -27,7 +28,7 @@ export type AptidaoFisicaPayload = {
   patientName: string
   birthDate: string
   activities: string
-  validityDate: string
+  validity: string
   observations: string
 }
 
@@ -41,12 +42,20 @@ export type MedicoPayload = {
   observations: string
 }
 
+export type AcompanhantePeriodo =
+  | ""
+  | "matutino"
+  | "vespertino"
+  | "noturno"
+  | "atual_data"
+
 export type AcompanhantePayload = {
   companionName: string
   patientName: string
   consultationDate: string
   timeStart: string
   timeEnd: string
+  periodo: AcompanhantePeriodo
   observations?: string
 }
 

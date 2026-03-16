@@ -6,6 +6,7 @@ import { createClient } from "@/lib/supabase/server"
 import { formatDate } from "@/lib/formatters"
 import { getAuthenticatedUser } from "@/modules/supabase/get-authenticated-user"
 import { getProfileDefaultLocation } from "@/modules/profiles/get-profile-default-location"
+import { getPatientById } from "@/modules/patients/get-patient-by-id"
 import { generateMedicalCertificatePdf } from "@/modules/medical-certificates/generate-medical-certificate-pdf"
 import { insertMedicalCertificate } from "@/modules/medical-certificates/insert-medical-certificate"
 import { uploadMedicalCertificatePdf } from "@/modules/medical-certificates/upload-medical-certificate-pdf"
@@ -55,7 +56,11 @@ function parsePayloadByType(
     case "medico": {
       const r = medicoPayloadSchema.safeParse(payload)
       if (!r.success) {
-        const msg = r.error.flatten().fieldErrors?.patientName?.[0] ?? r.error.message
+        const fe = r.error.flatten().fieldErrors
+        const msg =
+          fe?.startDate?.[0] ??
+          fe?.patientName?.[0] ??
+          r.error.message
         return { ok: false, error: msg }
       }
       return { ok: true, payload: r.data }
@@ -121,6 +126,28 @@ export async function generateMedicalCertificateAction(
     firstName: profile.first_name ?? "",
     surname: profile.surname ?? "",
     crm: profile.crm ?? null,
+    rqe: profile.rqe ?? null,
+  }
+  const locationDisplay =
+    profile.default_location_city?.trim() && profile.default_location_state?.trim()
+      ? `${profile.default_location_city.trim()} - ${profile.default_location_state.trim()}`
+      : profile.default_location_state?.trim() ?? "—"
+  let logoBuffer: Buffer | null = null
+  if (profile.logo_url_full?.trim()) {
+    try {
+      const res = await fetch(profile.logo_url_full.trim())
+      if (res.ok) {
+        const ab = await res.arrayBuffer()
+        logoBuffer = Buffer.from(ab)
+      }
+    } catch {
+      // omit logo on fetch error
+    }
+  }
+  let patientResponsible: string | null = null
+  if (params.patientId) {
+    const patient = await getPatientById(supabase, params.patientId, profile.id)
+    patientResponsible = patient?.responsible ?? null
   }
   const today = format(new Date(), "yyyy-MM-dd")
   let issuedAtDate = parsed.data.issuedAt
@@ -138,10 +165,7 @@ export async function generateMedicalCertificateAction(
       (payloadWithFormattedDates as ComparecimentoPayload).attendanceDate = formatDate(
         (payloadWithFormattedDates as ComparecimentoPayload).attendanceDate,
       )
-    if ("validityDate" in payloadWithFormattedDates && payloadWithFormattedDates.validityDate)
-      (payloadWithFormattedDates as AptidaoFisicaPayload).validityDate = formatDate(
-        (payloadWithFormattedDates as AptidaoFisicaPayload).validityDate,
-      )
+    // validity (aptidao_fisica) is free text — do not format as date
     if ("startDate" in payloadWithFormattedDates && payloadWithFormattedDates.startDate)
       (payloadWithFormattedDates as MedicoPayload).startDate = formatDate(
         (payloadWithFormattedDates as MedicoPayload).startDate,
@@ -157,6 +181,9 @@ export async function generateMedicalCertificateAction(
       doctor,
       locationState,
       issuedAt: issuedAtFormatted,
+      locationDisplay,
+      logoBuffer,
+      patientResponsible,
     })
 
     const certificateId = await insertMedicalCertificate(supabase, {
