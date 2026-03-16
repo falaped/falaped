@@ -7,7 +7,7 @@ import { PrescriptionTemplatesTableSection } from "@/components/dashboard/prescr
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Separator } from "@/components/ui/separator"
-import { NewPrescriptionLink } from "@/app/dashboard/prescriptions/novo/new-prescription-link"
+import { NewPrescriptionLink } from "@/app/dashboard/prescriptions/new/new-prescription-link"
 
 export default async function PrescriptionTemplatesPage() {
   const supabase = await createClient()

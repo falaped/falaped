@@ -7,7 +7,7 @@ import type { Patient } from "@/modules/patients/types"
 import type { PrescriptionTemplateOption } from "@/modules/prescription-templates/get-prescription-templates-by-profile-id"
 import type { PrescriptionTemplateSnapshot } from "@/modules/prescription-templates/types"
 
-const NEW_PRESCRIPTION_PATH = "/dashboard/prescriptions/novo"
+const NEW_PRESCRIPTION_PATH = "/dashboard/prescriptions/new"
 
 type PrescriptionWizardProfile = {
   id: string

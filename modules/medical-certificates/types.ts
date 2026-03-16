@@ -47,6 +47,7 @@ export type AcompanhantePayload = {
   consultationDate: string
   timeStart: string
   timeEnd: string
+  observations?: string
 }
 
 export type MedicalCertificatePayload =

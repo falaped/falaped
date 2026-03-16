@@ -20,7 +20,7 @@ export default function PatientsPage() {
           </p>
         </div>
         <Button asChild className="shrink-0">
-          <Link href="/dashboard/patients/novo">
+          <Link href="/dashboard/patients/new">
             <Plus className="mr-2 h-4 w-4" />
             Cadastrar paciente
           </Link>

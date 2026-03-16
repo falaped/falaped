@@ -16,7 +16,7 @@ export function PatientEmptyState() {
       </p>
       <div className="mt-4">
         <Button asChild>
-          <Link href="/dashboard/patients/novo">Cadastrar paciente</Link>
+          <Link href="/dashboard/patients/new">Cadastrar paciente</Link>
         </Button>
       </div>
     </div>

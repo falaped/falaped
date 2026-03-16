@@ -2,6 +2,7 @@
  * Returns the same paragraph texts used in the PDF, for preview.
  * No dependency on PdfBuilder so this can be used in client components.
  */
+import { stripHtml } from "@/lib/formatters"
 import type {
   DoctorInfo,
   ComparecimentoPayload,
@@ -18,7 +19,7 @@ function doctorSignature(doctor: DoctorInfo): string {
 }
 
 function observationsText(obs: string): string {
-  const t = obs?.trim()
+  const t = stripHtml(obs ?? "").trim()
   return `Observações: ${t || "-"}`
 }
 
@@ -46,8 +47,9 @@ export function getMedicalCertificatePreviewParagraphs(
   switch (type) {
     case "comparecimento": {
       const p = payload as ComparecimentoPayload
+      const periodText = p.timeStart?.trim() ? ` no período de ${p.timeStart}.` : "."
       return [
-        `Atesto, para os devidos fins, que ${p.patientName}, nascido(a) em ${p.birthDate}, esteve sob meus cuidados médicos no dia ${p.attendanceDate}, no período das ${p.timeStart} às ${p.timeEnd}.`,
+        `Atesto, para os devidos fins, que ${p.patientName}, nascido(a) em ${p.birthDate}, esteve sob meus cuidados médicos no dia ${p.attendanceDate},${periodText}`,
         observationsText(p.observations),
         locationDate,
         sig,
@@ -80,12 +82,17 @@ export function getMedicalCertificatePreviewParagraphs(
     }
     case "acompanhante": {
       const p = payload as AcompanhantePayload
-      return [
-        `Atesto, para os devidos fins, que ${p.companionName} acompanhou ${p.patientName} em consulta médica no dia ${p.consultationDate}, no período das ${p.timeStart} às ${p.timeEnd}.`,
+      const periodText = p.timeStart?.trim() ? ` no período de ${p.timeStart}.` : "."
+      const lines = [
+        `Atesto, para os devidos fins, que ${p.companionName} acompanhou ${p.patientName} em consulta médica no dia ${p.consultationDate},${periodText}`,
         locationDate,
         sig,
         doctorLine,
       ]
+      if (p.observations?.trim()) {
+        lines.splice(lines.length - 2, 0, observationsText(p.observations))
+      }
+      return lines
     }
   }
 }

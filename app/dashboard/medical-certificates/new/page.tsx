@@ -4,7 +4,7 @@ import { FileCheck, ChevronLeft } from "lucide-react"
 import { createClient } from "@/lib/supabase/server"
 import { getAuthenticatedUser } from "@/modules/supabase/get-authenticated-user"
 import { getPatientsByProfileId } from "@/modules/patients/get-patients-by-profile-id"
-import { MedicalCertificateWizard } from "@/components/dashboard/medical-certificates/medical-certificate-wizard"
+import { MedicalCertificateWizardWrapper } from "./medical-certificate-wizard-wrapper"
 import { Button } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
 
@@ -38,7 +38,7 @@ export default async function NewMedicalCertificatePage() {
 
       <Separator />
 
-      <MedicalCertificateWizard patients={patients} profile={profile} />
+      <MedicalCertificateWizardWrapper patients={patients} profile={profile} />
     </div>
   )
 }

@@ -4,41 +4,34 @@ import { useRouter } from "next/navigation"
 import type { ReactNode } from "react"
 import { cn } from "@/lib/utils"
 
-const NEW_PRESCRIPTION_PATH = "/dashboard/prescriptions/novo"
+const NEW_MEDICAL_CERTIFICATE_PATH = "/dashboard/medical-certificates/new"
 
-type NewPrescriptionLinkProps = {
+type NewMedicalCertificateLinkProps = {
   children: ReactNode
   className?: string
-  templateId?: string
 } & Omit<React.AnchorHTMLAttributes<HTMLAnchorElement>, "href">
 
 /**
- * Client link that navigates to Nova receita with a unique _t param.
+ * Client link that navigates to Novo atestado with a unique _t param.
  * Ensures each visit gets a fresh wizard (no cached state).
  */
-export function NewPrescriptionLink({
+export function NewMedicalCertificateLink({
   children,
   className,
-  templateId,
   ...props
-}: NewPrescriptionLinkProps) {
+}: NewMedicalCertificateLinkProps) {
   const router = useRouter()
-
-  const baseHref =
-    NEW_PRESCRIPTION_PATH +
-    (templateId ? "?templateId=" + encodeURIComponent(templateId) : "")
 
   function handleClick(e: React.MouseEvent<HTMLAnchorElement>) {
     e.preventDefault()
     const params = new URLSearchParams()
     params.set("_t", String(Date.now()))
-    if (templateId) params.set("templateId", templateId)
-    router.push(`${NEW_PRESCRIPTION_PATH}?${params.toString()}`)
+    router.push(`${NEW_MEDICAL_CERTIFICATE_PATH}?${params.toString()}`)
   }
 
   return (
     <a
-      href={baseHref}
+      href={NEW_MEDICAL_CERTIFICATE_PATH}
       className={cn(className)}
       onClick={handleClick}
       {...props}

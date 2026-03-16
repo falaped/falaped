@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation"
 import { Pill, Plus } from "lucide-react"
-import { NewPrescriptionLink } from "./novo/new-prescription-link"
+import { NewPrescriptionLink } from "./new/new-prescription-link"
 import { createClient } from "@/lib/supabase/server"
 import { getAuthenticatedUser } from "@/modules/supabase/get-authenticated-user"
 import { getPrescriptionsByProfileId } from "@/modules/prescriptions/get-prescriptions-by-profile-id"

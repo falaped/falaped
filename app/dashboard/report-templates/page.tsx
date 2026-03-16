@@ -41,7 +41,7 @@ export default async function ReportTemplatesPage() {
             </Link>
           </Button>
           <Button asChild>
-            <Link href="/dashboard/report-templates/novo">
+            <Link href="/dashboard/report-templates/new">
               <Plus className="mr-2 h-4 w-4" />
               Criar template
             </Link>
@@ -62,7 +62,7 @@ export default async function ReportTemplatesPage() {
               Crie um template para usar nos relatórios de atendimento.
             </p>
             <Button asChild className="mt-5">
-              <Link href="/dashboard/report-templates/novo">
+              <Link href="/dashboard/report-templates/new">
                 <Plus className="mr-2 h-4 w-4" />
                 Criar template
               </Link>

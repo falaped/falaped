@@ -92,7 +92,7 @@ function applySnapshotToMedications(
   }))
 }
 
-const NEW_PRESCRIPTION_PATH = "/dashboard/prescriptions/novo"
+const NEW_PRESCRIPTION_PATH = "/dashboard/prescriptions/new"
 
 export function PrescriptionWizard({
   patients,

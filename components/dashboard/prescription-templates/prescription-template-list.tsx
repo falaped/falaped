@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation"
 import Link from "next/link"
-import { NewPrescriptionLink } from "@/app/dashboard/prescriptions/novo/new-prescription-link"
+import { NewPrescriptionLink } from "@/app/dashboard/prescriptions/new/new-prescription-link"
 import { FileText, Trash2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription } from "@/components/ui/card"

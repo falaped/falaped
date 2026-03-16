@@ -18,7 +18,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Separator } from "@/components/ui/separator"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Textarea } from "@/components/ui/textarea"
 import {
   Field,
   FieldContent,
@@ -26,9 +25,16 @@ import {
   FieldLabel,
 } from "@/components/ui/field"
 import { Checkbox } from "@/components/ui/checkbox"
+import { RichTextEditor } from "@/components/ui/rich-text-editor"
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet"
 import { MedicalCertificatePatientPickerSheet } from "./medical-certificate-patient-picker-sheet"
 import { DatePickerField } from "./date-picker-field"
-import { TimePickerField } from "./time-picker-field"
+import { DateRangePickerField } from "./date-range-picker-field"
 import { formatDate } from "@/lib/formatters"
 import { getProfileDefaultLocation } from "@/modules/profiles/get-profile-default-location"
 import { generateMedicalCertificateAction } from "@/actions"
@@ -43,41 +49,41 @@ const TYPES: {
   description: string
   icon: React.ElementType
 }[] = [
-  {
-    value: "comparecimento",
-    label: "Comparecimento",
-    description: "Atestado de comparecimento ao atendimento",
-    icon: ClipboardList,
-  },
-  {
-    value: "aptidao_fisica",
-    label: "Aptidão Física",
-    description: "Atestado de aptidão para atividades físicas",
-    icon: UserCircle,
-  },
-  {
-    value: "medico",
-    label: "Médico (afastamento)",
-    description: "Atestado médico de afastamento",
-    icon: Stethoscope,
-  },
-  {
-    value: "acompanhante",
-    label: "Acompanhante",
-    description: "Atestado de acompanhante em consulta",
-    icon: UserPlus,
-  },
-]
+    {
+      value: "comparecimento",
+      label: "Comparecimento",
+      description: "Atestado de comparecimento ao atendimento",
+      icon: ClipboardList,
+    },
+    {
+      value: "aptidao_fisica",
+      label: "Aptidão Física",
+      description: "Atestado de aptidão para atividades físicas",
+      icon: UserCircle,
+    },
+    {
+      value: "medico",
+      label: "Médico (afastamento)",
+      description: "Atestado médico de afastamento",
+      icon: Stethoscope,
+    },
+    {
+      value: "acompanhante",
+      label: "Acompanhante",
+      description: "Atestado de acompanhante em consulta",
+      icon: UserPlus,
+    },
+  ]
 
 function WizardStepper({ currentStep }: { currentStep: Step }) {
   return (
     <p className="text-sm text-muted-foreground">
-      Passo {currentStep} de 4
+      Passo {currentStep} de 3
     </p>
   )
 }
 
-type Step = 1 | 2 | 3 | 4
+type Step = 1 | 2 | 3
 
 type WizardPayload = {
   comparecimento?: {
@@ -110,6 +116,7 @@ type WizardPayload = {
     consultationDate: string
     timeStart: string
     timeEnd: string
+    observations: string
   }
 }
 
@@ -144,7 +151,350 @@ const initialPayload: WizardPayload = {
     consultationDate: "",
     timeStart: "",
     timeEnd: "",
+    observations: "",
   },
+}
+
+type CertificateFormCardProps = {
+  type: MedicalCertificateType
+  currentPayload: NonNullable<WizardPayload[MedicalCertificateType]>
+  payload: WizardPayload
+  setPayload: React.Dispatch<React.SetStateAction<WizardPayload>>
+  selectedPatient: Patient | null
+}
+
+function CertificateFormCard({
+  type,
+  currentPayload,
+  payload,
+  setPayload,
+  selectedPatient,
+}: CertificateFormCardProps) {
+  const isComparecimento = type === "comparecimento"
+  const isAptidao = type === "aptidao_fisica"
+  const isMedico = type === "medico"
+  const isAcompanhante = type === "acompanhante"
+  const responsibleName = selectedPatient?.responsible?.trim() ?? ""
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="text-base">Passo 3 — Dados do atestado</CardTitle>
+        <CardDescription className="mt-1">
+          Preencha os campos. Use a localização do navegador ou digite o Estado no perfil.
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-6">
+        <section className="space-y-4">
+          <h4 className="text-sm font-medium text-muted-foreground">Dados do atestado</h4>
+          {isComparecimento && (
+            <>
+              <div className="flex flex-wrap gap-4">
+                <div className="w-full min-w-0 sm:w-1/2 sm:max-w-[50%]">
+                  <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                    <DatePickerField
+                      label="Data do atendimento"
+                      value={(currentPayload as { attendanceDate?: string }).attendanceDate ?? ""}
+                      onChange={(v) =>
+                        setPayload((prev) => ({
+                          ...prev,
+                          comparecimento: { ...prev.comparecimento!, attendanceDate: v },
+                        }))
+                      }
+                      placeholder="Selecione a data"
+                    />
+                    <Field>
+                      <FieldLabel>Horário</FieldLabel>
+                      <FieldContent>
+                        <Input
+                          value={(currentPayload as { timeStart?: string }).timeStart ?? ""}
+                          onChange={(e) =>
+                            setPayload((prev) => ({
+                              ...prev,
+                              comparecimento: {
+                                ...prev.comparecimento!,
+                                timeStart: e.target.value,
+                              },
+                            }))
+                          }
+                          placeholder="Ex: 09:00 às 11:00"
+                        />
+                      </FieldContent>
+                    </Field>
+                  </div>
+                </div>
+              </div>
+              <Field>
+                <FieldLabel>Observações</FieldLabel>
+                <FieldContent>
+                  <RichTextEditor
+                    value={(currentPayload as { observations?: string }).observations ?? ""}
+                    onChange={(value) =>
+                      setPayload((prev) => ({
+                        ...prev,
+                        comparecimento: { ...prev.comparecimento!, observations: value },
+                      }))
+                    }
+                    placeholder="Opcional"
+                    minHeight="80px"
+                  />
+                </FieldContent>
+              </Field>
+            </>
+          )}
+          {isAptidao && (
+            <>
+              <div className="w-full min-w-0 sm:w-1/2 sm:max-w-[50%]">
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                  <Field>
+                    <FieldLabel>Atividades</FieldLabel>
+                    <FieldContent>
+                      <Input
+                        value={(currentPayload as { activities?: string }).activities ?? ""}
+                        onChange={(e) =>
+                          setPayload((prev) => ({
+                            ...prev,
+                            aptidao_fisica: {
+                              ...prev.aptidao_fisica!,
+                              activities: e.target.value,
+                            },
+                          }))
+                        }
+                        placeholder="Ex.: atividades escolares e Natação"
+                      />
+                    </FieldContent>
+                  </Field>
+                  <DatePickerField
+                    label="Validade"
+                    value={(currentPayload as { validityDate?: string }).validityDate ?? ""}
+                    onChange={(v) =>
+                      setPayload((prev) => ({
+                        ...prev,
+                        aptidao_fisica: {
+                          ...prev.aptidao_fisica!,
+                          validityDate: v,
+                        },
+                      }))
+                    }
+                    placeholder="Selecione a data"
+                  />
+                </div>
+              </div>
+              <Field>
+                <FieldLabel>Observações</FieldLabel>
+                <FieldContent>
+                  <RichTextEditor
+                    value={(currentPayload as { observations?: string }).observations ?? ""}
+                    onChange={(value) =>
+                      setPayload((prev) => ({
+                        ...prev,
+                        aptidao_fisica: {
+                          ...prev.aptidao_fisica!,
+                          observations: value,
+                        },
+                      }))
+                    }
+                    placeholder="Opcional"
+                    minHeight="80px"
+                  />
+                </FieldContent>
+              </Field>
+            </>
+          )}
+          {isMedico && (
+            <>
+              <div className="w-full min-w-0 sm:w-1/2 sm:max-w-[50%]">
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                  <DateRangePickerField
+                    label="Período de afastamento"
+                    startDate={(currentPayload as { startDate?: string }).startDate ?? ""}
+                    daysAway={(currentPayload as { daysAway?: number }).daysAway ?? 1}
+                    onChange={({ startDate: v, daysAway: d }) =>
+                      setPayload((prev) => ({
+                        ...prev,
+                        medico: {
+                          ...prev.medico!,
+                          startDate: v,
+                          daysAway: d,
+                        },
+                      }))
+                    }
+                    placeholder="Selecione o período"
+                  />
+                  <Field>
+                    <FieldLabel>CID-10</FieldLabel>
+                    <FieldContent>
+                      <Input
+                        value={(currentPayload as { cid10?: string }).cid10 ?? ""}
+                        onChange={(e) =>
+                          setPayload((prev) => ({
+                            ...prev,
+                            medico: { ...prev.medico!, cid10: e.target.value },
+                          }))
+                        }
+                        placeholder="Ex.: J00"
+                      />
+                    </FieldContent>
+                  </Field>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <Checkbox
+                  id="canLeaveHome"
+                  checked={(currentPayload as { canLeaveHome?: boolean }).canLeaveHome ?? true}
+                  onCheckedChange={(checked) =>
+                    setPayload((prev) => ({
+                      ...prev,
+                      medico: {
+                        ...prev.medico!,
+                        canLeaveHome: checked === true,
+                      },
+                    }))
+                  }
+                />
+                <Label htmlFor="canLeaveHome" className="cursor-pointer font-normal">
+                  Pode sair de casa
+                </Label>
+              </div>
+              <Field>
+                <FieldLabel>Observações</FieldLabel>
+                <FieldContent>
+                  <RichTextEditor
+                    value={(currentPayload as { observations?: string }).observations ?? ""}
+                    onChange={(value) =>
+                      setPayload((prev) => ({
+                        ...prev,
+                        medico: {
+                          ...prev.medico!,
+                          observations: value,
+                        },
+                      }))
+                    }
+                    placeholder="Opcional"
+                    minHeight="80px"
+                  />
+                </FieldContent>
+              </Field>
+            </>
+          )}
+          {isAcompanhante && (
+            <>
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-4">
+                <Field>
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <FieldLabel>Nome do acompanhante</FieldLabel>
+                    {responsibleName ? (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className="h-auto py-1 text-xs text-muted-foreground hover:text-foreground"
+                        onClick={() =>
+                          setPayload((prev) => ({
+                            ...prev,
+                            acompanhante: {
+                              ...prev.acompanhante!,
+                              companionName: responsibleName,
+                            },
+                          }))
+                        }
+                      >
+                        Usar nome do responsável
+                      </Button>
+                    ) : null}
+                  </div>
+                  <FieldContent>
+                    <Input
+                      value={(currentPayload as { companionName?: string }).companionName ?? ""}
+                      onChange={(e) =>
+                        setPayload((prev) => ({
+                          ...prev,
+                          acompanhante: {
+                            ...prev.acompanhante!,
+                            companionName: e.target.value,
+                          },
+                        }))
+                      }
+                      placeholder="Nome completo"
+                    />
+                  </FieldContent>
+                </Field>
+                <Field>
+                  <FieldLabel>Nome do paciente acompanhado</FieldLabel>
+                  <FieldContent>
+                    <Input
+                      value={(currentPayload as { patientName?: string }).patientName ?? ""}
+                      onChange={(e) =>
+                        setPayload((prev) => ({
+                          ...prev,
+                          acompanhante: {
+                            ...prev.acompanhante!,
+                            patientName: e.target.value,
+                          },
+                        }))
+                      }
+                      placeholder="Nome completo"
+                    />
+                  </FieldContent>
+                </Field>
+                <DatePickerField
+                  label="Data da consulta"
+                  value={(currentPayload as { consultationDate?: string }).consultationDate ?? ""}
+                  onChange={(v) =>
+                    setPayload((prev) => ({
+                      ...prev,
+                      acompanhante: {
+                        ...prev.acompanhante!,
+                        consultationDate: v,
+                      },
+                    }))
+                  }
+                  placeholder="Selecione a data"
+                />
+                <Field>
+                  <FieldLabel>Horário</FieldLabel>
+                  <FieldContent>
+                    <Input
+                      value={(currentPayload as { timeStart?: string }).timeStart ?? ""}
+                      onChange={(e) =>
+                        setPayload((prev) => ({
+                          ...prev,
+                          acompanhante: {
+                            ...prev.acompanhante!,
+                            timeStart: e.target.value,
+                          },
+                        }))
+                      }
+                      placeholder="Ex: 09:00 às 11:00"
+                    />
+                  </FieldContent>
+                </Field>
+              </div>
+              <Field>
+                <FieldLabel>Observações</FieldLabel>
+                <FieldContent>
+                  <RichTextEditor
+                    value={(currentPayload as { observations?: string }).observations ?? ""}
+                    onChange={(value) =>
+                      setPayload((prev) => ({
+                        ...prev,
+                        acompanhante: {
+                          ...prev.acompanhante!,
+                          observations: value,
+                        },
+                      }))
+                    }
+                    placeholder="Opcional"
+                    minHeight="80px"
+                  />
+                </FieldContent>
+              </Field>
+            </>
+          )}
+        </section>
+      </CardContent>
+    </Card>
+  )
 }
 
 type MedicalCertificateWizardProfile = {
@@ -168,18 +518,25 @@ export function MedicalCertificateWizard({ patients, profile }: MedicalCertifica
   const [dataSource, setDataSource] = useState<"patient" | "manual" | null>(null)
   const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null)
   const [pickerOpen, setPickerOpen] = useState(false)
+  const [manualSheetOpen, setManualSheetOpen] = useState(false)
+  const [manualConfirmed, setManualConfirmed] = useState(false)
+  const [patientName, setPatientName] = useState("")
+  const [birthDate, setBirthDate] = useState("")
   const [payload, setPayload] = useState<WizardPayload>(initialPayload)
   const [issuedAt] = useState(format(new Date(), "yyyy-MM-dd"))
   const [generating, setGenerating] = useState(false)
 
   const currentPayload = type ? payload[type] : null
+  const hasPatient =
+    (dataSource === "patient" && selectedPatient) ||
+    (dataSource === "manual" && manualConfirmed)
 
   function handleSelectType(t: MedicalCertificateType) {
     setType(t)
-    setStep(3)
   }
 
   function handleSelectPatient(patient: Patient) {
+    setDataSource("patient")
     setSelectedPatient(patient)
     const keys = ["comparecimento", "aptidao_fisica", "medico", "acompanhante"] as const
     keys.forEach((k) => {
@@ -194,13 +551,36 @@ export function MedicalCertificateWizard({ patients, profile }: MedicalCertifica
   }
 
   function handleDataSourceManual() {
+    setManualSheetOpen(true)
+  }
+
+  function handleConfirmManualEntry() {
     setDataSource("manual")
-    setStep(2)
+    setManualConfirmed(true)
+    const keys = ["comparecimento", "aptidao_fisica", "medico", "acompanhante"] as const
+    keys.forEach((k) => {
+      if (payload[k]) {
+        const next = { ...payload[k] } as Record<string, unknown>
+        next.patientName = patientName.trim()
+        next.birthDate = birthDate.trim()
+        setPayload((prev) => ({ ...prev, [k]: next }))
+      }
+    })
+    setManualSheetOpen(false)
   }
 
   function handleDataSourcePatientChosen() {
     setDataSource("patient")
-    setStep(2)
+  }
+
+  function handleRemovePatient() {
+    setSelectedPatient(null)
+    setDataSource(null)
+    setManualConfirmed(false)
+    setPatientName("")
+    setBirthDate("")
+    setType(null)
+    setPayload(initialPayload)
   }
 
   function handleGenerate() {
@@ -237,91 +617,165 @@ export function MedicalCertificateWizard({ patients, profile }: MedicalCertifica
   if (step === 1) {
     return (
       <>
-        <Card>
-          <CardHeader>
-            <WizardStepper currentStep={1} />
-            <CardTitle className="mt-2">Como deseja preencher os dados?</CardTitle>
-            <CardDescription>
-              Associe a um paciente para usar nome e data de nascimento do cadastro, ou preencha manualmente.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-              <Card
-                className={cn(
-                  "cursor-pointer border transition-colors hover:border-primary/20 hover:bg-muted/30",
-                  selectedPatient && "border-primary/30 bg-muted/20",
-                )}
-                onClick={() => !selectedPatient && setPickerOpen(true)}
-              >
-                <CardContent className="p-5">
-                  <div className="flex flex-col gap-2">
-                    <UserPlus className="h-5 w-5 text-muted-foreground" />
-                    <h3 className="font-medium text-foreground">
-                      Associar a um paciente
-                    </h3>
-                    <p className="text-sm text-muted-foreground">
-                      Use nome e data de nascimento do cadastro.
-                    </p>
-                    {selectedPatient && (
-                      <div className="mt-3 space-y-1 rounded-md border border-border bg-background/50 p-3 text-sm">
-                        <p className="font-medium text-foreground">
-                          {selectedPatient.name}
-                        </p>
-                        <p className="text-muted-foreground">
-                          {selectedPatient.birth_date
-                            ? `Nascimento: ${format(new Date(selectedPatient.birth_date + "T12:00:00"), "dd/MM/yyyy", { locale: ptBR })}`
-                            : "Data de nascimento não informada"}
-                        </p>
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="sm"
-                          className="mt-2 h-8"
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            setPickerOpen(true)
-                          }}
-                        >
-                          Trocar paciente
-                        </Button>
-                      </div>
-                    )}
+        <div className="space-y-6">
+          <Card>
+            <CardHeader className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <WizardStepper currentStep={1} />
+                <CardTitle className="mt-2 text-base">Passo 1 — Associar ou preencher paciente</CardTitle>
+                <CardDescription className="mt-1">
+                  Associe um paciente cadastrado ou preencha os dados manualmente.
+                </CardDescription>
+              </div>
+              {!hasPatient ? (
+                <div className="flex shrink-0 flex-wrap gap-2">
+                  <Button
+                    type="button"
+                    variant={dataSource === "patient" && selectedPatient ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => setPickerOpen(true)}
+                  >
+                    <UserPlus className="mr-2 h-4 w-4" />
+                    Associar paciente
+                  </Button>
+                  <Button
+                    type="button"
+                    variant={dataSource === "manual" && manualConfirmed ? "default" : "outline"}
+                    size="sm"
+                    onClick={handleDataSourceManual}
+                  >
+                    <ClipboardList className="mr-2 h-4 w-4" />
+                    Preencher manualmente
+                  </Button>
+                </div>
+              ) : null}
+            </CardHeader>
+            <CardContent>
+              {dataSource === "patient" && selectedPatient ? (
+                <div className="rounded-lg border border-border bg-muted/30 px-5 py-4 shadow-sm">
+                  <div className="flex flex-wrap items-center justify-between gap-3">
+                    <div className="flex flex-wrap items-baseline gap-2">
+                      <p className="font-semibold text-foreground">{selectedPatient.name}</p>
+                      <span className="text-muted-foreground">·</span>
+                      <p className="text-sm text-muted-foreground">
+                        {selectedPatient.birth_date
+                          ? format(new Date(selectedPatient.birth_date + "T12:00:00"), "dd/MM/yyyy", { locale: ptBR })
+                          : "Data de nascimento não informada"}
+                      </p>
+                    </div>
+                    <Button type="button" variant="secondary" size="sm" onClick={handleRemovePatient}>
+                      Remover paciente
+                    </Button>
                   </div>
-                </CardContent>
-              </Card>
-              <Card
-                className="cursor-pointer border transition-colors hover:border-primary/20 hover:bg-muted/30"
-                onClick={handleDataSourceManual}
-              >
-                <CardContent className="p-5">
-                  <div className="flex flex-col gap-2">
-                    <ClipboardList className="h-5 w-5 text-muted-foreground" />
-                    <h3 className="font-medium text-foreground">
-                      Preencher manualmente
-                    </h3>
-                    <p className="text-sm text-muted-foreground">
-                      Informe os dados manualmente no próximo passo.
-                    </p>
+                </div>
+              ) : hasPatient ? (
+                <div className="rounded-lg border border-border bg-muted/30 px-5 py-4 shadow-sm">
+                  <div className="flex flex-wrap items-center justify-between gap-3">
+                    <div className="flex flex-wrap items-baseline gap-2">
+                      <p className="font-semibold text-foreground">
+                        {patientName.trim() || "Nome não informado"}
+                      </p>
+                      <span className="text-muted-foreground">·</span>
+                      <p className="text-sm text-muted-foreground">
+                        {birthDate.trim()
+                          ? format(new Date(birthDate + "T12:00:00"), "dd/MM/yyyy", { locale: ptBR })
+                          : "Data de nascimento não informada"}
+                      </p>
+                    </div>
+                    <Button type="button" variant="secondary" size="sm" onClick={handleRemovePatient}>
+                      Remover paciente
+                    </Button>
                   </div>
-                </CardContent>
-              </Card>
-            </div>
-          </CardContent>
-        </Card>
-        <div className="mt-4 flex gap-2">
+                </div>
+              ) : null}
+            </CardContent>
+          </Card>
+
+          {hasPatient ? (
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base">Passo 2 — Tipo de atestado</CardTitle>
+                <CardDescription className="mt-1">
+                  Escolha o tipo de atestado que deseja gerar.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-4">
+                  {TYPES.map(({ value, label, description, icon: Icon }) => (
+                    <Card
+                      key={value}
+                      className={cn(
+                        "cursor-pointer border transition-colors hover:border-primary/20 hover:bg-muted/30",
+                        type === value && "ring-2 ring-primary border-primary",
+                      )}
+                      onClick={() => handleSelectType(value)}
+                    >
+                      <CardContent className="p-5">
+                        <div className="flex flex-col gap-2">
+                          <Icon className="h-5 w-5 text-muted-foreground" />
+                          <h3 className="font-medium text-foreground">{label}</h3>
+                          <p className="text-sm text-muted-foreground">{description}</p>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          ) : null}
+
+          {hasPatient && type && currentPayload ? (
+            <CertificateFormCard
+              type={type}
+              currentPayload={currentPayload}
+              payload={payload}
+              setPayload={setPayload}
+              selectedPatient={selectedPatient}
+            />
+          ) : null}
+        </div>
+
+        <div className="mt-6 flex flex-wrap items-center gap-2">
           <Button variant="ghost" asChild>
             <Link href="/dashboard/medical-certificates">
               <ChevronLeft className="mr-2 h-4 w-4" />
               Voltar
             </Link>
           </Button>
-          {selectedPatient && (
-            <Button onClick={handleDataSourcePatientChosen}>
-              Continuar
-            </Button>
-          )}
+          {hasPatient && type ? (
+            <Button onClick={() => setStep(2)}>Revisar</Button>
+          ) : null}
         </div>
+
+        <Sheet open={manualSheetOpen} onOpenChange={setManualSheetOpen}>
+          <SheetContent side="right" className="flex flex-col sm:max-w-md">
+            <SheetHeader className="px-6">
+              <SheetTitle>Dados do paciente</SheetTitle>
+            </SheetHeader>
+            <div className="flex flex-col gap-4 px-6 pt-4">
+              <Field>
+                <FieldLabel>Nome do paciente</FieldLabel>
+                <FieldContent>
+                  <Input
+                    value={patientName}
+                    onChange={(e) => setPatientName(e.target.value)}
+                    placeholder="Nome completo"
+                  />
+                </FieldContent>
+              </Field>
+              <DatePickerField
+                label="Data de nascimento"
+                value={birthDate}
+                onChange={setBirthDate}
+                placeholder="Selecione a data"
+              />
+              <Button type="button" className="mt-2 w-full" onClick={handleConfirmManualEntry}>
+                Concluir
+              </Button>
+            </div>
+          </SheetContent>
+        </Sheet>
+
         <MedicalCertificatePatientPickerSheet
           patients={patients}
           open={pickerOpen}
@@ -332,443 +786,7 @@ export function MedicalCertificateWizard({ patients, profile }: MedicalCertifica
     )
   }
 
-  if (step === 2) {
-    return (
-      <Card>
-        <CardHeader>
-          <WizardStepper currentStep={2} />
-          <CardTitle className="mt-2">Tipo de atestado</CardTitle>
-          <CardDescription>
-            Escolha o tipo de atestado que deseja gerar.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            {TYPES.map(({ value, label, description, icon: Icon }) => (
-              <Card
-                key={value}
-                className="cursor-pointer border transition-colors hover:border-primary/20 hover:bg-muted/30"
-                onClick={() => handleSelectType(value)}
-              >
-                <CardContent className="p-5">
-                  <div className="flex flex-col gap-2">
-                    <Icon className="h-5 w-5 text-muted-foreground" />
-                    <h3 className="font-medium text-foreground">{label}</h3>
-                    <p className="text-sm text-muted-foreground">
-                      {description}
-                    </p>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-          <div className="mt-4 flex gap-2">
-            <Button variant="ghost" onClick={() => setStep(1)}>
-              <ChevronLeft className="mr-2 h-4 w-4" />
-              Voltar
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
-    )
-  }
-
-  if (step === 3 && type && currentPayload) {
-    const isComparecimento = type === "comparecimento"
-    const isAptidao = type === "aptidao_fisica"
-    const isMedico = type === "medico"
-    const isAcompanhante = type === "acompanhante"
-
-    return (
-      <Card>
-        <CardHeader>
-          <WizardStepper currentStep={3} />
-          <CardTitle className="mt-2">Preencha os dados</CardTitle>
-          <CardDescription>
-            Preencha os campos e informe o Estado. Use a localização do navegador ou digite o Estado.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          {(isComparecimento || isAptidao || isMedico || isAcompanhante) && (
-            <>
-              <section className="space-y-4">
-                <h4 className="text-sm font-medium text-muted-foreground">
-                  Paciente
-                </h4>
-                {(isComparecimento || isAptidao || isMedico) &&
-                  (dataSource === "patient" && selectedPatient ? (
-                    <div className="rounded-lg border border-border bg-muted/30 p-4">
-                      <p className="font-medium text-foreground">{selectedPatient.name}</p>
-                      <p className="mt-0.5 text-sm text-muted-foreground">
-                        {selectedPatient.birth_date
-                          ? `Nascimento: ${format(new Date(selectedPatient.birth_date + "T12:00:00"), "dd/MM/yyyy", { locale: ptBR })}`
-                          : "Data de nascimento não informada"}
-                      </p>
-                      {selectedPatient.responsible && (
-                        <p className="mt-0.5 text-sm text-muted-foreground">
-                          Responsável: {selectedPatient.responsible}
-                        </p>
-                      )}
-                    </div>
-                  ) : (
-                    (isComparecimento || isAptidao || isMedico) && (
-                      <>
-                        <Field>
-                          <FieldLabel>Nome do paciente</FieldLabel>
-                          <FieldContent>
-                            <Input
-                              value={(currentPayload as { patientName?: string }).patientName ?? ""}
-                              onChange={(e) =>
-                                setPayload((prev) => ({
-                                  ...prev,
-                                  [type]: { ...currentPayload, patientName: e.target.value },
-                                }))
-                              }
-                              placeholder="Nome completo"
-                            />
-                          </FieldContent>
-                        </Field>
-                        <DatePickerField
-                          label="Data de nascimento"
-                          value={(currentPayload as { birthDate?: string }).birthDate ?? ""}
-                          onChange={(v) =>
-                            setPayload((prev) => ({
-                              ...prev,
-                              [type]: { ...currentPayload, birthDate: v },
-                            }))
-                          }
-                          placeholder="Selecione a data"
-                        />
-                      </>
-                    )
-                  ))}
-                {isAcompanhante && (
-                  <>
-                    <Field>
-                      <FieldLabel>Nome do acompanhante</FieldLabel>
-                      <FieldContent>
-                        <Input
-                          value={(currentPayload as { companionName?: string }).companionName ?? ""}
-                          onChange={(e) =>
-                            setPayload((prev) => ({
-                              ...prev,
-                              acompanhante: {
-                                ...prev.acompanhante!,
-                                companionName: e.target.value,
-                              },
-                            }))
-                          }
-                          placeholder="Nome completo"
-                        />
-                      </FieldContent>
-                    </Field>
-                    <Field>
-                      <FieldLabel>Nome do paciente acompanhado</FieldLabel>
-                      <FieldContent>
-                        <Input
-                          value={(currentPayload as { patientName?: string }).patientName ?? ""}
-                          onChange={(e) =>
-                            setPayload((prev) => ({
-                              ...prev,
-                              acompanhante: {
-                                ...prev.acompanhante!,
-                                patientName: e.target.value,
-                              },
-                            }))
-                          }
-                          placeholder="Nome completo"
-                        />
-                      </FieldContent>
-                    </Field>
-                  </>
-                )}
-              </section>
-              <Separator />
-            </>
-          )}
-
-          <section className="space-y-4">
-            <h4 className="text-sm font-medium text-muted-foreground">
-              Dados do atestado
-            </h4>
-          {isComparecimento && (
-            <>
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-                <DatePickerField
-                  label="Data do atendimento"
-                  value={(currentPayload as { attendanceDate?: string }).attendanceDate ?? ""}
-                  onChange={(v) =>
-                    setPayload((prev) => ({
-                      ...prev,
-                      comparecimento: {
-                        ...prev.comparecimento!,
-                        attendanceDate: v,
-                      },
-                    }))
-                  }
-                  placeholder="Selecione a data"
-                />
-                <TimePickerField
-                  label="Horário início"
-                  value={(currentPayload as { timeStart?: string }).timeStart ?? ""}
-                  onChange={(v) =>
-                    setPayload((prev) => ({
-                      ...prev,
-                      comparecimento: {
-                        ...prev.comparecimento!,
-                        timeStart: v,
-                      },
-                    }))
-                  }
-                  placeholder="Selecione o horário"
-                />
-                <TimePickerField
-                  label="Horário fim"
-                  value={(currentPayload as { timeEnd?: string }).timeEnd ?? ""}
-                  onChange={(v) =>
-                    setPayload((prev) => ({
-                      ...prev,
-                      comparecimento: {
-                        ...prev.comparecimento!,
-                        timeEnd: v,
-                      },
-                    }))
-                  }
-                  placeholder="Selecione o horário"
-                />
-              </div>
-              <Field>
-                <FieldLabel>Observações</FieldLabel>
-                <FieldContent>
-                  <Textarea
-                    value={(currentPayload as { observations?: string }).observations ?? ""}
-                    onChange={(e) =>
-                      setPayload((prev) => ({
-                        ...prev,
-                        comparecimento: {
-                          ...prev.comparecimento!,
-                          observations: e.target.value,
-                        },
-                      }))
-                    }
-                    placeholder="Opcional"
-                    rows={2}
-                  />
-                </FieldContent>
-              </Field>
-            </>
-          )}
-
-          {isAptidao && (
-            <>
-              <Field>
-                <FieldLabel>Atividades</FieldLabel>
-                <FieldContent>
-                  <Input
-                    value={(currentPayload as { activities?: string }).activities ?? ""}
-                    onChange={(e) =>
-                      setPayload((prev) => ({
-                        ...prev,
-                        aptidao_fisica: {
-                          ...prev.aptidao_fisica!,
-                          activities: e.target.value,
-                        },
-                      }))
-                    }
-                    placeholder="Ex.: atividades escolares e Natação"
-                  />
-                </FieldContent>
-              </Field>
-              <DatePickerField
-                label="Validade"
-                value={(currentPayload as { validityDate?: string }).validityDate ?? ""}
-                onChange={(v) =>
-                  setPayload((prev) => ({
-                    ...prev,
-                    aptidao_fisica: {
-                      ...prev.aptidao_fisica!,
-                      validityDate: v,
-                    },
-                  }))
-                }
-                placeholder="Selecione a data"
-              />
-              <Field>
-                <FieldLabel>Observações</FieldLabel>
-                <FieldContent>
-                  <Textarea
-                    value={(currentPayload as { observations?: string }).observations ?? ""}
-                    onChange={(e) =>
-                      setPayload((prev) => ({
-                        ...prev,
-                        aptidao_fisica: {
-                          ...prev.aptidao_fisica!,
-                          observations: e.target.value,
-                        },
-                      }))
-                    }
-                    rows={2}
-                  />
-                </FieldContent>
-              </Field>
-            </>
-          )}
-
-          {isMedico && (
-            <>
-              <Field>
-                <FieldLabel>Dias de afastamento</FieldLabel>
-                <FieldContent>
-                  <Input
-                    type="number"
-                    min={1}
-                    value={(currentPayload as { daysAway?: number }).daysAway ?? 1}
-                    onChange={(e) =>
-                      setPayload((prev) => ({
-                        ...prev,
-                        medico: {
-                          ...prev.medico!,
-                          daysAway: parseInt(e.target.value, 10) || 1,
-                        },
-                      }))
-                    }
-                  />
-                </FieldContent>
-              </Field>
-              <DatePickerField
-                label="Data de início do afastamento"
-                value={(currentPayload as { startDate?: string }).startDate ?? ""}
-                onChange={(v) =>
-                  setPayload((prev) => ({
-                    ...prev,
-                    medico: {
-                      ...prev.medico!,
-                      startDate: v,
-                    },
-                  }))
-                }
-                placeholder="Selecione a data"
-              />
-              <Field>
-                <FieldLabel>CID-10</FieldLabel>
-                <FieldContent>
-                  <Input
-                    value={(currentPayload as { cid10?: string }).cid10 ?? ""}
-                    onChange={(e) =>
-                      setPayload((prev) => ({
-                        ...prev,
-                        medico: {
-                          ...prev.medico!,
-                          cid10: e.target.value,
-                        },
-                      }))
-                    }
-                    placeholder="Ex.: J00"
-                  />
-                </FieldContent>
-              </Field>
-              <div className="flex items-center gap-2">
-                <Checkbox
-                  id="canLeaveHome"
-                  checked={(currentPayload as { canLeaveHome?: boolean }).canLeaveHome ?? true}
-                  onCheckedChange={(checked) =>
-                    setPayload((prev) => ({
-                      ...prev,
-                      medico: {
-                        ...prev.medico!,
-                        canLeaveHome: checked === true,
-                      },
-                    }))
-                  }
-                />
-                <Label htmlFor="canLeaveHome" className="cursor-pointer font-normal">
-                  Pode sair de casa
-                </Label>
-              </div>
-              <Field>
-                <FieldLabel>Observações</FieldLabel>
-                <FieldContent>
-                  <Textarea
-                    value={(currentPayload as { observations?: string }).observations ?? ""}
-                    onChange={(e) =>
-                      setPayload((prev) => ({
-                        ...prev,
-                        medico: {
-                          ...prev.medico!,
-                          observations: e.target.value,
-                        },
-                      }))
-                    }
-                    rows={2}
-                  />
-                </FieldContent>
-              </Field>
-            </>
-          )}
-
-          {isAcompanhante && (
-            <>
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-                <DatePickerField
-                  label="Data da consulta"
-                  value={(currentPayload as { consultationDate?: string }).consultationDate ?? ""}
-                  onChange={(v) =>
-                    setPayload((prev) => ({
-                      ...prev,
-                      acompanhante: {
-                        ...prev.acompanhante!,
-                        consultationDate: v,
-                      },
-                    }))
-                  }
-                  placeholder="Selecione a data"
-                />
-                <TimePickerField
-                  label="Horário início"
-                  value={(currentPayload as { timeStart?: string }).timeStart ?? ""}
-                  onChange={(v) =>
-                    setPayload((prev) => ({
-                      ...prev,
-                      acompanhante: {
-                        ...prev.acompanhante!,
-                        timeStart: v,
-                      },
-                    }))
-                  }
-                  placeholder="Selecione o horário"
-                />
-                <TimePickerField
-                  label="Horário fim"
-                  value={(currentPayload as { timeEnd?: string }).timeEnd ?? ""}
-                  onChange={(v) =>
-                    setPayload((prev) => ({
-                      ...prev,
-                      acompanhante: {
-                        ...prev.acompanhante!,
-                        timeEnd: v,
-                      },
-                    }))
-                  }
-                  placeholder="Selecione o horário"
-                />
-              </div>
-            </>
-          )}
-          </section>
-
-        </CardContent>
-        <div className="mt-4 flex gap-2">
-          <Button variant="ghost" onClick={() => setStep(2)}>
-            <ChevronLeft className="mr-2 h-4 w-4" />
-            Voltar
-          </Button>
-          <Button onClick={() => setStep(4)}>Revisar e gerar</Button>
-        </div>
-      </Card>
-    )
-  }
-
-  if (step === 4 && type && currentPayload) {
+  if (step === 2 && type && currentPayload) {
     const location = getProfileDefaultLocation(profile)
     const issuedAtFormatted = issuedAt
       ? format(new Date(issuedAt + "T12:00:00"), "d 'de' MMMM 'de' yyyy", { locale: ptBR })
@@ -801,7 +819,7 @@ export function MedicalCertificateWizard({ patients, profile }: MedicalCertifica
     return (
       <Card>
         <CardHeader>
-          <WizardStepper currentStep={4} />
+          <WizardStepper currentStep={2} />
           <CardTitle className="mt-2">Preview do atestado</CardTitle>
           <CardDescription>
             Confira como ficará o atestado. Ao confirmar, o PDF será gerado, salvo e disponível para download.
@@ -838,7 +856,30 @@ export function MedicalCertificateWizard({ patients, profile }: MedicalCertifica
             </div>
           </div>
           <div className="flex gap-2">
-            <Button variant="ghost" onClick={() => setStep(3)}>
+            <Button variant="ghost" onClick={() => setStep(1)}>
+              <ChevronLeft className="mr-2 h-4 w-4" />
+              Voltar
+            </Button>
+            <Button onClick={() => setStep(3)}>Confirmar e gerar</Button>
+          </div>
+        </CardContent>
+      </Card>
+    )
+  }
+
+  if (step === 3 && type && currentPayload) {
+    return (
+      <Card>
+        <CardHeader>
+          <WizardStepper currentStep={3} />
+          <CardTitle className="mt-2">Confirmar e gerar</CardTitle>
+          <CardDescription>
+            Clique em &quot;Confirmar e gerar&quot; para gerar o PDF, salvar e fazer o download.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="flex gap-2">
+            <Button variant="ghost" onClick={() => setStep(2)}>
               <ChevronLeft className="mr-2 h-4 w-4" />
               Voltar
             </Button>
