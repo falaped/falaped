@@ -60,7 +60,9 @@ export function RichTextEditor({
     if (!editor) return
     const handler = () => setToolbarUpdate((n) => n + 1)
     editor.on("selectionUpdate", handler)
-    return () => editor.off("selectionUpdate", handler)
+    return () => {
+      editor.off("selectionUpdate", handler)
+    }
   }, [editor])
 
   useEffect(() => {
