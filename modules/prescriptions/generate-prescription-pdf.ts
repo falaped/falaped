@@ -1,9 +1,7 @@
 /**
- * Generates a prescription PDF buffer.
- * Uses PdfBuilder (lib/pdf) and buildPrescriptionPdfContent (this module).
+ * Generates a prescription PDF buffer using @falaped/falaped-kit.
  */
-import { PdfBuilder } from "@/lib/pdf/pdf-builder"
-import { buildPrescriptionPdfContent } from "./build-prescription-pdf-content"
+import { buildPrescriptionPdf } from "@falaped/falaped-kit/pdf"
 import type { DoctorInfo, PrescriptionPayload } from "./types"
 
 export type GeneratePrescriptionPdfParams = {
@@ -19,8 +17,25 @@ export type GeneratePrescriptionPdfParams = {
 export async function generatePrescriptionPdf(
   params: GeneratePrescriptionPdfParams,
 ): Promise<Buffer> {
-  const { payload, doctor, locationState, issuedAt } = params
-  const builder = new PdfBuilder({ margin: 50 })
-  buildPrescriptionPdfContent(builder, payload, doctor, locationState, issuedAt)
-  return builder.build()
+  const { payload, doctor, issuedAt } = params
+  const patientName = payload.patientName?.trim() ?? ""
+  const doctorName = [doctor.firstName, doctor.surname].filter(Boolean).join(" ").trim() || "Médico(a)"
+  const doctorCrm = doctor.crm?.trim() ?? ""
+
+  const items = (payload.medications ?? []).map((m) => {
+    const description = [m.name, m.dosage].filter(Boolean).join(" - ")
+    const posology = [m.posology, m.duration, m.observations].filter(Boolean).join("; ")
+    return { description: description || "—", posology: posology || "—" }
+  })
+
+  const notes = [payload.orientations, payload.additionalNotes].filter(Boolean).join("\n").trim() || undefined
+
+  return buildPrescriptionPdf({
+    patientName,
+    date: issuedAt,
+    items,
+    doctorName,
+    doctorCrm,
+    notes,
+  })
 }

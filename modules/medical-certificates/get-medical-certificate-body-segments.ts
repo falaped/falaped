@@ -1,6 +1,6 @@
 /**
  * Returns body paragraphs for the PDF as segment arrays (text + bold) for nome, datas, horários.
- * Used by build-medical-certificate-pdf-content; excludes locationDate, sig, doctorLine.
+ * Used by generate-medical-certificate-pdf (kit input) and get-medical-certificate-preview-content.
  */
 import { stripHtml } from "@/lib/formatters"
 import type {

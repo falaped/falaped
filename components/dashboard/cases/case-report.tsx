@@ -18,11 +18,11 @@ import {
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable"
 import { CSS } from "@dnd-kit/utilities"
-import { GripVertical, Sparkles, Loader2, AlertTriangle, Trash2, FileText, Eye } from "lucide-react"
+import { GripVertical, Sparkles, Loader2, AlertTriangle, Trash2, FileText, Eye, Download } from "lucide-react"
 
 import type { CaseReport as CaseReportType, CaseReportSection } from "@/modules/cases/get-case-report"
 import type { ReportTemplateWithSections } from "@/modules/report-templates/get-report-template-by-id"
-import { generateCaseReportAction, improveReportSectionAction, updateCaseReportAction, deleteCaseReportAction } from "@/actions"
+import { generateCaseReportAction, downloadCaseReportPdfAction, improveReportSectionAction, updateCaseReportAction, deleteCaseReportAction } from "@/actions"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Label } from "@/components/ui/label"
@@ -226,6 +226,7 @@ export function CaseReport({
   const [improvingSection, setImprovingSection] = useState<string | null>(null)
   const [isFinalizing, setIsFinalizing] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
+  const [isDownloading, setIsDownloading] = useState(false)
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const [deletingReportId, setDeletingReportId] = useState<string | null>(null)
 
@@ -391,6 +392,31 @@ export function CaseReport({
   const handleBackToEdit = useCallback(() => {
     handleFinalizeChange(false)
   }, [handleFinalizeChange])
+
+  const handleDownloadPdf = useCallback(async () => {
+    if (!selectedReport) return
+    setIsDownloading(true)
+    try {
+      const result = await downloadCaseReportPdfAction(selectedReport.id)
+      if (result.ok) {
+        const blob = new Blob(
+          [Uint8Array.from(atob(result.pdfBase64), (c) => c.charCodeAt(0))],
+          { type: "application/pdf" },
+        )
+        const url = URL.createObjectURL(blob)
+        const a = document.createElement("a")
+        a.href = url
+        a.download = result.filename
+        a.click()
+        URL.revokeObjectURL(url)
+        toast.success("Download do PDF iniciado.")
+      } else {
+        toast.error(result.error)
+      }
+    } finally {
+      setIsDownloading(false)
+    }
+  }, [selectedReport])
 
   const handleDeleteReport = useCallback(async () => {
     if (!selectedReport) return
@@ -604,6 +630,20 @@ export function CaseReport({
                     Voltar a editar
                   </Button>
                 )}
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  disabled={isDownloading}
+                  onClick={handleDownloadPdf}
+                >
+                  {isDownloading ? (
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  ) : (
+                    <Download className="mr-2 h-4 w-4" />
+                  )}
+                  Baixar PDF
+                </Button>
                 <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
                   <AlertDialogTrigger asChild>
                     <Button

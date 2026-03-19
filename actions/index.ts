@@ -3,6 +3,7 @@ export {
   deleteCaseAction,
   updateCaseStatusAction,
   generateCaseReportAction,
+  downloadCaseReportPdfAction,
   improveReportSectionAction,
   updateCaseReportAction,
   deleteCaseReportAction,

@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache"
 import { createClient } from "@/lib/supabase/server"
+import { env } from "@/lib/env"
 import { formatDate } from "@/lib/formatters"
 import { getAuthenticatedUser } from "@/modules/supabase/get-authenticated-user"
 import { getCaseById } from "@/modules/cases/get-case-by-id"
@@ -60,6 +61,10 @@ export async function generateCaseReportAction(
       return { ok: false, error: "Caso não encontrado ou você não tem acesso." }
     if (caseDetail.messages.length === 0)
       return { ok: false, error: "Necessário ter conversa para gerar o relatório." }
+
+    if (!env.GROQ_API_KEY?.trim()) {
+      return { ok: false, error: "Geração por IA não está configurada." }
+    }
 
     const template = profile.report_template_id
       ? await getReportTemplateById(supabase, profile.report_template_id)
