@@ -39,14 +39,18 @@ export {
 export {
   generateMedicalCertificateAction,
   deleteMedicalCertificateAction,
+  deleteMedicalCertificatesBulkAction,
   type GenerateMedicalCertificateResult,
   type DeleteMedicalCertificateResult,
+  type DeleteMedicalCertificatesBulkResult,
 } from "./medical-certificates"
 export {
   generatePrescriptionAction,
   type GeneratePrescriptionResult,
   deletePrescriptionAction,
+  deletePrescriptionsBulkAction,
   type DeletePrescriptionResult,
+  type DeletePrescriptionsBulkResult,
 } from "./prescriptions"
 export {
   createPrescriptionTemplateAction,

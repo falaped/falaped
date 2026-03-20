@@ -25,6 +25,7 @@ import type {
   MedicoPayload,
   AcompanhantePayload,
 } from "@/modules/medical-certificates/types"
+import { zodErrorToUserMessage } from "@/lib/zod-error-message"
 
 export type GenerateMedicalCertificateResult =
   | { ok: true; pdfBase64: string; filename: string }
@@ -40,36 +41,28 @@ function parsePayloadByType(
     case "comparecimento": {
       const r = comparecimentoPayloadSchema.safeParse(payload)
       if (!r.success) {
-        const msg = r.error.flatten().fieldErrors?.patientName?.[0] ?? r.error.message
-        return { ok: false, error: msg }
+        return { ok: false, error: zodErrorToUserMessage(r.error) }
       }
       return { ok: true, payload: r.data }
     }
     case "aptidao_fisica": {
       const r = aptidaoFisicaPayloadSchema.safeParse(payload)
       if (!r.success) {
-        const msg = r.error.flatten().fieldErrors?.patientName?.[0] ?? r.error.message
-        return { ok: false, error: msg }
+        return { ok: false, error: zodErrorToUserMessage(r.error) }
       }
       return { ok: true, payload: r.data }
     }
     case "medico": {
       const r = medicoPayloadSchema.safeParse(payload)
       if (!r.success) {
-        const fe = r.error.flatten().fieldErrors
-        const msg =
-          fe?.startDate?.[0] ??
-          fe?.patientName?.[0] ??
-          r.error.message
-        return { ok: false, error: msg }
+        return { ok: false, error: zodErrorToUserMessage(r.error) }
       }
       return { ok: true, payload: r.data }
     }
     case "acompanhante": {
       const r = acompanhantePayloadSchema.safeParse(payload)
       if (!r.success) {
-        const msg = r.error.flatten().fieldErrors?.companionName?.[0] ?? r.error.message
-        return { ok: false, error: msg }
+        return { ok: false, error: zodErrorToUserMessage(r.error) }
       }
       return { ok: true, payload: r.data }
     }
@@ -129,8 +122,7 @@ export async function generateMedicalCertificateAction(
     issuedAt: params.issuedAt,
   })
   if (!parsed.success) {
-    const msg = parsed.error.message
-    return { ok: false, error: msg }
+    return { ok: false, error: zodErrorToUserMessage(parsed.error) }
   }
 
   const locationState =

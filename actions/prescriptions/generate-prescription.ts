@@ -12,6 +12,7 @@ import { uploadPrescriptionPdf } from "@/modules/prescriptions/upload-prescripti
 import { updatePrescriptionPdfPath } from "@/modules/prescriptions/update-prescription-pdf-path"
 import type { DoctorInfo } from "@/modules/prescriptions/types"
 import { generatePrescriptionSchema } from "@/lib/schemas/prescription"
+import { zodErrorToUserMessage } from "@/lib/zod-error-message"
 import type { PrescriptionPayload } from "@/modules/prescriptions/types"
 
 export type GeneratePrescriptionResult =
@@ -49,9 +50,7 @@ export async function generatePrescriptionAction(params: {
     issuedAt: params.issuedAt,
   })
   if (!parsed.success) {
-    const msg =
-      parsed.error.flatten().fieldErrors?.payload?.[0] ?? parsed.error.message
-    return { ok: false, error: msg }
+    return { ok: false, error: zodErrorToUserMessage(parsed.error) }
   }
 
   const locationState =
