@@ -14,6 +14,9 @@ type PrescriptionWizardProfile = {
   first_name: string | null
   surname: string | null
   crm: string | null
+  rqe?: string | null
+  default_location_state?: string | null
+  default_location_city?: string | null
 }
 
 type PrescriptionWizardWrapperProps = {

@@ -31,4 +31,5 @@ export type DoctorInfo = {
   firstName: string
   surname: string
   crm: string | null
+  rqe?: string | null
 }

@@ -67,6 +67,7 @@ type PrescriptionWizardProfile = {
   first_name: string | null
   surname: string | null
   crm: string | null
+  rqe?: string | null
   default_location_state?: string | null
   default_location_city?: string | null
 }
@@ -726,6 +727,7 @@ export function PrescriptionWizard({
       firstName: profile.first_name ?? "",
       surname: profile.surname ?? "",
       crm: profile.crm ?? null,
+      rqe: profile.rqe ?? null,
     }
     const payloadForPreview: PrescriptionPayload = {
       ...payload,

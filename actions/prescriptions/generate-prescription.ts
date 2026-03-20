@@ -60,6 +60,23 @@ export async function generatePrescriptionAction(params: {
     firstName: profile.first_name ?? "",
     surname: profile.surname ?? "",
     crm: profile.crm ?? null,
+    rqe: profile.rqe ?? null,
+  }
+  const locationDisplay =
+    profile.default_location_city?.trim() && profile.default_location_state?.trim()
+      ? `${profile.default_location_city.trim()} - ${profile.default_location_state.trim()}`
+      : profile.default_location_state?.trim() ?? "—"
+  let logoBuffer: Buffer | null = null
+  if (profile.logo_url_full?.trim()) {
+    try {
+      const res = await fetch(profile.logo_url_full.trim())
+      if (res.ok) {
+        const ab = await res.arrayBuffer()
+        logoBuffer = Buffer.from(ab)
+      }
+    } catch {
+      // omit logo on fetch error
+    }
   }
   const today = format(new Date(), "yyyy-MM-dd")
   let issuedAtDate = parsed.data.issuedAt
@@ -82,6 +99,8 @@ export async function generatePrescriptionAction(params: {
       doctor,
       locationState,
       issuedAt: issuedAtFormatted,
+      locationDisplay,
+      logoBuffer,
     })
 
     const prescriptionId = await insertPrescription(supabase, {

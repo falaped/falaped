@@ -96,6 +96,51 @@ export function stripHtml(html: string): string {
 }
 
 /**
+ * Converts TipTap/HTML to plain text while preserving line breaks from
+ * `<br>`, paragraphs, headings, list items, etc.
+ *
+ * Prefer this over {@link stripHtml} when exporting rich text to PDF or anywhere
+ * newlines matter — `stripHtml` replaces tags with spaces and collapses `\s+` to a single space.
+ */
+export function htmlToPlainMultiline(html: string): string {
+  if (!html?.trim()) return ""
+  let s = html
+  s = s.replace(/<\/p>\s*<p[^>]*>/gi, "\n\n")
+  s = s.replace(/<br\s*\/?>/gi, "\n")
+  s = s.replace(/<\/p>/gi, "\n\n")
+  s = s.replace(/<\/div>/gi, "\n")
+  s = s.replace(/<\/tr>/gi, "\n")
+  s = s.replace(/<\/li>/gi, "\n")
+  s = s.replace(/<\/h[1-6]>/gi, "\n\n")
+  s = s.replace(/<[^>]+>/g, "")
+  s = s
+    .replace(/&nbsp;/gi, " ")
+    .replace(/&amp;/g, "&")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&#39;/g, "'")
+    .replace(/&quot;/g, '"')
+  s = s.replace(/\n{3,}/g, "\n\n")
+  s = s.replace(/[ \t]+\n/g, "\n")
+  s = s.replace(/\n[ \t]+/g, "\n")
+  return s.trim()
+}
+
+/** Heuristic: legacy TipTap/HTML snapshots (templates) vs plain textarea (e.g. "febre < 38°C" is not HTML). */
+const looksLikeHtmlFragment = (s: string): boolean => /<[a-zA-Z!/]/.test(s)
+
+/**
+ * Normalizes prescription free-text fields for PDF/preview.
+ * Plain textarea content is returned trimmed; legacy saved HTML runs {@link htmlToPlainMultiline}.
+ */
+export function prescriptionFieldToPlainText(value: string | undefined | null): string {
+  const s = value?.trim() ?? ""
+  if (!s) return ""
+  if (looksLikeHtmlFragment(s)) return htmlToPlainMultiline(s)
+  return s
+}
+
+/**
  * Formats a full Brazilian number (with optional country code 55) for display.
  * Example: "553197815503" → "+55 (31) 9781-5503"
  */
