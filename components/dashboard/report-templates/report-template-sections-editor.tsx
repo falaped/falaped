@@ -23,10 +23,32 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { cn } from "@/lib/utils"
+import type { ReportTemplateSection } from "@/modules/report-templates/get-report-template-by-id"
 
 export type ReportTemplateSectionInput = {
   name: string
   description: string
+}
+
+export function ReportTemplateFixedSectionCard({
+  section,
+}: {
+  section: ReportTemplateSection
+}) {
+  return (
+    <div className="rounded-lg border border-border bg-muted/30 p-4 space-y-2">
+      <p className="text-sm font-medium">{section.name}</p>
+      {section.description ? (
+        <p className="text-xs text-muted-foreground leading-relaxed">
+          {section.description}
+        </p>
+      ) : null}
+      <p className="text-xs text-muted-foreground">
+        Preenchida automaticamente ao gerar o relatório. Não pode ser movida nem
+        removida.
+      </p>
+    </div>
+  )
 }
 
 function SectionRow({
@@ -87,7 +109,7 @@ function SectionRow({
             id={`section-name-${id}`}
             value={section.name}
             onChange={(e) => onNameChange(index, e.target.value)}
-            placeholder="Ex.: Anamnese"
+            placeholder="Ex.: Queixa principal"
             className="w-full"
           />
         </div>
@@ -99,7 +121,7 @@ function SectionRow({
             id={`section-desc-${id}`}
             value={section.description}
             onChange={(e) => onDescriptionChange(index, e.target.value)}
-            placeholder="Ex.: Relatório do caso da paciente **Nome do Paciente**"
+            placeholder="Ex.: Motivo da consulta e duração dos sintomas"
             className="min-h-20 resize-y"
           />
         </div>
@@ -118,7 +140,10 @@ function SectionRow({
   )
 }
 
-export function ReportTemplateSectionsEditor({
+/**
+ * Editable, reorderable sections between the fixed patient blocks and the fixed pediatrician block.
+ */
+export function ReportTemplateMiddleSectionsEditor({
   sections,
   onChange,
 }: {
@@ -177,9 +202,9 @@ export function ReportTemplateSectionsEditor({
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between gap-4">
         <p className="text-sm font-medium text-muted-foreground">
-          Seções do template (ordem definirá a ordem no relatório)
+          Demais seções (após Paciente e Dados clínicos). Arraste para ordenar.
         </p>
         <Button type="button" variant="outline" size="sm" onClick={handleAddSection}>
           Adicionar seção
@@ -208,3 +233,6 @@ export function ReportTemplateSectionsEditor({
     </div>
   )
 }
+
+/** @deprecated Use ReportTemplateMiddleSectionsEditor */
+export const ReportTemplateSectionsEditor = ReportTemplateMiddleSectionsEditor

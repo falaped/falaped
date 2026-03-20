@@ -13,7 +13,7 @@ Templates de relatório médico com seções configuráveis. user_phone null = t
 | id | uuid | NOT NULL | gen_random_uuid() | PK |
 | user_phone | text | NULL | — | |
 | name | text | NOT NULL | — | |
-| sections | jsonb | NOT NULL | — | Array de { name, description, information_not_extracted_reason? } |
+| sections | jsonb | NOT NULL | — | Array de seções; ver formato abaixo. |
 | is_default | boolean | NULL | false | |
 | created_at | timestamptz | NULL | now() | |
 | updated_at | timestamptz | NULL | now() | |
@@ -27,3 +27,16 @@ Templates de relatório médico com seções configuráveis. user_phone null = t
 ## RLS
 
 - rls_enabled: false
+
+## Formato de `sections` (JSON)
+
+Cada elemento é um objeto:
+
+| Campo | Tipo | Obrigatório | Observação |
+|-------|------|-------------|------------|
+| `name` | string | sim | Título da seção no relatório |
+| `description` | string | não | Ajuda ao preencher / IA |
+| `information_not_extracted_reason` | string | não | Uso em fluxos de relatório (opcional) |
+| `slot` | string | não | `patient_identity` \| `patient_clinical` nas duas seções fixas; omitido nas seções livres. Valores legados `pediatrician` ou títulos tipo Pediatra são removidos na normalização. |
+
+**Ordem persistida:** `patient_identity` → `patient_clinical` → seções sem `slot` (livres). Dados do pediatra ficam no PDF (cabeçalho/rodapé), não como seção de template.

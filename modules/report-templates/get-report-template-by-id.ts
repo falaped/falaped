@@ -1,9 +1,19 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
 
+/** Stable role for system sections (identity, clinical). Omitted = free section after the fixed block. */
+export const REPORT_TEMPLATE_SECTION_SLOTS = [
+  "patient_identity",
+  "patient_clinical",
+] as const
+
+export type ReportTemplateSectionSlot =
+  (typeof REPORT_TEMPLATE_SECTION_SLOTS)[number]
+
 export type ReportTemplateSection = {
   name: string
   description?: string
   information_not_extracted_reason?: string
+  slot?: ReportTemplateSectionSlot
 }
 
 export type ReportTemplateWithSections = {

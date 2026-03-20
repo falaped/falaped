@@ -1,6 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
 import type { ReportTemplateSection } from "./get-report-template-by-id"
 import { getProfileAuthUserId } from "@/modules/profiles/get-profile-auth-user-id"
+import { normalizeReportTemplateSections } from "./fixed-template-sections"
 
 export type CreateReportTemplatePayload = {
   name: string
@@ -20,12 +21,14 @@ export async function createReportTemplate(
   if (authUserId == null)
     throw new Error("[REPORT_TEMPLATES] Profile not found or has no auth_user_id")
 
+  const sections = normalizeReportTemplateSections(payload.sections)
+
   const { data, error } = await supabase
     .from("report_templates")
     .insert({
       user_id: authUserId,
       name: payload.name,
-      sections: payload.sections,
+      sections,
       is_default: false,
     })
     .select("id")

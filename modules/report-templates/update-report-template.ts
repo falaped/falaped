@@ -1,6 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
 import type { ReportTemplateSection } from "./get-report-template-by-id"
 import { getProfileAuthUserId } from "@/modules/profiles/get-profile-auth-user-id"
+import { normalizeReportTemplateSections } from "./fixed-template-sections"
 
 export type UpdateReportTemplatePayload = {
   name?: string
@@ -25,7 +26,9 @@ export async function updateReportTemplate(
     updated_at: new Date().toISOString(),
   }
   if (payload.name !== undefined) updates.name = payload.name
-  if (payload.sections !== undefined) updates.sections = payload.sections
+  if (payload.sections !== undefined) {
+    updates.sections = normalizeReportTemplateSections(payload.sections)
+  }
 
   const { data, error } = await supabase
     .from("report_templates")

@@ -13,6 +13,14 @@ import { generateCaseReport as generateCaseReportWithGroq } from "@/modules/groq
 import type { CaseReportSection } from "@/modules/cases/get-case-report"
 import type { CasePatientDetail } from "@/modules/cases/get-case-by-id"
 import type { PatientReportContext } from "@/modules/groq/generate-case-report"
+import {
+  normalizeReportTemplateSections,
+  partitionSectionsForAi,
+} from "@/modules/report-templates/fixed-template-sections"
+import {
+  formatPatientClinicalSectionContent,
+  formatPatientIdentitySectionContent,
+} from "@/modules/report-templates/format-fixed-report-sections"
 
 export type GenerateCaseReportResult =
   | { ok: true; reportId: string }
@@ -62,10 +70,6 @@ export async function generateCaseReportAction(
     if (caseDetail.messages.length === 0)
       return { ok: false, error: "Necessário ter conversa para gerar o relatório." }
 
-    if (!env.GROQ_API_KEY?.trim()) {
-      return { ok: false, error: "Geração por IA não está configurada." }
-    }
-
     const template = profile.report_template_id
       ? await getReportTemplateById(supabase, profile.report_template_id)
       : await getDefaultReportTemplate(supabase)
@@ -76,25 +80,42 @@ export async function generateCaseReportAction(
       role: m.role as "user" | "assistant",
       content: m.content,
     }))
-    const templateSections = template.sections.map((s) => ({
-      name: s.name,
-      description: s.description,
-    }))
+
+    const normalizedSections = normalizeReportTemplateSections(template.sections)
+    const middleForAi = partitionSectionsForAi(template.sections)
 
     const patientContext = toPatientReportContext(caseDetail.patient)
 
-    const contentBySection = await generateCaseReportWithGroq(
-      messages,
-      templateSections,
-      patientContext,
-    )
+    let contentBySection: Record<string, string> = {}
+    if (middleForAi.length > 0) {
+      if (!env.GROQ_API_KEY?.trim()) {
+        return { ok: false, error: "Geração por IA não está configurada." }
+      }
+      contentBySection = await generateCaseReportWithGroq(
+        messages,
+        middleForAi,
+        patientContext,
+      )
+    }
 
-    const sections: CaseReportSection[] = template.sections.map((s, order) => ({
-      name: s.name,
-      description: s.description,
-      content: contentBySection[s.name]?.trim() || "Sem informação registrada.",
-      order,
-    }))
+    const emptyMsg = "Sem informação registrada."
+
+    const sections: CaseReportSection[] = normalizedSections.map((s, order) => {
+      let content: string
+      if (s.slot === "patient_identity") {
+        content = formatPatientIdentitySectionContent(caseDetail.patient)
+      } else if (s.slot === "patient_clinical") {
+        content = formatPatientClinicalSectionContent(caseDetail.patient)
+      } else {
+        content = contentBySection[s.name]?.trim() || emptyMsg
+      }
+      return {
+        name: s.name,
+        description: s.description,
+        content,
+        order,
+      }
+    })
 
     const reportId = await createCaseReport(supabase, {
       case_id: caseId,

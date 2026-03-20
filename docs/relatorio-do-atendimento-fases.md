@@ -28,6 +28,7 @@ Copy da seção: **"Relatório do atendimento"**.
 - [x] **Report templates:** criar `modules/report-templates/get-default-report-template.ts` para template efetivo quando `profile.report_template_id` é null.
 
 - [x] **Gerar template com IA:** opção na listagem de templates ("Gerar com IA") que leva à página `/dashboard/report-templates/gerar-com-ia`. O usuário descreve o tipo de relatório em texto livre; o módulo `modules/groq/generate-report-template-sections.ts` (e action `generateReportTemplateSectionsAction`) retorna nome sugerido e seções; o usuário revisa no formulário e salva com o CRUD existente.
+- [x] **Seções fixas no template:** dois slots (`patient_identity`, `patient_clinical`) com ordem fixa; preenchimento determinístico na geração do relatório; IA só nas seções livres após elas. Seção pediatra removida do template (dados do médico no PDF). Ver `modules/report-templates/fixed-template-sections.ts` e `format-fixed-report-sections.ts`.
 
 - [x] **Cases:** criar `modules/cases/get-case-report.ts`
   - Busca relatório por `case_id`; validar ownership via profile_id (user_phone) quando necessário

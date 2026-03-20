@@ -22,11 +22,6 @@ export default async function EditReportTemplatePage({
   const template = await getReportTemplateByIdForProfile(supabase, id, profile.id)
   if (!template) notFound()
 
-  const initialSections = template.sections.map((s) => ({
-    name: s.name ?? "",
-    description: s.description ?? "",
-  }))
-
   return (
     <div className="flex flex-col gap-6">
       <div className="flex items-center gap-2">
@@ -49,8 +44,8 @@ export default async function EditReportTemplatePage({
         <CardHeader>
           <CardTitle>{template.name}</CardTitle>
           <CardDescription>
-            Altere o nome e as seções. A ordem das seções será mantida na
-            geração do relatório.
+            Altere o nome e as seções do meio. As duas seções fixas (Paciente, Dados clínicos) não podem
+            ser movidas nem removidas.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -58,7 +53,7 @@ export default async function EditReportTemplatePage({
             mode="edit"
             templateId={template.id}
             initialName={template.name}
-            initialSections={initialSections.length > 0 ? initialSections : [{ name: "", description: "" }]}
+            initialTemplateSections={template.sections}
           />
         </CardContent>
       </Card>

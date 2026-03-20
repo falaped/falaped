@@ -9,21 +9,9 @@ import {
 import { formatDate, formatBrazilianPhone } from "@/lib/formatters"
 import type { CasePatientDetail } from "@/modules/cases/get-case-by-id"
 
-function calculateAge(birthDate: string): string {
-  const birth = new Date(birthDate)
-  const now = new Date()
-  const diffMs = now.getTime() - birth.getTime()
-  const years = Math.floor(diffMs / (365.25 * 24 * 60 * 60 * 1000))
-  const months = Math.floor((diffMs % (365.25 * 24 * 60 * 60 * 1000)) / (30.44 * 24 * 60 * 60 * 1000))
 
-  if (years === 0 && months === 0) return "Recém-nascido"
-  if (years === 0) return `${months} ${months === 1 ? "mês" : "meses"}`
-  if (months === 0) return `${years} ${years === 1 ? "ano" : "anos"}`
-  return `${years}a ${months}m`
-}
 
 export function CasePatientInfo({ patient }: { patient: CasePatientDetail }) {
-  const age = patient.birth_date ? calculateAge(patient.birth_date) : null
   const formattedPhone = patient.contact_phone ? formatBrazilianPhone(patient.contact_phone) : null
 
   return (
@@ -73,7 +61,6 @@ export function CasePatientInfo({ patient }: { patient: CasePatientDetail }) {
           </div>
         )}
         <div className="hidden h-8 w-px bg-border sm:block" />
-
         {patient.allergies && (
           <div>
             <div className="flex items-center gap-2 text-sm">

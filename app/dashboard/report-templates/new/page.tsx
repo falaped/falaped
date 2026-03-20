@@ -35,12 +35,12 @@ export default async function NewReportTemplatePage() {
         <CardHeader>
           <CardTitle>Dados do template</CardTitle>
           <CardDescription>
-            Nome e seções que comporão o relatório. A ordem das seções será
-            mantida na geração do relatório.
+            Nome do template e seções clínicas do meio. &quot;Paciente&quot; e &quot;Dados clínicos&quot;
+            são fixas e preenchidas automaticamente na geração do relatório.
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <ReportTemplateForm mode="create" initialSections={[{ name: "", description: "" }]} />
+          <ReportTemplateForm mode="create" />
         </CardContent>
       </Card>
     </div>

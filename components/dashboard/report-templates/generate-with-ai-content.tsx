@@ -1,7 +1,6 @@
 "use client"
 
 import { useState } from "react"
-import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
@@ -16,12 +15,11 @@ import { Sparkles } from "lucide-react"
 type Step = "prompt" | "form"
 
 export function GenerateWithAiContent() {
-  const router = useRouter()
   const [step, setStep] = useState<Step>("prompt")
   const [prompt, setPrompt] = useState("")
   const [loading, setLoading] = useState(false)
   const [suggestedName, setSuggestedName] = useState("")
-  const [sections, setSections] = useState<{ name: string; description?: string }[]>([])
+  const [templateSections, setTemplateSections] = useState<ReportTemplateSection[]>([])
 
   async function handleGenerate() {
     const trimmed = prompt.trim()
@@ -37,12 +35,7 @@ export function GenerateWithAiContent() {
         return
       }
       setSuggestedName(result.suggestedName)
-      setSections(
-        result.sections.map((s: ReportTemplateSection) => ({
-          name: s.name,
-          description: s.description ?? "",
-        })),
-      )
+      setTemplateSections(result.sections)
       setStep("form")
     } finally {
       setLoading(false)
@@ -52,7 +45,7 @@ export function GenerateWithAiContent() {
   function handleDiscardAndNew() {
     setStep("prompt")
     setSuggestedName("")
-    setSections([])
+    setTemplateSections([])
   }
 
   if (step === "form") {
@@ -60,7 +53,8 @@ export function GenerateWithAiContent() {
       <div className="flex flex-col gap-6">
         <div className="flex items-center justify-between gap-4">
           <p className="text-sm text-muted-foreground">
-            Revise o nome e as seções abaixo. Você pode editar e reordenar antes de criar o template.
+            Revise o nome e as seções do meio (Paciente e Dados clínicos são fixos). Você pode editar e
+            reordenar as demais antes de criar o template.
           </p>
           <Button type="button" variant="outline" size="sm" onClick={handleDiscardAndNew}>
             Descartar e gerar de novo
@@ -75,13 +69,10 @@ export function GenerateWithAiContent() {
           </CardHeader>
           <CardContent>
             <ReportTemplateForm
+              key={suggestedName}
               mode="create"
               initialName={suggestedName}
-              initialSections={
-                sections.length > 0
-                  ? sections.map((s) => ({ name: s.name, description: s.description ?? "" }))
-                  : [{ name: "", description: "" }]
-              }
+              initialTemplateSections={templateSections}
             />
           </CardContent>
         </Card>

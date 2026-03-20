@@ -110,6 +110,25 @@ function sectionsEqual(
   )
 }
 
+function previewTextForSection(section: CaseReportSection): string {
+  const raw = section.content?.trim() ?? ""
+  if (!raw) return "—"
+  if (
+    section.name === "Pediatra" ||
+    section.name === "Dados do pediatra"
+  ) {
+    const withoutLogoLine = raw
+      .split("\n")
+      .filter(
+        (line) => !line.trim().toLowerCase().startsWith("url do logo:"),
+      )
+      .join("\n")
+      .trim()
+    return withoutLogoLine || "—"
+  }
+  return section.content || "—"
+}
+
 function SectionPreview({ section }: { section: CaseReportSection }) {
   return (
     <div className="border-border border-b pb-4 last:border-0 last:pb-0">
@@ -117,7 +136,7 @@ function SectionPreview({ section }: { section: CaseReportSection }) {
         {section.name}
       </h3>
       <div className="mt-1.5 text-sm leading-relaxed text-foreground whitespace-pre-wrap">
-        {section.content || "—"}
+        {previewTextForSection(section)}
       </div>
     </div>
   )
@@ -150,9 +169,9 @@ function SectionBlock({
 
   const style = transform
     ? {
-        transform: CSS.Transform.toString(transform),
-        transition,
-      }
+      transform: CSS.Transform.toString(transform),
+      transition,
+    }
     : undefined
 
   const placeholder = section.description || `Sem ${section.name.toLowerCase()} registrada.`
@@ -551,7 +570,7 @@ export function CaseReport({
                       className={cn(
                         "shrink-0 text-xs",
                         isWhatsApp &&
-                          "border-0 bg-[#25D366] text-white hover:bg-[#20BD5A]",
+                        "border-0 bg-[#25D366] text-white hover:bg-[#20BD5A]",
                       )}
                     >
                       {reportSourceLabel(report.source)}
@@ -581,13 +600,8 @@ export function CaseReport({
 
         {selectedReport && (
           <div className="space-y-4 border-t border-border pt-4">
-            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-              <div className="flex items-center gap-2">
-                <Eye className="h-4 w-4 shrink-0 text-primary" aria-hidden />
-                <p className="text-sm font-medium text-muted-foreground">
-                  Visualizando: Relatório de {patientName} — {formatDateTime(selectedReport.created_at)} · Via {reportSourceLabel(selectedReport.source)}
-                </p>
-              </div>
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-end">
+
               <div className="flex items-center gap-4">
                 {canEdit ? (
                   <Tooltip>
@@ -600,7 +614,7 @@ export function CaseReport({
                         onClick={() => handleFinalizeChange(true)}
                         className={cn(
                           hasUnsavedEdits &&
-                            "border-amber-500/50 text-amber-600 hover:bg-amber-500/10 hover:text-amber-600 dark:text-amber-400 dark:hover:bg-amber-500/10",
+                          "border-amber-500/50 text-amber-600 hover:bg-amber-500/10 hover:text-amber-600 dark:text-amber-400 dark:hover:bg-amber-500/10",
                         )}
                       >
                         {hasUnsavedEdits ? (
@@ -648,7 +662,7 @@ export function CaseReport({
                   <AlertDialogTrigger asChild>
                     <Button
                       type="button"
-                      variant="ghost"
+                      variant="destructive"
                       size="sm"
                       disabled={isDeleting}
                       className="text-destructive hover:bg-destructive/10 hover:text-destructive"

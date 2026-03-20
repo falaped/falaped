@@ -430,10 +430,10 @@
     "@eslint/core" "^0.17.0"
     levn "^0.4.1"
 
-"@falaped/falaped-kit@0.2.0":
-  version "0.2.0"
-  resolved "https://registry.npmjs.org/@falaped/falaped-kit/-/falaped-kit-0.2.0.tgz"
-  integrity sha512-Xrg9/aaG23RfM7Fc+iG9QHZX/MFFi/2IG8rKJVTxoBkAmtm8lE/vROKR2dmoVyIA8avw37DDJwbHdoOl7k56Fw==
+"@falaped/falaped-kit@0.2.4":
+  version "0.2.4"
+  resolved "https://registry.npmjs.org/@falaped/falaped-kit/-/falaped-kit-0.2.4.tgz"
+  integrity sha512-XMtaNX6puKWWiH67boGcS9wCx3MM9MEvgdawsHebTpddfyXRUvmXokT0KmIdYSOzl9dH53JyRuWezwUwiSoXDQ==
   dependencies:
     groq-sdk "^0.15.0"
     image-size "^1.1.1"

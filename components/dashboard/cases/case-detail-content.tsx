@@ -7,6 +7,7 @@ import { getCaseReports } from "@/modules/cases/get-case-report"
 import { getPatientsByProfileId } from "@/modules/patients/get-patients-by-profile-id"
 import { getReportTemplateById } from "@/modules/report-templates/get-report-template-by-id"
 import { getDefaultReportTemplate } from "@/modules/report-templates/get-default-report-template"
+import { normalizeReportTemplateSections } from "@/modules/report-templates/fixed-template-sections"
 import { CaseDetailHeader } from "@/components/dashboard/cases/case-detail-header"
 import { CasePatientBlock } from "@/components/dashboard/cases/case-patient-block"
 import { CaseChat } from "@/components/dashboard/cases/case-chat"
@@ -19,7 +20,7 @@ export async function CaseDetailContent({ id }: { id: string }) {
   if (!profile) redirect("/auth/login")
   if (profile.status !== "paid") redirect("/dashboard/link-whatsapp")
 
-  const [caseDetail, patients, template, caseReports] = await Promise.all([
+  const [caseDetail, patients, templateRaw, caseReports] = await Promise.all([
     getCaseById(supabase, id, profile.id),
     getPatientsByProfileId(supabase, profile.id),
     profile.report_template_id
@@ -31,6 +32,14 @@ export async function CaseDetailContent({ id }: { id: string }) {
   if (!caseDetail) {
     notFound()
   }
+
+  const template =
+    templateRaw != null
+      ? {
+          ...templateRaw,
+          sections: normalizeReportTemplateSections(templateRaw.sections),
+        }
+      : null
 
   return (
     <div className="space-y-6">

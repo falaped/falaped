@@ -5,6 +5,7 @@ import { env } from "@/lib/env"
 import { getAuthenticatedUser } from "@/modules/supabase/get-authenticated-user"
 import { generateReportTemplateSections as generateWithGroq } from "@/modules/groq/generate-report-template-sections"
 import type { ReportTemplateSection } from "@/modules/report-templates/get-report-template-by-id"
+import { mergeAiSuggestedMiddleSections } from "@/modules/report-templates/fixed-template-sections"
 
 const PROMPT_MAX_LENGTH = 1000
 
@@ -36,16 +37,11 @@ export async function generateReportTemplateSectionsAction(
 
   try {
     const result = await generateWithGroq(trimmed)
-    if (!result.sections.length) {
-      return {
-        ok: false,
-        error: "Não foi possível gerar seções. Tente outra descrição.",
-      }
-    }
+    const sections = mergeAiSuggestedMiddleSections(result.sections)
     return {
       ok: true,
       suggestedName: result.suggestedName,
-      sections: result.sections,
+      sections,
     }
   } catch (e) {
     console.error("[REPORT_TEMPLATES] generateReportTemplateSections failed", e)

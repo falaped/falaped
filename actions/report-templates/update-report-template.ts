@@ -6,6 +6,7 @@ import { createClient } from "@/lib/supabase/server"
 import { getAuthenticatedUser } from "@/modules/supabase/get-authenticated-user"
 import { updateReportTemplate } from "@/modules/report-templates/update-report-template"
 import { updateReportTemplateSchema } from "@/lib/schemas/report-template"
+import type { ReportTemplateSection } from "@/modules/report-templates/get-report-template-by-id"
 
 export type UpdateReportTemplateResult =
   | { ok: true }
@@ -26,7 +27,7 @@ export async function updateReportTemplateAction(
     return { ok: false, error: msg ?? "Dados inválidos." }
   }
 
-  const payload: { name?: string; sections?: { name: string; description?: string }[] } = {}
+  const payload: { name?: string; sections?: ReportTemplateSection[] } = {}
   if (parsed.data.name !== undefined) payload.name = parsed.data.name
   if (parsed.data.sections !== undefined) payload.sections = parsed.data.sections
 
