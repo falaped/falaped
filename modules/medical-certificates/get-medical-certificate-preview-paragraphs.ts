@@ -23,6 +23,23 @@ function observationsLine(obs: string): string | null {
   return t ? `Observações: ${t}` : null
 }
 
+function plainTextPeriodSuffix(p: { timeStart?: string; periodo?: string }): string {
+  const hasTime = !!p.timeStart?.trim()
+  const hasPeriodo =
+    !!p.periodo?.trim() && p.periodo !== "atual_data"
+  const periodLabel =
+    p.periodo === "matutino"
+      ? "Matutino"
+      : p.periodo === "vespertino"
+        ? "Vespertino"
+        : p.periodo === "noturno"
+          ? "Noturno"
+          : null
+  if (hasTime) return ` no período de ${p.timeStart!.trim()}.`
+  if (hasPeriodo && periodLabel) return ` no período ${periodLabel}.`
+  return "."
+}
+
 type PayloadUnion =
   | ComparecimentoPayload
   | AptidaoFisicaPayload
@@ -47,9 +64,12 @@ export function getMedicalCertificatePreviewParagraphs(
   switch (type) {
     case "comparecimento": {
       const p = payload as ComparecimentoPayload
-      const periodText = p.timeStart?.trim() ? ` no período de ${p.timeStart}.` : "."
+      const periodText = plainTextPeriodSuffix({
+        timeStart: p.timeStart,
+        periodo: p.periodo,
+      })
       const lines = [
-        `Atesto, para os devidos fins, que ${p.patientName}, nascido(a) em ${p.birthDate}, esteve sob meus cuidados médicos no dia ${p.attendanceDate},${periodText}`,
+        `Atesto, para os devidos fins, que ${p.patientName}, nascido(a) em ${p.birthDate}, esteve sob meus cuidados médicos no dia ${p.attendanceDate}${periodText}`,
         locationDate,
         sig,
         doctorLine,
@@ -88,22 +108,10 @@ export function getMedicalCertificatePreviewParagraphs(
     }
     case "acompanhante": {
       const p = payload as AcompanhantePayload
-      const hasTime = !!p.timeStart?.trim()
-      const hasPeriodo =
-        !!p.periodo?.trim() && p.periodo !== "atual_data"
-      const periodLabel =
-        p.periodo === "matutino"
-          ? "Matutino"
-          : p.periodo === "vespertino"
-            ? "Vespertino"
-            : p.periodo === "noturno"
-              ? "Noturno"
-              : null
-      const periodText = hasTime
-        ? ` no período de ${p.timeStart}.`
-        : hasPeriodo && periodLabel
-          ? ` no período ${periodLabel}.`
-          : "."
+      const periodText = plainTextPeriodSuffix({
+        timeStart: p.timeStart,
+        periodo: p.periodo,
+      })
       const lines = [
         `Atesto, para os devidos fins, que ${p.companionName} acompanhou ${p.patientName} em consulta médica no dia ${p.consultationDate} ${periodText}`,
         locationDate,

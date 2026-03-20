@@ -18,6 +18,39 @@ function obs(observations: string): BodySegment[] | null {
   return t ? [{ text: `Observações: ${t}` }] : null
 }
 
+/** Free-text horário (timeStart) or fixed period (matutino/vespertino/noturno); atual_data or empty → only "." */
+function bodySegmentsForTimeOrPeriodo(p: {
+  timeStart?: string
+  periodo?: string
+}): BodySegment[] {
+  const hasTime = !!p.timeStart?.trim()
+  const hasPeriodo =
+    !!p.periodo?.trim() && p.periodo !== "atual_data"
+  const periodLabel =
+    p.periodo === "matutino"
+      ? "Matutino"
+      : p.periodo === "vespertino"
+        ? "Vespertino"
+        : p.periodo === "noturno"
+          ? "Noturno"
+          : null
+  if (hasTime) {
+    return [
+      { text: " no período de " },
+      { text: p.timeStart!.trim(), bold: true },
+      { text: "." },
+    ]
+  }
+  if (hasPeriodo && periodLabel) {
+    return [
+      { text: " no período " },
+      { text: periodLabel, bold: true },
+      { text: "." },
+    ]
+  }
+  return [{ text: "." }]
+}
+
 type PayloadUnion =
   | ComparecimentoPayload
   | AptidaoFisicaPayload
@@ -34,8 +67,10 @@ export function getMedicalCertificateBodySegments(
   switch (type) {
     case "comparecimento": {
       const p = payload as ComparecimentoPayload
-      const periodText = p.timeStart?.trim() ? ` no período de ` : "."
-      const periodSuffix = p.timeStart?.trim() ? "." : ""
+      const periodSegments = bodySegmentsForTimeOrPeriodo({
+        timeStart: p.timeStart,
+        periodo: p.periodo,
+      })
       const paragraphs: BodySegment[][] = [
         [
           { text: "Atesto, para os devidos fins, que " },
@@ -44,9 +79,7 @@ export function getMedicalCertificateBodySegments(
           { text: p.birthDate, bold: true },
           { text: ", esteve sob meus cuidados médicos no dia " },
           { text: p.attendanceDate, bold: true },
-          ...(p.timeStart?.trim()
-            ? ([{ text: periodText }, { text: p.timeStart, bold: true }, { text: periodSuffix }] as BodySegment[])
-            : [{ text: periodSuffix }]),
+          ...periodSegments,
         ],
       ]
       const observations = obs(p.observations)
@@ -97,22 +130,10 @@ export function getMedicalCertificateBodySegments(
     }
     case "acompanhante": {
       const p = payload as AcompanhantePayload
-      const hasTime = !!p.timeStart?.trim()
-      const hasPeriodo =
-        !!p.periodo?.trim() && p.periodo !== "atual_data"
-      const periodLabel =
-        p.periodo === "matutino"
-          ? "Matutino"
-          : p.periodo === "vespertino"
-            ? "Vespertino"
-            : p.periodo === "noturno"
-              ? "Noturno"
-              : null
-      const periodSegments: BodySegment[] = hasTime
-        ? ([{ text: " no período de " }, { text: p.timeStart!, bold: true }, { text: "." }] as BodySegment[])
-        : hasPeriodo && periodLabel
-          ? ([{ text: " no período " }, { text: periodLabel, bold: true }, { text: "." }] as BodySegment[])
-          : [{ text: "." }]
+      const periodSegments = bodySegmentsForTimeOrPeriodo({
+        timeStart: p.timeStart,
+        periodo: p.periodo,
+      })
       const paragraphs: BodySegment[][] = [
         [
           { text: "Atesto, para os devidos fins, que " },

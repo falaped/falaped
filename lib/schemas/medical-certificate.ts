@@ -4,8 +4,11 @@ export const comparecimentoPayloadSchema = z.object({
   patientName: z.string().min(1, "Nome do paciente é obrigatório"),
   birthDate: z.string().min(1, "Data de nascimento é obrigatória"),
   attendanceDate: z.string().min(1, "Data do atendimento é obrigatória"),
-  timeStart: z.string().min(1, "Hora de início é obrigatória"),
+  timeStart: z.string().default(""),
   timeEnd: z.string().default(""),
+  periodo: z
+    .union([z.literal(""), z.enum(["matutino", "vespertino", "noturno", "atual_data"])])
+    .default(""),
   observations: z.string().default(""),
 })
 

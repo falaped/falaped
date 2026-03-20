@@ -2,6 +2,7 @@
  * Generates a medical certificate PDF buffer using @falaped/falaped-kit.
  */
 import { buildMedicalCertificatePdf } from "@falaped/falaped-kit/pdf"
+import { getCertificateTitle } from "./get-medical-certificate-preview-content"
 import { getMedicalCertificateBodySegments } from "./get-medical-certificate-body-segments"
 import type {
   DoctorInfo,
@@ -41,19 +42,25 @@ function bodySegmentsToText(
 export async function generateMedicalCertificatePdf(
   params: GenerateMedicalCertificatePdfParams,
 ): Promise<Buffer> {
-  const { type, payload, doctor, issuedAt } = params
+  const { type, payload, doctor, issuedAt, locationDisplay, logoBuffer } = params
   const patientName =
     "patientName" in payload ? payload.patientName : (payload as AcompanhantePayload).patientName
   const doctorName = [doctor.firstName, doctor.surname].filter(Boolean).join(" ").trim() || "Médico(a)"
   const doctorCrm = doctor.crm?.trim() ?? ""
+  const doctorRqe = doctor.rqe?.trim()
 
   const input: Parameters<typeof buildMedicalCertificatePdf>[0] = {
+    certificateTitle: getCertificateTitle(type).toUpperCase(),
     patientName,
     date: issuedAt,
     body: bodySegmentsToText(type, payload),
     doctorName,
     doctorCrm,
+    consultationDateFormatted: issuedAt,
+    consultationLocation: locationDisplay?.trim() || undefined,
+    logoFooter: logoBuffer ?? undefined,
   }
+  if (doctorRqe) input.doctorRqe = doctorRqe
   if (type === "medico") {
     const p = payload as MedicoPayload
     input.daysOff = p.daysAway

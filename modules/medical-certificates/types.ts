@@ -15,12 +15,21 @@ export type DoctorInfo = {
   rqe: string | null
 }
 
+export type AcompanhantePeriodo =
+  | ""
+  | "matutino"
+  | "vespertino"
+  | "noturno"
+  | "atual_data"
+
 export type ComparecimentoPayload = {
   patientName: string
   birthDate: string
   attendanceDate: string
   timeStart: string
   timeEnd: string
+  /** Same options as acompanhante: matutino, vespertino, noturno, atual_data, or empty if using free-text horário. */
+  periodo: AcompanhantePeriodo
   observations: string
 }
 
@@ -41,13 +50,6 @@ export type MedicoPayload = {
   canLeaveHome: boolean
   observations: string
 }
-
-export type AcompanhantePeriodo =
-  | ""
-  | "matutino"
-  | "vespertino"
-  | "noturno"
-  | "atual_data"
 
 export type AcompanhantePayload = {
   companionName: string

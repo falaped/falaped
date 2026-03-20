@@ -93,6 +93,7 @@ type WizardPayload = {
     attendanceDate: string
     timeStart: string
     timeEnd: string
+    periodo: AcompanhantePeriodo
     observations: string
   }
   aptidao_fisica?: {
@@ -129,6 +130,7 @@ const initialPayload: WizardPayload = {
     attendanceDate: "",
     timeStart: "",
     timeEnd: "",
+    periodo: "",
     observations: "",
   },
   aptidao_fisica: {
@@ -192,40 +194,74 @@ function CertificateFormCard({
           <h4 className="text-sm font-medium text-muted-foreground">Dados do atestado</h4>
           {isComparecimento && (
             <>
-              <div className="flex flex-wrap gap-4">
-                <div className="w-full min-w-0 sm:w-1/2 sm:max-w-[50%]">
-                  <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                    <DatePickerField
-                      label="Data do atendimento"
-                      value={(currentPayload as { attendanceDate?: string }).attendanceDate ?? ""}
-                      onChange={(v) =>
-                        setPayload((prev) => ({
-                          ...prev,
-                          comparecimento: { ...prev.comparecimento!, attendanceDate: v },
-                        }))
-                      }
-                      placeholder="Selecione a data"
-                    />
-                    <Field>
-                      <FieldLabel>Horário</FieldLabel>
-                      <FieldContent>
-                        <Input
-                          value={(currentPayload as { timeStart?: string }).timeStart ?? ""}
-                          onChange={(e) =>
-                            setPayload((prev) => ({
-                              ...prev,
-                              comparecimento: {
-                                ...prev.comparecimento!,
-                                timeStart: e.target.value,
-                              },
-                            }))
-                          }
-                          placeholder="Ex: 09:00 às 11:00"
-                        />
-                      </FieldContent>
-                    </Field>
-                  </div>
-                </div>
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+                <DatePickerField
+                  label="Data do atendimento"
+                  value={(currentPayload as { attendanceDate?: string }).attendanceDate ?? ""}
+                  onChange={(v) =>
+                    setPayload((prev) => ({
+                      ...prev,
+                      comparecimento: { ...prev.comparecimento!, attendanceDate: v },
+                    }))
+                  }
+                  placeholder="Selecione a data"
+                />
+                {!(currentPayload as { periodo?: string }).periodo?.trim() ? (
+                  <Field>
+                    <FieldLabel>Horário</FieldLabel>
+                    <FieldContent>
+                      <Input
+                        value={(currentPayload as { timeStart?: string }).timeStart ?? ""}
+                        onChange={(e) => {
+                          const v = e.target.value
+                          setPayload((prev) => ({
+                            ...prev,
+                            comparecimento: {
+                              ...prev.comparecimento!,
+                              timeStart: v,
+                              periodo: "",
+                            },
+                          }))
+                        }}
+                        placeholder="Ex: 09:00 às 11:00"
+                      />
+                    </FieldContent>
+                  </Field>
+                ) : null}
+                {!(currentPayload as { timeStart?: string }).timeStart?.trim() ? (
+                  <Field>
+                    <FieldLabel>Período</FieldLabel>
+                    <FieldContent>
+                      <Select
+                        value={
+                          (currentPayload as { periodo?: AcompanhantePeriodo }).periodo || "__none__"
+                        }
+                        onValueChange={(v) =>
+                          setPayload((prev) => ({
+                            ...prev,
+                            comparecimento: {
+                              ...prev.comparecimento!,
+                              periodo: (v === "__none__" ? "" : v) as AcompanhantePeriodo,
+                              timeStart: "",
+                              timeEnd: "",
+                            },
+                          }))
+                        }
+                      >
+                        <SelectTrigger className="w-full">
+                          <SelectValue placeholder="Selecione ou limpe" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="__none__">Nenhum</SelectItem>
+                          <SelectItem value="matutino">Matutino</SelectItem>
+                          <SelectItem value="vespertino">Vespertino</SelectItem>
+                          <SelectItem value="noturno">Noturno</SelectItem>
+                          <SelectItem value="atual_data">Atual data</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </FieldContent>
+                  </Field>
+                ) : null}
               </div>
               <Field>
                 <FieldLabel>Observações</FieldLabel>
