@@ -776,7 +776,9 @@ export function MedicalCertificateWizard({ patients, profile }: MedicalCertifica
     generateMedicalCertificateAction({
       type,
       payload: currentPayload as unknown as Record<string, unknown>,
-      issuedAt: issuedAt ? new Date(issuedAt).toISOString() : undefined,
+      issuedAt: issuedAt
+        ? new Date(`${issuedAt}T12:00:00`).toISOString().slice(0, 10)
+        : undefined,
       patientId: selectedPatient?.id ?? null,
       caseId: null,
     })

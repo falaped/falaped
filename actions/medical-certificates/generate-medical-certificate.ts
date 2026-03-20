@@ -78,14 +78,31 @@ function parsePayloadByType(
   }
 }
 
-function formatIssuedAt(issuedAt: string): string {
+/**
+ * Formats yyyy-MM-dd for PDF/footer without UTC midnight shifting the calendar day
+ * (new Date("2026-03-19") is UTC 00:00 → previous evening in America/São_Paulo).
+ */
+function formatIssuedAt(issuedAtYmd: string): string {
   try {
-    const d = new Date(issuedAt)
-    if (Number.isNaN(d.getTime())) return format(new Date(), "d 'de' MMMM 'de' yyyy", { locale: ptBR })
+    const d = new Date(`${issuedAtYmd}T12:00:00`)
+    if (Number.isNaN(d.getTime()))
+      return format(new Date(), "d 'de' MMMM 'de' yyyy", { locale: ptBR })
     return format(d, "d 'de' MMMM 'de' yyyy", { locale: ptBR })
   } catch {
     return format(new Date(), "d 'de' MMMM 'de' yyyy", { locale: ptBR })
   }
+}
+
+function normalizeIssuedAtToYmd(raw: string, todayYmd: string): string {
+  const trimmed = raw.trim()
+  const m = /^(\d{4}-\d{2}-\d{2})/.exec(trimmed)
+  if (m) {
+    const d = new Date(`${m[1]}T12:00:00`)
+    if (!Number.isNaN(d.getTime())) return d.toISOString().slice(0, 10)
+  }
+  const d = new Date(trimmed)
+  if (!Number.isNaN(d.getTime())) return d.toISOString().slice(0, 10)
+  return todayYmd
 }
 
 /**
@@ -150,8 +167,8 @@ export async function generateMedicalCertificateAction(
     patientResponsible = patient?.responsible ?? null
   }
   const today = format(new Date(), "yyyy-MM-dd")
-  let issuedAtDate = parsed.data.issuedAt
-    ? new Date(parsed.data.issuedAt).toISOString().slice(0, 10)
+  let issuedAtDate = parsed.data.issuedAt?.trim()
+    ? normalizeIssuedAtToYmd(parsed.data.issuedAt, today)
     : today
   if (issuedAtDate > today) issuedAtDate = today
   const issuedAtFormatted = formatIssuedAt(issuedAtDate)
