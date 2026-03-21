@@ -2,6 +2,8 @@
 
 Complemento à [SKILL.md](SKILL.md). Leia quando precisar aprofundar qualidade de PRD, INVEST, fatiamento ou spikes.
 
+**Ordem de trabalho:** a seção *Regra obrigatória* do SKILL.md tem precedência — perguntas ao usuário antes do PRD/US, salvo skip explícito.
+
 ## Boas práticas de PRD
 
 1. **Problema antes da solução** — descreva dor, contexto e resultado desejado antes de detalhar telas ou stack.

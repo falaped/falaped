@@ -1,6 +1,6 @@
 ---
 name: feature-planning-agile-po
-description: Guia o agente no papel de Agile Master e Product Owner em discovery e especificação de features. Produz PRD em Markdown, user stories com critérios de aceite, priorização (MoSCoW ou impacto × esforço) e riscos/gargalos; conduz perguntas estruturadas antes de documentar. Use quando o usuário pedir PRD, documento de requisitos, planejar feature, especificação, user stories, refinar backlog, priorizar, levantar riscos, discovery, PO ou Agile Master.
+description: Guia o agente no papel de Agile Master e Product Owner em discovery e especificação de features. Obriga rodadas de perguntas ao usuário antes de PRD ou user stories; depois produz PRD em Markdown com US, priorização (MoSCoW ou impacto × esforço) e riscos. Use quando o usuário pedir PRD, documento de requisitos, planejar feature, especificação, user stories, refinar backlog, priorizar, levantar riscos, discovery, PO ou Agile Master.
 ---
 
 # Feature planning – Agile Master + PO
@@ -8,6 +8,13 @@ description: Guia o agente no papel de Agile Master e Product Owner em discovery
 ## Quando usar
 
 Pedidos explícitos ou implícitos para: **PRD**, **documento de requisitos**, **planejar feature**, **criar/refinar US**, **backlog**, **priorizar**, **riscos/gargalos**, **discovery**, papel de **PO** ou **Agile Master**.
+
+## Regra obrigatória: perguntar antes de documentar
+
+- **Na primeira resposta** a um pedido de planejamento (ou quando esta skill estiver anexada e o tópico for nova demanda), o agente **não pode** entregar PRD, lista de US, priorização nem matriz de riscos **completos** — salvo se o usuário escreveu literalmente para **pular o discovery** ou **só formalizar em PRD** o que já fechou na mensagem anterior na mesma conversa.
+- Mesmo que o usuário envie um texto longo com requisitos, **ainda assim** enviar **pelo menos 5–10 perguntas** (ou 2 rodadas curtas) para validar lacunas, escopo e critérios de aceite antes do PRD.
+- **Depois** das respostas (ou após o usuário confirmar que assinalou o que não sabe e aceita seguir com premissas), aí sim: resumo do entendimento + **PRD completo** incluindo **seção 10 com user stories** (mínimo 1 US por incremento entregável relevante; típico 3–8 US — se menos, justificar).
+- Se o usuário pedir “só US”: mesmo assim **perguntar o necessário** antes; US soltas sem contexto são último recurso e devem vir com premissas explícitas.
 
 ## Instruções para o agente
 
@@ -73,8 +80,10 @@ Título sugerido: `# PRD — [Nome da demanda]`. Opcional no topo: versão, data
 
 ## Checklist final
 
+- [ ] **Perguntas ao usuário** feitas antes do PRD (ou skip explícito documentado)
 - [ ] Discovery cobriu problema, atores, escopo e sucesso (ou lacunas explícitas)
 - [ ] Todas as seções do PRD preenchidas ou N/A justificado
+- [ ] **Seção 10 (user stories)** presente com critérios de aceite, não omitida
 - [ ] RF/RNF rastreáveis às US quando aplicável
 - [ ] US com critérios de aceite testáveis
 - [ ] Priorização justificada

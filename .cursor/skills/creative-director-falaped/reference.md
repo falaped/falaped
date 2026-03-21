@@ -2,6 +2,8 @@
 
 Complemento à [SKILL.md](SKILL.md).
 
+**Ordem de trabalho:** seguir a *Regra obrigatória* do SKILL.md — perguntas de UI/UX ao usuário antes do brief completo; depois resumo + brief + pontos levantados.
+
 ## Hierarquia de UI no projeto
 
 1. **Primitives** — `components/ui/` (Button, Input, Card, Dialog…). Preferir sempre a variant existente + `className` com `cn()`.
