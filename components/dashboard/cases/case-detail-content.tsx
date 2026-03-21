@@ -18,7 +18,6 @@ export async function CaseDetailContent({ id }: { id: string }) {
   const supabase = await createClient()
   const { profile } = await getAuthenticatedUser(supabase)
   if (!profile) redirect("/auth/login")
-  if (profile.status !== "paid") redirect("/dashboard/link-whatsapp")
 
   const [caseDetail, patients, templateRaw, caseReports] = await Promise.all([
     getCaseById(supabase, id, profile.id),

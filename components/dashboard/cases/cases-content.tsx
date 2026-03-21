@@ -9,7 +9,6 @@ export async function CasesContent() {
   const supabase = await createClient()
   const { profile } = await getAuthenticatedUser(supabase)
   if (!profile) redirect("/auth/login")
-  if (profile.status !== "paid") redirect("/dashboard/link-whatsapp")
 
   const cases = await getCasesByProfileId(supabase, profile)
   return <CasesToolbarAndList cases={cases} />

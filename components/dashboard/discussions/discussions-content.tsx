@@ -9,7 +9,6 @@ export async function DiscussionsContent() {
   const supabase = await createClient()
   const { profile } = await getAuthenticatedUser(supabase)
   if (!profile) redirect("/auth/login")
-  if (profile.status !== "paid") redirect("/dashboard/link-whatsapp")
 
   const discussions = await getDiscussionsByProfileId(supabase, profile.id)
   return <DiscussionsToolbarAndList discussions={discussions} />
