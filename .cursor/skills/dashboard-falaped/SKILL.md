@@ -17,12 +17,21 @@ app/
   dashboard/                 # Área restrita
     cases/                   # Lista de casos
       [id]/                  # Detalhe do caso (page, not-found)
+      new/                   # Redirect para seleção de paciente
+      select-patient/        # Entrada do fluxo Novo Caso
+      new/[caseId]/          # Workspace de prontuário assistido
     patients/, profile/
 lib/
   supabase/ client, server, middleware
   formatters.ts, parsers.ts, errors.ts
+  format-clinical-assistant-sections.ts  # strip UI-mimic lines; constant legacy "Dados anotados" para merge no workspace
+  strip-imc-calculation-template-prefix.ts # remove eco do template de IMC no início da reply (turno sem pedido de IMC)
+  parse-anthropometrics-for-bmi.ts      # Peso/comprimento em texto livre; IMC com faixa plausível
 modules/
   supabase/get-authenticated-user.ts   # getAuthenticatedUser – profile + authenticatedUser
+  dashboard-assistant/
+    route-case-assistant-turn.ts       # Intents, IMC (parse-anthropometrics), resumo/sugestões via Groq
+    assistant-model-message.ts        # JSON do assistente → texto para contexto do modelo
   patients/, cases/, case-messages/,
   authenticated-users/, report-templates/
 components/
@@ -34,6 +43,7 @@ components/
                              #   Case detail: CaseDetailHeader, CasePatientInfo,
                              #     CaseChat, CaseQuickActions, CaseReport,
                              #     CaseDetailContent, CaseDetailLoading
+                             #   New case: SelectPatientWorkspace, NewCaseWorkspace
 ```
 
 ## Padrão de separação de código em páginas
@@ -46,7 +56,7 @@ Pages (`app/.../page.tsx`) são shells finos que importam:
 ## Convenções
 
 - **Módulos**: `modules/{domain}/`, um arquivo por query/action (kebab-case). Client Supabase sempre primeiro argumento.
-- **Rotas**: `dashboard/cases`, `dashboard/patients`, `dashboard/profile`. Proteção via middleware.
+- **Rotas**: `dashboard/cases`, `dashboard/cases/select-patient`, `dashboard/cases/new/[caseId]`, `dashboard/patients`, `dashboard/profile`. Proteção via middleware.
 - **user_phone**: chave para filtrar dados do médico; obter via `getAuthenticatedUser(supabase)` e `result.authenticatedUser` (status paid, phone).
 
 ## Referências
