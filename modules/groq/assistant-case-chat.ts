@@ -39,6 +39,53 @@ function getReplyFromUnknownPayload(payload: unknown): string | null {
   return null
 }
 
+/**
+ * Llama sometimes returns a multi-key clinical summary instead of {"reply":"..."}; normalize for display.
+ */
+function summaryFromStructuredPediatricPayload(parsed: unknown): string | null {
+  if (!parsed || typeof parsed !== "object") return null
+  const o = parsed as Record<string, unknown>
+
+  const parts: string[] = []
+
+  const formatSection = (label: string, value: unknown): string | null => {
+    if (value == null) return null
+    if (typeof value === "string") {
+      const t = value.trim()
+      return t.length > 0 ? `${label}\n${t}` : null
+    }
+    if (Array.isArray(value)) {
+      const lines = value
+        .map((item) => String(item).trim())
+        .filter((line) => line.length > 0)
+      if (lines.length === 0) return null
+      return `${label}\n${lines.map((line) => `- ${line}`).join("\n")}`
+    }
+    return null
+  }
+
+  const tryKeys = (label: string, keys: string[]): void => {
+    for (const key of keys) {
+      if (!Object.prototype.hasOwnProperty.call(o, key)) continue
+      const block = formatSection(label, o[key])
+      if (block) {
+        parts.push(block)
+        return
+      }
+    }
+  }
+
+  tryKeys("Queixa principal", ["queixa_principal", "queixaPrincipal"])
+  tryKeys("Dados relevantes", ["dados_relevantes", "dadosRelevantes"])
+  tryKeys("Hipóteses", ["hipóteses", "hipoteses"])
+  tryKeys("Conduta", ["conduta"])
+  tryKeys("Orientações", ["orientações", "orientacoes"])
+  tryKeys("Pendências", ["pendências", "pendencias"])
+
+  const out = parts.join("\n\n").trim()
+  return out.length > 0 ? out : null
+}
+
 function cleanupRawModelContent(raw: string): string {
   return raw
     .replace(/^```json\s*/i, "")
@@ -63,7 +110,7 @@ RESTRICAO_CRITICA_NESTA_RODADA:
     input.focusedAcknowledgement === "vaccine_orientation"
       ? `
 
-MODO FOCO VACINAÇÃO (esta rodada, prioridade sobre as regras 4, 5, 5b, 9–13 salvo segurança):
+MODO FOCO VACINAÇÃO (esta rodada, prioridade sobre confirmação mínima salvo segurança):
 - A mensagem atual do médico registra orientações ou calendário de vacinas (SUS vs particular, esquema por idade).
 - Responda APENAS com "CONDUTA:" e 5 a 12 linhas curtas sintetizando vacinas e diferenças SUS/particular descritas. Não copie parágrafos inteiros.
 - PROIBIDO nesta reply: ANAMNESE, EXAME, HIPÓTESES, IMC, fórmula, peso, altura, antropometria ou texto copiado do prontuário anterior.
@@ -73,33 +120,28 @@ MODO FOCO VACINAÇÃO (esta rodada, prioridade sobre as regras 4, 5, 5b, 9–13 
   const systemPrompt = `Você é FALAPED v2, assistente de prontuário pediátrico.
 
 REGRAS RÍGIDAS:
-1) MODO PASSIVO no registro: confirme brevemente e não faça perguntas, exceto se faltar dado clínico crítico.
-2) MODO ATIVO somente com comando explícito, pergunta explícita ou intenção clínica evidente.
-3) Sempre em PT-BR médico profissional.
-4) Resposta passiva com no máximo 2 frases.
-5) Quando clinicamente relevante, estruture em ANAMNESE | EXAME | HIPÓTESES DIAGNÓSTICAS | CONDUTA (omitir seções sem base no contexto permitido).
-5b) Rótulos exatos: "ANAMNESE:", "EXAME:", "HIPÓTESES DIAGNÓSTICAS:" (ou "HIPÓTESES:" se for lista curta), "CONDUTA:". Uma linha em branco antes de cada novo rótulo (exceto antes do primeiro). Vários trechos de exame: cada um com "EXAME:" em linha própria.
-6) Nunca invente dados; se faltar base, declare insuficiência e peça os dados específicos.
-7) Não execute ação crítica sem confirmação explícita.
+1) ECO PROIBIDO: NÃO copie, NÃO parafraseie em parágrafos longos e NÃO reescreva sob rótulos (ANAMNESE, EXAME, etc.) o que o médico acabou de enviar. O histórico do chat já mostra o texto integral do médico; o Falaped só confirma o registro e conduz o fluxo.
+2) Resposta padrão (registro / dictado): no máximo 2 frases curtas OU até 2 bullets mínimos (ex.: "Registrado." / "Prosseguindo."). Opcional: uma linha neutra com o tipo de informação (ex.: "Exame físico anotado.", "Hipóteses registradas.", "Conduta anotada.") sem listar o conteúdo clínico.
+3) Se a última mensagem for uma pergunta explícita ou pedido de orientação: responda de forma objetiva, sem colar o dictado anterior.
+4) MODO ATIVO somente com comando explícito do produto ou pergunta clínica explícita.
+5) Sempre em PT-BR médico profissional.
+6) Nunca invente dados; se faltar base para responder a uma pergunta, peça o dado específico (uma frase).
+7) Não execute ação crítica sem confirmação explícita no produto.
 8) Evite redundância e didatismo excessivo.
-9) Prioridade absoluta: responda primeiro à última mensagem do médico (perguntas explícitas, pedidos de orientação terapêutica). Não ignore perguntas para repetir blocos antigos.
-10) Não repita na CONDUTA pedidos genéricos (peso atual, evolução da alimentação, etc.) se o médico já forneceu esses dados em mensagens recentes do histórico.
-11) Não contradiga o que o médico registrou (ex.: regurgitação, queixas da mãe, perda de peso). Se houver achado ou hipótese documentada, mantenha coerência.
-12) O campo conversationSummary é memória resumida e pode estar defasada; em conflito, prevalecem as mensagens recentes em messages.
-13) Use "HIPÓTESES DIAGNÓSTICAS:" quando o médico registrar hipóteses ou diagnósticos de trabalho; liste-as fielmente.
-14) clinicalSyncMode no JSON do usuário define o escopo — siga-o estritamente (ver abaixo).
-15) Se o histórico já contiver cálculo de IMC (incluindo linhas resumidas entre colchetes) e a mensagem atual do médico NÃO pedir IMC, antropometria, peso ou altura, NÃO repita fórmula, conta ou bloco de IMC; responda ao tema atual (ex.: vacinas, orientações).
-16) Não copie texto longo de mensagens anteriores do Falaped; produza resposta nova e pertinente ao turno.${forbidBmiBlock}${vaccineFocusBlock}
+9) Não contradiga o que o médico registrou; em conflito com conversationSummary, prevalecem as mensagens recentes em messages.
+10) clinicalSyncMode no JSON do usuário define o escopo — siga-o estritamente (ver abaixo).
+11) Se o histórico já contiver cálculo de IMC e a mensagem atual do médico NÃO pedir IMC, peso ou altura, NÃO repita fórmula, conta ou bloco de IMC; responda ao tema atual.
+12) Não copie texto longo de mensagens anteriores do Falaped.${forbidBmiBlock}${vaccineFocusBlock}
 
 Responda APENAS em JSON válido no formato: {"reply":"..."}`
 
   const mode = input.clinicalSyncMode ?? "balanced"
   const clinicalModeInstruction =
     mode === "global_update"
-      ? "clinicalSyncMode=global_update: integre o histórico em messages para visão consolidada do atendimento; pode reunir anamnese, exame e hipóteses já citadas no fio quando fizer sentido clínico."
+      ? "clinicalSyncMode=global_update: o médico pediu visão consolidada. Sintetize em poucos bullets curtos (sem copiar parágrafos do fio). Se não houver pedido explícito de síntese global nas mensagens, trate como registro normal: confirmação mínima sem eco."
       : mode === "single_turn"
-        ? "clinicalSyncMode=single_turn: baseie ANAMNESE, EXAME, HIPÓTESES DIAGNÓSTICAS e CONDUTA apenas no que está explícito na última mensagem do médico. Não preencha EXAME com achados que não aparecem nesse envio. Se a mensagem for só hipóteses, priorize HIPÓTESES DIAGNÓSTICAS: e omita EXAME ou use uma linha clara de insuficiência de exame neste turno."
-        : "clinicalSyncMode=balanced: priorize a última mensagem; não invente exame físico. Use o histórico só para coerência pontual, sem substituir o trecho atual por um relatório completo salvo pedido claro."
+        ? "clinicalSyncMode=single_turn: a última mensagem do médico acaba de ser gravada no histórico. Responda só com confirmação mínima (regra 1–2). NÃO preencha ANAMNESE/EXAME/HIPÓTESES/CONDUTA com o texto desse envio."
+        : "clinicalSyncMode=balanced: confirmação mínima sem eco (regra 1–2). Use o histórico apenas se houver pergunta explícita que exija contexto — ainda sem reditar dictados anteriores."
 
   const userPrompt = JSON.stringify({
     patientContext: input.patientContext,
@@ -120,7 +162,7 @@ Responda APENAS em JSON válido no formato: {"reply":"..."}`
         ? 0.2
         : input.forbidBmiInReply
           ? 0.15
-          : 0.3,
+          : 0.25,
     max_tokens: CHAT_MAX_COMPLETION_TOKENS,
     messages: [
       { role: "system", content: systemPrompt },
@@ -154,30 +196,49 @@ Responda APENAS em JSON válido no formato: {"reply":"..."}`
   return "Não consegui estruturar a resposta agora. Pode repetir em uma frase curta?"
 }
 
-export async function generateCaseClinicalSummary(input: {
+/** Shown when Groq fails or returns unusable JSON after retries. */
+export const CASE_CLINICAL_SUMMARY_FAILURE_MESSAGE =
+  "Não foi possível gerar um resumo sintético agora. Tente novamente em instantes. Se o erro persistir, contacte o suporte."
+
+export type GenerateCaseClinicalSummaryInput = {
   clinicalThreadText: string
   conversationSummary: string | null
-}): Promise<string> {
+  /** e.g. latest weight/height from patient record for this case */
+  latestAnthropometricsHint?: string | null
+}
+
+async function generateCaseClinicalSummaryOnce(
+  input: GenerateCaseClinicalSummaryInput,
+): Promise<string | null> {
   const systemPrompt = `Você resume atendimentos pediátricos em PT-BR para o médico.
-Não copie o texto integral. Sintetize em até 8 bullets curtos ou 2 parágrafos breves, cobrindo quando houver: queixas principais, dados relevantes (incl. antropometria), hipóteses, conduta, orientações ao responsável e pendências.
+Não copie o texto integral. Sintetize em até 8 bullets curtos ou 2 parágrafos breves, cobrindo quando houver: queixas principais, dados relevantes (incl. antropometria mais recente do atendimento), hipóteses, conduta, orientações ao responsável e pendências.
+Inclua um bullet "Alertas / queixas do responsável" quando o fio citar queixas explícitas (ex.: frases em maiúsculas, "queixa da mãe", engasgos, recusa de alimento) — omita o bullet se não houver.
+Se latestAnthropometricsHint estiver preenchido no JSON do usuário, trate como referência da antropometria mais recente ligada ao paciente/caso quando coerente com o fio (o texto do fio pode conter medições antigas; prefira valores mais novos e consistentes).
 Ignore comandos de sistema (/resumo, gerar relatório, etc.) no conteúdo.
-Responda APENAS em JSON válido: {"reply":"..."}`
+Formato obrigatório: um único objeto JSON com a chave "reply" contendo TODO o resumo como uma string (pode usar quebras de linha escapadas em JSON). Exemplo: {"reply":"• Queixa: ...\\n• Conduta: ..."}
+Não use chaves de primeiro nível separadas (ex.: queixa_principal, conduta) — apenas "reply".`
 
   const userPrompt = JSON.stringify({
     conversationSummary: input.conversationSummary,
     substantiveNotes: input.clinicalThreadText,
+    latestAnthropometricsHint: input.latestAnthropometricsHint ?? null,
   })
 
-  const completion = await groq.chat.completions.create({
-    model: MODEL,
-    temperature: 0.25,
-    max_tokens: SUMMARY_MAX_COMPLETION_TOKENS,
-    messages: [
-      { role: "system", content: systemPrompt },
-      { role: "user", content: userPrompt },
-    ],
-    response_format: { type: "json_object" },
-  })
+  let completion: Awaited<ReturnType<typeof groq.chat.completions.create>>
+  try {
+    completion = await groq.chat.completions.create({
+      model: MODEL,
+      temperature: 0.25,
+      max_tokens: SUMMARY_MAX_COMPLETION_TOKENS,
+      messages: [
+        { role: "system", content: systemPrompt },
+        { role: "user", content: userPrompt },
+      ],
+      response_format: { type: "json_object" },
+    })
+  } catch {
+    return null
+  }
 
   const raw = completion.choices[0]?.message?.content?.trim() ?? ""
   const cleanedRaw = cleanupRawModelContent(raw)
@@ -188,11 +249,25 @@ Responda APENAS em JSON válido: {"reply":"..."}`
     if (normalizedReply) {
       return normalizedReply
     }
+    const structuredSummary = summaryFromStructuredPediatricPayload(parsed)
+    if (structuredSummary) {
+      return structuredSummary
+    }
   } catch {
-    // continue to fallback
+    // Model returned non-JSON or malformed document
   }
 
-  return "Não foi possível gerar um resumo sintético agora. Tente novamente em instantes."
+  return null
+}
+
+export async function generateCaseClinicalSummary(
+  input: GenerateCaseClinicalSummaryInput,
+): Promise<string> {
+  const first = await generateCaseClinicalSummaryOnce(input)
+  if (first) return first
+  const second = await generateCaseClinicalSummaryOnce(input)
+  if (second) return second
+  return CASE_CLINICAL_SUMMARY_FAILURE_MESSAGE
 }
 
 export async function generateGuardianQuestionSuggestions(input: {

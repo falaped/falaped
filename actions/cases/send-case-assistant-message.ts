@@ -234,7 +234,7 @@ export async function sendCaseAssistantMessageAction(
         return {
           ok: false,
           error:
-            "Necessário ter histórico clínico mínimo para gerar o relatório. Continue registrando o atendimento.",
+            "É preciso registrar mais informações clínicas neste caso antes de gerar o relatório. Continue o atendimento e tente novamente.",
         }
       }
       const generated = await generateCaseReportAction(caseId)
@@ -304,7 +304,7 @@ export async function sendCaseAssistantMessageAction(
           type: "assistant_report_file",
           title: "Relatório disponível para download",
           content:
-            "Relatório gerado com base no histórico clínico mínimo deste caso.",
+            "Relatório gerado com base nas informações registradas neste caso.",
           reportId,
           reportFileName: "relatorio-caso.pdf",
         }

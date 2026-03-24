@@ -268,6 +268,21 @@ function extractStoredData(message: string): StoredDataItem[] {
   return data
 }
 
+/** Latest weight/height from patient profile for summary bias (thread may contain older measurements). */
+function formatLatestAnthropometricsHint(
+  patientMetrics?: { weight: number | null; height: number | null },
+): string | null {
+  const weightKg = patientMetrics?.weight
+  const heightM = patientMetrics?.height
+  if (weightKg == null || heightM == null) return null
+  const heightCm = heightM * 100
+  const weightLabel =
+    Math.abs(weightKg - Math.round(weightKg)) < 1e-6
+      ? String(weightKg)
+      : weightKg.toFixed(3).replace(/\.?0+$/, "")
+  return `Referência do cadastro do paciente neste caso: peso ${weightLabel} kg, comprimento/altura ${heightCm.toFixed(1)} cm.`
+}
+
 export async function routeDashboardCaseAssistantTurn(params: {
   userMessage: string
   messages: CaseMessage[]
@@ -450,6 +465,7 @@ export async function routeDashboardCaseAssistantTurn(params: {
     const summaryReply = await generateCaseClinicalSummary({
       clinicalThreadText: threadText,
       conversationSummary: params.conversationSummary,
+      latestAnthropometricsHint: formatLatestAnthropometricsHint(params.patientMetrics),
     })
 
     return {

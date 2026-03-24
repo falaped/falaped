@@ -30,7 +30,7 @@ lib/
 modules/
   supabase/get-authenticated-user.ts   # getAuthenticatedUser – profile + authenticatedUser
   dashboard-assistant/
-    route-case-assistant-turn.ts       # Intents, IMC (parse-anthropometrics), resumo/sugestões via Groq
+    route-case-assistant-turn.ts       # Intents, IMC (parse-anthropometrics), resumo (hint antropometria cadastro) + sugestões via Groq; chat sem eco do dictado
     assistant-model-message.ts        # JSON do assistente → texto para contexto do modelo
   patients/, cases/, case-messages/,
   authenticated-users/, report-templates/

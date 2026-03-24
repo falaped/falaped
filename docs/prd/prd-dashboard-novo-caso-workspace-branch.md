@@ -234,6 +234,7 @@ Commits associados: melhoria de navegação e alinhamento com o fluxo Novo caso 
 - **Enter** envia; **Shift+Enter** quebra linha; ignora Enter durante composição IME (`isComposing`).
 - **Indicador “digitando”:** `AssistantTypingIndicator` exibido enquanto `assistantSending`; duração mínima visível `ASSISTANT_TYPING_MIN_DISPLAY_MS` (3000 ms) após resposta rápida da API para evitar “piscar”.
 - **Otimistic UI:** mensagem user aparece antes da resposta; em erro, reverte e restaura draft.
+- **Confirmação de ações (relatório, encerramento, atestado, receita):** enquanto a última mensagem do assistente expõe botões Confirmar/Cancelar, o **textarea, chips, mic e enviar** ficam desabilitados até o médico decidir; os botões da mensagem permanecem ativos (`bypassPendingActionGate` no envio disparado por eles).
 - **Transcrição:** badge “Transcrevendo…” com `aria-live="polite"` e `aria-busy`.
 
 ### 5.3 Chips

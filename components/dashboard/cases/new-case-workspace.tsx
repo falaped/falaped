@@ -102,6 +102,32 @@ function parseAssistantPayload(content: string): AssistantPayload | null {
   }
 }
 
+/**
+ * True when the latest assistant message shows confirm/cancel actions and the user has not
+ * yet completed a real reply (optimistic in-flight messages are ignored).
+ */
+function getAwaitingPendingActionConfirmation(messages: WorkspaceMessage[]): boolean {
+  for (let i = messages.length - 1; i >= 0; i--) {
+    const msg = messages[i]
+    if (msg.role === "user") {
+      if (msg.id.startsWith("optimistic-user-")) continue
+      return false
+    }
+    if (msg.role === "assistant") {
+      const payload = parseAssistantPayload(msg.content)
+      if (
+        payload?.type === "assistant_reply" &&
+        payload.actions &&
+        payload.actions.length > 0
+      ) {
+        return true
+      }
+      return false
+    }
+  }
+  return false
+}
+
 function formatElapsed(seconds: number): string {
   const mins = Math.floor(seconds / 60)
   const secs = seconds % 60
@@ -131,13 +157,13 @@ function ThreadBubble({
   message,
   onAssistantAction,
   onDownloadReport,
-  disabled,
+  assistantActionsDisabled,
   downloadBusy,
 }: {
   message: WorkspaceMessage
   onAssistantAction: (actionId: string) => void
   onDownloadReport: (reportId: string) => void
-  disabled: boolean
+  assistantActionsDisabled: boolean
   downloadBusy: boolean
 }) {
   const isUser = message.role === "user"
@@ -231,7 +257,7 @@ function ThreadBubble({
                     size="sm"
                     variant="outline"
                     className={cn("gap-1.5", buttonPressFeedbackClass)}
-                    disabled={disabled || downloadBusy}
+                    disabled={assistantActionsDisabled || downloadBusy}
                     aria-busy={downloadBusy}
                     onClick={() => onDownloadReport(payload.reportId!)}
                   >
@@ -248,7 +274,7 @@ function ThreadBubble({
                     size="sm"
                     variant="ghost"
                     className={buttonPressFeedbackClass}
-                    disabled={disabled}
+                    disabled={assistantActionsDisabled}
                     onClick={() => onAssistantAction("confirm_generate_report")}
                   >
                     Gerar novamente
@@ -264,7 +290,7 @@ function ThreadBubble({
                       size="sm"
                       variant={action.id === "cancel_pending_action" ? "outline" : "default"}
                       className={buttonPressFeedbackClass}
-                      disabled={disabled}
+                      disabled={assistantActionsDisabled}
                       onClick={() => onAssistantAction(action.id)}
                     >
                       {action.label}
@@ -378,8 +404,21 @@ export function NewCaseWorkspace({
     return Array.from(map.entries())
   }, [messages])
 
-  const handleSend = (text: string, options?: { chipId?: string }) => {
+  const awaitingPendingActionConfirmation = useMemo(
+    () => getAwaitingPendingActionConfirmation(messages),
+    [messages],
+  )
+
+  /** Blocks textarea, chips, mic, send — not the assistant confirm/cancel buttons. */
+  const isComposerBlocked =
+    isInteractionLocked || awaitingPendingActionConfirmation
+
+  const handleSend = (
+    text: string,
+    options?: { chipId?: string; bypassPendingActionGate?: boolean },
+  ) => {
     if (isTurnLocked) return
+    if (awaitingPendingActionConfirmation && !options?.bypassPendingActionGate) return
     const content = text.trim()
     if (!content) return
     if (sendInFlightRef.current) return
@@ -437,17 +476,20 @@ export function NewCaseWorkspace({
 
   const handleAssistantAction = (actionId: string) => {
     if (isInteractionLocked) return
+    const bypass = { bypassPendingActionGate: true as const }
     if (actionId === "cancel_pending_action") {
-      handleSend("cancelar ação")
+      handleSend("cancelar ação", bypass)
       return
     }
-    if (actionId === "confirm_close_case") handleSend("confirmar encerramento")
-    if (actionId === "confirm_generate_report") handleSend("confirmar geração de relatório")
+    if (actionId === "confirm_close_case") handleSend("confirmar encerramento", bypass)
+    if (actionId === "confirm_generate_report") {
+      handleSend("confirmar geração de relatório", bypass)
+    }
     if (actionId === "confirm_generate_medical_certificate") {
-      handleSend("confirmar geração de atestado")
+      handleSend("confirmar geração de atestado", bypass)
     }
     if (actionId === "confirm_generate_prescription") {
-      handleSend("confirmar geração de receita")
+      handleSend("confirmar geração de receita", bypass)
     }
   }
 
@@ -579,7 +621,7 @@ export function NewCaseWorkspace({
                   message={message}
                   onAssistantAction={handleAssistantAction}
                   onDownloadReport={handleDownloadReport}
-                  disabled={isInteractionLocked}
+                  assistantActionsDisabled={isInteractionLocked}
                   downloadBusy={isDownloadingReport}
                 />
               ))}
@@ -694,9 +736,13 @@ export function NewCaseWorkspace({
               value={draft}
               onChange={(event) => setDraft(event.target.value)}
               onKeyDown={handleComposerKeyDown}
-              placeholder="Descreva os achados clínicos ou peça uma análise..."
+              placeholder={
+                awaitingPendingActionConfirmation
+                  ? "Confirme ou cancele a ação acima para continuar…"
+                  : "Descreva os achados clínicos ou peça uma análise…"
+              }
               className="field-sizing-fixed h-[88px] min-h-[88px] max-h-[88px] resize-none overflow-y-auto pr-32 text-sm leading-relaxed"
-              disabled={isInteractionLocked}
+              disabled={isComposerBlocked}
             />
             <div className="absolute bottom-3 right-3 flex items-center gap-2">
               {recorder.isRecording || recorder.isPaused ? (
@@ -771,7 +817,7 @@ export function NewCaseWorkspace({
                 variant="ghost"
                 aria-label="Gravar áudio"
                 className={buttonPressFeedbackClass}
-                disabled={isInteractionLocked}
+                disabled={isComposerBlocked}
                 onClick={() => recorder.start()}
               >
                 <MicIcon className="h-4 w-4" />
@@ -781,7 +827,7 @@ export function NewCaseWorkspace({
                 type="button"
                 aria-label="Enviar mensagem"
                 className={buttonPressFeedbackClass}
-                disabled={isInteractionLocked || !draft.trim()}
+                disabled={isComposerBlocked || !draft.trim()}
                 aria-busy={isSendingMessage || isAssistantResponding}
                 onClick={() => handleSend(draft)}
               >
