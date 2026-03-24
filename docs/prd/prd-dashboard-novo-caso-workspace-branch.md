@@ -114,7 +114,7 @@ flowchart LR
 
 **Arquivo:** `modules/dashboard-assistant/route-case-assistant-turn.ts`
 
-**Intents:** `GENERATE_REPORT` | `CLOSE_CASE` | `SUGGEST_GUARDIAN_QUESTIONS` | `CALCULATE_BMI` | `SUMMARY` | `CHAT`
+**Intents:** `GENERATE_REPORT` | `CLOSE_CASE` | `SUGGEST_GUARDIAN_QUESTIONS` | `CALCULATE_BMI` | `SUMMARY` | `QUESTION` | `REVIEW_ANTHROPOMETRIC_REFERENCE` | `REVIEW_GUARDIAN_ALERT` | `CHAT`
 
 **Detecção:** normalização de texto (PT-BR, lowercase, NFD sem acentos, espaços colapsados) + **substring** nas mensagens do usuário:
 
@@ -125,6 +125,9 @@ flowchart LR
 | contém `sugerir perguntas` | `SUGGEST_GUARDIAN_QUESTIONS` |
 | contém `imc` | `CALCULATE_BMI` |
 | contém `resumir principais pontos` | `SUMMARY` |
+| mensagem com pergunta explícita (`?`, “como”, “qual”, “estratégia”, etc.) **ou classificada por IA** como dúvida assistiva | `QUESTION` |
+| mensagem de dictado com novos peso/altura divergentes do cadastro | `REVIEW_ANTHROPOMETRIC_REFERENCE` |
+| mensagem com alerta explícito do responsável (ex.: engasgos, caixa alta) | `REVIEW_GUARDIAN_ALERT` |
 | demais | `CHAT` |
 
 **Tipos de mensagem persistidos (`messageKind`):** Relatório, Encerramento, Cálculo, Resumo, Conversa, Aviso — prefixados no conteúdo como `Tipo: …` em `formatAssistantPersistedContent` na action.
@@ -150,7 +153,7 @@ flowchart LR
 ### 3.3 Chat principal (Groq)
 
 - **Arquivo:** `modules/groq/assistant-case-chat.ts`
-- **Modelo:** `llama-3.1-8b-instant`
+- **Modelo:** `GROQ_ASSISTANT_MODEL` (default `qwen/qwen3-32b`)
 - **Saída:** JSON validado com Zod: `reply`, `insights[]`
 - **System prompt:** PT-BR, anti-alucinação (só usar histórico + contexto do paciente), limites clínicos, formato JSON obrigatório
 - **Entradas extras:** `patientContext`, `conversationSummary`, `omitOlderMessagesNotice`
@@ -207,6 +210,8 @@ Constantes em `lib/constants.ts`:
 
 - **`SelectPatientWorkspace`** (`components/dashboard/cases/select-patient-workspace.tsx`): `precheckNewDashboardCaseAction` → se `willClosePriorActiveDashboardCases`, `AlertDialog` “Caso ativo no painel”; `createDashboardCaseWithPatientAction` → navega para `/dashboard/cases/new/{caseId}`; toast com ação “Abrir caso” se WhatsApp ativo.
 - **`NewCaseWorkspace`** (`components/dashboard/cases/new-case-workspace.tsx`): header (paciente, fechar), thread (`ChatMessageList` + empty state), indicador de digitação, footer com chips + textarea + enviar + mic + clipe.
+- **Dados registrados na resposta do assistente:** agora aparecem via **ícone de informação** no canto da mensagem, abrindo popover com dados estruturados e botões de **Confirmar / Não confirmar** para itens pendentes (ex.: IMC).
+- **Loading de resposta do assistente:** removida a copy detalhada “A resposta está em processamento…”, mantendo apenas estado visual de “Falaped está respondendo…”.
 - **`CasePatientPickerSheet`**: troca/associação de paciente.
 
 ### 4.3 Áudio e pós-processamento

@@ -6,6 +6,7 @@ import {
 import { stripImcCalculationTemplatePrefix } from "@/lib/strip-imc-calculation-template-prefix"
 import { assistantMessageToModelText } from "@/modules/dashboard-assistant/assistant-model-message"
 import {
+  classifyQuestionIntentByAi,
   generateAssistantCaseChat,
   generateCaseClinicalSummary,
   generateGuardianQuestionSuggestions,
@@ -14,8 +15,11 @@ import {
 
 export type DashboardAssistantIntent =
   | "CHAT"
+  | "QUESTION"
   | "SUMMARY"
   | "CALCULATE_BMI"
+  | "REVIEW_ANTHROPOMETRIC_REFERENCE"
+  | "REVIEW_GUARDIAN_ALERT"
   | "SUGGEST_GUARDIAN_QUESTIONS"
   | "GENERATE_REPORT"
   | "GENERATE_MEDICAL_CERTIFICATE"
@@ -28,9 +32,15 @@ export type AssistantAction =
   | "confirm_generate_report"
   | "confirm_generate_medical_certificate"
   | "confirm_generate_prescription"
+  | "confirm_anthropometric_reference"
+  | "confirm_guardian_alert_storage"
 
 export type StoredDataItem = {
-  section: "CONDUTA" | "DADOS_ANTROPOMETRICOS"
+  section:
+    | "CONDUTA"
+    | "DADOS_ANTROPOMETRICOS"
+    | "ALERTAS_CLINICOS"
+    | "CALCULO_IMC"
   label: string
   value: string
   status: "confirmado" | "pendente_de_confirmacao"
@@ -45,12 +55,38 @@ export type RoutedAssistantTurn = {
   storedData: StoredDataItem[]
 }
 
+const ASSISTANT_PAYLOAD_PREFIX = "__FALAPED_JSON__"
+
+type AssistantStoredDataPayloadItem = {
+  section: string
+  label: string
+  value: string
+  status: "confirmado" | "pendente_de_confirmacao"
+}
+
+type AssistantPayloadLite = {
+  content: string
+  storedData?: {
+    items: AssistantStoredDataPayloadItem[]
+  }
+}
+
 function normalizeText(value: string): string {
   return value
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "")
     .toLowerCase()
     .trim()
+}
+
+function isQuestionLikeMessage(message: string): boolean {
+  const n = normalizeText(message)
+  return (
+    message.includes("?") ||
+    /\b(como|qual|quais|quando|devo|deveria|deveriamos|estrategia|o que|por que|porque)\b/.test(
+      n,
+    )
+  )
 }
 
 /** Same criteria as CALCULATE_BMI intent (user explicitly asked for BMI this turn). */
@@ -62,6 +98,21 @@ function messageRequestsBmi(userMessage: string): boolean {
     /\bimc\b/.test(n) ||
     /\bindice\s+de\s+massa(\s+corporal)?\b/.test(n)
   )
+}
+
+function hasExplicitGuardianAlertSignal(message: string): boolean {
+  const content = message.trim()
+  const normalized = normalizeText(content)
+  const hasPriorityTerms =
+    /\bqueixa da mae\b|\bqueixa do responsavel\b|\bengasg|\bnao mama\b|\brecusa\b|\bfebre\b|\bletarg/.test(
+      normalized,
+    )
+
+  const lettersOnly = content.replace(/[^A-Za-zÀ-ÿ]/g, "")
+  const upperOnly = lettersOnly.replace(/[^A-ZÀ-Ý]/g, "")
+  const upperRatio = lettersOnly.length > 0 ? upperOnly.length / lettersOnly.length : 0
+  const hasShoutSignal = upperRatio >= 0.55 && lettersOnly.length >= 12
+  return hasPriorityTerms || hasShoutSignal
 }
 
 function replyStartsWithBmiBlock(reply: string): boolean {
@@ -105,6 +156,413 @@ function vaccineReplyHasCondutaLead(reply: string): boolean {
 function vaccineReplyViolatesCondutaOnly(reply: string): boolean {
   if (reply.trim().length === 0) return true
   return !vaccineReplyHasCondutaLead(reply)
+}
+
+function parseAssistantPayloadLite(rawContent: string): AssistantPayloadLite | null {
+  const raw = rawContent.trim()
+  if (!raw.startsWith(ASSISTANT_PAYLOAD_PREFIX)) return null
+  const jsonPayload = raw.slice(ASSISTANT_PAYLOAD_PREFIX.length)
+  try {
+    const parsed = JSON.parse(jsonPayload) as AssistantPayloadLite
+    if (!parsed || typeof parsed !== "object") return null
+    if (typeof parsed.content !== "string") return null
+    return parsed
+  } catch {
+    return null
+  }
+}
+
+function listRecentAssistantReplies(messages: CaseMessage[], limit = 2): string[] {
+  const replies: string[] = []
+  for (let i = messages.length - 1; i >= 0; i -= 1) {
+    const message = messages[i]
+    if (message.role !== "assistant") continue
+    const displayText = assistantMessageToModelText(message.content).trim()
+    if (displayText.length === 0) continue
+    replies.push(displayText)
+    if (replies.length >= limit) break
+  }
+  return replies
+}
+
+function normalizeForNearDuplicate(value: string): string {
+  return normalizeText(value)
+    .replace(/[^a-z0-9\s]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim()
+}
+
+function areNearDuplicateReplies(candidate: string, previous: string): boolean {
+  const a = normalizeForNearDuplicate(candidate)
+  const b = normalizeForNearDuplicate(previous)
+  if (!a || !b) return false
+  if (a === b) return true
+  if (a.length >= 24 && b.includes(a)) return true
+  if (b.length >= 24 && a.includes(b)) return true
+  return false
+}
+
+function isReplyEchoingUserMessage(reply: string, userMessage: string): boolean {
+  const replyNormalized = normalizeForNearDuplicate(reply)
+  const userNormalized = normalizeForNearDuplicate(userMessage)
+  if (!replyNormalized || !userNormalized) return false
+  if (replyNormalized === userNormalized) return true
+  if (replyNormalized.length >= 24 && userNormalized.includes(replyNormalized)) return true
+  if (userNormalized.length >= 24 && replyNormalized.includes(userNormalized)) return true
+  return false
+}
+
+function isDryAcknowledgementReply(reply: string): boolean {
+  const normalized = normalizeText(reply).replace(/\s+/g, " ")
+  return (
+    normalized === "registrado." ||
+    normalized === "anotado." ||
+    normalized === "recebido." ||
+    normalized === "prosseguindo." ||
+    normalized === "registro realizado com sucesso." ||
+    normalized === "anotacao clinica registrada no caso."
+  )
+}
+
+function isLikelyDictationMessage(userMessage: string): boolean {
+  const n = normalizeText(userMessage)
+  if (n.includes("?")) return false
+  if (
+    /\b(resumir|calcular|gerar|encerrar|fechar|sugerir perguntas|analise|analisar)\b/.test(
+      n,
+    )
+  ) {
+    return false
+  }
+  return userMessage.trim().length >= 20
+}
+
+function detectAcknowledgementTopic(
+  userMessage: string,
+): "anamnese" | "exame" | "hipoteses" | "conduta" | "orientacoes" | "registro" {
+  const n = normalizeText(userMessage)
+
+  if (/\bhipotese\b|\bhipoteses\b|\bdiagnostic/.test(n)) return "hipoteses"
+  if (
+    /\borientacoes?\b/.test(n) &&
+    /\b(vacina|sus|particular|responsavel|engasg|amament|aleitamento)\b/.test(n)
+  ) {
+    return "orientacoes"
+  }
+  if (
+    /\b(conduta|prescrev|monitorar|manter|avaliar necessidade|iniciar|inicio|ajustar)\b/.test(
+      n,
+    )
+  ) {
+    return "conduta"
+  }
+  if (
+    /\b(exame|acv|abd|ar:|neurologic|ortolani|barlow|fontanela|murmurio|bulhas)\b/.test(
+      n,
+    )
+  ) {
+    return "exame"
+  }
+  if (
+    /\b(anamnese|historic|gestacao|nascimento|familia|queixa principal|episodio|fungor|nasal|sintoma|triagem)\b/.test(
+      n,
+    )
+  ) {
+    return "anamnese"
+  }
+  return "registro"
+}
+
+function topicAcknowledgementTemplates(
+  topic: "anamnese" | "exame" | "hipoteses" | "conduta" | "orientacoes" | "registro",
+): string[] {
+  if (topic === "anamnese") {
+    return [
+      "Anamnese registrada com sucesso.",
+      "Perfeito, histórico clínico anotado. Pode seguir com exame quando desejar.",
+      "Registro concluído para anamnese. Quer um resumo parcial até aqui?",
+    ]
+  }
+  if (topic === "exame") {
+    return [
+      "Exame físico registrado no caso.",
+      "Perfeito, achados de exame anotados. Pode seguir com hipóteses e conduta.",
+      "Exame documentado com sucesso. Se quiser, eu organizo um resumo parcial.",
+    ]
+  }
+  if (topic === "hipoteses") {
+    return [
+      "Hipóteses diagnósticas registradas.",
+      "Perfeito, hipóteses anotadas no prontuário do caso.",
+      "Hipóteses registradas. Quer que eu já consolide conduta e orientações em seguida?",
+    ]
+  }
+  if (topic === "conduta") {
+    return [
+      "Conduta registrada com sucesso.",
+      "Perfeito, conduta anotada no caso.",
+      "Conduta registrada. Se quiser, eu já preparo um resumo final do atendimento.",
+    ]
+  }
+  if (topic === "orientacoes") {
+    return [
+      "Orientações registradas no caso.",
+      "Perfeito, orientações ao responsável anotadas com sucesso.",
+      "Orientações registradas. Quer que eu resuma os pontos para o responsável?",
+    ]
+  }
+  return [
+    "Anotação clínica registrada no caso.",
+    "Perfeito, atualização clínica salva no prontuário.",
+    "Registro clínico concluído. Se quiser, eu organizo um resumo parcial.",
+  ]
+}
+
+function buildDeterministicAcknowledgement(
+  userMessage: string,
+  messages: CaseMessage[],
+): string {
+  const topic = detectAcknowledgementTopic(userMessage)
+  const templates = topicAcknowledgementTemplates(topic)
+  const recentReplies = listRecentAssistantReplies(messages, 2)
+
+  for (const template of templates) {
+    const repeats = recentReplies.some((previous) =>
+      areNearDuplicateReplies(template, previous),
+    )
+    if (!repeats) return template
+  }
+
+  return templates[0]
+}
+
+function enforceReplyVariation(
+  userMessage: string,
+  reply: string,
+  messages: CaseMessage[],
+): string {
+  const recentReplies = listRecentAssistantReplies(messages, 2)
+  const isRepeated = recentReplies.some((previous) =>
+    areNearDuplicateReplies(reply, previous),
+  )
+  if (!isRepeated) return reply
+  if (!isLikelyDictationMessage(userMessage)) return reply
+  return buildDeterministicAcknowledgement(userMessage, messages)
+}
+
+function parseNumericValue(labelValue: string): number | null {
+  const match = labelValue.replace(",", ".").match(/(\d+(?:\.\d+)?)/)
+  if (!match) return null
+  return Number(match[1])
+}
+
+function formatBmiConfirmationReply(params: {
+  bmiValue: string
+  weightValue: string | null
+  heightValue: string | null
+}): string {
+  const weightNumber = params.weightValue ? parseNumericValue(params.weightValue) : null
+  const heightNumber = params.heightValue ? parseNumericValue(params.heightValue) : null
+  const weightText = weightNumber != null ? `${weightNumber.toFixed(3).replace(/\.?0+$/, "")} kg` : null
+  const heightText = heightNumber != null ? `${heightNumber.toFixed(1)} cm` : null
+
+  if (weightText && heightText) {
+    return `IMC confirmado: ${params.bmiValue}. Mantive o registro com peso ${weightText} e comprimento/altura ${heightText}.`
+  }
+  return `IMC confirmado: ${params.bmiValue}.`
+}
+
+function isBmiConfirmationMessage(userMessage: string): boolean {
+  const n = normalizeText(userMessage)
+  return (
+    /\bimc\b/.test(n) &&
+    (/confirmad/.test(n) || /\bconfirmo\b/.test(n) || /\bpode confirmar\b/.test(n))
+  )
+}
+
+function getLatestPendingBmiFromAssistantMessages(messages: CaseMessage[]): {
+  bmiValue: string
+  weightValue: string | null
+  heightValue: string | null
+} | null {
+  for (let i = messages.length - 1; i >= 0; i -= 1) {
+    const message = messages[i]
+    if (message.role !== "assistant") continue
+    const payload = parseAssistantPayloadLite(message.content)
+    const items = payload?.storedData?.items
+    if (!items || items.length === 0) continue
+
+    const pendingBmi = items.find(
+      (item) =>
+        normalizeText(item.label).includes("imc") &&
+        item.status === "pendente_de_confirmacao",
+    )
+    if (!pendingBmi) continue
+
+    const weightItem = items.find(
+      (item) =>
+        normalizeText(item.label) === "peso" && item.status === "confirmado",
+    )
+    const heightItem = items.find(
+      (item) =>
+        normalizeText(item.label).includes("comprimento / altura") &&
+        item.status === "confirmado",
+    )
+
+    return {
+      bmiValue: pendingBmi.value,
+      weightValue: weightItem?.value ?? null,
+      heightValue: heightItem?.value ?? null,
+    }
+  }
+  return null
+}
+
+function getLatestConfirmedAnthropometricsFromAssistantMessages(messages: CaseMessage[]): {
+  weightKg: number | null
+  heightM: number | null
+} {
+  for (let i = messages.length - 1; i >= 0; i -= 1) {
+    const message = messages[i]
+    if (message.role !== "assistant") continue
+    const payload = parseAssistantPayloadLite(message.content)
+    const items = payload?.storedData?.items
+    if (!items || items.length === 0) continue
+
+    const weightItem = items.find(
+      (item) => normalizeText(item.label) === "peso" && item.status === "confirmado",
+    )
+    const heightItem = items.find(
+      (item) =>
+        normalizeText(item.label).includes("comprimento / altura") &&
+        item.status === "confirmado",
+    )
+
+    const weightValue = weightItem ? parseNumericValue(weightItem.value) : null
+    const heightCm = heightItem ? parseNumericValue(heightItem.value) : null
+    const heightValue = heightCm != null ? heightCm / 100 : null
+
+    if (weightValue != null || heightValue != null) {
+      return { weightKg: weightValue, heightM: heightValue }
+    }
+  }
+
+  return { weightKg: null, heightM: null }
+}
+
+function extractExplicitGuardianAlertsHint(messages: CaseMessage[]): string | null {
+  const confirmedAlerts: string[] = []
+
+  for (let i = messages.length - 1; i >= 0; i -= 1) {
+    const message = messages[i]
+    if (message.role !== "assistant") continue
+    const payload = parseAssistantPayloadLite(message.content)
+    const items = payload?.storedData?.items ?? []
+    for (const item of items) {
+      if (
+        item.section === "ALERTAS_CLINICOS" &&
+        item.status === "confirmado" &&
+        item.value.trim().length > 0
+      ) {
+        confirmedAlerts.push(item.value.trim())
+      }
+    }
+  }
+
+  const uniqueConfirmed = Array.from(new Set(confirmedAlerts)).slice(0, 3)
+  if (uniqueConfirmed.length > 0) {
+    return uniqueConfirmed.map((item) => `- ${item}`).join("\n")
+  }
+
+  const alerts: string[] = []
+
+  for (const message of messages) {
+    if (message.role !== "user") continue
+    if (isCommandLikeMessage(message.content)) continue
+    const content = message.content.trim()
+    if (content.length < 8) continue
+    if (!hasExplicitGuardianAlertSignal(content)) continue
+
+    const singleLine = content.replace(/\s+/g, " ").trim()
+    if (singleLine.length === 0) continue
+    alerts.push(singleLine)
+  }
+
+  const uniqueAlerts = Array.from(new Set(alerts)).slice(-3)
+  if (uniqueAlerts.length === 0) return null
+  return uniqueAlerts.map((item) => `- ${item}`).join("\n")
+}
+
+function formatPtDecimal(value: number, fractionDigits = 1): string {
+  return value.toFixed(fractionDigits).replace(".", ",")
+}
+
+function buildAnthropometrySummaryLine(params: {
+  weightKg: number | null
+  heightM: number | null
+}): string | null {
+  if (params.weightKg == null && params.heightM == null) return null
+  const parts: string[] = []
+  if (params.weightKg != null) {
+    parts.push(`peso ${params.weightKg.toFixed(3).replace(/\.?0+$/, "")} kg`)
+  }
+  if (params.heightM != null) {
+    parts.push(`comprimento ${formatPtDecimal(params.heightM * 100, 1)} cm`)
+  }
+  if (params.weightKg != null && params.heightM != null) {
+    const bmiResult = computePediatricBmi(params.weightKg, params.heightM)
+    if (bmiResult.ok) {
+      parts.push(`IMC ≈ ${formatPtDecimal(bmiResult.bmi, 1)}`)
+    }
+  }
+  return `• Dados antropométricos: ${parts.join(", ")}.`
+}
+
+function enforceAnthropometrySourceOfTruthInSummary(
+  summaryReply: string,
+  latestMetrics: { weightKg: number | null; heightM: number | null },
+): string {
+  const line = buildAnthropometrySummaryLine(latestMetrics)
+  if (!line) return summaryReply
+
+  const lines = summaryReply.split("\n")
+  const anthropometricLineIndex = lines.findIndex((current) =>
+    /\bdados\s+antropometric/i.test(normalizeText(current)),
+  )
+
+  if (anthropometricLineIndex >= 0) {
+    lines[anthropometricLineIndex] = line
+    return lines.join("\n")
+  }
+
+  const firstBulletIndex = lines.findIndex((current) => current.trim().startsWith("• "))
+  if (firstBulletIndex >= 0) {
+    lines.splice(firstBulletIndex + 1, 0, line)
+    return lines.join("\n")
+  }
+
+  return `${line}\n${summaryReply}`
+}
+
+function resolveSummaryAnthropometrics(params: {
+  messages: CaseMessage[]
+  patientMetrics?: { weight: number | null; height: number | null }
+}): { weightKg: number | null; heightM: number | null } {
+  const fromThread = getLatestConfirmedAnthropometricsFromAssistantMessages(params.messages)
+  const hasThreadWeight = fromThread.weightKg != null
+  const hasThreadHeight = fromThread.heightM != null
+
+  if (hasThreadWeight || hasThreadHeight) {
+    return {
+      weightKg: fromThread.weightKg,
+      heightM: fromThread.heightM,
+    }
+  }
+
+  return {
+    weightKg: params.patientMetrics?.weight ?? null,
+    heightM: params.patientMetrics?.height ?? null,
+  }
 }
 
 /** Scopes structured clinical blocks: last user turn only vs full thread consolidation. */
@@ -167,6 +625,10 @@ export function detectDashboardAssistantIntent(message: string): DashboardAssist
     return "CLOSE_CASE"
   }
 
+  if (isQuestionLikeMessage(message)) {
+    return "QUESTION"
+  }
+
   return "CHAT"
 }
 
@@ -192,6 +654,14 @@ function isCommandLikeMessage(content: string): boolean {
     normalized.includes("confirmar geracao de relatorio") ||
     normalized.includes("confirmar geracao de atestado") ||
     normalized.includes("confirmar geracao de receita") ||
+    normalized.includes("confirmar novos dados antropometricos") ||
+    normalized.includes("usar novos dados antropometricos") ||
+    normalized.includes("manter valores anteriores") ||
+    normalized.includes("manter dados anteriores") ||
+    normalized.includes("salvar alerta para resumo e relatorio") ||
+    normalized.includes("confirmar armazenamento de alerta") ||
+    normalized.includes("nao armazenar alerta") ||
+    normalized.includes("não armazenar alerta") ||
     normalized.includes("cancelar acao") ||
     normalized.includes("cancelar ação")
   )
@@ -220,6 +690,27 @@ function buildThreadTextForAuxiliaryModel(messages: CaseMessage[]): string {
   }
   const joined = lines.join("\n\n")
   return joined.length > 14_000 ? joined.slice(-14_000) : joined
+}
+
+function buildMessagesForModel(
+  messages: CaseMessage[],
+  userMessage: string,
+): Array<{ role: "user" | "assistant"; content: string }> {
+  const mappedMessages = messages.map((message) => ({
+    role: message.role,
+    content:
+      message.role === "assistant"
+        ? assistantMessageToModelText(message.content)
+        : message.content,
+  }))
+
+  const lastMessage = messages[messages.length - 1]
+  const endsWithSameUser =
+    lastMessage?.role === "user" && lastMessage.content.trim() === userMessage.trim()
+
+  return endsWithSameUser
+    ? mappedMessages
+    : [...mappedMessages, { role: "user" as const, content: userMessage }]
 }
 
 function extractStoredData(message: string): StoredDataItem[] {
@@ -268,19 +759,98 @@ function extractStoredData(message: string): StoredDataItem[] {
   return data
 }
 
-/** Latest weight/height from patient profile for summary bias (thread may contain older measurements). */
-function formatLatestAnthropometricsHint(
-  patientMetrics?: { weight: number | null; height: number | null },
-): string | null {
-  const weightKg = patientMetrics?.weight
-  const heightM = patientMetrics?.height
-  if (weightKg == null || heightM == null) return null
-  const heightCm = heightM * 100
-  const weightLabel =
-    Math.abs(weightKg - Math.round(weightKg)) < 1e-6
-      ? String(weightKg)
-      : weightKg.toFixed(3).replace(/\.?0+$/, "")
-  return `Referência do cadastro do paciente neste caso: peso ${weightLabel} kg, comprimento/altura ${heightCm.toFixed(1)} cm.`
+function buildBmiStoredData(params: {
+  weightKg: number
+  heightM: number
+  bmi: number
+}): StoredDataItem[] {
+  const heightMetersRounded = params.heightM.toFixed(3)
+  const heightSquared = (params.heightM * params.heightM).toFixed(5)
+  const weightRounded = params.weightKg.toFixed(3)
+  const heightCmDisplay = (params.heightM * 100).toFixed(1)
+
+  const details = [
+    "Fórmula: peso (kg) ÷ altura (m)².",
+    `Conta: ${weightRounded} kg ÷ (${heightMetersRounded} m)² = ${weightRounded} ÷ ${heightSquared} ≈ ${params.bmi.toFixed(1)}.`,
+    `Dados utilizados neste cálculo: peso ${weightRounded} kg e comprimento/altura ${heightCmDisplay} cm (altura em metros: ${heightMetersRounded} m).`,
+    "Confirme se esses valores estão corretos antes de registrar.",
+  ].join("\n")
+
+  return [
+    {
+      section: "DADOS_ANTROPOMETRICOS",
+      label: "Peso",
+      value: `${weightRounded.replace(/\.?0+$/, "")} kg`,
+      status: "confirmado",
+    },
+    {
+      section: "DADOS_ANTROPOMETRICOS",
+      label: "Comprimento / altura",
+      value: `${heightCmDisplay} cm`,
+      status: "confirmado",
+    },
+    {
+      section: "DADOS_ANTROPOMETRICOS",
+      label: "IMC estimado",
+      value: params.bmi.toFixed(1),
+      status: "pendente_de_confirmacao",
+    },
+    {
+      section: "CALCULO_IMC",
+      label: "Detalhes do cálculo",
+      value: details,
+      status: "confirmado",
+    },
+  ]
+}
+
+function detectAnthropometricReferenceChange(params: {
+  userMessage: string
+  patientMetrics?: { weight: number | null; height: number | null }
+}): { hasChange: boolean; weightKg: number | null; heightM: number | null } {
+  const parsed = parseWeightHeightForBmi(params.userMessage)
+  const weightKg = parsed.weightKg ?? null
+  const heightM = parsed.heightM ?? null
+  if (weightKg == null && heightM == null) {
+    return { hasChange: false, weightKg: null, heightM: null }
+  }
+
+  const currentWeight = params.patientMetrics?.weight ?? null
+  const currentHeight = params.patientMetrics?.height ?? null
+
+  const weightChanged =
+    weightKg != null && currentWeight != null && Math.abs(weightKg - currentWeight) >= 0.05
+  const heightChanged =
+    heightM != null && currentHeight != null && Math.abs(heightM - currentHeight) >= 0.005
+
+  return {
+    hasChange: weightChanged || heightChanged,
+    weightKg,
+    heightM,
+  }
+}
+
+/** Prioritize latest confirmed anthropometric values from thread, fallback to patient profile. */
+function formatLatestAnthropometricsHint(params: {
+  messages: CaseMessage[]
+  patientMetrics?: { weight: number | null; height: number | null }
+}): string | null {
+  const resolved = resolveSummaryAnthropometrics(params)
+  if (resolved.weightKg == null && resolved.heightM == null) return null
+
+  const parts: string[] = []
+  if (resolved.weightKg != null) {
+    const weightLabel =
+      Math.abs(resolved.weightKg - Math.round(resolved.weightKg)) < 1e-6
+        ? String(resolved.weightKg)
+        : resolved.weightKg.toFixed(3).replace(/\.?0+$/, "")
+    parts.push(`peso ${weightLabel} kg`)
+  }
+  if (resolved.heightM != null) {
+    parts.push(`comprimento/altura ${(resolved.heightM * 100).toFixed(1)} cm`)
+  }
+
+  return `Referência antropométrica mais recente para este caso: ${parts.join(", ")}.`
 }
 
 export async function routeDashboardCaseAssistantTurn(params: {
@@ -291,13 +861,43 @@ export async function routeDashboardCaseAssistantTurn(params: {
   conversationSummary: string | null
   patientMetrics?: { weight: number | null; height: number | null }
 }): Promise<RoutedAssistantTurn> {
-  const intent = detectDashboardAssistantIntent(params.userMessage)
+  const baseIntent = detectDashboardAssistantIntent(params.userMessage)
   const normalized = normalizeText(params.userMessage)
+  const aiDetectedQuestionIntent =
+    baseIntent === "CHAT" && params.userMessage.trim().length >= 18
+      ? await classifyQuestionIntentByAi({ userMessage: params.userMessage })
+      : false
+  const anthropometricChange = detectAnthropometricReferenceChange({
+    userMessage: params.userMessage,
+    patientMetrics: params.patientMetrics,
+  })
+  const hasGuardianAlertSignal = hasExplicitGuardianAlertSignal(params.userMessage)
+  const intent: DashboardAssistantIntent =
+    (baseIntent === "QUESTION" || aiDetectedQuestionIntent)
+      ? "QUESTION"
+      : baseIntent === "CHAT" && anthropometricChange.hasChange
+      ? "REVIEW_ANTHROPOMETRIC_REFERENCE"
+      : baseIntent === "CHAT" && hasGuardianAlertSignal
+        ? "REVIEW_GUARDIAN_ALERT"
+        : baseIntent
+
   const confirmsReport = normalized.includes("confirmar geracao de relatorio")
   const confirmsMedicalCertificate = normalized.includes(
     "confirmar geracao de atestado",
   )
   const confirmsPrescription = normalized.includes("confirmar geracao de receita")
+  const confirmsAnthropometricReference =
+    normalized.includes("confirmar novos dados antropometricos") ||
+    normalized.includes("usar novos dados antropometricos")
+  const keepsPreviousAnthropometricReference =
+    normalized.includes("manter valores anteriores") ||
+    normalized.includes("manter dados anteriores")
+  const confirmsGuardianAlertStorage =
+    normalized.includes("confirmar armazenamento de alerta") ||
+    normalized.includes("salvar alerta para resumo e relatorio")
+  const declinesGuardianAlertStorage =
+    normalized.includes("nao armazenar alerta") ||
+    normalized.includes("não armazenar alerta")
   const cancelsAction =
     normalized.includes("cancelar acao") ||
     normalized.includes("cancelar ação") ||
@@ -312,6 +912,101 @@ export async function routeDashboardCaseAssistantTurn(params: {
     "confirmar geracao",
   ]
   const userConfirmed = confirms.some((term) => normalized.includes(term))
+
+  if (confirmsAnthropometricReference) {
+    const latestConfirmed = getLatestConfirmedAnthropometricsFromAssistantMessages(
+      params.messages,
+    )
+    const parsed = parseWeightHeightForBmi(params.userMessage)
+    const weight =
+      parsed.weightKg ??
+      latestConfirmed.weightKg ??
+      anthropometricChange.weightKg ??
+      params.patientMetrics?.weight ??
+      null
+    const height =
+      parsed.heightM ??
+      latestConfirmed.heightM ??
+      anthropometricChange.heightM ??
+      params.patientMetrics?.height ??
+      null
+    const storedData: StoredDataItem[] = []
+
+    if (weight != null) {
+      storedData.push({
+        section: "DADOS_ANTROPOMETRICOS",
+        label: "Peso (referência confirmada)",
+        value: `${weight.toFixed(3).replace(/\.?0+$/, "")} kg`,
+        status: "confirmado",
+      })
+    }
+    if (height != null) {
+      storedData.push({
+        section: "DADOS_ANTROPOMETRICOS",
+        label: "Comprimento / altura (referência confirmada)",
+        value: `${(height * 100).toFixed(1)} cm`,
+        status: "confirmado",
+      })
+    }
+
+    return {
+      intent: "REVIEW_ANTHROPOMETRIC_REFERENCE",
+      reply:
+        "Perfeito, novos dados antropométricos confirmados como referência para resumo e relatório.",
+      action: "confirm_anthropometric_reference",
+      showStructuredCard: true,
+      showAlert: false,
+      storedData,
+    }
+  }
+
+  if (keepsPreviousAnthropometricReference) {
+    return {
+      intent: "REVIEW_ANTHROPOMETRIC_REFERENCE",
+      reply:
+        "Entendido. Mantive os valores anteriores como referência principal para resumo e relatório.",
+      action: "none",
+      showStructuredCard: false,
+      showAlert: false,
+      storedData: [],
+    }
+  }
+
+  if (confirmsGuardianAlertStorage) {
+    const latestAlert = extractExplicitGuardianAlertsHint(params.messages)
+    const alertValue =
+      latestAlert?.split("\n").at(-1)?.replace(/^- /, "").trim() ??
+      "Alerta clínico do responsável confirmado."
+
+    return {
+      intent: "REVIEW_GUARDIAN_ALERT",
+      reply:
+        "Alerta salvo com sucesso. Vou priorizar esse ponto nos próximos resumos e no relatório.",
+      action: "confirm_guardian_alert_storage",
+      showStructuredCard: true,
+      showAlert: false,
+      storedData: [
+        {
+          section: "ALERTAS_CLINICOS",
+          label: "Alerta do responsável",
+          value: alertValue,
+          status: "confirmado",
+        },
+      ],
+    }
+  }
+
+  if (declinesGuardianAlertStorage) {
+    return {
+      intent: "REVIEW_GUARDIAN_ALERT",
+      reply:
+        "Perfeito. O alerta não será destacado como item obrigatório no resumo ou relatório.",
+      action: "none",
+      showStructuredCard: false,
+      showAlert: false,
+      storedData: [],
+    }
+  }
 
   if (cancelsAction) {
     return {
@@ -448,6 +1143,74 @@ export async function routeDashboardCaseAssistantTurn(params: {
     }
   }
 
+  if (intent === "QUESTION") {
+    const questionMessages = buildMessagesForModel(params.messages, params.userMessage)
+    let questionReply = await generateAssistantCaseChat({
+      patientContext: params.patientContext,
+      conversationSummary: params.conversationSummary,
+      messages: questionMessages,
+      clinicalSyncMode: "balanced",
+      forbidBmiInReply: !messageRequestsBmi(params.userMessage),
+    })
+
+    questionReply = refineChatReplyAfterModel(params.userMessage, questionReply)
+
+    if (
+      questionReply.trim().length === 0 ||
+      isReplyEchoingUserMessage(questionReply, params.userMessage) ||
+      isDryAcknowledgementReply(questionReply)
+    ) {
+      questionReply =
+        "Entendi sua pergunta. Posso te ajudar melhor se você confirmar os dados clínicos principais (peso, idade e objetivo da conduta) para eu responder de forma objetiva."
+    }
+
+    return {
+      intent,
+      reply: questionReply,
+      action: "none",
+      showStructuredCard: true,
+      showAlert: false,
+      storedData: [],
+    }
+  }
+
+  if (intent === "REVIEW_ANTHROPOMETRIC_REFERENCE") {
+    const previousWeight = params.patientMetrics?.weight
+    const previousHeight = params.patientMetrics?.height
+    const nextWeight = anthropometricChange.weightKg
+    const nextHeight = anthropometricChange.heightM
+
+    const previousWeightText =
+      previousWeight != null ? `${previousWeight.toFixed(3).replace(/\.?0+$/, "")} kg` : "não informado"
+    const previousHeightText =
+      previousHeight != null ? `${(previousHeight * 100).toFixed(1)} cm` : "não informado"
+    const nextWeightText =
+      nextWeight != null ? `${nextWeight.toFixed(3).replace(/\.?0+$/, "")} kg` : "não informado"
+    const nextHeightText =
+      nextHeight != null ? `${(nextHeight * 100).toFixed(1)} cm` : "não informado"
+
+    return {
+      intent,
+      reply: `Detectei novos dados antropométricos neste registro.\n\nAtuais de referência: peso ${previousWeightText}, comprimento/altura ${previousHeightText}.\nNovos informados agora: peso ${nextWeightText}, comprimento/altura ${nextHeightText}.\n\nDeseja confirmar os novos valores como referência principal para resumo e relatório?`,
+      action: "none",
+      showStructuredCard: true,
+      showAlert: false,
+      storedData: extractStoredData(params.userMessage),
+    }
+  }
+
+  if (intent === "REVIEW_GUARDIAN_ALERT") {
+    return {
+      intent,
+      reply:
+        "Identifiquei uma queixa importante do responsável nesta mensagem. Deseja armazenar esse alerta para priorizar nos próximos resumos e no relatório?",
+      action: "none",
+      showStructuredCard: true,
+      showAlert: true,
+      storedData: [],
+    }
+  }
+
   if (intent === "SUMMARY") {
     if (substantiveUserMessageCount(params.messages) === 0) {
       return {
@@ -462,10 +1225,22 @@ export async function routeDashboardCaseAssistantTurn(params: {
     }
 
     const threadText = buildThreadTextForAuxiliaryModel(params.messages)
-    const summaryReply = await generateCaseClinicalSummary({
+    const summaryReplyRaw = await generateCaseClinicalSummary({
       clinicalThreadText: threadText,
       conversationSummary: params.conversationSummary,
-      latestAnthropometricsHint: formatLatestAnthropometricsHint(params.patientMetrics),
+      latestAnthropometricsHint: formatLatestAnthropometricsHint({
+        messages: params.messages,
+        patientMetrics: params.patientMetrics,
+      }),
+      explicitGuardianAlertsHint: extractExplicitGuardianAlertsHint(params.messages),
+    })
+    const latestAnthropometrics = resolveSummaryAnthropometrics({
+      messages: params.messages,
+      patientMetrics: params.patientMetrics,
+    })
+    const summaryReply = enforceAnthropometrySourceOfTruthInSummary(summaryReplyRaw, {
+      weightKg: latestAnthropometrics.weightKg,
+      heightM: latestAnthropometrics.heightM,
     })
 
     return {
@@ -499,6 +1274,44 @@ export async function routeDashboardCaseAssistantTurn(params: {
   }
 
   if (intent === "CALCULATE_BMI") {
+    if (
+      normalized.includes("nao confirmar imc") ||
+      normalized.includes("não confirmar imc")
+    ) {
+      return {
+        intent,
+        reply:
+          "Tudo bem. Não confirmei o IMC. Envie peso e comprimento/altura atualizados para recalcular.",
+        action: "none",
+        showStructuredCard: true,
+        showAlert: false,
+        storedData: [],
+      }
+    }
+
+    if (isBmiConfirmationMessage(params.userMessage)) {
+      const pendingBmi = getLatestPendingBmiFromAssistantMessages(params.messages)
+      if (pendingBmi) {
+        const confirmedStoredData: StoredDataItem[] = [
+          {
+            section: "DADOS_ANTROPOMETRICOS",
+            label: "IMC estimado",
+            value: pendingBmi.bmiValue,
+            status: "confirmado",
+          },
+        ]
+
+        return {
+          intent,
+          reply: formatBmiConfirmationReply(pendingBmi),
+          action: "none",
+          showStructuredCard: true,
+          showAlert: false,
+          storedData: confirmedStoredData,
+        }
+      }
+    }
+
     const parsed = parseWeightHeightForBmi(params.userMessage)
     const weight = parsed.weightKg ?? params.patientMetrics?.weight ?? null
     const height = parsed.heightM ?? params.patientMetrics?.height ?? null
@@ -527,17 +1340,7 @@ export async function routeDashboardCaseAssistantTurn(params: {
       }
     }
 
-    const heightMetersRounded = height.toFixed(3)
-    const heightSquared = (height * height).toFixed(5)
-    const weightRounded = weight.toFixed(3)
-    const heightCmDisplay = (height * 100).toFixed(1)
-    const reply = [
-      `IMC estimado: ${bmiResult.bmi.toFixed(1)}.`,
-      `Fórmula: peso (kg) ÷ altura (m)².`,
-      `Conta: ${weightRounded} kg ÷ (${heightMetersRounded} m)² = ${weightRounded} ÷ ${heightSquared} ≈ ${bmiResult.bmi.toFixed(1)}.`,
-      `Dados utilizados neste cálculo: peso ${weightRounded} kg e comprimento/altura ${heightCmDisplay} cm (altura em metros: ${heightMetersRounded} m).`,
-      "Confirme se esses valores estão corretos antes de registrar.",
-    ].join("\n\n")
+    const reply = `IMC estimado: ${bmiResult.bmi.toFixed(1)}. Abra o ícone de informação para ver a fórmula e confirme os valores.`
 
     return {
       intent,
@@ -545,7 +1348,11 @@ export async function routeDashboardCaseAssistantTurn(params: {
       action: "none",
       showStructuredCard: true,
       showAlert: false,
-      storedData: extractStoredData(params.userMessage),
+      storedData: buildBmiStoredData({
+        weightKg: weight,
+        heightM: height,
+        bmi: bmiResult.bmi,
+      }),
     }
   }
 
@@ -622,6 +1429,8 @@ export async function routeDashboardCaseAssistantTurn(params: {
       reply =
         "CONDUTA: Orientações de vacinação registradas (SUS e particular conforme o texto enviado). Confira calendário local e idade da criança para datas de doses."
     }
+  } else if (isLikelyDictationMessage(params.userMessage)) {
+    reply = buildDeterministicAcknowledgement(params.userMessage, params.messages)
   } else {
     reply = await generateAssistantCaseChat({
       patientContext: params.patientContext,
@@ -647,6 +1456,12 @@ export async function routeDashboardCaseAssistantTurn(params: {
         "CONDUTA: Registro recebido. Revise o texto enviado para os detalhes; IMC não foi solicitado neste turno."
     }
   }
+
+  if (isLikelyDictationMessage(params.userMessage) && isReplyEchoingUserMessage(reply, params.userMessage)) {
+    reply = buildDeterministicAcknowledgement(params.userMessage, params.messages)
+  }
+
+  reply = enforceReplyVariation(params.userMessage, reply, params.messages)
 
   const showAlert = /alerta|urgencia|gravidade|risco/.test(normalized)
   const storedData = extractStoredData(params.userMessage)

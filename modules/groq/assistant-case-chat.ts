@@ -1,10 +1,12 @@
 import { groq } from "@/modules/groq/groq-client"
 
-const MODEL = "llama-3.1-8b-instant"
+const MODEL = process.env.GROQ_ASSISTANT_MODEL?.trim() || "qwen/qwen3-32b"
 
 /** json_object mode must finish valid JSON; long PT-BR replies need headroom after escaping newlines/quotes. */
 const CHAT_MAX_COMPLETION_TOKENS = 2048
 const SUMMARY_MAX_COMPLETION_TOKENS = 1536
+const POLISH_MAX_COMPLETION_TOKENS = 700
+const INTENT_MAX_COMPLETION_TOKENS = 120
 
 export type ClinicalSyncMode = "single_turn" | "global_update" | "balanced"
 
@@ -94,6 +96,42 @@ function cleanupRawModelContent(raw: string): string {
     .trim()
 }
 
+function normalizeForPolishComparison(value: string): string {
+  return value
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9\s]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim()
+}
+
+function tokenJaccardSimilarity(a: string, b: string): number {
+  const aTokens = new Set(normalizeForPolishComparison(a).split(" ").filter(Boolean))
+  const bTokens = new Set(normalizeForPolishComparison(b).split(" ").filter(Boolean))
+  if (aTokens.size === 0 && bTokens.size === 0) return 1
+  if (aTokens.size === 0 || bTokens.size === 0) return 0
+
+  let intersection = 0
+  for (const token of aTokens) {
+    if (bTokens.has(token)) intersection += 1
+  }
+  const union = new Set([...aTokens, ...bTokens]).size
+  return union === 0 ? 0 : intersection / union
+}
+
+function polishLooksSafe(original: string, polished: string): boolean {
+  const originalTrimmed = original.trim()
+  const polishedTrimmed = polished.trim()
+  if (!polishedTrimmed) return false
+
+  const maxDelta = Math.max(12, Math.floor(originalTrimmed.length * 0.35))
+  if (Math.abs(polishedTrimmed.length - originalTrimmed.length) > maxDelta) return false
+
+  const similarity = tokenJaccardSimilarity(originalTrimmed, polishedTrimmed)
+  return similarity >= 0.72
+}
+
 export async function generateAssistantCaseChat(
   input: AssistantCaseChatInput,
 ): Promise<string> {
@@ -121,7 +159,7 @@ MODO FOCO VACINAÇÃO (esta rodada, prioridade sobre confirmação mínima salvo
 
 REGRAS RÍGIDAS:
 1) ECO PROIBIDO: NÃO copie, NÃO parafraseie em parágrafos longos e NÃO reescreva sob rótulos (ANAMNESE, EXAME, etc.) o que o médico acabou de enviar. O histórico do chat já mostra o texto integral do médico; o Falaped só confirma o registro e conduz o fluxo.
-2) Resposta padrão (registro / dictado): no máximo 2 frases curtas OU até 2 bullets mínimos (ex.: "Registrado." / "Prosseguindo."). Opcional: uma linha neutra com o tipo de informação (ex.: "Exame físico anotado.", "Hipóteses registradas.", "Conduta anotada.") sem listar o conteúdo clínico.
+2) Resposta padrão (registro / dictado): use 1-2 frases curtas, naturais e profissionais. Evite respostas de uma única palavra repetidas ("Registrado.", "Anotado."). Confirme o registro e, quando possível, cite o tipo de bloco registrado (ex.: exame físico, hipóteses, conduta) sem listar conteúdo clínico.
 3) Se a última mensagem for uma pergunta explícita ou pedido de orientação: responda de forma objetiva, sem colar o dictado anterior.
 4) MODO ATIVO somente com comando explícito do produto ou pergunta clínica explícita.
 5) Sempre em PT-BR médico profissional.
@@ -131,7 +169,8 @@ REGRAS RÍGIDAS:
 9) Não contradiga o que o médico registrou; em conflito com conversationSummary, prevalecem as mensagens recentes em messages.
 10) clinicalSyncMode no JSON do usuário define o escopo — siga-o estritamente (ver abaixo).
 11) Se o histórico já contiver cálculo de IMC e a mensagem atual do médico NÃO pedir IMC, peso ou altura, NÃO repita fórmula, conta ou bloco de IMC; responda ao tema atual.
-12) Não copie texto longo de mensagens anteriores do Falaped.${forbidBmiBlock}${vaccineFocusBlock}
+12) Não copie texto longo de mensagens anteriores do Falaped.
+13) Não repita literalmente a mesma frase de confirmação usada na resposta imediatamente anterior do assistente; varie a redação mantendo brevidade.${forbidBmiBlock}${vaccineFocusBlock}
 
 Responda APENAS em JSON válido no formato: {"reply":"..."}`
 
@@ -205,6 +244,8 @@ export type GenerateCaseClinicalSummaryInput = {
   conversationSummary: string | null
   /** e.g. latest weight/height from patient record for this case */
   latestAnthropometricsHint?: string | null
+  /** Explicitly flagged guardian complaints from recent turns (priority in summary). */
+  explicitGuardianAlertsHint?: string | null
 }
 
 async function generateCaseClinicalSummaryOnce(
@@ -213,6 +254,7 @@ async function generateCaseClinicalSummaryOnce(
   const systemPrompt = `Você resume atendimentos pediátricos em PT-BR para o médico.
 Não copie o texto integral. Sintetize em até 8 bullets curtos ou 2 parágrafos breves, cobrindo quando houver: queixas principais, dados relevantes (incl. antropometria mais recente do atendimento), hipóteses, conduta, orientações ao responsável e pendências.
 Inclua um bullet "Alertas / queixas do responsável" quando o fio citar queixas explícitas (ex.: frases em maiúsculas, "queixa da mãe", engasgos, recusa de alimento) — omita o bullet se não houver.
+Se explicitGuardianAlertsHint vier preenchido no JSON do usuário, trate esse conteúdo como prioridade clínica para o bullet "Alertas / queixas do responsável" (não substitua por sintomas secundários menos relevantes).
 Se latestAnthropometricsHint estiver preenchido no JSON do usuário, trate como referência da antropometria mais recente ligada ao paciente/caso quando coerente com o fio (o texto do fio pode conter medições antigas; prefira valores mais novos e consistentes).
 Ignore comandos de sistema (/resumo, gerar relatório, etc.) no conteúdo.
 Formato obrigatório: um único objeto JSON com a chave "reply" contendo TODO o resumo como uma string (pode usar quebras de linha escapadas em JSON). Exemplo: {"reply":"• Queixa: ...\\n• Conduta: ..."}
@@ -222,6 +264,7 @@ Não use chaves de primeiro nível separadas (ex.: queixa_principal, conduta) �
     conversationSummary: input.conversationSummary,
     substantiveNotes: input.clinicalThreadText,
     latestAnthropometricsHint: input.latestAnthropometricsHint ?? null,
+    explicitGuardianAlertsHint: input.explicitGuardianAlertsHint ?? null,
   })
 
   let completion: Awaited<ReturnType<typeof groq.chat.completions.create>>
@@ -310,5 +353,95 @@ Responda APENAS em JSON válido: {"reply":"texto com os traços"}`
   }
 
   return "Sugestões para o responsável:\n- Como está a aceitação da alimentação nas últimas 24 horas?\n- Houve mudança no número de fraldas ou no comportamento do sono?\n- Notou febre, letargia ou dificuldade para respirar?\n- Há algo novo que gostaria de relatar desde a última consulta?"
+}
+
+export async function polishAssistantReplyForDisplay(input: {
+  reply: string
+  intent: string
+  userMessage: string
+}): Promise<string> {
+  const rawReply = input.reply.trim()
+  if (!rawReply) return input.reply
+
+  // Keep deterministic numeric outputs untouched.
+  if (input.intent === "CALCULATE_BMI") return input.reply
+  if (/^IMC\s+estimado:/i.test(rawReply)) return input.reply
+  if (rawReply.length < 90 && !rawReply.includes("\n")) return input.reply
+
+  const systemPrompt = `Você revisa texto final do assistente em PT-BR antes da exibição ao pediatra.
+Objetivo: corrigir ortografia, acentuação, concordância e pontuação, mantendo tom profissional e breve.
+
+REGRAS CRÍTICAS:
+- Não alterar sentido clínico, não inventar informação, não adicionar orientações novas.
+- Corrigir de forma CONSERVADORA: prefira microedições (acentos, pontuação, concordância) e evite reescrever frases.
+- Preservar números, unidades, doses, horários, percentuais e nomes de vacinas/medicamentos exatamente como estão.
+- Preservar estrutura em bullets quando houver.
+- Se o texto já estiver bom, devolva igual.
+- Responda APENAS em JSON válido: {"reply":"texto revisado"}`
+
+  const userPrompt = JSON.stringify({
+    intent: input.intent,
+    userMessage: input.userMessage,
+    replyToPolish: input.reply,
+  })
+
+  try {
+    const completion = await groq.chat.completions.create({
+      model: MODEL,
+      temperature: 0,
+      max_tokens: POLISH_MAX_COMPLETION_TOKENS,
+      messages: [
+        { role: "system", content: systemPrompt },
+        { role: "user", content: userPrompt },
+      ],
+      response_format: { type: "json_object" },
+    })
+
+    const raw = completion.choices[0]?.message?.content?.trim() ?? ""
+    const cleanedRaw = cleanupRawModelContent(raw)
+    const parsed = JSON.parse(cleanedRaw || "{}")
+    const polished = getReplyFromUnknownPayload(parsed)
+    if (!polished || polished.trim().length === 0) return input.reply
+    if (!polishLooksSafe(input.reply, polished)) return input.reply
+    return polished
+  } catch {
+    return input.reply
+  }
+}
+
+export async function classifyQuestionIntentByAi(input: {
+  userMessage: string
+}): Promise<boolean> {
+  const text = input.userMessage.trim()
+  if (!text) return false
+
+  const systemPrompt = `Classifique se a mensagem do médico é uma PERGUNTA que exige resposta assistiva imediata (estratégia, explicação, orientação, dúvida), em vez de simples ditado para registro.
+Responda SOMENTE em JSON válido: {"isQuestion":true} ou {"isQuestion":false}.`
+
+  const userPrompt = JSON.stringify({
+    message: text,
+    guidance:
+      "isQuestion=true quando houver intenção de perguntar algo ao assistente, mesmo sem '?'.",
+  })
+
+  try {
+    const completion = await groq.chat.completions.create({
+      model: MODEL,
+      temperature: 0,
+      max_tokens: INTENT_MAX_COMPLETION_TOKENS,
+      messages: [
+        { role: "system", content: systemPrompt },
+        { role: "user", content: userPrompt },
+      ],
+      response_format: { type: "json_object" },
+    })
+
+    const raw = completion.choices[0]?.message?.content?.trim() ?? ""
+    const cleanedRaw = cleanupRawModelContent(raw)
+    const parsed = JSON.parse(cleanedRaw || "{}") as { isQuestion?: unknown }
+    return parsed.isQuestion === true
+  } catch {
+    return false
+  }
 }
 

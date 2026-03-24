@@ -5,13 +5,16 @@ import Link from "next/link"
 import { useRouter } from "next/navigation"
 import {
   BotIcon,
+  CheckIcon,
   FileTextIcon,
+  InfoIcon,
   Loader2Icon,
   MicIcon,
   PauseIcon,
   PlayIcon,
   SendIcon,
   StethoscopeIcon,
+  XCircleIcon,
   XIcon,
 } from "lucide-react"
 import { toast } from "sonner"
@@ -40,6 +43,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import {
   ASSISTANT_POST_RESPONSE_DELAY_MS,
   ASSISTANT_TYPING_MIN_DISPLAY_MS,
@@ -65,6 +69,14 @@ type AssistantPayload = {
     | "confirm_generate_report"
     | "confirm_generate_medical_certificate"
     | "confirm_generate_prescription"
+    | "confirm_anthropometric_reference"
+    | "keep_previous_anthropometric_reference"
+    | "confirm_guardian_alert_storage"
+    | "decline_guardian_alert_storage"
+    | "confirm_pending_imc"
+    | "reject_pending_imc"
+    | "confirm_stored_data"
+    | "reject_stored_data"
     | "cancel_pending_action"
     label: string
   }>
@@ -155,12 +167,14 @@ const buttonPressFeedbackClass =
 
 function ThreadBubble({
   message,
+  userDisplayName,
   onAssistantAction,
   onDownloadReport,
   assistantActionsDisabled,
   downloadBusy,
 }: {
   message: WorkspaceMessage
+  userDisplayName: string
   onAssistantAction: (actionId: string) => void
   onDownloadReport: (reportId: string) => void
   assistantActionsDisabled: boolean
@@ -168,6 +182,16 @@ function ThreadBubble({
 }) {
   const isUser = message.role === "user"
   const payload = !isUser ? parseAssistantPayload(message.content) : null
+  const bubbleShapeClass = isUser
+    ? "rounded-xl rounded-tr-none"
+    : "rounded-xl rounded-tl-none"
+  const hasStoredData = Boolean(payload?.storedData?.items.length)
+  const shouldShowInfoPopover = hasStoredData
+  const popoverItems = hasStoredData
+    ? payload!.storedData!.items.some((item) => item.section === "CALCULO_IMC")
+      ? payload!.storedData!.items.filter((item) => item.section === "CALCULO_IMC")
+      : payload!.storedData!.items
+    : []
 
   return (
     <div className={cn("flex gap-3", isUser ? "justify-end" : "justify-start")}>
@@ -181,25 +205,123 @@ function ThreadBubble({
 
       <div className={cn("max-w-[78%] space-y-1", isUser && "items-end")}>
         <div className={cn("flex items-center gap-2 text-xs text-muted-foreground", isUser && "justify-end")}>
-          <span className="font-medium">{isUser ? "Pediatra" : "Falaped"}</span>
+          <span className="font-medium">{isUser ? userDisplayName : "Falaped"}</span>
           <span>{formatTime(message.created_at)}</span>
         </div>
 
         {isUser ? (
-          <div className="rounded-xl border border-primary/30 bg-primary px-4 py-3 text-sm leading-relaxed text-primary-foreground shadow-sm">
+          <div
+            className={cn(
+              bubbleShapeClass,
+              "border border-primary/30 bg-primary px-4 py-3 text-sm leading-relaxed text-primary-foreground shadow-sm",
+            )}
+          >
             <p className="whitespace-pre-wrap">{message.content}</p>
           </div>
         ) : payload ? (
-          <Card className="border-border/70 shadow-sm">
+          <Card className={cn(bubbleShapeClass, "border-border/70 shadow-sm")}>
             {payload.type === "assistant_report_file" ? (
-              <CardHeader className="pb-2">
+              <CardHeader className={cn("pb-2", shouldShowInfoPopover && "pr-10")}>
                 <CardTitle className="flex items-center gap-2 text-lg text-primary">
                   <FileTextIcon className="h-4 w-4" />
                   {payload.title ?? "Relatório disponível"}
                 </CardTitle>
               </CardHeader>
             ) : null}
-            <CardContent className="space-y-3 pt-0">
+            <CardContent className={cn("relative space-y-3 pt-0", shouldShowInfoPopover && "pr-10")}>
+              {shouldShowInfoPopover ? (
+                <div className="absolute -right-[3px] top-1/2 z-10 -translate-y-1/2">
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button
+                        type="button"
+                        size="icon"
+                        variant="outline"
+                        className={cn(
+                          "h-7 w-7 rounded-full border-amber-300 bg-amber-50 text-amber-600 shadow-sm",
+                          "animate-pulse hover:bg-amber-100",
+                          "focus-visible:ring-2 focus-visible:ring-amber-400 focus-visible:ring-offset-1",
+                        )}
+                        aria-label="Ver detalhes desta mensagem"
+                      >
+                        <InfoIcon className="h-4 w-4" />
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent
+                      align="end"
+                      className="w-[560px] max-w-[calc(100vw-2rem)] space-y-3 overflow-x-hidden"
+                    >
+                      <div>
+                        <p className="text-sm font-semibold">Detalhes desta mensagem</p>
+                        <p className="text-xs text-muted-foreground">
+                          Informações referentes somente a esta resposta do Falaped.
+                        </p>
+                      </div>
+
+                      <div className="max-h-72 space-y-2 overflow-y-auto overflow-x-hidden pr-1">
+                        {popoverItems.map((item, index) => (
+                          <div
+                            key={`${item.label}-${index}`}
+                            className="rounded-md border border-border bg-muted/30 p-2"
+                          >
+                            <div className="flex items-start justify-between gap-2">
+                              <p className="text-xs font-medium text-muted-foreground">
+                                {item.section}
+                              </p>
+                              <Badge variant="outline" className="shrink-0 text-[10px] tracking-wide">
+                                {item.status === "confirmado"
+                                  ? "Confirmado"
+                                  : "Pendente de confirmação"}
+                              </Badge>
+                            </div>
+                            <p className="mt-1 whitespace-pre-wrap text-sm">
+                              <span className="font-medium">{item.label}:</span> {item.value}
+                            </p>
+                            {item.status === "pendente_de_confirmacao" ? (
+                              <div className="mt-2 flex items-center gap-2">
+                                <Button
+                                  size="sm"
+                                  type="button"
+                                  className="h-7 gap-1.5"
+                                  disabled={assistantActionsDisabled}
+                                  onClick={() =>
+                                    onAssistantAction(
+                                      /imc/i.test(item.label)
+                                        ? "confirm_pending_imc"
+                                        : "confirm_stored_data",
+                                    )
+                                  }
+                                >
+                                  <CheckIcon className="h-3.5 w-3.5" />
+                                  Confirmar
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  type="button"
+                                  variant="outline"
+                                  className="h-7 gap-1.5"
+                                  disabled={assistantActionsDisabled}
+                                  onClick={() =>
+                                    onAssistantAction(
+                                      /imc/i.test(item.label)
+                                        ? "reject_pending_imc"
+                                        : "reject_stored_data",
+                                    )
+                                  }
+                                >
+                                  <XCircleIcon className="h-3.5 w-3.5" />
+                                  Não confirmar
+                                </Button>
+                              </div>
+                            ) : null}
+                          </div>
+                        ))}
+                      </div>
+                    </PopoverContent>
+                  </Popover>
+                </div>
+              ) : null}
+
               <p className="whitespace-pre-wrap text-sm leading-relaxed text-foreground">
                 {mergeLegacyAssistantDisplay(payload)}
               </p>
@@ -212,42 +334,6 @@ function ThreadBubble({
                   <p className="mt-2 text-amber-900">
                     Sinal de alerta clínico detectado. Reavalie evolução e conduta antes de fechar o atendimento.
                   </p>
-                </details>
-              ) : null}
-
-              {payload.storedData?.items.length ? (
-                <details
-                  open={!(payload.storedData.collapsedByDefault ?? true)}
-                  className="rounded-md border border-border bg-muted/30 px-3 py-2"
-                >
-                  <summary className="cursor-pointer text-sm font-medium">
-                    Dados registrados nesta mensagem
-                  </summary>
-                  <div className="mt-2 space-y-2">
-                    {payload.storedData.items.map((item, index) => (
-                      <div
-                        key={`${item.label}-${index}`}
-                        className="rounded-sm bg-background px-2 py-1.5"
-                      >
-                        <div className="flex items-center justify-between gap-2">
-                          <p className="text-xs font-medium text-muted-foreground">
-                            {item.section}
-                          </p>
-                          <Badge
-                            variant="outline"
-                            className="text-[10px] uppercase tracking-wide"
-                          >
-                            {item.status === "confirmado"
-                              ? "Confirmado"
-                              : "Pendente de confirmação"}
-                          </Badge>
-                        </div>
-                        <p className="text-sm">
-                          <span className="font-medium">{item.label}:</span> {item.value}
-                        </p>
-                      </div>
-                    ))}
-                  </div>
                 </details>
               ) : null}
 
@@ -301,7 +387,7 @@ function ThreadBubble({
             </CardContent>
           </Card>
         ) : (
-          <Card className="border-border/70 shadow-sm">
+          <Card className={cn(bubbleShapeClass, "border-border/70 shadow-sm")}>
             <CardContent className="py-3">
               <p className="whitespace-pre-wrap text-sm leading-relaxed">{message.content}</p>
             </CardContent>
@@ -324,6 +410,7 @@ export function NewCaseWorkspace({
   caseId,
   initialMessages,
   patient,
+  userDisplayName,
 }: {
   caseId: string
   initialMessages: WorkspaceMessage[]
@@ -334,6 +421,7 @@ export function NewCaseWorkspace({
     responsible: string | null
     contact_phone: string | null
   } | null
+  userDisplayName: string
 }) {
   const router = useRouter()
   const scrollRef = useRef<HTMLDivElement | null>(null)
@@ -491,6 +579,30 @@ export function NewCaseWorkspace({
     if (actionId === "confirm_generate_prescription") {
       handleSend("confirmar geração de receita", bypass)
     }
+    if (actionId === "confirm_anthropometric_reference") {
+      handleSend("confirmar novos dados antropométricos", bypass)
+    }
+    if (actionId === "keep_previous_anthropometric_reference") {
+      handleSend("manter valores anteriores", bypass)
+    }
+    if (actionId === "confirm_guardian_alert_storage") {
+      handleSend("salvar alerta para resumo e relatório", bypass)
+    }
+    if (actionId === "decline_guardian_alert_storage") {
+      handleSend("não armazenar alerta", bypass)
+    }
+    if (actionId === "confirm_pending_imc") {
+      handleSend("imc confirmado", bypass)
+    }
+    if (actionId === "reject_pending_imc") {
+      handleSend("não confirmar imc, recalcular com novos dados", bypass)
+    }
+    if (actionId === "confirm_stored_data") {
+      handleSend("confirmar dados registrados", bypass)
+    }
+    if (actionId === "reject_stored_data") {
+      handleSend("não confirmar dados registrados", bypass)
+    }
   }
 
   const handleDownloadReport = async (reportId: string) => {
@@ -568,7 +680,7 @@ export function NewCaseWorkspace({
   return (
     <section
       aria-label="Área do novo caso"
-      className="-m-8 flex h-[calc(100dvh-2rem)] flex-col overflow-hidden bg-muted/25"
+      className="-m-8 flex h-[calc(100dvh-2rem)] flex-col overflow-hidden bg-sidebar"
     >
       <header className="supports-backdrop-filter:bg-background/80 shrink-0 border-b border-border bg-background/95 px-8 py-4 backdrop-blur">
         <div className="flex items-center justify-between gap-3">
@@ -619,6 +731,7 @@ export function NewCaseWorkspace({
                 <ThreadBubble
                   key={message.id}
                   message={message}
+                  userDisplayName={userDisplayName}
                   onAssistantAction={handleAssistantAction}
                   onDownloadReport={handleDownloadReport}
                   assistantActionsDisabled={isInteractionLocked}
@@ -663,27 +776,10 @@ export function NewCaseWorkspace({
                   <BotIcon className="h-4 w-4" />
                 </AvatarFallback>
               </Avatar>
-              <Card className="border-border/70 shadow-sm">
-                <CardContent className="flex items-center gap-3 py-3">
-                  <Loader2Icon className="h-4 w-4 animate-spin text-primary" />
-                  <p className="text-sm font-medium">Falaped está respondendo...</p>
-                  <button
-                    type="button"
-                    className="text-xs text-muted-foreground underline underline-offset-2"
-                    onClick={() => setIsSlowNetworkExpanded((value) => !value)}
-                  >
-                    Ver detalhes
-                  </button>
-                </CardContent>
-                {isSlowNetworkExpanded ? (
-                  <CardContent className="pt-0">
-                    <p className="text-xs text-muted-foreground">
-                      A resposta está em processamento. O envio permanece bloqueado para manter
-                      o turno único do prontuário.
-                    </p>
-                  </CardContent>
-                ) : null}
-              </Card>
+              <div className="flex items-center gap-2 pt-1 text-sm text-muted-foreground">
+                <Loader2Icon className="h-3.5 w-3.5 animate-spin text-muted-foreground" />
+                <p>Falaped está respondendo...</p>
+              </div>
             </div>
           ) : null}
         </div>

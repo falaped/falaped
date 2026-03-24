@@ -11,6 +11,28 @@ export type CreateDashboardCaseWithPatientActionResult =
   | { ok: true; caseId: string }
   | { ok: false; code: "not_authenticated" | "unpaid" | "no_phone" | "whatsapp_active" | "unknown"; error: string; activeCaseId?: string }
 
+function getGreetingByTime(): "Bom dia" | "Boa tarde" | "Boa noite" {
+  const hourInBrazil = Number(
+    new Intl.DateTimeFormat("pt-BR", {
+      hour: "2-digit",
+      hour12: false,
+      timeZone: "America/Sao_Paulo",
+    }).format(new Date()),
+  )
+
+  if (hourInBrazil >= 6 && hourInBrazil < 12) return "Bom dia"
+  if (hourInBrazil >= 12 && hourInBrazil < 18) return "Boa tarde"
+  return "Boa noite"
+}
+
+function buildDashboardNewCaseGreeting(firstName: string | null | undefined): string {
+  const greeting = getGreetingByTime()
+  const safeFirstName = firstName?.trim()
+  if (!safeFirstName) return DASHBOARD_NEW_CASE_GREETING
+
+  return `${greeting} Pediatra ${safeFirstName}, vou te acompanhar neste atendimento. Pode me enviar os achados clínicos que eu organizo tudo por aqui.`
+}
+
 export async function createDashboardCaseWithPatientAction(
   patientId: string,
 ): Promise<CreateDashboardCaseWithPatientActionResult> {
@@ -57,7 +79,7 @@ export async function createDashboardCaseWithPatientAction(
     await insertCaseMessage(supabase, {
       caseId: result.caseId,
       role: "assistant",
-      content: DASHBOARD_NEW_CASE_GREETING,
+      content: buildDashboardNewCaseGreeting(profile.first_name),
     })
 
     revalidatePath("/dashboard/cases")

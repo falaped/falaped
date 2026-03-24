@@ -18,6 +18,7 @@ import { updateCaseStatusAction } from "@/actions/cases/update-case-status"
 import { generateCaseReportAction } from "@/actions/cases/generate-case-report"
 import { updateCaseDashboardChatContextSummary } from "@/modules/cases/update-case-dashboard-chat-context-summary"
 import { stripAssistantUiLabelsFromReply } from "@/lib/format-clinical-assistant-sections"
+import { polishAssistantReplyForDisplay } from "@/modules/groq/assistant-case-chat"
 
 const PAYLOAD_PREFIX = "__FALAPED_JSON__"
 
@@ -26,6 +27,10 @@ type AssistantActionId =
   | "confirm_generate_report"
   | "confirm_generate_medical_certificate"
   | "confirm_generate_prescription"
+  | "confirm_anthropometric_reference"
+  | "keep_previous_anthropometric_reference"
+  | "confirm_guardian_alert_storage"
+  | "decline_guardian_alert_storage"
   | "cancel_pending_action"
 
 type AssistantStoredData = {
@@ -128,6 +133,32 @@ function buildAssistantActionsFromPendingAction(
         label: "Confirmar geração de atestado",
       },
       { id: "cancel_pending_action", label: "Cancelar ação" },
+    ]
+  }
+
+  if (pendingAction === "review_anthropometric_reference") {
+    return [
+      {
+        id: "confirm_anthropometric_reference",
+        label: "Confirmar novos dados antropométricos",
+      },
+      {
+        id: "keep_previous_anthropometric_reference",
+        label: "Manter valores anteriores",
+      },
+    ]
+  }
+
+  if (pendingAction === "review_guardian_alert") {
+    return [
+      {
+        id: "confirm_guardian_alert_storage",
+        label: "Salvar alerta para resumo e relatório",
+      },
+      {
+        id: "decline_guardian_alert_storage",
+        label: "Não armazenar alerta",
+      },
     ]
   }
 
@@ -266,6 +297,10 @@ export async function sendCaseAssistantMessageAction(
             ? "generate_medical_certificate"
             : routed.intent === "GENERATE_PRESCRIPTION"
               ? "generate_prescription"
+              : routed.intent === "REVIEW_ANTHROPOMETRIC_REFERENCE"
+                ? "review_anthropometric_reference"
+                : routed.intent === "REVIEW_GUARDIAN_ALERT"
+                  ? "review_guardian_alert"
               : null
 
     const isReportInsufficientGate =
@@ -274,11 +309,16 @@ export async function sendCaseAssistantMessageAction(
       !reportHasMinimumData
 
     const assistantReplySanitized = stripAssistantUiLabelsFromReply(routed.reply)
+    const polishedAssistantReply = await polishAssistantReplyForDisplay({
+      reply: assistantReplySanitized,
+      intent: routed.intent,
+      userMessage: content,
+    })
 
     const replyContent =
       isReportInsufficientGate
         ? "Ainda não há conteúdo clínico suficiente para gerar o relatório. Registre sintomas, exame e conduta para continuar."
-        : assistantReplySanitized
+        : polishedAssistantReply
 
     const storedDataPayload =
       routed.storedData.length > 0

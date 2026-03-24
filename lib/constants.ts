@@ -20,4 +20,4 @@ export const NEW_CASE_TRANSCRIPTION_MAX_DURATION_SECONDS = 600
 export const GROQ_TRANSCRIPTION_MAX_FILE_BYTES = 25 * 1024 * 1024
 
 export const DASHBOARD_NEW_CASE_GREETING =
-  "Prontuário iniciado. Pode registrar os achados clínicos que vou organizar as informações com você."
+  "Prontuário iniciado. Vou te acompanhar neste atendimento. Pode me enviar os achados clínicos que eu organizo tudo por aqui."

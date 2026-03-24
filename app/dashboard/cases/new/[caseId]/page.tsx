@@ -26,6 +26,7 @@ export default async function NewCaseWorkspacePage({
       caseId={caseDetail.id}
       initialMessages={caseDetail.messages}
       patient={caseDetail.patient}
+      userDisplayName={profile.first_name?.trim() || "Pediatra"}
     />
   )
 }
