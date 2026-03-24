@@ -28,11 +28,14 @@ export type CaseDetail = {
   id: string
   user_phone: string
   status: "active" | "closed"
+  origin: "dashboard" | "whatsapp"
   started_at: string
   ended_at: string | null
   patient_id: string | null
   awaiting_intent: boolean
   awaiting_patient_choice: boolean
+  pending_action: string | null
+  dashboard_chat_context_summary: string | null
   patient: CasePatientDetail | null
   messages: CaseMessage[]
 }
@@ -62,11 +65,14 @@ export async function getCaseById(
       id,
       user_phone,
       status,
+      origin,
       started_at,
       ended_at,
       patient_id,
       awaiting_intent,
       awaiting_patient_choice,
+      pending_action,
+      dashboard_chat_context_summary,
       patient:patients(
         id,
         name,
