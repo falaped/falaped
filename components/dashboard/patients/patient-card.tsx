@@ -5,6 +5,7 @@ import { ChevronRightIcon, PhoneIcon, UserIcon } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { formatDate, formatBrazilianPhone } from "@/lib/formatters"
 import type { Patient } from "@/modules/patients/types"
+import { Button } from "@/components/ui/button"
 
 export function PatientCard({ patient }: { patient: Patient }) {
   return (
@@ -53,6 +54,14 @@ export function PatientCard({ patient }: { patient: Patient }) {
           </a>
         </p>
       )}
+
+      <div className="mt-3">
+        <Button asChild size="sm" variant="outline" className="w-full">
+          <Link href={`/dashboard/cases/select-patient?patientId=${patient.id}`}>
+            Abrir novo caso
+          </Link>
+        </Button>
+      </div>
     </div>
   )
 }

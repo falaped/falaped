@@ -48,6 +48,7 @@ const navMain = [
     icon: MessagesSquareIcon,
     isActive: false,
     items: [
+      { title: "Novo caso", url: "/dashboard/cases/select-patient" },
       { title: "Casos", url: "/dashboard/cases" },
       { title: "Discussões", url: "/dashboard/discussions" },
       { title: "Pacientes", url: "/dashboard/patients" },
