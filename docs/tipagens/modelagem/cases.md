@@ -20,6 +20,11 @@ Casos de conversa por usuário (telefone); um caso ativo por vez para getActiveC
 | awaiting_patient_choice | boolean | NOT NULL | false | Aguardando escolha do médico: criar/associar paciente ou pular (ao finalizar) |
 | patient_registration_state | jsonb | NULL | — | Progresso do cadastro guiado ou fluxo ao finalizar: { step, collected } |
 | profile_id | uuid | NULL | — | Perfil do médico (auth); escopo do caso. FK → profiles.id |
+| origin | text | NOT NULL | 'whatsapp' | Origem do caso. Check: `dashboard`, `whatsapp` |
+| source | case_source | NOT NULL | 'whatsapp' | Enum de origem do caso (`dashboard`, `whatsapp`) |
+| dashboard_chat_context_summary | text | NULL | — | Resumo rolante de contexto do workspace para preservar histórico longo |
+| context_summary | text | NULL | — | Campo de resumo contextual legado/auxiliar |
+| pending_action | text | NULL | — | Ação crítica pendente aguardando confirmação (ex.: `close_case`) |
 
 ## Chaves
 
