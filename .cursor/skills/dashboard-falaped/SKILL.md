@@ -30,12 +30,16 @@ lib/
 modules/
   supabase/get-authenticated-user.ts   # getAuthenticatedUser – profile + authenticatedUser
   dashboard-assistant/
-    orchestrator/process-turn.ts       # Main orchestration: detect intent/plan, queue (assistant_turn_queue), dispatch de handler e bloqueio por confirmação pendente
-    intent/detect-intent-and-plan.ts   # Decomposição multi-intent (LLM + fallback), regras de bloqueio e montagem de passos
+    planning/                          # Action planning layer (plan → queue → dispatch)
+      turn-action-types.ts             # TurnAction / TurnActionPlan types, order + confirmation tables
+      extract-actions-by-llm.ts        # LLM call (Groq) that extracts ordered actions from user message
+      plan-assistant-turn-actions.ts   # Main planner: LLM actions + anthropometric/alert rules → ordered TurnActionPlan
+    orchestrator/process-turn.ts       # Executes pipeline: detect plan, build queue, dispatch handlers, pause on confirmation
+    intent/detect-intent-and-plan.ts   # Thin adapter: delegates to planner, maps TurnAction[] → PipelineStep[] / DetectedTurnPlan
     router/dispatch.ts                 # Route orchestrator (dispatch por intent/step)
     handlers/                          # Handlers por intent (business/ai separados), mantendo contrato RouteResult
     pipeline/assistant-turn-queue.ts   # Parse/build/advance da fila sequencial em JSONB
-    pipeline/pipeline-policy.ts        # Ordem canônica dos passos + regras de confirmação/auto-continue
+    pipeline/pipeline-policy.ts        # Ordem canônica dos passos + regras de confirmação (execution layer)
     route-case-assistant-turn.ts       # Motor legado reutilizado por handlers enquanto a migração incremental é concluída
     assistant-model-message.ts        # JSON do assistente → texto para contexto do modelo
   patients/, cases/, case-messages/,

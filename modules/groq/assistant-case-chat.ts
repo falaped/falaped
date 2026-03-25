@@ -317,16 +317,24 @@ export async function generateCaseClinicalSummary(
 export async function generateGuardianQuestionSuggestions(input: {
   clinicalThreadText: string
   conversationSummary: string | null
+  /** Concordância gramatical (ele/ela/a criança) e primeiro nome quando disponível. */
+  patientGrammarHint?: string | null
 }): Promise<string> {
+  const grammarBlock =
+    input.patientGrammarHint && input.patientGrammarHint.trim().length > 0
+      ? `\nRegra obrigatória de linguagem: ${input.patientGrammarHint.trim()}`
+      : ""
+
   const systemPrompt = `Você sugere perguntas em PT-BR que o pediatra pode fazer ao responsável pela criança (linguagem acessível, respeitosa).
 Gere exatamente 4 itens em formato de lista com traço (- ), alinhados ao caso descrito (puericultura, ganho de peso, amamentação, sintomas respiratórios, etc.).
 Evite lista genérica de gripe se o caso for recém-nascido ou ganho de peso, e vice-versa.
-Sem diagnósticos definitivos; apenas perguntas de esclarecimento clínico.
+Sem diagnósticos definitivos; apenas perguntas de esclarecimento clínico.${grammarBlock}
 Responda APENAS em JSON válido: {"reply":"texto com os traços"}`
 
   const userPrompt = JSON.stringify({
     conversationSummary: input.conversationSummary,
     caseNotes: input.clinicalThreadText,
+    patientGrammarHint: input.patientGrammarHint ?? null,
   })
 
   const completion = await groq.chat.completions.create({

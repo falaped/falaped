@@ -14,6 +14,7 @@ import {
   PlayIcon,
   SendIcon,
   StethoscopeIcon,
+  TriangleAlertIcon,
   XCircleIcon,
   XIcon,
 } from "lucide-react"
@@ -64,6 +65,7 @@ type AssistantPayload = {
   content: string
   structuredClinicalNote?: string
   showAlertCompact?: boolean
+  clinicalAlertItems?: Array<{ id: string; title: string; detail: string }>
   actions?: Array<{
     id:
     | "confirm_close_case"
@@ -98,6 +100,58 @@ type AssistantPayload = {
 }
 
 /** Legacy assistant payloads: content was a stub; body lived in structuredClinicalNote. */
+function ClinicalAlertCallout({
+  items,
+}: {
+  items?: Array<{ id: string; title: string; detail: string }>
+}) {
+  const hasStructuredItems = Boolean(items && items.length > 0)
+
+  return (
+    <div
+      role="status"
+      aria-live="polite"
+      className={cn(
+        "mt-3 flex gap-3 rounded-lg border border-border bg-card p-4 shadow-xs",
+        "ring-1 ring-border/50",
+      )}
+    >
+      <div
+        className="w-1 shrink-0 rounded-full bg-primary"
+        aria-hidden
+      />
+      <div className="min-w-0 flex-1 space-y-3">
+        <div className="flex gap-2.5">
+          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-primary/10">
+            <TriangleAlertIcon className="h-4 w-4 text-primary" aria-hidden />
+          </div>
+          <div className="min-w-0 flex-1 space-y-1">
+            <p className="text-sm font-semibold leading-tight text-foreground">Alerta clínico</p>
+            <p className="text-xs leading-relaxed text-muted-foreground">
+              {hasStructuredItems
+                ? "O assistente identificou os seguintes pontos no texto que você enviou. Use como lembrete na conduta e antes de encerrar o caso."
+                : "Foi detectado contexto de alerta neste turno. Reavalie evolução, conduta e critérios de retorno antes de fechar o atendimento."}
+            </p>
+          </div>
+        </div>
+        {hasStructuredItems ? (
+          <ul className="space-y-3 border-t border-border pt-3">
+            {items!.map((item) => (
+              <li key={item.id} className="text-sm leading-relaxed">
+                <span className="font-medium text-foreground">{item.title}</span>
+                <span className="text-muted-foreground"> — {item.detail}</span>
+              </li>
+            ))}
+          </ul>
+        ) : null}
+        <p className="text-[11px] leading-snug text-muted-foreground">
+          Sugestão automática com base no texto; não substitui julgamento clínico.
+        </p>
+      </div>
+    </div>
+  )
+}
+
 function mergeLegacyAssistantDisplay(payload: AssistantPayload): string {
   const main = payload.content.trim()
   const note = payload.structuredClinicalNote?.trim()
@@ -119,10 +173,11 @@ function parseAssistantPayload(content: string): AssistantPayload | null {
 }
 
 /**
- * True when the latest assistant message shows confirm/cancel actions and the user has not
- * yet completed a real reply (optimistic in-flight messages are ignored).
+ * True when any assistant message **after the last real user turn** still shows confirm/cancel
+ * actions that were not followed by a user reply (handles multi-bubble assistant responses).
  */
 function getAwaitingPendingActionConfirmation(messages: WorkspaceMessage[]): boolean {
+  const resolvedIds = getResolvedAssistantActionMessageIds(messages)
   for (let i = messages.length - 1; i >= 0; i--) {
     const msg = messages[i]
     if (msg.role === "user") {
@@ -136,9 +191,9 @@ function getAwaitingPendingActionConfirmation(messages: WorkspaceMessage[]): boo
         payload.actions &&
         payload.actions.length > 0
       ) {
-        return true
+        return !resolvedIds.has(msg.id)
       }
-      return false
+      continue
     }
   }
   return false
@@ -165,15 +220,22 @@ function getResolvedAssistantActionMessageIds(messages: WorkspaceMessage[]): Set
   return resolvedIds
 }
 
+/** Scroll/highlight target for pending UI: walk trailing assistants after the last real user message. */
 function getLatestBlockedAssistantMessageId(messages: WorkspaceMessage[]): string | null {
   for (let i = messages.length - 1; i >= 0; i -= 1) {
     const message = messages[i]
+    if (message.role === "user") {
+      if (message.id.startsWith("optimistic-user-")) continue
+      break
+    }
     if (message.role !== "assistant") continue
     const payload = parseAssistantPayload(message.content)
     if (payload?.blockedAssistantMessageId) {
       return payload.blockedAssistantMessageId
     }
-    return null
+    if (payload?.type === "assistant_reply" && payload.actions && payload.actions.length > 0) {
+      return message.id
+    }
   }
   return null
 }
@@ -376,14 +438,7 @@ function ThreadBubble({
               </p>
 
               {payload.showAlertCompact ? (
-                <details className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-sm">
-                  <summary className="cursor-pointer font-medium text-amber-800">
-                    Ver alerta clínico
-                  </summary>
-                  <p className="mt-2 text-amber-900">
-                    Sinal de alerta clínico detectado. Reavalie evolução e conduta antes de fechar o atendimento.
-                  </p>
-                </details>
+                <ClinicalAlertCallout items={payload.clinicalAlertItems} />
               ) : null}
 
               {payload.type === "assistant_report_file" && payload.reportId ? (
@@ -616,12 +671,22 @@ export function NewCaseWorkspace({
           result.userMessage,
         ])
 
-        await delayMs(ASSISTANT_POST_RESPONSE_DELAY_MS)
+        const assistantSegments =
+          result.assistantMessages.length > 0
+            ? result.assistantMessages
+            : [result.assistantMessage]
 
-        setMessages((previous) => [...previous, result.assistantMessage])
-        const assistantPayload = parseAssistantPayload(result.assistantMessage.content)
-        if (assistantPayload?.blockedAssistantMessageId) {
-          setHighlightedMessageId(assistantPayload.blockedAssistantMessageId)
+        for (let segmentIndex = 0; segmentIndex < assistantSegments.length; segmentIndex++) {
+          await delayMs(ASSISTANT_POST_RESPONSE_DELAY_MS)
+          const segment = assistantSegments[segmentIndex]!
+          setMessages((previous) => [...previous, segment])
+        }
+
+        const lastAssistantPayload = parseAssistantPayload(
+          assistantSegments[assistantSegments.length - 1]!.content,
+        )
+        if (lastAssistantPayload?.blockedAssistantMessageId) {
+          setHighlightedMessageId(lastAssistantPayload.blockedAssistantMessageId)
         }
         setIsAssistantResponding(false)
 

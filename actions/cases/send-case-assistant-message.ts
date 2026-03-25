@@ -11,7 +11,10 @@ import { getAuthenticatedUser } from "@/modules/supabase/get-authenticated-user"
 import { getCaseRowForProfile } from "@/modules/cases/get-case-row-for-profile"
 import { getCaseById } from "@/modules/cases/get-case-by-id"
 import { listCaseMessagesByCaseId } from "@/modules/case-messages/list-case-messages-by-case-id"
-import { insertCaseMessage } from "@/modules/case-messages/insert-case-message"
+import {
+  insertCaseMessage,
+  type InsertedCaseMessage,
+} from "@/modules/case-messages/insert-case-message"
 import { updateCasePendingAction } from "@/modules/cases/update-case-pending-action"
 import { updateCaseStatusAction } from "@/actions/cases/update-case-status"
 import { generateCaseReportAction } from "@/actions/cases/generate-case-report"
@@ -47,6 +50,12 @@ type AssistantStoredData = {
   status: "confirmado" | "pendente_de_confirmacao"
 }
 
+type AssistantClinicalAlertItem = {
+  id: string
+  title: string
+  detail: string
+}
+
 type AssistantPayload = {
   type: "assistant_reply" | "assistant_report_file"
   title?: string
@@ -54,6 +63,7 @@ type AssistantPayload = {
   /** @deprecated Legacy payloads only; new replies use full text in `content`. */
   structuredClinicalNote?: string
   showAlertCompact?: boolean
+  clinicalAlertItems?: AssistantClinicalAlertItem[]
   actions?: Array<{ id: AssistantActionId; label: string }>
   reportId?: string
   reportFileName?: string
@@ -131,6 +141,33 @@ function parseMetricToNumber(value: string | null | undefined): number | null {
   const match = normalized.match(/(\d{1,3}(?:\.\d+)?)/)
   if (!match) return null
   return Number(match[1])
+}
+
+function buildAnthropometricPatientUpdateFromStoredData(
+  items: Array<{ section: string; label: string; value: string; status: string }>,
+): UpdatePatientPayload {
+  const out: UpdatePatientPayload = {}
+  for (const item of items) {
+    if (item.section !== "DADOS_ANTROPOMETRICOS" || item.status !== "confirmado") {
+      continue
+    }
+    const label = item.label
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .toLowerCase()
+    const match = item.value.replace(",", ".").match(/(\d+(?:\.\d+)?)/)
+    if (!match) continue
+    const num = Number(match[1])
+    if (!Number.isFinite(num)) continue
+    if (label === "peso") {
+      out.weight = num.toFixed(3).replace(/\.?0+$/, "")
+    }
+    if (label.includes("comprimento") && label.includes("altura")) {
+      const cm = num <= 3.5 ? num * 100 : num
+      out.height = cm.toFixed(1).replace(/\.0$/, "")
+    }
+  }
+  return out
 }
 
 function truncateConversationWindow(messages: Array<{ role: "user" | "assistant"; content: string }>): {
@@ -270,7 +307,10 @@ export type SendCaseAssistantMessageActionResult =
   | {
     ok: true
     userMessage: { id: string; role: "user"; content: string; created_at: string }
-    assistantMessage: { id: string; role: "assistant"; content: string; created_at: string }
+    /** Last assistant message (same as the last entry of `assistantMessages`). */
+    assistantMessage: InsertedCaseMessage
+    /** All assistant segments produced in this request (chained pipeline). */
+    assistantMessages: InsertedCaseMessage[]
     reportId?: string
   }
   | { ok: false; error: string }
@@ -377,154 +417,204 @@ export async function sendCaseAssistantMessageAction(
         : undefined,
       turnQueue: caseRow.assistant_turn_queue,
     })
-    const routed = processedTurn.routed
+    const pipelineResults = processedTurn.pipelineResults
 
     let reportId: string | undefined
+    let reportGeneratedAtSegmentIndex: number | null = null
     const reportHasMinimumData = hasMinimumConversationForReport(normalizedMessages)
 
-    if (routed.action === "confirm_close_case") {
-      await updateCasePendingAction(supabase, caseId, profile.id, null)
-      const closed = await updateCaseStatusAction(caseId, "closed")
-      if (!closed.ok) return { ok: false, error: closed.error }
-    }
+    for (let segmentIndex = 0; segmentIndex < pipelineResults.length; segmentIndex++) {
+      const routed = pipelineResults[segmentIndex]
+      if (routed.action === "confirm_close_case") {
+        await updateCasePendingAction(supabase, caseId, profile.id, null)
+        const closed = await updateCaseStatusAction(caseId, "closed")
+        if (!closed.ok) return { ok: false, error: closed.error }
+      }
 
-    if (routed.action === "confirm_generate_report") {
-      if (!reportHasMinimumData) {
-        return {
-          ok: false,
-          error:
-            "É preciso registrar mais informações clínicas neste caso antes de gerar o relatório. Continue o atendimento e tente novamente.",
+      if (routed.action === "confirm_generate_report") {
+        if (!reportHasMinimumData) {
+          return {
+            ok: false,
+            error:
+              "É preciso registrar mais informações clínicas neste caso antes de gerar o relatório. Continue o atendimento e tente novamente.",
+          }
+        }
+        const generated = await generateCaseReportAction(caseId)
+        if (!generated.ok) return { ok: false, error: generated.error }
+        reportId = generated.reportId
+        reportGeneratedAtSegmentIndex = segmentIndex
+      }
+
+      if (routed.action === "confirm_generate_medical_certificate") {
+        // Placeholder for future certificate generation flow confirmation.
+      }
+      if (routed.action === "confirm_generate_prescription") {
+        // Placeholder for future prescription generation flow confirmation.
+      }
+
+      if (routed.action === "confirm_update_patient_profile") {
+        if (caseDetail?.patient?.id && routed.patientProfileUpdatePayload) {
+          await updatePatient(
+            supabase,
+            caseDetail.patient.id,
+            profile.id,
+            routed.patientProfileUpdatePayload,
+          )
         }
       }
-      const generated = await generateCaseReportAction(caseId)
-      if (!generated.ok) return { ok: false, error: generated.error }
-      reportId = generated.reportId
-    }
 
-    if (routed.action === "confirm_generate_medical_certificate") {
-      // Placeholder for future certificate generation flow confirmation.
-    }
-    if (routed.action === "confirm_generate_prescription") {
-      // Placeholder for future prescription generation flow confirmation.
-    }
-
-    let patientProfileUpdateSuccessReply: string | undefined
-    if (routed.action === "confirm_update_patient_profile") {
-      if (caseDetail?.patient?.id && routed.patientProfileUpdatePayload) {
-        await updatePatient(
-          supabase,
-          caseDetail.patient.id,
-          profile.id,
-          routed.patientProfileUpdatePayload,
+      if (routed.action === "confirm_anthropometric_reference" && caseDetail?.patient?.id) {
+        const anthropometricPayload = buildAnthropometricPatientUpdateFromStoredData(
+          routed.storedData,
         )
-        patientProfileUpdateSuccessReply = formatPatientProfileUpdateSuccessReply(
-          routed.patientProfileUpdatePayload,
-        )
+        if (anthropometricPayload.weight !== undefined || anthropometricPayload.height !== undefined) {
+          await updatePatient(supabase, caseDetail.patient.id, profile.id, anthropometricPayload)
+        }
       }
-    }
 
-    if (routed.action === "none") {
-      if (routed.intent === "CLOSE_CASE") {
+      if (routed.action === "none" && routed.intent === "CLOSE_CASE") {
         await updateCasePendingAction(supabase, caseId, profile.id, "close_case")
       }
     }
 
-    const pendingActionForButtons =
-      routed.intent === "CLOSE_CASE"
-        ? "close_case"
-        : routed.intent === "GENERATE_REPORT"
-          ? reportHasMinimumData
-            ? "generate_report"
-            : null
-          : routed.intent === "GENERATE_MEDICAL_CERTIFICATE"
-            ? "generate_medical_certificate"
-            : routed.intent === "GENERATE_PRESCRIPTION"
-              ? "generate_prescription"
-              : routed.intent === "REVIEW_PATIENT_PROFILE_UPDATE"
-                ? routed.showPatientProfileUpdateActions === true
-                  ? "review_patient_profile_update"
-                  : null
-              : routed.intent === "REVIEW_ANTHROPOMETRIC_REFERENCE"
-                ? "review_anthropometric_reference"
-                : routed.intent === "REVIEW_GUARDIAN_ALERT"
-                  ? "review_guardian_alert"
+    const insertedAssistantMessages: InsertedCaseMessage[] = []
+    let lastAssistantIdWithActions: string | null = null
+
+    for (let segmentIndex = 0; segmentIndex < pipelineResults.length; segmentIndex++) {
+      const routed = pipelineResults[segmentIndex]
+
+      const suppressReviewButtonsAfterConfirm =
+        routed.action === "confirm_anthropometric_reference" ||
+        routed.action === "keep_previous_anthropometric_reference" ||
+        routed.action === "confirm_update_patient_profile" ||
+        routed.action === "decline_update_patient_profile" ||
+        routed.action === "confirm_guardian_alert_storage" ||
+        routed.action === "decline_guardian_alert_storage" ||
+        routed.action === "confirm_close_case"
+
+      const pendingActionForButtons = suppressReviewButtonsAfterConfirm
+        ? null
+        : routed.intent === "CLOSE_CASE"
+          ? "close_case"
+          : routed.intent === "GENERATE_REPORT"
+            ? reportHasMinimumData
+              ? "generate_report"
               : null
+            : routed.intent === "GENERATE_MEDICAL_CERTIFICATE"
+              ? "generate_medical_certificate"
+              : routed.intent === "GENERATE_PRESCRIPTION"
+                ? "generate_prescription"
+                : routed.intent === "REVIEW_PATIENT_PROFILE_UPDATE"
+                  ? routed.showPatientProfileUpdateActions === true
+                    ? "review_patient_profile_update"
+                    : null
+                : routed.intent === "REVIEW_ANTHROPOMETRIC_REFERENCE"
+                  ? "review_anthropometric_reference"
+                  : routed.intent === "REVIEW_GUARDIAN_ALERT"
+                    ? "review_guardian_alert"
+                : null
 
-    const isReportInsufficientGate =
-      routed.intent === "GENERATE_REPORT" &&
-      routed.action === "none" &&
-      !reportHasMinimumData
+      const patientProfileUpdateSuccessReply =
+        routed.action === "confirm_update_patient_profile" &&
+          caseDetail?.patient?.id &&
+          routed.patientProfileUpdatePayload
+          ? formatPatientProfileUpdateSuccessReply(routed.patientProfileUpdatePayload)
+          : undefined
 
-    const assistantReplySanitized = stripAssistantUiLabelsFromReply(routed.reply)
-    const polishedAssistantReply =
-      patientProfileUpdateSuccessReply !== undefined
-        ? assistantReplySanitized
-        : await polishAssistantReplyForDisplay({
-            reply: assistantReplySanitized,
-            intent: routed.intent,
-            userMessage: content,
-          })
+      const isReportInsufficientGate =
+        routed.intent === "GENERATE_REPORT" &&
+        routed.action === "none" &&
+        !reportHasMinimumData
 
-    const replyContent =
-      patientProfileUpdateSuccessReply ??
-      (isReportInsufficientGate
-        ? "Ainda não há conteúdo clínico suficiente para gerar o relatório. Registre sintomas, exame e conduta para continuar."
-        : polishedAssistantReply)
-    const replyContentPrivacySafe = sanitizeAssistantReplyForPrivacy(replyContent)
+      const assistantReplySanitized = stripAssistantUiLabelsFromReply(routed.reply)
+      const polishedAssistantReply =
+        patientProfileUpdateSuccessReply !== undefined
+          ? assistantReplySanitized
+          : await polishAssistantReplyForDisplay({
+              reply: assistantReplySanitized,
+              intent: routed.intent,
+              userMessage: content,
+            })
 
-    const storedDataPayload =
-      routed.storedData.length > 0
-        ? {
-          collapsedByDefault: true,
-          items: routed.storedData.map(
-            (item): AssistantStoredData => ({
-              section: item.section,
-              label: item.label,
-              value: item.value,
-              status:
-                item.status === "confirmado"
-                  ? "confirmado"
-                  : "pendente_de_confirmacao",
-            }),
-          ),
-        }
+      const replyContent =
+        patientProfileUpdateSuccessReply ??
+        (isReportInsufficientGate
+          ? "Ainda não há conteúdo clínico suficiente para gerar o relatório. Registre sintomas, exame e conduta para continuar."
+          : polishedAssistantReply)
+      const replyContentPrivacySafe = sanitizeAssistantReplyForPrivacy(replyContent)
+
+      const storedDataPayload =
+        routed.storedData.length > 0
+          ? {
+            collapsedByDefault: true,
+            items: routed.storedData.map(
+              (item): AssistantStoredData => ({
+                section: item.section,
+                label: item.label,
+                value: item.value,
+                status:
+                  item.status === "confirmado"
+                    ? "confirmado"
+                    : "pendente_de_confirmacao",
+              }),
+            ),
+          }
+          : undefined
+
+      const useReportFilePayload =
+        reportId !== undefined && segmentIndex === reportGeneratedAtSegmentIndex
+
+      const actionButtons = pendingActionForButtons
+        ? buildAssistantActionsFromPendingAction(pendingActionForButtons)
         : undefined
 
-    const payload: AssistantPayload =
-      reportId
+      const payload: AssistantPayload = useReportFilePayload
         ? {
-          type: "assistant_report_file",
-          title: "Relatório disponível para download",
-          content:
-            "Relatório gerado com base nas informações registradas neste caso.",
-          reportId,
-          reportFileName: "relatorio-caso.pdf",
-        }
+            type: "assistant_report_file",
+            title: "Relatório disponível para download",
+            content:
+              "Relatório gerado com base nas informações registradas neste caso.",
+            reportId: reportId!,
+            reportFileName: "relatorio-caso.pdf",
+          }
         : {
-          type: "assistant_reply",
-          content: replyContentPrivacySafe,
-          showAlertCompact: routed.showAlert,
-          blockedAssistantMessageId: routed.blockedAssistantMessageId ?? undefined,
-          actions: pendingActionForButtons
-            ? buildAssistantActionsFromPendingAction(pendingActionForButtons)
-            : undefined,
-          storedData: storedDataPayload,
-        }
+            type: "assistant_reply",
+            content: replyContentPrivacySafe,
+            showAlertCompact: routed.showAlert,
+            clinicalAlertItems:
+              routed.showAlert && routed.clinicalAlertItems && routed.clinicalAlertItems.length > 0
+                ? routed.clinicalAlertItems
+                : undefined,
+            blockedAssistantMessageId:
+              actionButtons && actionButtons.length > 0
+                ? routed.blockedAssistantMessageId ?? undefined
+                : undefined,
+            actions: actionButtons,
+            storedData: storedDataPayload,
+          }
 
-    const assistantContent = serializeAssistantPayload(payload)
-    const insertedAssistantMessage = await insertCaseMessage(supabase, {
-      caseId,
-      role: "assistant",
-      content: assistantContent,
-    })
+      const assistantContent = serializeAssistantPayload(payload)
+      const insertedAssistantMessage = await insertCaseMessage(supabase, {
+        caseId,
+        role: "assistant",
+        content: assistantContent,
+      })
+      insertedAssistantMessages.push(insertedAssistantMessage)
+
+      if (
+        payload.type === "assistant_reply" &&
+        actionButtons &&
+        actionButtons.length > 0
+      ) {
+        lastAssistantIdWithActions = insertedAssistantMessage.id
+      }
+    }
 
     if (processedTurn.shouldPersistQueue) {
       const queueWithBlockedMessage =
         processedTurn.queue &&
-        payload.type === "assistant_reply" &&
-        payload.actions &&
-        payload.actions.length > 0
-          ? withBlockedAssistantMessageId(processedTurn.queue, insertedAssistantMessage.id)
+        lastAssistantIdWithActions
+          ? withBlockedAssistantMessageId(processedTurn.queue, lastAssistantIdWithActions)
           : processedTurn.queue
 
       await updateCaseAssistantTurnQueue(
@@ -538,6 +628,9 @@ export async function sendCaseAssistantMessageAction(
     revalidatePath("/dashboard/cases")
     revalidatePath(`/dashboard/cases/new/${caseId}`)
 
+    const lastAssistant =
+      insertedAssistantMessages[insertedAssistantMessages.length - 1]!
+
     return {
       ok: true,
       userMessage: {
@@ -546,12 +639,8 @@ export async function sendCaseAssistantMessageAction(
         content: insertedUserMessage.content,
         created_at: insertedUserMessage.created_at,
       },
-      assistantMessage: {
-        id: insertedAssistantMessage.id,
-        role: "assistant",
-        content: insertedAssistantMessage.content,
-        created_at: insertedAssistantMessage.created_at,
-      },
+      assistantMessage: lastAssistant,
+      assistantMessages: insertedAssistantMessages,
       reportId,
     }
   } catch (error) {

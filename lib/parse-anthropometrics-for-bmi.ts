@@ -33,8 +33,13 @@ function pickWeightKg(normalizedFlat: string): number | null {
     .filter((weight) => weight >= 0.3 && weight <= 180)
 
   if (values.length === 0) return null
-  // Prefer explicit "peso" label if present
-  const labeled = /\bpeso\s*[:]?\s*(\d+(?:\.\d+)?)\s*kg\b/i.exec(normalizedFlat)
+  // Prefer explicit "peso" / "peso atual" labels (dictation patterns)
+  const labeledAtual = /\bpeso\s+atual\s*[:]?\s*(\d+(?:\.\d+)?)\s*kg\b/i.exec(normalizedFlat)
+  if (labeledAtual) {
+    const fromLabel = Number(labeledAtual[1])
+    if (fromLabel >= 0.3 && fromLabel <= 180) return fromLabel
+  }
+  const labeled = /\bpeso(?:\s+atual)?\s*[:]?\s*(\d+(?:\.\d+)?)\s*kg\b/i.exec(normalizedFlat)
   if (labeled) {
     const fromLabel = Number(labeled[1])
     if (fromLabel >= 0.3 && fromLabel <= 180) return fromLabel
@@ -43,14 +48,42 @@ function pickWeightKg(normalizedFlat: string): number | null {
 }
 
 /**
- * Stature (cm) from a line: ignore everything after first PC:/PA: (perimeters on same line).
+ * Finds the index in the line where a PC (perímetro cefálico) segment begins,
+ * matching "PC:", "PC 35", "PC=50", "perímetro cefalico" variants.
+ * Returns -1 if no PC marker is found.
+ */
+function findPcCutoffIndex(lower: string): number {
+  const withColon = lower.search(/\bpc\s*[:=]/)
+  if (withColon >= 0) return withColon
+  const withDigit = lower.search(/\bpc\s+\d/)
+  if (withDigit >= 0) return withDigit
+  const full = lower.search(/\bperimetro\s+cefalico\b/)
+  if (full >= 0) return full
+  return -1
+}
+
+/**
+ * True when the line is exclusively about head circumference — starts with PC/perímetro
+ * and does NOT contain height keywords (comprimento/altura/estatura).
+ */
+function lineIsExclusivelyHeadCircumference(lower: string): boolean {
+  if (/\b(comprimento|altura|estatura)\b/.test(lower)) return false
+  return /^\s*pc\b/.test(lower) || /^\s*perimetro\s+cefalico\b/.test(lower)
+}
+
+/**
+ * Stature (cm) from a line: ignore everything after first PC/PA perimeter marker,
+ * and skip lines that are exclusively about head circumference.
  */
 function extractLengthCmFromLine(line: string): number | null {
   const trimmed = line.trim()
   if (!trimmed) return null
 
   const lower = normalizeAccentsLower(trimmed)
-  const idxPc = lower.search(/\bpc\s*:/)
+
+  if (lineIsExclusivelyHeadCircumference(lower)) return null
+
+  const idxPc = findPcCutoffIndex(lower)
   const idxPa = lower.search(/\bpa\s*:/)
   let cut = trimmed.length
   if (idxPc >= 0) cut = Math.min(cut, idxPc)
@@ -83,7 +116,10 @@ function pickHeightMeters(rawLines: string[], normalizedFlat: string): number | 
     return Math.max(...candidatesCm) / 100
   }
 
-  const stripped = normalizedFlat.replace(/\bpc\s*:\s*[^.\n]*?\b\d+(?:\.\d+)?\s*cm/gi, "")
+  const stripped = normalizedFlat
+    .replace(/\bpc\s*[:=,]?\s*\d+(?:\.\d+)?\s*cm\b/gi, "")
+    .replace(/\bperimetro\s+cefalico\s*[:=,]?\s*\d+(?:\.\d+)?\s*cm\b/gi, "")
+    .replace(/\b\d+(?:\.\d+)?\s*cm\s+(?:e\s+)?de\s+pc\b/gi, "")
   const stripped2 = stripped.replace(/\bpa\s*:\s*[^.\n]*?\b\d+(?:\.\d+)?\s*cm/gi, "")
   const fallbackMatches = [...stripped2.matchAll(/\b(\d+(?:\.\d+)?)\s*cm\b/gi)]
     .map((match) => Number(match[1]))
@@ -104,6 +140,40 @@ export function parseWeightHeightForBmi(raw: string): ParsedAnthropometrics {
 
   const weightKg = pickWeightKg(normalizedFlat)
   const heightM = pickHeightMeters(rawLines, normalizedFlat)
+
+  return { weightKg, heightM }
+}
+
+/**
+ * Removes stature/weight parsed from neonatal history so they are not compared to current visit metrics
+ * (e.g. birth length 50 cm vs toddler height 82 cm).
+ */
+export function stripNeonatalBirthMeasuresFromParsedAnthropometrics(
+  raw: string,
+  parsed: ParsedAnthropometrics,
+): ParsedAnthropometrics {
+  const n = normalizeDecimalCommas(normalizeAccentsLower(raw))
+  const neonatalNarrative =
+    /\bpeso\s+de\s+nascimento\b/.test(n) ||
+    /\bpeso\s+ao\s+nascer\b/.test(n) ||
+    /\bcomprimento\s+(ao\s+)?nascer\b/.test(n) ||
+    /\bcomprimento\s+de\s+nascimento\b/.test(n) ||
+    (/\b(gestacao|gestação)\b/.test(n) &&
+      /\b(semanas?|\d+\s*sem)\b/.test(n) &&
+      /\b(parto|nascimento)\b/.test(n))
+
+  let { weightKg, heightM } = parsed
+
+  if (neonatalNarrative && heightM != null) {
+    const cm = heightM * 100
+    if (cm >= 40 && cm <= 62) heightM = null
+  }
+
+  const birthWeightLabel =
+    /\bpeso\s+de\s+nascimento\b/.test(n) || /\bpeso\s+ao\s+nascer\b/.test(n)
+  if (neonatalNarrative && birthWeightLabel && weightKg != null) {
+    if (weightKg >= 0.5 && weightKg <= 5.0) weightKg = null
+  }
 
   return { weightKg, heightM }
 }

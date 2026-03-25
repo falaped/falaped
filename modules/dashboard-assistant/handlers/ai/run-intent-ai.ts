@@ -1,3 +1,4 @@
+import type { DashboardAssistantIntent } from "@/modules/dashboard-assistant/contracts/assistant-types"
 import type { DashboardAssistantTurnContext } from "@/modules/dashboard-assistant/contracts/turn-context"
 import type { RouteResult } from "@/modules/dashboard-assistant/contracts/route-result"
 import { executeLegacyIntent } from "@/modules/dashboard-assistant/handlers/legacy-intent-executor"
@@ -5,6 +6,7 @@ import { executeLegacyIntent } from "@/modules/dashboard-assistant/handlers/lega
 export async function runIntentAi(
   context: DashboardAssistantTurnContext,
   commandMessage: string,
+  dispatchedIntent: DashboardAssistantIntent,
 ): Promise<RouteResult> {
-  return executeLegacyIntent(context, commandMessage)
+  return executeLegacyIntent(context, commandMessage, dispatchedIntent)
 }

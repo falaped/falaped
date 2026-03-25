@@ -1,10 +1,12 @@
 import type { DashboardAssistantIntent } from "@/modules/dashboard-assistant/contracts/assistant-types"
 import type { DashboardAssistantTurnContext } from "@/modules/dashboard-assistant/contracts/turn-context"
 import type { PipelineStep } from "@/modules/dashboard-assistant/contracts/turn-queue"
-import { decomposeTurnIntentsByAi } from "@/modules/groq/decompose-turn-intents"
-import { getCurrentQueueStep } from "@/modules/dashboard-assistant/pipeline/assistant-turn-queue"
-import { orderPipelineSteps, requiresConfirmationForStep } from "@/modules/dashboard-assistant/pipeline/pipeline-policy"
-import { parseWeightHeightForBmi } from "@/lib/parse-anthropometrics-for-bmi"
+import {
+  getCurrentQueueStep,
+  parseAssistantTurnQueue,
+} from "@/modules/dashboard-assistant/pipeline/assistant-turn-queue"
+import { planAssistantTurnActions } from "@/modules/dashboard-assistant/planning/plan-assistant-turn-actions"
+import type { TurnAction } from "@/modules/dashboard-assistant/planning/turn-action-types"
 
 function normalizeText(value: string): string {
   return value
@@ -25,28 +27,19 @@ function isConfirmationOrCancellationMessage(userMessage: string): boolean {
     n.includes("manter valores anteriores") ||
     n.includes("manter dados anteriores") ||
     n.includes("nao armazenar alerta") ||
-    n.includes("não armazenar alerta")
+    n.includes("não armazenar alerta") ||
+    n.includes("salvar alerta para resumo e relatorio") ||
+    n.includes("salvar alerta")
   )
 }
 
-function buildCommandMessage(intent: DashboardAssistantIntent, originalInput: string): string {
-  if (intent === "CALCULATE_BMI") return originalInput
-  if (intent === "SUMMARY") return "/resumo"
-  if (intent === "SUGGEST_GUARDIAN_QUESTIONS") return "sugerir perguntas para o responsavel"
-  if (intent === "GENERATE_REPORT") return "gerar relatorio"
-  if (intent === "GENERATE_MEDICAL_CERTIFICATE") return "gerar atestado"
-  if (intent === "GENERATE_PRESCRIPTION") return "gerar receita"
-  if (intent === "CLOSE_CASE") return "encerrar caso"
-  return originalInput
-}
-
-function createPipelineStep(intent: DashboardAssistantIntent, originalInput: string): PipelineStep {
+function turnActionToPipelineStep(action: TurnAction): PipelineStep {
   return {
-    id: `${Date.now()}-${intent}`,
-    kind: intent,
-    originalInput,
-    commandMessage: buildCommandMessage(intent, originalInput),
-    requiresConfirmation: requiresConfirmationForStep(intent),
+    id: `${Date.now()}-${action.kind}`,
+    kind: action.kind,
+    originalInput: action.originalInput,
+    commandMessage: action.commandMessage,
+    requiresConfirmation: action.requiresConfirmation,
   }
 }
 
@@ -61,14 +54,15 @@ export type DetectedTurnPlan = {
 export async function detectIntentAndPlan(
   context: DashboardAssistantTurnContext,
 ): Promise<DetectedTurnPlan> {
-  const currentQueuedStep = getCurrentQueueStep(context.turnQueue ?? null)
+  const parsedQueue = parseAssistantTurnQueue(context.turnQueue ?? null)
+  const currentQueuedStep = getCurrentQueueStep(parsedQueue)
   if (
     currentQueuedStep &&
     currentQueuedStep.requiresConfirmation &&
     !isConfirmationOrCancellationMessage(context.userMessage)
   ) {
     return {
-      source: context.turnQueue?.source === "llm" ? "llm" : "heuristic",
+      source: parsedQueue?.source === "llm" ? "llm" : "heuristic",
       intents: [currentQueuedStep.kind],
       steps: [currentQueuedStep],
       shouldBlockForPendingQueue: true,
@@ -76,34 +70,20 @@ export async function detectIntentAndPlan(
     }
   }
 
-  const aiDecomposition = await decomposeTurnIntentsByAi({
-    userMessage: context.userMessage,
-  })
+  const plan = await planAssistantTurnActions(context)
 
-  const intents = Array.from(new Set(aiDecomposition.intents)) as DashboardAssistantIntent[]
-  const parsedAnthropometrics = parseWeightHeightForBmi(context.userMessage)
-  const hasAnthropometricInput =
-    parsedAnthropometrics.weightKg != null || parsedAnthropometrics.heightM != null
-  const differsFromCurrentReference =
-    (parsedAnthropometrics.weightKg != null &&
-      context.patientMetrics?.weight != null &&
-      Math.abs(parsedAnthropometrics.weightKg - context.patientMetrics.weight) >= 0.05) ||
-    (parsedAnthropometrics.heightM != null &&
-      context.patientMetrics?.height != null &&
-      Math.abs(parsedAnthropometrics.heightM - context.patientMetrics.height) >= 0.005)
+  const intents = plan.actions.map((action) => action.kind as DashboardAssistantIntent)
+  const steps = plan.actions.map(turnActionToPipelineStep)
 
-  if (
-    hasAnthropometricInput &&
-    differsFromCurrentReference &&
-    !intents.includes("REVIEW_ANTHROPOMETRIC_REFERENCE")
-  ) {
-    intents.unshift("REVIEW_ANTHROPOMETRIC_REFERENCE")
-  }
-
-  const steps = orderPipelineSteps(intents.map((intent) => createPipelineStep(intent, context.userMessage)))
+  const source: "llm" | "heuristic" | "mixed" =
+    plan.source === "llm"
+      ? "llm"
+      : plan.source === "rule"
+        ? "mixed"
+        : "heuristic"
 
   return {
-    source: aiDecomposition.source,
+    source,
     intents,
     steps,
     shouldBlockForPendingQueue: false,

@@ -19,8 +19,11 @@ export type AssistantAction =
   | "confirm_generate_medical_certificate"
   | "confirm_generate_prescription"
   | "confirm_update_patient_profile"
+  | "decline_update_patient_profile"
   | "confirm_anthropometric_reference"
+  | "keep_previous_anthropometric_reference"
   | "confirm_guardian_alert_storage"
+  | "decline_guardian_alert_storage"
 
 export type StoredDataItem = {
   section:

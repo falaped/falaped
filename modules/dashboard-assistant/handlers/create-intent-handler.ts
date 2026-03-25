@@ -6,6 +6,6 @@ import { runIntentAi } from "@/modules/dashboard-assistant/handlers/ai/run-inten
 export function createIntentHandler(intent: DashboardAssistantIntent): AssistantIntentHandler {
   return async (context) => {
     const command = buildIntentCommand(intent, context)
-    return runIntentAi(context, command)
+    return runIntentAi(context, command, intent)
   }
 }

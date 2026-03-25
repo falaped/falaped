@@ -2,6 +2,7 @@ import type { CaseMessage } from "@/modules/cases/get-case-by-id"
 import {
   computePediatricBmi,
   parseWeightHeightForBmi,
+  stripNeonatalBirthMeasuresFromParsedAnthropometrics,
 } from "@/lib/parse-anthropometrics-for-bmi"
 import { stripImcCalculationTemplatePrefix } from "@/lib/strip-imc-calculation-template-prefix"
 import { assistantMessageToModelText } from "@/modules/dashboard-assistant/assistant-model-message"
@@ -12,6 +13,11 @@ import {
   generateGuardianQuestionSuggestions,
   type ClinicalSyncMode,
 } from "@/modules/groq/assistant-case-chat"
+import {
+  buildClinicalAlertItemsFromUserMessage,
+  hasExplicitGuardianQuotedOrShoutSignal,
+} from "@/modules/dashboard-assistant/clinical-alert-from-user-message"
+import type { ClinicalAlertItem } from "@/modules/dashboard-assistant/contracts/route-result"
 
 export type DashboardAssistantIntent =
   | "CHAT"
@@ -34,8 +40,11 @@ export type AssistantAction =
   | "confirm_generate_medical_certificate"
   | "confirm_generate_prescription"
   | "confirm_update_patient_profile"
+  | "decline_update_patient_profile"
   | "confirm_anthropometric_reference"
+  | "keep_previous_anthropometric_reference"
   | "confirm_guardian_alert_storage"
+  | "decline_guardian_alert_storage"
 
 export type StoredDataItem = {
   section:
@@ -54,6 +63,7 @@ export type RoutedAssistantTurn = {
   action: AssistantAction
   showStructuredCard: boolean
   showAlert: boolean
+  clinicalAlertItems?: ClinicalAlertItem[]
   storedData: StoredDataItem[]
   patientProfileUpdatePayload?: PatientProfileUpdatePayload
   /** When true, UI shows confirm/decline for profile update (prompt only; not after confirm/decline). */
@@ -107,6 +117,8 @@ type AssistantPayloadLite = {
   storedData?: {
     items: AssistantStoredDataPayloadItem[]
   }
+  actions?: Array<{ id?: string }>
+  clinicalAlertItems?: unknown[]
 }
 
 function normalizeText(value: string): string {
@@ -213,19 +225,58 @@ function messageRequestsBmi(userMessage: string): boolean {
   )
 }
 
-function hasExplicitGuardianAlertSignal(message: string): boolean {
-  const content = message.trim()
-  const normalized = normalizeText(content)
-  const hasPriorityTerms =
-    /\bqueixa da mae\b|\bqueixa do responsavel\b|\bengasg|\bnao mama\b|\brecusa\b|\bfebre\b|\bletarg/.test(
-      normalized,
-    )
+function isGuardianAlertConfirmOrDeclineMessage(text: string): boolean {
+  const n = normalizeText(text.trim())
+  return (
+    n.includes("salvar alerta para resumo e relatorio") ||
+    n.includes("confirmar armazenamento de alerta") ||
+    n.includes("nao armazenar alerta") ||
+    n.includes("não armazenar alerta")
+  )
+}
 
-  const lettersOnly = content.replace(/[^A-Za-zÀ-ÿ]/g, "")
-  const upperOnly = lettersOnly.replace(/[^A-ZÀ-Ý]/g, "")
-  const upperRatio = lettersOnly.length > 0 ? upperOnly.length / lettersOnly.length : 0
-  const hasShoutSignal = upperRatio >= 0.55 && lettersOnly.length >= 12
-  return hasPriorityTerms || hasShoutSignal
+function assistantPayloadPromptedAlertStorage(rawContent: string): boolean {
+  const raw = rawContent.trim()
+  if (!raw.startsWith(ASSISTANT_PAYLOAD_PREFIX)) return false
+  try {
+    const parsed = JSON.parse(raw.slice(ASSISTANT_PAYLOAD_PREFIX.length)) as AssistantPayloadLite & {
+      showAlertCompact?: boolean
+    }
+    if (parsed.actions?.some((action) => action.id === "confirm_guardian_alert_storage")) {
+      return true
+    }
+    if (Array.isArray(parsed.clinicalAlertItems) && parsed.clinicalAlertItems.length > 0) {
+      return true
+    }
+    const main = normalizeText(parsed.content ?? "")
+    if (main.includes("armazenar") && main.includes("alerta")) return true
+    return parsed.showAlertCompact === true
+  } catch {
+    return false
+  }
+}
+
+/**
+ * User turn that led to the last assistant prompt asking whether to store a clinical priority alert.
+ */
+function findLatestUserTurnTextForAlertSave(messages: CaseMessage[]): string | null {
+  for (let assistantIndex = messages.length - 1; assistantIndex >= 0; assistantIndex -= 1) {
+    const assistantMessage = messages[assistantIndex]
+    if (assistantMessage.role !== "assistant") continue
+    if (!assistantPayloadPromptedAlertStorage(assistantMessage.content)) continue
+
+    for (let userIndex = assistantIndex - 1; userIndex >= 0; userIndex -= 1) {
+      const userMessage = messages[userIndex]
+      if (userMessage.role !== "user") continue
+      const body = userMessage.content.trim()
+      if (body.length < 8) continue
+      if (isCommandLikeMessage(body)) continue
+      if (isGuardianAlertConfirmOrDeclineMessage(body)) continue
+      return body.replace(/\s+/g, " ").trim()
+    }
+    return null
+  }
+  return null
 }
 
 function replyStartsWithBmiBlock(reply: string): boolean {
@@ -315,6 +366,26 @@ function areNearDuplicateReplies(candidate: string, previous: string): boolean {
   return false
 }
 
+function hasIdenticalConfirmedClinicalAlertInThread(
+  messages: CaseMessage[],
+  candidateValue: string,
+): boolean {
+  const target = normalizeForNearDuplicate(candidateValue)
+  if (!target || target.length < 12) return false
+
+  for (let messageIndex = messages.length - 1; messageIndex >= 0; messageIndex -= 1) {
+    const entry = messages[messageIndex]
+    if (entry.role !== "assistant") continue
+    const payload = parseAssistantPayloadLite(entry.content)
+    const items = payload?.storedData?.items ?? []
+    for (const item of items) {
+      if (item.section !== "ALERTAS_CLINICOS" || item.status !== "confirmado") continue
+      if (normalizeForNearDuplicate(item.value) === target) return true
+    }
+  }
+  return false
+}
+
 function isReplyEchoingUserMessage(reply: string, userMessage: string): boolean {
   const replyNormalized = normalizeForNearDuplicate(reply)
   const userNormalized = normalizeForNearDuplicate(userMessage)
@@ -352,8 +423,23 @@ function isLikelyDictationMessage(userMessage: string): boolean {
 
 function detectAcknowledgementTopic(
   userMessage: string,
-): "anamnese" | "exame" | "hipoteses" | "conduta" | "orientacoes" | "registro" {
+):
+  | "anamnese"
+  | "exame"
+  | "exames_lab"
+  | "hipoteses"
+  | "conduta"
+  | "orientacoes"
+  | "registro" {
   const n = normalizeText(userMessage)
+
+  if (
+    /\b(laboratorial|hemograma|hemogram|leucocit|neutrofil|pcr\b|gasometria|exames?\s+labor|urina\s+tipo|urocultura)\b/.test(
+      n,
+    )
+  ) {
+    return "exames_lab"
+  }
 
   if (/\bhipotese\b|\bhipoteses\b|\bdiagnostic/.test(n)) return "hipoteses"
   if (
@@ -387,7 +473,14 @@ function detectAcknowledgementTopic(
 }
 
 function topicAcknowledgementTemplates(
-  topic: "anamnese" | "exame" | "hipoteses" | "conduta" | "orientacoes" | "registro",
+  topic:
+    | "anamnese"
+    | "exame"
+    | "exames_lab"
+    | "hipoteses"
+    | "conduta"
+    | "orientacoes"
+    | "registro",
 ): string[] {
   if (topic === "anamnese") {
     return [
@@ -401,6 +494,13 @@ function topicAcknowledgementTemplates(
       "Exame físico registrado no caso.",
       "Perfeito, achados de exame anotados. Pode seguir com hipóteses e conduta.",
       "Exame documentado com sucesso. Se quiser, eu organizo um resumo parcial.",
+    ]
+  }
+  if (topic === "exames_lab") {
+    return [
+      "Exames laboratoriais registrados no caso.",
+      "Resultados de laboratório anotados. Quando quiser, posso ajudar a amarrar com a conduta.",
+      "Registro laboratorial salvo no prontuário deste atendimento.",
     ]
   }
   if (topic === "hipoteses") {
@@ -471,7 +571,9 @@ function parseNumericValue(labelValue: string): number | null {
 
 function parseHeadCircumferenceCmFromMessage(userMessage: string): number | null {
   const normalized = normalizeText(userMessage).replace(",", ".")
-  const directMatch = normalized.match(/\b(pc|perimetro cefalico)\s*[:=]?\s*(\d+(?:\.\d+)?)\s*cm?\b/i)
+  const directMatch = normalized.match(
+    /\b(pc|perimetro\s+cefalico(?:\s+atual)?)\s*[:=]?\s*(\d+(?:\.\d+)?)\s*cm?\b/i,
+  )
   if (directMatch) {
     const value = Number(directMatch[2])
     if (Number.isFinite(value) && value >= 20 && value <= 70) return value
@@ -580,10 +682,13 @@ function detectPatientProfileUpdateCandidate(params: {
   const updates: PatientProfileUpdatePayload = {}
   const summaryLines: string[] = []
 
-  const parsedAnthro = parseWeightHeightForBmi(params.userMessage)
+  const parsedAnthro = stripNeonatalBirthMeasuresFromParsedAnthropometrics(
+    params.userMessage,
+    parseWeightHeightForBmi(params.userMessage),
+  )
   if (parsedAnthro.weightKg != null) {
     const nextWeight = parsedAnthro.weightKg.toFixed(3).replace(/\.?0+$/, "")
-    const currentWeight = profile.weight ? Number(profile.weight.replace(",", ".")) : null
+    const currentWeight = profile.weight ? parseNumericValue(profile.weight) : null
     if (currentWeight == null || Math.abs(parsedAnthro.weightKg - currentWeight) >= 0.01) {
       updates.weight = nextWeight
       summaryLines.push(`Peso: ${nextWeight} kg`)
@@ -929,7 +1034,7 @@ function extractExplicitGuardianAlertsHint(messages: CaseMessage[]): string | nu
     if (isCommandLikeMessage(message.content)) continue
     const content = message.content.trim()
     if (content.length < 8) continue
-    if (!hasExplicitGuardianAlertSignal(content)) continue
+    if (!hasExplicitGuardianQuotedOrShoutSignal(content)) continue
 
     const singleLine = content.replace(/\s+/g, " ").trim()
     if (singleLine.length === 0) continue
@@ -1178,7 +1283,10 @@ function extractStoredData(message: string): StoredDataItem[] {
     })
   }
 
-  const parsed = parseWeightHeightForBmi(message)
+  const parsed = stripNeonatalBirthMeasuresFromParsedAnthropometrics(
+    message,
+    parseWeightHeightForBmi(message),
+  )
   if (parsed.weightKg) {
     data.push({
       section: "DADOS_ANTROPOMETRICOS",
@@ -1251,7 +1359,7 @@ function buildBmiStoredData(params: {
       section: "CALCULO_IMC",
       label: "Detalhes do cálculo",
       value: details,
-      status: "confirmado",
+      status: "pendente_de_confirmacao",
     },
   ]
 }
@@ -1260,7 +1368,10 @@ function detectAnthropometricReferenceChange(params: {
   userMessage: string
   patientMetrics?: { weight: number | null; height: number | null }
 }): { hasChange: boolean; weightKg: number | null; heightM: number | null } {
-  const parsed = parseWeightHeightForBmi(params.userMessage)
+  const parsed = stripNeonatalBirthMeasuresFromParsedAnthropometrics(
+    params.userMessage,
+    parseWeightHeightForBmi(params.userMessage),
+  )
   const weightKg = parsed.weightKg ?? null
   const heightM = parsed.heightM ?? null
   if (weightKg == null && heightM == null) {
@@ -1305,6 +1416,27 @@ function formatLatestAnthropometricsHint(params: {
   return `Referência antropométrica mais recente para este caso: ${parts.join(", ")}.`
 }
 
+function buildPatientGrammarHintForGuardianQuestions(
+  profile: PatientProfileSnapshot | undefined,
+): string {
+  if (!profile) {
+    return "Use \"a criança\" nas perguntas quando o sexo não estiver claro; não assuma ele/ela sem dados."
+  }
+  const firstToken = profile.name?.trim().split(/\s+/).filter(Boolean)[0] ?? ""
+  const sex = profile.sex?.trim().toLowerCase() ?? ""
+  const nameHint = firstToken
+    ? `Primeiro nome do paciente para referência: ${firstToken}. `
+    : ""
+
+  if (sex === "m" || sex === "masculino") {
+    return `${nameHint}Concordância em masculino (ele, o menino); não use \"ela\" para o paciente.`
+  }
+  if (sex === "f" || sex === "feminino") {
+    return `${nameHint}Concordância em feminino (ela, a menina); não use \"ele\" para o paciente.`
+  }
+  return `${nameHint}Sexo não informado de forma clara: prefira \"a criança\" em vez de ele/ela.`
+}
+
 export async function routeDashboardCaseAssistantTurn(params: {
   userMessage: string
   messages: CaseMessage[]
@@ -1313,6 +1445,8 @@ export async function routeDashboardCaseAssistantTurn(params: {
   conversationSummary: string | null
   patientMetrics?: { weight: number | null; height: number | null }
   patientProfile?: PatientProfileSnapshot
+  /** When set, trust orchestrator intent for LLM-only flows (guardian alert / profile review). */
+  pipelineIntent?: DashboardAssistantIntent | null
 }): Promise<RoutedAssistantTurn> {
   const baseIntent = detectDashboardAssistantIntent(params.userMessage)
   const normalized = normalizeText(params.userMessage)
@@ -1330,7 +1464,11 @@ export async function routeDashboardCaseAssistantTurn(params: {
     userMessage: params.userMessage,
     patientMetrics: params.patientMetrics,
   })
-  const hasGuardianAlertSignal = hasExplicitGuardianAlertSignal(params.userMessage)
+  const guardianQuotedOrShoutSignal = hasExplicitGuardianQuotedOrShoutSignal(params.userMessage)
+  const structuredClinicalAlertSignal =
+    buildClinicalAlertItemsFromUserMessage(params.userMessage).length > 0
+  const hasGuardianOrClinicalAlertSignal =
+    guardianQuotedOrShoutSignal || structuredClinicalAlertSignal
   const patientUpdateCandidate = detectPatientProfileUpdateCandidate({
     userMessage: params.userMessage,
     patientProfile: params.patientProfile,
@@ -1349,13 +1487,13 @@ export async function routeDashboardCaseAssistantTurn(params: {
     Boolean(patientUpdateCandidate) &&
     !baseIntentsThatBlockPatientProfileReview.includes(baseIntent)
 
-  const intent: DashboardAssistantIntent = shouldPrioritizePatientProfileUpdate
+  const heuristicIntent: DashboardAssistantIntent = shouldPrioritizePatientProfileUpdate
     ? "REVIEW_PATIENT_PROFILE_UPDATE"
     : (baseIntent === "QUESTION" || aiDetectedQuestionIntent)
       ? "QUESTION"
       : baseIntent === "CHAT" && anthropometricChange.hasChange
         ? "REVIEW_ANTHROPOMETRIC_REFERENCE"
-        : baseIntent === "CHAT" && hasGuardianAlertSignal
+        : baseIntent === "CHAT" && hasGuardianOrClinicalAlertSignal
           ? "REVIEW_GUARDIAN_ALERT"
           : baseIntent
 
@@ -1372,7 +1510,14 @@ export async function routeDashboardCaseAssistantTurn(params: {
     normalized.includes("manter dados anteriores")
   const confirmsGuardianAlertStorage =
     normalized.includes("confirmar armazenamento de alerta") ||
-    normalized.includes("salvar alerta para resumo e relatorio")
+    normalized.includes("salvar alerta para resumo e relatorio") ||
+    normalized.includes("salvar alerta") ||
+    (params.pipelineIntent === "REVIEW_GUARDIAN_ALERT" &&
+      (normalized === "confirmar" ||
+        normalized === "sim" ||
+        normalized === "sim, confirmar" ||
+        normalized === "pode confirmar" ||
+        normalized.includes("confirmar alerta")))
   const declinesGuardianAlertStorage =
     normalized.includes("nao armazenar alerta") ||
     normalized.includes("não armazenar alerta")
@@ -1433,7 +1578,7 @@ export async function routeDashboardCaseAssistantTurn(params: {
     return {
       intent: "REVIEW_PATIENT_PROFILE_UPDATE",
       reply: "Tudo bem, mantive os dados atuais do paciente sem alterações.",
-      action: "none",
+      action: "decline_update_patient_profile",
       showStructuredCard: false,
       showAlert: false,
       storedData: [],
@@ -1492,18 +1637,34 @@ export async function routeDashboardCaseAssistantTurn(params: {
       intent: "REVIEW_ANTHROPOMETRIC_REFERENCE",
       reply:
         "Entendido. Mantive os valores anteriores como referência principal para resumo e relatório.",
-      action: "none",
-      showStructuredCard: false,
+      action: "keep_previous_anthropometric_reference",
+      showStructuredCard: true,
       showAlert: false,
       storedData: [],
     }
   }
 
   if (confirmsGuardianAlertStorage) {
-    const latestAlert = extractExplicitGuardianAlertsHint(params.messages)
+    const fromPromptTurn = findLatestUserTurnTextForAlertSave(params.messages)
+    const latestAlertHint = extractExplicitGuardianAlertsHint(params.messages)
+    const hintLastLine =
+      latestAlertHint?.split("\n").at(-1)?.replace(/^- /, "").trim() ?? null
     const alertValue =
-      latestAlert?.split("\n").at(-1)?.replace(/^- /, "").trim() ??
-      "Alerta clínico do responsável confirmado."
+      fromPromptTurn ??
+      hintLastLine ??
+      "Alerta clínico prioritário confirmado pelo pediatra."
+
+    if (hasIdenticalConfirmedClinicalAlertInThread(params.messages, alertValue)) {
+      return {
+        intent: "REVIEW_GUARDIAN_ALERT",
+        reply:
+          "Esse conteúdo já estava salvo como alerta clínico prioritário neste caso. Não dupliquei o registro.",
+        action: "confirm_guardian_alert_storage",
+        showStructuredCard: true,
+        showAlert: false,
+        storedData: [],
+      }
+    }
 
     return {
       intent: "REVIEW_GUARDIAN_ALERT",
@@ -1515,7 +1676,7 @@ export async function routeDashboardCaseAssistantTurn(params: {
       storedData: [
         {
           section: "ALERTAS_CLINICOS",
-          label: "Alerta do responsável",
+          label: "Alerta clínico prioritário",
           value: alertValue,
           status: "confirmado",
         },
@@ -1528,7 +1689,7 @@ export async function routeDashboardCaseAssistantTurn(params: {
       intent: "REVIEW_GUARDIAN_ALERT",
       reply:
         "Perfeito. O alerta não será destacado como item obrigatório no resumo ou relatório.",
-      action: "none",
+      action: "decline_guardian_alert_storage",
       showStructuredCard: false,
       showAlert: false,
       storedData: [],
@@ -1549,9 +1710,10 @@ export async function routeDashboardCaseAssistantTurn(params: {
   if (params.pendingAction === "close_case" && userConfirmed) {
     return {
       intent: "CLOSE_CASE",
-      reply: "Confirmação recebida. Vou encerrar o caso agora.",
+      reply:
+        "Caso encerrado. O atendimento foi marcado como fechado; você pode gerar o relatório depois, se ainda precisar.",
       action: "confirm_close_case",
-      showStructuredCard: false,
+      showStructuredCard: true,
       showAlert: false,
       storedData: [],
     }
@@ -1623,6 +1785,11 @@ export async function routeDashboardCaseAssistantTurn(params: {
     }
   }
 
+  let intent: DashboardAssistantIntent = heuristicIntent
+  if (params.pipelineIntent != null) {
+    intent = params.pipelineIntent
+  }
+
   if (intent === "CLOSE_CASE") {
     return {
       intent,
@@ -1670,16 +1837,33 @@ export async function routeDashboardCaseAssistantTurn(params: {
     }
   }
 
-  if (intent === "REVIEW_PATIENT_PROFILE_UPDATE" && patientUpdateCandidate) {
+  if (intent === "REVIEW_PATIENT_PROFILE_UPDATE") {
+    const profileCandidate =
+      patientUpdateCandidate ??
+      findLatestPatientProfileUpdateCandidateFromThread({
+        messages: params.messages,
+        patientProfile: params.patientProfile,
+      })
+    if (profileCandidate) {
+      return {
+        intent,
+        reply: `Identifiquei dados clínicos que podem atualizar o cadastro do paciente:\n- ${profileCandidate.summaryLines.join("\n- ")}\n\nDeseja confirmar a atualização desses dados no perfil do paciente?`,
+        action: "none",
+        showStructuredCard: true,
+        showAlert: false,
+        storedData: [],
+        patientProfileUpdatePayload: profileCandidate.updates,
+        showPatientProfileUpdateActions: true,
+      }
+    }
     return {
       intent,
-      reply: `Identifiquei dados clínicos que podem atualizar o cadastro do paciente:\n- ${patientUpdateCandidate.summaryLines.join("\n- ")}\n\nDeseja confirmar a atualização desses dados no perfil do paciente?`,
+      reply:
+        "Classifiquei a mensagem como possível atualização de cadastro, mas não extraí campos claros. Envie novamente com rótulos (ex.: peso, altura, telefone do responsável).",
       action: "none",
       showStructuredCard: true,
       showAlert: false,
       storedData: [],
-      patientProfileUpdatePayload: patientUpdateCandidate.updates,
-      showPatientProfileUpdateActions: true,
     }
   }
 
@@ -1751,13 +1935,32 @@ export async function routeDashboardCaseAssistantTurn(params: {
   }
 
   if (intent === "REVIEW_GUARDIAN_ALERT") {
+    const signalItems = buildClinicalAlertItemsFromUserMessage(params.userMessage)
+    const clinicalAlertItems: ClinicalAlertItem[] =
+      signalItems.length > 0
+        ? signalItems
+        : [
+            {
+              id: "clinical_priority_highlight",
+              title: "Prioridade clínica no registro",
+              detail:
+                guardianQuotedOrShoutSignal
+                  ? "Há indícios de relato direto do responsável ou linguagem de urgência. Confirme se deseja registrar como alerta prioritário em resumos e relatório."
+                  : "Este trecho tem sinais que costumam merecer destaque em resumos e relatório. Confirme se deseja registrar como alerta prioritário.",
+            },
+          ]
+
+    const reply = guardianQuotedOrShoutSignal
+      ? "Identifiquei conteúdo com possível relato do responsável ou tom de urgência. Deseja registrar como alerta prioritário para resumos e relatório?"
+      : "Identifiquei sinais clínicos que costumam merecer destaque. Deseja registrar como alerta prioritário para resumos e relatório?"
+
     return {
       intent,
-      reply:
-        "Identifiquei uma queixa importante do responsável nesta mensagem. Deseja armazenar esse alerta para priorizar nos próximos resumos e no relatório?",
+      reply,
       action: "none",
       showStructuredCard: true,
       showAlert: true,
+      clinicalAlertItems,
       storedData: [],
     }
   }
@@ -1809,6 +2012,7 @@ export async function routeDashboardCaseAssistantTurn(params: {
     const guardianReply = await generateGuardianQuestionSuggestions({
       clinicalThreadText: threadText,
       conversationSummary: params.conversationSummary,
+      patientGrammarHint: buildPatientGrammarHintForGuardianQuestions(params.patientProfile),
     })
     const replyText = guardianReply.trim().startsWith("Sugestões para o responsável")
       ? guardianReply
@@ -2028,7 +2232,8 @@ export async function routeDashboardCaseAssistantTurn(params: {
 
   reply = enforceReplyVariation(params.userMessage, reply, params.messages)
 
-  const showAlert = /alerta|urgencia|gravidade|risco/.test(normalized)
+  const clinicalAlertItems = buildClinicalAlertItemsFromUserMessage(params.userMessage)
+  const showAlert = clinicalAlertItems.length > 0
   const storedData = extractStoredData(params.userMessage)
   const showStructuredCard =
     storedData.length >= 2 ||
@@ -2040,6 +2245,7 @@ export async function routeDashboardCaseAssistantTurn(params: {
     action: "none",
     showStructuredCard,
     showAlert,
+    clinicalAlertItems: showAlert ? clinicalAlertItems : undefined,
     storedData,
   }
 }

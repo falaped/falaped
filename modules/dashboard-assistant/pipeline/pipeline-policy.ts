@@ -28,21 +28,6 @@ const CONFIRMATION_REQUIRED: Partial<Record<PipelineStepKind, true>> = {
   CLOSE_CASE: true,
 }
 
-const AUTO_CONTINUE_ALLOWED: Record<PipelineStepKind, PipelineStepKind[]> = {
-  REVIEW_PATIENT_PROFILE_UPDATE: [],
-  REVIEW_ANTHROPOMETRIC_REFERENCE: [],
-  REVIEW_GUARDIAN_ALERT: [],
-  CALCULATE_BMI: [],
-  QUESTION: [],
-  CHAT: [],
-  SUMMARY: [],
-  SUGGEST_GUARDIAN_QUESTIONS: [],
-  GENERATE_REPORT: [],
-  GENERATE_MEDICAL_CERTIFICATE: [],
-  GENERATE_PRESCRIPTION: [],
-  CLOSE_CASE: [],
-}
-
 export function orderPipelineSteps(steps: PipelineStep[]): PipelineStep[] {
   const seen = new Set<string>()
   return [...steps]
@@ -57,8 +42,4 @@ export function orderPipelineSteps(steps: PipelineStep[]): PipelineStep[] {
 
 export function requiresConfirmationForStep(kind: PipelineStepKind): boolean {
   return CONFIRMATION_REQUIRED[kind] === true
-}
-
-export function canAutoContinueInSameRequest(current: PipelineStepKind, next: PipelineStepKind): boolean {
-  return AUTO_CONTINUE_ALLOWED[current]?.includes(next) ?? false
 }

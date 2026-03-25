@@ -31,7 +31,8 @@ export function decomposeTurnIntentsHeuristic(userMessage: string): PipelineStep
   const n = normalizeText(userMessage)
   const intents: PipelineStepKind[] = []
 
-  if (n.includes("/imc") || n.includes("calcular imc") || /\bimc\b/.test(n)) {
+  const hasBmiCommand = n.includes("/imc") || n.includes("calcular imc") || /\bimc\b/.test(n)
+  if (hasBmiCommand) {
     intents.push("CALCULATE_BMI")
   }
   if (n.includes("/resumo") || n.includes("resumir principais pontos")) {
@@ -40,7 +41,13 @@ export function decomposeTurnIntentsHeuristic(userMessage: string): PipelineStep
   if (n.includes("sugerir perguntas para o responsavel") || n.includes("sugerir perguntas ao responsavel")) {
     intents.push("SUGGEST_GUARDIAN_QUESTIONS")
   }
-  if (n.includes("/relatorio") || n.includes("gerar relatorio")) {
+  if (
+    n.includes("/relatorio") ||
+    n.includes("gerar relatorio") ||
+    n.includes("gerar relatório") ||
+    /\b(gere|gerar)\s+(?:o\s+)?relat[oó]rio\b/.test(n) ||
+    /\b(elaborar|emitir|fazer)\s+(?:o\s+)?relat[oó]rio\b/.test(n)
+  ) {
     intents.push("GENERATE_REPORT")
   }
   if (n.includes("/atestado") || n.includes("gerar atestado")) {
@@ -52,9 +59,14 @@ export function decomposeTurnIntentsHeuristic(userMessage: string): PipelineStep
   if (n.includes("/encerrar") || n.includes("encerrar caso") || n.includes("fechar caso")) {
     intents.push("CLOSE_CASE")
   }
-  if (
+  const questionSignals =
     /\?|\b(como|qual|quais|devo|deveria|estrategia|por que|porque|qual imc)\b/.test(n)
-  ) {
+  const bmiUtteranceLooksLikeImcAsk =
+    n.includes("/imc") ||
+    n.includes("calcular imc") ||
+    /\bqual\b[^.!?]{0,120}\bimc\b/.test(n) ||
+    /\bimc\b[^.!?]{0,20}\?/.test(n)
+  if (questionSignals && !(hasBmiCommand && bmiUtteranceLooksLikeImcAsk)) {
     intents.push("QUESTION")
   }
 
@@ -85,6 +97,11 @@ Regras:
 - Pode retornar várias intents quando o texto pedir múltiplas ações.
 - Não invente intents fora da lista.
 - Se não houver comando claro, use CHAT.
+- NUNCA use SUMMARY a menos que o pediatra peça resumo explícito (ex.: /resumo, "resumir principais pontos", "fazer um resumo clínico", "gerar resumo do caso"). Anamnese ou texto estruturado sem esse pedido → CHAT, não SUMMARY.
+- NUNCA use GENERATE_PRESCRIPTION salvo pedido explícito de receita (ex.: /receita, "gerar receita", "emitir receita", "emissão de receita"). Descrever medicações, doses ou nebulização na conduta NÃO é pedido de receita → use CHAT.
+- NUNCA use REVIEW_ANTHROPOMETRIC_REFERENCE se a mensagem não trouxer peso e/ou comprimento/altura novos (números). Perguntas gerais ou só texto clínico → não inclua essa intent.
+- NUNCA use QUESTION junto com CALCULATE_BMI quando o pedido for só cálculo/explicação de IMC (ex.: "Qual o IMC?"); use apenas CALCULATE_BMI.
+- Use GENERATE_REPORT quando o pediatra pedir relatório explicitamente (inclui "gere o relatório", "gerar relatório do caso", /relatorio).
 - Saída JSON obrigatória no formato: {"intents":["...","..."]}.`
 
   try {
