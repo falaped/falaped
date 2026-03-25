@@ -1,7 +1,6 @@
 "use client"
 
 import { useRouter } from "next/navigation"
-import Link from "next/link"
 import { NewPrescriptionLink } from "@/app/dashboard/prescriptions/new/new-prescription-link"
 import { FileText, Trash2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -26,6 +25,7 @@ import type { PrescriptionTemplateOption } from "@/modules/prescription-template
 import { deletePrescriptionTemplateAction } from "@/actions"
 import { formatRelativeTime } from "@/lib/formatters"
 import { toast } from "sonner"
+import { getFriendlyToastMessage } from "@/lib/get-friendly-toast-message"
 import { useState } from "react"
 
 export function PrescriptionTemplateList({
@@ -75,7 +75,7 @@ function PrescriptionTemplateCard({
       toast.success("Template excluído.")
       router.refresh()
     } else {
-      toast.error(result.error)
+      toast.error(getFriendlyToastMessage(result.error))
     }
   }
 

@@ -171,6 +171,7 @@ REGRAS RÍGIDAS:
 11) Se o histórico já contiver cálculo de IMC e a mensagem atual do médico NÃO pedir IMC, peso ou altura, NÃO repita fórmula, conta ou bloco de IMC; responda ao tema atual.
 12) Não copie texto longo de mensagens anteriores do Falaped.
 13) Não repita literalmente a mesma frase de confirmação usada na resposta imediatamente anterior do assistente; varie a redação mantendo brevidade.${forbidBmiBlock}${vaccineFocusBlock}
+14) Nunca exponha identificadores internos de banco (UUID, IDs técnicos, chaves internas). Se surgir no contexto, descreva em termos clínicos (nome do paciente, idade, responsável e dados assistenciais), sem mostrar o identificador.
 
 Responda APENAS em JSON válido no formato: {"reply":"..."}`
 

@@ -35,6 +35,7 @@ import {
   deleteMedicalCertificatesBulkAction,
 } from "@/actions"
 import { toast } from "sonner"
+import { getFriendlyToastMessage } from "@/lib/get-friendly-toast-message"
 import { ListDeletingSkeletonOverlay } from "@/components/dashboard/list-deleting-skeleton-overlay"
 import type {
   MedicalCertificateListItem,
@@ -134,7 +135,7 @@ export function MedicalCertificateTable({
       })
       toast.success("Atestado excluído.")
     } else {
-      toast.error(result.error)
+      toast.error(getFriendlyToastMessage(result.error))
     }
     setDeleting(false)
     setDeleteId(null)
@@ -166,7 +167,7 @@ export function MedicalCertificateTable({
           : `${result.deletedCount} atestados excluídos.`,
       )
     } else {
-      toast.error(result.error)
+      toast.error(getFriendlyToastMessage(result.error))
     }
     setBulkDeleting(false)
     setBulkDialogOpen(false)

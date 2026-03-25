@@ -1,21 +1,19 @@
 "use client"
 
 import { useState, useEffect, useRef } from "react"
-import Link from "next/link"
 import { useRouter, usePathname } from "next/navigation"
 import { toast } from "sonner"
+import { getFriendlyToastMessage } from "@/lib/get-friendly-toast-message"
 import { format } from "date-fns"
 import { ptBR } from "date-fns/locale"
 import { UserPlus, ClipboardList, ChevronLeft, Plus, Trash2, Save, FileText } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Separator } from "@/components/ui/separator"
 import { Input } from "@/components/ui/input"
 import { RichTextEditor } from "@/components/ui/rich-text-editor"
 import {
   Field,
   FieldContent,
-  FieldError,
   FieldLabel,
 } from "@/components/ui/field"
 import {
@@ -288,7 +286,7 @@ export function PrescriptionWizard({
       setSaveAsTemplateOpen(false)
       router.refresh()
     } else {
-      toast.error(result.error)
+      toast.error(getFriendlyToastMessage(result.error))
     }
   }
 
@@ -320,7 +318,7 @@ export function PrescriptionWizard({
           router.push("/dashboard/prescriptions")
           router.refresh()
         } else {
-          toast.error(result.error)
+          toast.error(getFriendlyToastMessage(result.error))
         }
       })
       .finally(() => setGenerating(false))

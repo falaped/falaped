@@ -5,6 +5,7 @@ import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { Download, Trash2 } from "lucide-react"
 import { toast } from "sonner"
+import { getFriendlyToastMessage } from "@/lib/get-friendly-toast-message"
 import {
   Table,
   TableBody,
@@ -122,7 +123,7 @@ export function PrescriptionTable({ prescriptions }: PrescriptionTableProps) {
       })
       toast.success("Receita excluída.")
     } else {
-      toast.error(result.error)
+      toast.error(getFriendlyToastMessage(result.error))
     }
     setDeleting(false)
     setDeleteId(null)
@@ -154,7 +155,7 @@ export function PrescriptionTable({ prescriptions }: PrescriptionTableProps) {
           : `${result.deletedCount} receitas excluídas.`,
       )
     } else {
-      toast.error(result.error)
+      toast.error(getFriendlyToastMessage(result.error))
     }
     setBulkDeleting(false)
     setBulkDialogOpen(false)

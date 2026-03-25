@@ -117,6 +117,81 @@ function normalizeText(value: string): string {
     .trim()
 }
 
+function formatAgeFromBirthDateForDisplay(birthDate: string | null | undefined): string | null {
+  if (!birthDate) return null
+  const birth = new Date(`${birthDate}T12:00:00`)
+  if (Number.isNaN(birth.getTime())) return null
+
+  const now = new Date()
+  let years = now.getFullYear() - birth.getFullYear()
+  let months = now.getMonth() - birth.getMonth()
+  if (now.getDate() < birth.getDate()) months -= 1
+  if (months < 0) {
+    years -= 1
+    months += 12
+  }
+
+  if (years <= 0) {
+    if (months <= 0) return "0 meses"
+    return `${months} ${months === 1 ? "mês" : "meses"}`
+  }
+  return `${years} ${years === 1 ? "ano" : "anos"}${months > 0 ? ` e ${months} ${months === 1 ? "mês" : "meses"}` : ""}`
+}
+
+function isPatientDataAccessQuestion(userMessage: string): boolean {
+  const n = normalizeText(userMessage)
+  const asksData =
+    n.includes("quais dados do paciente") ||
+    (n.includes("dados do paciente") && n.includes("tem acesso")) ||
+    (n.includes("dados disponiveis") && n.includes("paciente"))
+  const asksAccess =
+    n.includes("tem acesso") || n.includes("possui acesso") || n.includes("acesso")
+  return asksData && asksAccess
+}
+
+function buildPatientDataAccessReply(
+  patientProfile: PatientProfileSnapshot | undefined,
+): string {
+  if (!patientProfile) {
+    return "Ainda não há paciente associado a este caso. Quando houver vínculo, eu consigo mostrar os dados clínicos disponíveis no cadastro."
+  }
+
+  const lines: string[] = ["Tenho acesso aos seguintes dados do paciente neste caso:"]
+
+  lines.push(`- Nome: ${patientProfile.name?.trim() || "não informado"}`)
+  const ageText = formatAgeFromBirthDateForDisplay(patientProfile.birth_date)
+  if (ageText) lines.push(`- Idade: ${ageText}`)
+  if (patientProfile.weight?.trim()) lines.push(`- Peso: ${patientProfile.weight.trim()}`)
+  if (patientProfile.height?.trim()) {
+    lines.push(`- Comprimento/altura: ${patientProfile.height.trim()}`)
+  }
+  if (patientProfile.head_circumference?.trim()) {
+    lines.push(`- Perímetro cefálico: ${patientProfile.head_circumference.trim()}`)
+  }
+  if (patientProfile.sex?.trim()) lines.push(`- Sexo: ${patientProfile.sex.trim()}`)
+  if (patientProfile.blood_type?.trim()) {
+    lines.push(`- Tipo sanguíneo: ${patientProfile.blood_type.trim()}`)
+  }
+  if (patientProfile.responsible?.trim()) {
+    lines.push(`- Responsável: ${patientProfile.responsible.trim()}`)
+  }
+  if (patientProfile.contact_phone?.trim()) {
+    lines.push(`- Telefone de contato: ${patientProfile.contact_phone.trim()}`)
+  }
+  if (patientProfile.legal_guardian?.trim()) {
+    lines.push(`- Responsável legal: ${patientProfile.legal_guardian.trim()}`)
+  }
+  if (patientProfile.allergies?.trim()) lines.push(`- Alergias: ${patientProfile.allergies.trim()}`)
+  if (patientProfile.current_medications?.trim()) {
+    lines.push(`- Medicações em uso: ${patientProfile.current_medications.trim()}`)
+  }
+  if (patientProfile.medical_history?.trim()) {
+    lines.push(`- Histórico médico: ${patientProfile.medical_history.trim()}`)
+  }
+
+  return lines.join("\n")
+}
+
 function isQuestionLikeMessage(message: string): boolean {
   const n = normalizeText(message)
   return (
@@ -1609,6 +1684,17 @@ export async function routeDashboardCaseAssistantTurn(params: {
   }
 
   if (intent === "QUESTION") {
+    if (isPatientDataAccessQuestion(params.userMessage)) {
+      return {
+        intent,
+        reply: buildPatientDataAccessReply(params.patientProfile),
+        action: "none",
+        showStructuredCard: true,
+        showAlert: false,
+        storedData: [],
+      }
+    }
+
     const questionMessages = buildMessagesForModel(params.messages, params.userMessage)
     let questionReply = await generateAssistantCaseChat({
       patientContext: params.patientContext,

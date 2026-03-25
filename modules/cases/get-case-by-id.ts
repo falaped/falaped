@@ -35,6 +35,7 @@ export type CaseDetail = {
   awaiting_intent: boolean
   awaiting_patient_choice: boolean
   pending_action: string | null
+  assistant_turn_queue: unknown | null
   dashboard_chat_context_summary: string | null
   patient: CasePatientDetail | null
   messages: CaseMessage[]
@@ -72,6 +73,7 @@ export async function getCaseById(
       awaiting_intent,
       awaiting_patient_choice,
       pending_action,
+      assistant_turn_queue,
       dashboard_chat_context_summary,
       patient:patients(
         id,

@@ -25,7 +25,7 @@ Referência rápida das tabelas. Migrations em `supabase/migrations/`. Tipos em 
 - Uso: códigos de vinculação WhatsApp. Dashboard gera via `createLinkCode(supabase, profileId)`; bot busca por code (não expirado, não usado), vincula phone ao profile_id em authenticated_users e seta used_at. Ver docs/contrato-bot-vinculacao-whatsapp.md.
 
 ### cases
-- `id` uuid PK, `user_phone` text not null, `status` ('active' | 'closed') default 'active', `started_at` timestamptz default now(), `ended_at` timestamptz nullable, `awaiting_intent` boolean not null default false, `patient_id` uuid nullable FK → patients(id), `awaiting_patient_choice` boolean not null default false, `patient_registration_state` jsonb nullable
+- `id` uuid PK, `user_phone` text not null, `status` ('active' | 'closed') default 'active', `started_at` timestamptz default now(), `ended_at` timestamptz nullable, `awaiting_intent` boolean not null default false, `patient_id` uuid nullable FK → patients(id), `awaiting_patient_choice` boolean not null default false, `patient_registration_state` jsonb nullable, `pending_action` text nullable, `dashboard_chat_context_summary` text nullable, `assistant_turn_queue` jsonb nullable
 - Índice: idx_cases_user_phone_status (user_phone, status) where status = 'active' (para getActiveCase). awaiting_intent: true quando aguardamos resposta "Continuar / Finalizar / Outro?". awaiting_patient_choice: true ao finalizar aguardando criar/associar paciente ou pular. patient_registration_state: progresso do cadastro guiado ou fluxo ao finalizar.
 
 ### case_messages

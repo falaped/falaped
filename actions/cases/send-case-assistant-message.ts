@@ -12,7 +12,6 @@ import { getCaseRowForProfile } from "@/modules/cases/get-case-row-for-profile"
 import { getCaseById } from "@/modules/cases/get-case-by-id"
 import { listCaseMessagesByCaseId } from "@/modules/case-messages/list-case-messages-by-case-id"
 import { insertCaseMessage } from "@/modules/case-messages/insert-case-message"
-import { routeDashboardCaseAssistantTurn } from "@/modules/dashboard-assistant/route-case-assistant-turn"
 import { updateCasePendingAction } from "@/modules/cases/update-case-pending-action"
 import { updateCaseStatusAction } from "@/actions/cases/update-case-status"
 import { generateCaseReportAction } from "@/actions/cases/generate-case-report"
@@ -20,8 +19,13 @@ import { updateCaseDashboardChatContextSummary } from "@/modules/cases/update-ca
 import { stripAssistantUiLabelsFromReply } from "@/lib/format-clinical-assistant-sections"
 import { polishAssistantReplyForDisplay } from "@/modules/groq/assistant-case-chat"
 import { updatePatient, type UpdatePatientPayload } from "@/modules/patients/update-patient"
+import { processDashboardAssistantTurn } from "@/modules/dashboard-assistant/orchestrator/process-turn"
+import { updateCaseAssistantTurnQueue } from "@/modules/cases/update-case-assistant-turn-queue"
+import { withBlockedAssistantMessageId } from "@/modules/dashboard-assistant/pipeline/assistant-turn-queue"
 
 const PAYLOAD_PREFIX = "__FALAPED_JSON__"
+const UUID_PATTERN =
+  /\b[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}\b/gi
 
 type AssistantActionId =
   | "confirm_close_case"
@@ -57,6 +61,7 @@ type AssistantPayload = {
     collapsedByDefault: boolean
     items: AssistantStoredData[]
   }
+  blockedAssistantMessageId?: string
 }
 
 function serializeAssistantPayload(payload: AssistantPayload): string {
@@ -79,11 +84,45 @@ function hasMinimumConversationForReport(messages: Array<{ role: "user" | "assis
   return substantiveMessages.length >= 2
 }
 
-function buildPatientContext(caseRow: { patient_id: string | null }): string | null {
-  if (!caseRow.patient_id) {
+type PatientContextSnapshot = {
+  name: string
+  birth_date: string | null
+  responsible: string | null
+  weight: string | null
+  height: string | null
+}
+
+function formatPatientAgeFromBirthDate(birthDate: string | null): string | null {
+  if (!birthDate) return null
+  const birth = new Date(birthDate)
+  if (Number.isNaN(birth.getTime())) return null
+  const now = new Date()
+  let years = now.getFullYear() - birth.getFullYear()
+  let months = now.getMonth() - birth.getMonth()
+  if (now.getDate() < birth.getDate()) months -= 1
+  if (months < 0) {
+    years -= 1
+    months += 12
+  }
+  if (years <= 0) {
+    return `${Math.max(months, 0)} meses`
+  }
+  return `${years} anos e ${Math.max(months, 0)} meses`
+}
+
+function buildPatientContext(patient: PatientContextSnapshot | null): string | null {
+  if (!patient) {
     return "Paciente ainda não associado."
   }
-  return `Paciente associado ao caso: ${caseRow.patient_id}`
+
+  const parts: string[] = [`Nome: ${patient.name}`]
+  const age = formatPatientAgeFromBirthDate(patient.birth_date)
+  if (age) parts.push(`Idade: ${age}`)
+  if (patient.responsible?.trim()) parts.push(`Responsável: ${patient.responsible.trim()}`)
+  if (patient.weight?.trim()) parts.push(`Peso: ${patient.weight.trim()}`)
+  if (patient.height?.trim()) parts.push(`Altura/comprimento: ${patient.height.trim()}`)
+
+  return `Contexto do paciente: ${parts.join(" | ")}`
 }
 
 function parseMetricToNumber(value: string | null | undefined): number | null {
@@ -136,6 +175,23 @@ function formatPatientProfileUpdateSuccessReply(
   if (keys.length === 0) return "Perfil do paciente atualizado."
   const parts = keys.map((key) => labelForKey[key] ?? String(key))
   return `Perfil do paciente atualizado: ${parts.join(", ")}.`
+}
+
+function sanitizeAssistantReplyForPrivacy(reply: string): string {
+  const withoutUuid = reply.replace(UUID_PATTERN, "[identificador interno ocultado]")
+  const lines = withoutUuid.split("\n")
+  const sanitizedLines = lines.map((line) => {
+    const normalized = line
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .toLowerCase()
+      .trim()
+    if (/^[-•]\s*paciente\s*:\s*id\b/.test(normalized)) {
+      return "• Paciente: identificado no prontuário clínico."
+    }
+    return line
+  })
+  return sanitizedLines.join("\n")
 }
 
 function buildAssistantActionsFromPendingAction(
@@ -272,7 +328,7 @@ export async function sendCaseAssistantMessageAction(
       await updateCaseDashboardChatContextSummary(supabase, caseId, profile.id, summaryText)
     }
 
-    const routed = await routeDashboardCaseAssistantTurn({
+    const processedTurn = await processDashboardAssistantTurn({
       userMessage: content,
       messages: threadMessages.map((message) => ({
         id: message.id,
@@ -281,7 +337,17 @@ export async function sendCaseAssistantMessageAction(
         created_at: message.created_at,
       })),
       pendingAction: caseRow.pending_action,
-      patientContext: buildPatientContext(caseRow),
+      patientContext: buildPatientContext(
+        caseDetail?.patient
+          ? {
+              name: caseDetail.patient.name,
+              birth_date: caseDetail.patient.birth_date,
+              responsible: caseDetail.patient.responsible,
+              weight: caseDetail.patient.weight,
+              height: caseDetail.patient.height,
+            }
+          : null,
+      ),
       conversationSummary: caseRow.dashboard_chat_context_summary,
       patientMetrics: {
         weight: parseMetricToNumber(caseDetail?.patient?.weight),
@@ -309,7 +375,9 @@ export async function sendCaseAssistantMessageAction(
           medical_history: caseDetail.patient.medical_history,
         }
         : undefined,
+      turnQueue: caseRow.assistant_turn_queue,
     })
+    const routed = processedTurn.routed
 
     let reportId: string | undefined
     const reportHasMinimumData = hasMinimumConversationForReport(normalizedMessages)
@@ -402,6 +470,7 @@ export async function sendCaseAssistantMessageAction(
       (isReportInsufficientGate
         ? "Ainda não há conteúdo clínico suficiente para gerar o relatório. Registre sintomas, exame e conduta para continuar."
         : polishedAssistantReply)
+    const replyContentPrivacySafe = sanitizeAssistantReplyForPrivacy(replyContent)
 
     const storedDataPayload =
       routed.storedData.length > 0
@@ -433,8 +502,9 @@ export async function sendCaseAssistantMessageAction(
         }
         : {
           type: "assistant_reply",
-          content: replyContent,
+          content: replyContentPrivacySafe,
           showAlertCompact: routed.showAlert,
+          blockedAssistantMessageId: routed.blockedAssistantMessageId ?? undefined,
           actions: pendingActionForButtons
             ? buildAssistantActionsFromPendingAction(pendingActionForButtons)
             : undefined,
@@ -447,6 +517,23 @@ export async function sendCaseAssistantMessageAction(
       role: "assistant",
       content: assistantContent,
     })
+
+    if (processedTurn.shouldPersistQueue) {
+      const queueWithBlockedMessage =
+        processedTurn.queue &&
+        payload.type === "assistant_reply" &&
+        payload.actions &&
+        payload.actions.length > 0
+          ? withBlockedAssistantMessageId(processedTurn.queue, insertedAssistantMessage.id)
+          : processedTurn.queue
+
+      await updateCaseAssistantTurnQueue(
+        supabase,
+        caseId,
+        profile.id,
+        queueWithBlockedMessage,
+      )
+    }
 
     revalidatePath("/dashboard/cases")
     revalidatePath(`/dashboard/cases/new/${caseId}`)

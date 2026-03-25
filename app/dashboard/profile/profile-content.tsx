@@ -5,6 +5,7 @@ import { useForm } from "react-hook-form"
 import { useRouter } from "next/navigation"
 import { useTheme } from "next-themes"
 import { toast } from "sonner"
+import { getFriendlyToastMessage } from "@/lib/get-friendly-toast-message"
 import {
   UserIcon,
   AlertTriangleIcon,
@@ -122,7 +123,7 @@ export function ProfileContent({ profile, reportTemplateOptions }: ProfileConten
         return
       }
       setStatusError(result.error)
-      toast.error(result.error)
+      toast.error(getFriendlyToastMessage(result.error))
     } finally {
       setStatusUpdating(false)
     }
@@ -196,7 +197,7 @@ export function ProfileContent({ profile, reportTemplateOptions }: ProfileConten
       return
     }
     setProfileError(result.error)
-    toast.error(result.error)
+    toast.error(getFriendlyToastMessage(result.error))
   }
 
   async function handleLogoChange(
@@ -217,7 +218,7 @@ export function ProfileContent({ profile, reportTemplateOptions }: ProfileConten
         toast.success("Logo enviada.")
       } else {
         setLogoError(result.error)
-        toast.error(result.error)
+        toast.error(getFriendlyToastMessage(result.error))
       }
     } finally {
       if (kind === "full") setLogoFullLoading(false)
@@ -237,7 +238,7 @@ export function ProfileContent({ profile, reportTemplateOptions }: ProfileConten
         return
       }
       setLogoError(result.error)
-      toast.error(result.error)
+      toast.error(getFriendlyToastMessage(result.error))
     } finally {
       setLogoClearLoading(null)
     }
@@ -253,7 +254,7 @@ export function ProfileContent({ profile, reportTemplateOptions }: ProfileConten
         return
       }
       setDeleteError(result.error)
-      toast.error(result.error)
+      toast.error(getFriendlyToastMessage(result.error))
     } finally {
       setDeleteLoading(false)
     }

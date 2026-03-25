@@ -19,6 +19,7 @@ export type CaseWithPatient = {
   awaiting_intent: boolean
   awaiting_patient_choice: boolean
   pending_action: string | null
+  assistant_turn_queue: unknown | null
   dashboard_chat_context_summary: string | null
   patient: CasePatient | null
 }

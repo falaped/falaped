@@ -47,6 +47,7 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { cn } from "@/lib/utils"
 import { formatDateTime } from "@/lib/formatters"
 import { toast } from "sonner"
+import { getFriendlyToastMessage } from "@/lib/get-friendly-toast-message"
 
 function reportSourceLabel(source: string): string {
   if (source === "web") return "Web"
@@ -87,7 +88,6 @@ type CaseReportProps = {
   caseId: string
   hasMessages: boolean
   patientName: string
-  caseStatus: "active" | "closed"
 }
 
 function sortSections(sections: CaseReportSection[] | null | undefined): CaseReportSection[] {
@@ -231,7 +231,6 @@ export function CaseReport({
   caseId,
   hasMessages,
   patientName,
-  caseStatus,
 }: CaseReportProps) {
   const router = useRouter()
   const [selectedReportId, setSelectedReportId] = useState<string | null>(null)
@@ -303,7 +302,7 @@ export function CaseReport({
         setSelectedReportId(result.reportId)
         router.refresh()
       } else {
-        toast.error(result.error)
+        toast.error(getFriendlyToastMessage(result.error))
       }
     } finally {
       setIsGenerating(false)
@@ -344,10 +343,10 @@ export function CaseReport({
             toast.success("Seção melhorada.")
             router.refresh()
           } else {
-            toast.error(updateResult.error)
+            toast.error(getFriendlyToastMessage(updateResult.error))
           }
         } else {
-          toast.error(result.error)
+          toast.error(getFriendlyToastMessage(result.error))
         }
       } finally {
         setImprovingSection(null)
@@ -377,7 +376,7 @@ export function CaseReport({
           toast.success("Ordem atualizada.")
           router.refresh()
         } else {
-          toast.error(result.error)
+          toast.error(getFriendlyToastMessage(result.error))
         }
       })
     },
@@ -399,7 +398,7 @@ export function CaseReport({
           toast.success(checked ? "Relatório finalizado." : "Edição reabilitada.")
           router.refresh()
         } else {
-          toast.error(result.error)
+          toast.error(getFriendlyToastMessage(result.error))
         }
       } finally {
         setIsFinalizing(false)
@@ -430,7 +429,7 @@ export function CaseReport({
         URL.revokeObjectURL(url)
         toast.success("Download do PDF iniciado.")
       } else {
-        toast.error(result.error)
+        toast.error(getFriendlyToastMessage(result.error))
       }
     } finally {
       setIsDownloading(false)
@@ -452,7 +451,7 @@ export function CaseReport({
         router.refresh()
       } else {
         setDeletingReportId(null)
-        toast.error(result.error)
+        toast.error(getFriendlyToastMessage(result.error))
       }
     } finally {
       setIsDeleting(false)

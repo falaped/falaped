@@ -43,6 +43,7 @@ import {
   setActiveReportTemplateAction,
 } from "@/actions"
 import { toast } from "sonner"
+import { getFriendlyToastMessage } from "@/lib/get-friendly-toast-message"
 import { cn } from "@/lib/utils"
 import type { ReportTemplateOption } from "@/modules/report-templates/get-report-templates-by-profile-id"
 
@@ -82,7 +83,7 @@ export function ReportTemplateTable({
       toast.success("Template excluído.")
       router.refresh()
     } else {
-      toast.error(result.error)
+      toast.error(getFriendlyToastMessage(result.error))
     }
   }
 
@@ -97,7 +98,7 @@ export function ReportTemplateTable({
       toast.success("Template ativado. Será usado nos próximos relatórios.")
       router.refresh()
     } else {
-      toast.error(result.error)
+      toast.error(getFriendlyToastMessage(result.error))
     }
   }
 
@@ -116,8 +117,6 @@ export function ReportTemplateTable({
           {templates.map((template) => {
             const isActive = activeTemplateId === template.id
             const canEdit = !template.is_default
-            const sections = template.sections ?? []
-
             return (
               <TableRow
                 key={template.id}

@@ -34,10 +34,10 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet"
-import { Separator } from "@/components/ui/separator"
 import { formatRelativeTime } from "@/lib/formatters"
 import { deletePrescriptionTemplateAction } from "@/actions"
 import { toast } from "sonner"
+import { getFriendlyToastMessage } from "@/lib/get-friendly-toast-message"
 import type { PrescriptionTemplateOption } from "@/modules/prescription-templates/get-prescription-templates-by-profile-id"
 import type { PrescriptionTemplateSnapshot } from "@/modules/prescription-templates/types"
 import { stripHtml } from "@/lib/formatters"
@@ -134,7 +134,7 @@ export function PrescriptionTemplateTable({
       toast.success("Template excluído.")
       router.refresh()
     } else {
-      toast.error(result.error)
+      toast.error(getFriendlyToastMessage(result.error))
     }
   }
 

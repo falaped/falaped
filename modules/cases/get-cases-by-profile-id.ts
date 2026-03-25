@@ -27,6 +27,7 @@ export async function getCasesByProfileId(
       awaiting_intent,
       awaiting_patient_choice,
       pending_action,
+      assistant_turn_queue,
       dashboard_chat_context_summary,
       patient:patients(
         id,

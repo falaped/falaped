@@ -6,6 +6,7 @@ import { SearchIcon, UserRoundIcon } from "lucide-react"
 import { toast } from "sonner"
 import { createDashboardCaseWithPatientAction } from "@/actions/cases/create-dashboard-case-with-patient"
 import { precheckNewDashboardCaseAction } from "@/actions/cases/precheck-new-dashboard-case"
+import { getFriendlyToastMessage } from "@/lib/get-friendly-toast-message"
 import type { Patient } from "@/modules/patients/types"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
@@ -71,7 +72,7 @@ export function SelectPatientWorkspace({
       }
 
       if (!precheck.ok) {
-        toast.error(precheck.error)
+        toast.error(getFriendlyToastMessage(precheck.error))
         return
       }
 
@@ -84,7 +85,7 @@ export function SelectPatientWorkspace({
       const created = await createDashboardCaseWithPatientAction(patientId)
       if (!created.ok) {
         if (created.code === "whatsapp_active" && created.activeCaseId) {
-          toast.error(created.error, {
+          toast.error(getFriendlyToastMessage(created.error), {
             action: {
               label: "Abrir caso",
               onClick: () => router.push(`/dashboard/cases/${created.activeCaseId}`),
@@ -92,7 +93,7 @@ export function SelectPatientWorkspace({
           })
           return
         }
-        toast.error(created.error)
+        toast.error(getFriendlyToastMessage(created.error))
         return
       }
 
@@ -106,7 +107,7 @@ export function SelectPatientWorkspace({
     startTransition(async () => {
       const created = await createDashboardCaseWithPatientAction(pendingPatientId)
       if (!created.ok) {
-        toast.error(created.error)
+        toast.error(getFriendlyToastMessage(created.error))
         return
       }
       setWillCloseCurrentCaseDialogOpen(false)

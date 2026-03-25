@@ -34,6 +34,7 @@ import { deleteReportTemplateAction, setActiveReportTemplateAction } from "@/act
 import { formatRelativeTime } from "@/lib/formatters"
 import { cn } from "@/lib/utils"
 import { toast } from "sonner"
+import { getFriendlyToastMessage } from "@/lib/get-friendly-toast-message"
 import { useState } from "react"
 
 export function ReportTemplateList({
@@ -95,7 +96,7 @@ function ReportTemplateCard({
       router.refresh()
       return
     }
-    toast.error(result.error)
+    toast.error(getFriendlyToastMessage(result.error))
   }
 
   async function handleActivate() {
@@ -108,7 +109,7 @@ function ReportTemplateCard({
       router.refresh()
       return
     }
-    toast.error(result.error)
+    toast.error(getFriendlyToastMessage(result.error))
   }
 
   const canEdit = !template.is_default

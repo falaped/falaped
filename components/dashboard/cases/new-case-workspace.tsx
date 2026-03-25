@@ -20,6 +20,7 @@ import {
 import { toast } from "sonner"
 import { cn } from "@/lib/utils"
 import { formatDate, formatTime } from "@/lib/formatters"
+import { getFriendlyToastMessage } from "@/lib/get-friendly-toast-message"
 import { useAudioRecorder } from "@/hooks/use-audio-recorder"
 import { getFallbackCaseChatChips, type CaseChatChipSuggestion } from "@/lib/dashboard-case-chat-chips"
 import { suggestCaseChatChipsAction } from "@/actions/cases/suggest-case-chat-chips"
@@ -93,6 +94,7 @@ type AssistantPayload = {
       status: "confirmado" | "pendente_de_confirmacao"
     }>
   }
+  blockedAssistantMessageId?: string
 }
 
 /** Legacy assistant payloads: content was a stub; body lived in structuredClinicalNote. */
@@ -163,6 +165,19 @@ function getResolvedAssistantActionMessageIds(messages: WorkspaceMessage[]): Set
   return resolvedIds
 }
 
+function getLatestBlockedAssistantMessageId(messages: WorkspaceMessage[]): string | null {
+  for (let i = messages.length - 1; i >= 0; i -= 1) {
+    const message = messages[i]
+    if (message.role !== "assistant") continue
+    const payload = parseAssistantPayload(message.content)
+    if (payload?.blockedAssistantMessageId) {
+      return payload.blockedAssistantMessageId
+    }
+    return null
+  }
+  return null
+}
+
 function formatElapsed(seconds: number): string {
   const mins = Math.floor(seconds / 60)
   const secs = seconds % 60
@@ -196,6 +211,7 @@ function ThreadBubble({
   assistantActionsDisabled,
   actionMessageResolved,
   downloadBusy,
+  isHighlighted,
 }: {
   message: WorkspaceMessage
   userDisplayName: string
@@ -204,6 +220,7 @@ function ThreadBubble({
   assistantActionsDisabled: boolean
   actionMessageResolved: boolean
   downloadBusy: boolean
+  isHighlighted: boolean
 }) {
   const isUser = message.role === "user"
   const payload = !isUser ? parseAssistantPayload(message.content) : null
@@ -219,7 +236,14 @@ function ThreadBubble({
     : []
 
   return (
-    <div className={cn("flex gap-3", isUser ? "justify-end" : "justify-start")}>
+    <div
+      data-thread-message-id={message.id}
+      className={cn(
+        "flex gap-3 rounded-xl transition-colors",
+        isUser ? "justify-end" : "justify-start",
+        isHighlighted && "ring-2 ring-primary/60 ring-offset-2 ring-offset-sidebar",
+      )}
+    >
       {!isUser && (
         <Avatar className="h-8 w-8">
           <AvatarFallback className="bg-primary/15 text-primary">
@@ -468,6 +492,7 @@ export function NewCaseWorkspace({
   const [isSlowNetworkExpanded, setIsSlowNetworkExpanded] = useState(false)
   const [showDiscardDialog, setShowDiscardDialog] = useState(false)
   const [transcriptionPreview, setTranscriptionPreview] = useState<string | null>(null)
+  const [highlightedMessageId, setHighlightedMessageId] = useState<string | null>(null)
 
   const recorder = useAudioRecorder()
   const isTurnLocked =
@@ -525,10 +550,27 @@ export function NewCaseWorkspace({
     () => getResolvedAssistantActionMessageIds(messages),
     [messages],
   )
+  const latestBlockedAssistantMessageId = useMemo(
+    () => getLatestBlockedAssistantMessageId(messages),
+    [messages],
+  )
 
   /** Blocks textarea, chips, mic, send — not the assistant confirm/cancel buttons. */
   const isComposerBlocked =
-    isInteractionLocked || awaitingPendingActionConfirmation
+    isInteractionLocked || awaitingPendingActionConfirmation || Boolean(latestBlockedAssistantMessageId)
+
+  useEffect(() => {
+    if (!highlightedMessageId) return
+    const container = scrollRef.current
+    if (!container) return
+    const target = container.querySelector<HTMLElement>(
+      `[data-thread-message-id="${highlightedMessageId}"]`,
+    )
+    if (!target) return
+    target.scrollIntoView({ behavior: "smooth", block: "center" })
+    const timeout = window.setTimeout(() => setHighlightedMessageId(null), 2600)
+    return () => window.clearTimeout(timeout)
+  }, [highlightedMessageId, messages])
 
   const handleSend = (
     text: string,
@@ -564,7 +606,7 @@ export function NewCaseWorkspace({
           setMessages((previous) =>
             previous.filter((message) => message.id !== optimisticUserMessage.id),
           )
-          toast.error(result.error)
+          toast.error(getFriendlyToastMessage(result.error))
           setDraft(content)
           return
         }
@@ -577,6 +619,10 @@ export function NewCaseWorkspace({
         await delayMs(ASSISTANT_POST_RESPONSE_DELAY_MS)
 
         setMessages((previous) => [...previous, result.assistantMessage])
+        const assistantPayload = parseAssistantPayload(result.assistantMessage.content)
+        if (assistantPayload?.blockedAssistantMessageId) {
+          setHighlightedMessageId(assistantPayload.blockedAssistantMessageId)
+        }
         setIsAssistantResponding(false)
 
         setChipsLoading(true)
@@ -647,7 +693,7 @@ export function NewCaseWorkspace({
     try {
       const downloadResult = await downloadCaseReportPdfAction(reportId)
       if (!downloadResult.ok) {
-        toast.error(downloadResult.error)
+        toast.error(getFriendlyToastMessage(downloadResult.error))
         return
       }
       const binaryString = atob(downloadResult.pdfBase64)
@@ -684,7 +730,7 @@ export function NewCaseWorkspace({
         try {
           const result = await transcribeNewCaseAudioAction(file)
           if (!result.ok) {
-            toast.error(result.error)
+            toast.error(getFriendlyToastMessage(result.error))
             return
           }
           setTranscriptionPreview(result.text)
@@ -784,6 +830,7 @@ export function NewCaseWorkspace({
                   assistantActionsDisabled={isInteractionLocked}
                   actionMessageResolved={resolvedAssistantActionMessageIds.has(message.id)}
                   downloadBusy={isDownloadingReport}
+                  isHighlighted={highlightedMessageId === message.id}
                 />
               ))}
             </div>

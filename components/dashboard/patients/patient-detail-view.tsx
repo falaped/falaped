@@ -4,6 +4,7 @@ import { useState } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { toast } from "sonner"
+import { getFriendlyToastMessage } from "@/lib/get-friendly-toast-message"
 import { Trash2Icon } from "lucide-react"
 import {
   Card,
@@ -75,7 +76,7 @@ export function PatientDetailView({
         toast.success("Paciente excluído.")
         router.push("/dashboard/patients")
       } else {
-        toast.error(result.error)
+        toast.error(getFriendlyToastMessage(result.error))
       }
     } finally {
       setDeleteLoading(false)

@@ -8,6 +8,7 @@ export type CaseRowForProfile = {
   origin: "dashboard" | "whatsapp"
   patient_id: string | null
   pending_action: string | null
+  assistant_turn_queue: unknown | null
   dashboard_chat_context_summary: string | null
 }
 
@@ -19,7 +20,7 @@ export async function getCaseRowForProfile(
   const { data, error } = await supabase
     .from("cases")
     .select(
-      "id, profile_id, user_phone, status, origin, patient_id, pending_action, dashboard_chat_context_summary",
+      "id, profile_id, user_phone, status, origin, patient_id, pending_action, assistant_turn_queue, dashboard_chat_context_summary",
     )
     .eq("id", caseId)
     .eq("profile_id", profileId)

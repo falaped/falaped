@@ -3,6 +3,7 @@
 import { useState } from "react"
 import Link from "next/link"
 import { toast } from "sonner"
+import { getFriendlyToastMessage } from "@/lib/get-friendly-toast-message"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Label } from "@/components/ui/label"
@@ -31,7 +32,7 @@ export function GenerateWithAiContent() {
     try {
       const result = await generateReportTemplateSectionsAction(trimmed)
       if (!result.ok) {
-        toast.error(result.error)
+        toast.error(getFriendlyToastMessage(result.error))
         return
       }
       setSuggestedName(result.suggestedName)

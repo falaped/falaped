@@ -25,6 +25,7 @@ Casos de conversa por usuário (telefone); um caso ativo por vez para getActiveC
 | dashboard_chat_context_summary | text | NULL | — | Resumo rolante de contexto do workspace para preservar histórico longo |
 | context_summary | text | NULL | — | Campo de resumo contextual legado/auxiliar |
 | pending_action | text | NULL | — | Ação crítica pendente aguardando confirmação (ex.: `close_case`) |
+| assistant_turn_queue | jsonb | NULL | — | Fila sequencial de passos/intents do assistente no dashboard (`version`, `steps`, `cursor`, metadados de bloqueio/confirmação) |
 
 ## Chaves
 

@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { toast } from "sonner"
+import { getFriendlyToastMessage } from "@/lib/get-friendly-toast-message"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { PhoneInput } from "@/components/ui/phone-input"
@@ -115,7 +116,7 @@ export function PatientForm(props: PatientFormProps) {
         toast.success("Paciente cadastrado.")
         router.push(`/dashboard/patients/${result.patientId}`)
       } else {
-        toast.error(result.error)
+        toast.error(getFriendlyToastMessage(result.error))
       }
     } else {
       const result = await updatePatientAction(
@@ -126,7 +127,7 @@ export function PatientForm(props: PatientFormProps) {
         toast.success("Paciente atualizado.")
         props.onUpdateSuccess?.()
       } else {
-        toast.error(result.error)
+        toast.error(getFriendlyToastMessage(result.error))
       }
     }
   }

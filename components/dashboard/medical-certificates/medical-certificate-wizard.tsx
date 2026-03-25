@@ -4,6 +4,7 @@ import { useState } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { toast } from "sonner"
+import { getFriendlyToastMessage } from "@/lib/get-friendly-toast-message"
 import { format } from "date-fns"
 import { ptBR } from "date-fns/locale"
 import {
@@ -16,13 +17,11 @@ import {
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Separator } from "@/components/ui/separator"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import {
   Field,
   FieldContent,
-  FieldError,
   FieldLabel,
 } from "@/components/ui/field"
 import { Checkbox } from "@/components/ui/checkbox"
@@ -163,7 +162,6 @@ const initialPayload: WizardPayload = {
 type CertificateFormCardProps = {
   type: MedicalCertificateType
   currentPayload: NonNullable<WizardPayload[MedicalCertificateType]>
-  payload: WizardPayload
   setPayload: React.Dispatch<React.SetStateAction<WizardPayload>>
   selectedPatient: Patient | null
 }
@@ -171,7 +169,6 @@ type CertificateFormCardProps = {
 function CertificateFormCard({
   type,
   currentPayload,
-  payload,
   setPayload,
   selectedPatient,
 }: CertificateFormCardProps) {
@@ -756,10 +753,6 @@ export function MedicalCertificateWizard({ patients, profile }: MedicalCertifica
     setManualSheetOpen(false)
   }
 
-  function handleDataSourcePatientChosen() {
-    setDataSource("patient")
-  }
-
   function handleRemovePatient() {
     setSelectedPatient(null)
     setDataSource(null)
@@ -797,7 +790,7 @@ export function MedicalCertificateWizard({ patients, profile }: MedicalCertifica
           router.push("/dashboard/medical-certificates")
           router.refresh()
         } else {
-          toast.error(result.error)
+          toast.error(getFriendlyToastMessage(result.error))
         }
       })
       .finally(() => setGenerating(false))
@@ -916,7 +909,6 @@ export function MedicalCertificateWizard({ patients, profile }: MedicalCertifica
               <CertificateFormCard
                 type={type}
                 currentPayload={currentPayload}
-                payload={payload}
                 setPayload={setPayload}
                 selectedPatient={selectedPatient}
               />

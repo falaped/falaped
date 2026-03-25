@@ -57,7 +57,6 @@ export async function CaseDetailContent({ id }: { id: string }) {
           caseId={id}
           hasMessages={caseDetail.messages.length > 0}
           patientName={caseDetail.patient?.name ?? "Paciente não associado"}
-          caseStatus={caseDetail.status}
         />
       )}
       <CaseQuickActions />

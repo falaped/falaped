@@ -30,7 +30,13 @@ lib/
 modules/
   supabase/get-authenticated-user.ts   # getAuthenticatedUser – profile + authenticatedUser
   dashboard-assistant/
-    route-case-assistant-turn.ts       # Intents, IMC (parse-anthropometrics), resumo (hint antropometria cadastro) + sugestões via Groq; chat sem eco do dictado
+    orchestrator/process-turn.ts       # Main orchestration: detect intent/plan, queue (assistant_turn_queue), dispatch de handler e bloqueio por confirmação pendente
+    intent/detect-intent-and-plan.ts   # Decomposição multi-intent (LLM + fallback), regras de bloqueio e montagem de passos
+    router/dispatch.ts                 # Route orchestrator (dispatch por intent/step)
+    handlers/                          # Handlers por intent (business/ai separados), mantendo contrato RouteResult
+    pipeline/assistant-turn-queue.ts   # Parse/build/advance da fila sequencial em JSONB
+    pipeline/pipeline-policy.ts        # Ordem canônica dos passos + regras de confirmação/auto-continue
+    route-case-assistant-turn.ts       # Motor legado reutilizado por handlers enquanto a migração incremental é concluída
     assistant-model-message.ts        # JSON do assistente → texto para contexto do modelo
   patients/, cases/, case-messages/,
   authenticated-users/, report-templates/
