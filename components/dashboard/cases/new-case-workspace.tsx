@@ -140,6 +140,27 @@ function getAwaitingPendingActionConfirmation(messages: WorkspaceMessage[]): boo
   return false
 }
 
+function getResolvedAssistantActionMessageIds(messages: WorkspaceMessage[]): Set<string> {
+  const resolvedIds = new Set<string>()
+
+  for (let i = 0; i < messages.length; i += 1) {
+    const current = messages[i]
+    if (current.role !== "assistant") continue
+    const payload = parseAssistantPayload(current.content)
+    if (!payload?.actions?.length) continue
+
+    for (let j = i + 1; j < messages.length; j += 1) {
+      const next = messages[j]
+      if (next.role !== "user") continue
+      if (next.id.startsWith("optimistic-user-")) continue
+      resolvedIds.add(current.id)
+      break
+    }
+  }
+
+  return resolvedIds
+}
+
 function formatElapsed(seconds: number): string {
   const mins = Math.floor(seconds / 60)
   const secs = seconds % 60
@@ -171,6 +192,7 @@ function ThreadBubble({
   onAssistantAction,
   onDownloadReport,
   assistantActionsDisabled,
+  actionMessageResolved,
   downloadBusy,
 }: {
   message: WorkspaceMessage
@@ -178,6 +200,7 @@ function ThreadBubble({
   onAssistantAction: (actionId: string) => void
   onDownloadReport: (reportId: string) => void
   assistantActionsDisabled: boolean
+  actionMessageResolved: boolean
   downloadBusy: boolean
 }) {
   const isUser = message.role === "user"
@@ -283,7 +306,7 @@ function ThreadBubble({
                                   size="sm"
                                   type="button"
                                   className="h-7 gap-1.5"
-                                  disabled={assistantActionsDisabled}
+                                  disabled={assistantActionsDisabled || actionMessageResolved}
                                   onClick={() =>
                                     onAssistantAction(
                                       /imc/i.test(item.label)
@@ -300,7 +323,7 @@ function ThreadBubble({
                                   type="button"
                                   variant="outline"
                                   className="h-7 gap-1.5"
-                                  disabled={assistantActionsDisabled}
+                                  disabled={assistantActionsDisabled || actionMessageResolved}
                                   onClick={() =>
                                     onAssistantAction(
                                       /imc/i.test(item.label)
@@ -343,7 +366,7 @@ function ThreadBubble({
                     size="sm"
                     variant="outline"
                     className={cn("gap-1.5", buttonPressFeedbackClass)}
-                    disabled={assistantActionsDisabled || downloadBusy}
+                    disabled={assistantActionsDisabled || actionMessageResolved || downloadBusy}
                     aria-busy={downloadBusy}
                     onClick={() => onDownloadReport(payload.reportId!)}
                   >
@@ -360,7 +383,7 @@ function ThreadBubble({
                     size="sm"
                     variant="ghost"
                     className={buttonPressFeedbackClass}
-                    disabled={assistantActionsDisabled}
+                    disabled={assistantActionsDisabled || actionMessageResolved}
                     onClick={() => onAssistantAction("confirm_generate_report")}
                   >
                     Gerar novamente
@@ -376,7 +399,7 @@ function ThreadBubble({
                       size="sm"
                       variant={action.id === "cancel_pending_action" ? "outline" : "default"}
                       className={buttonPressFeedbackClass}
-                      disabled={assistantActionsDisabled}
+                      disabled={assistantActionsDisabled || actionMessageResolved}
                       onClick={() => onAssistantAction(action.id)}
                     >
                       {action.label}
@@ -494,6 +517,10 @@ export function NewCaseWorkspace({
 
   const awaitingPendingActionConfirmation = useMemo(
     () => getAwaitingPendingActionConfirmation(messages),
+    [messages],
+  )
+  const resolvedAssistantActionMessageIds = useMemo(
+    () => getResolvedAssistantActionMessageIds(messages),
     [messages],
   )
 
@@ -682,18 +709,30 @@ export function NewCaseWorkspace({
       aria-label="Área do novo caso"
       className="-m-8 flex h-[calc(100dvh-2rem)] flex-col overflow-hidden bg-sidebar"
     >
-      <header className="supports-backdrop-filter:bg-background/80 shrink-0 border-b border-border bg-background/95 px-8 py-4 backdrop-blur">
-        <div className="flex items-center justify-between gap-3">
-          <div className="min-w-0 space-y-1">
-            <h1 className="truncate text-lg font-semibold">
-              {patient?.name ?? "Paciente não associado"}
-            </h1>
-            <p className="truncate text-sm text-muted-foreground">
-              {patient?.responsible
-                ? `Responsável: ${patient.responsible}`
-                : "Responsável não informado"}
-            </p>
+      <header className="shrink-0 border-b border-border/60 bg-transparent px-8 py-4 backdrop-blur-md">
+        <div className="flex items-center justify-between gap-4 rounded-xl border border-border/60 bg-card/80 px-4 py-3 shadow-xs backdrop-blur-sm">
+          <div className="min-w-0 space-y-2">
+            <div className="flex items-center gap-2">
+              <Badge variant="secondary" className="h-6 rounded-full px-2.5 text-[11px]">
+                Workspace ativo
+              </Badge>
+              <span className="truncate text-xs text-muted-foreground">
+                Atendimento pediátrico em andamento
+              </span>
+            </div>
+
+            <div>
+              <h1 className="truncate text-xl font-semibold tracking-tight">
+                {patient?.name ?? "Paciente não associado"}
+              </h1>
+              <p className="truncate text-sm text-muted-foreground">
+                {patient?.responsible
+                  ? `Responsável: ${patient.responsible}`
+                  : "Responsável não informado"}
+              </p>
+            </div>
           </div>
+
           <div className="flex items-center gap-2">
             <Button asChild variant="outline" size="sm" className={buttonPressFeedbackClass}>
               <Link href="/dashboard/cases/select-patient">Trocar paciente</Link>
@@ -735,6 +774,7 @@ export function NewCaseWorkspace({
                   onAssistantAction={handleAssistantAction}
                   onDownloadReport={handleDownloadReport}
                   assistantActionsDisabled={isInteractionLocked}
+                  actionMessageResolved={resolvedAssistantActionMessageIds.has(message.id)}
                   downloadBusy={isDownloadingReport}
                 />
               ))}
@@ -787,8 +827,8 @@ export function NewCaseWorkspace({
 
       <Separator />
 
-      <footer className="shrink-0 border-t border-border bg-background px-8 py-4">
-        <div className="mx-auto flex max-w-5xl flex-col gap-3">
+      <footer className="shrink-0 border-t border-border/60 bg-transparent px-8 py-4 backdrop-blur-md">
+        <div className="mx-auto flex max-w-5xl flex-col gap-3 rounded-xl border border-border/60 bg-card/80 p-4 shadow-xs backdrop-blur-sm">
           <div className="flex gap-2 overflow-x-auto pb-1">
             {chips.slice(0, 4).map((chip) => {
               const chipBusy = chipsLoading || submittingChipId === chip.id
