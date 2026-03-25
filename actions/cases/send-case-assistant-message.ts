@@ -19,6 +19,7 @@ import { generateCaseReportAction } from "@/actions/cases/generate-case-report"
 import { updateCaseDashboardChatContextSummary } from "@/modules/cases/update-case-dashboard-chat-context-summary"
 import { stripAssistantUiLabelsFromReply } from "@/lib/format-clinical-assistant-sections"
 import { polishAssistantReplyForDisplay } from "@/modules/groq/assistant-case-chat"
+import { updatePatient, type UpdatePatientPayload } from "@/modules/patients/update-patient"
 
 const PAYLOAD_PREFIX = "__FALAPED_JSON__"
 
@@ -27,6 +28,8 @@ type AssistantActionId =
   | "confirm_generate_report"
   | "confirm_generate_medical_certificate"
   | "confirm_generate_prescription"
+  | "confirm_update_patient_profile"
+  | "decline_update_patient_profile"
   | "confirm_anthropometric_reference"
   | "keep_previous_anthropometric_reference"
   | "confirm_guardian_alert_storage"
@@ -109,6 +112,32 @@ function truncateConversationWindow(messages: Array<{ role: "user" | "assistant"
   return { trimmed, droppedCount }
 }
 
+function formatPatientProfileUpdateSuccessReply(
+  payload: UpdatePatientPayload,
+): string {
+  const labelForKey: Partial<Record<keyof UpdatePatientPayload, string>> = {
+    name: "nome",
+    birth_date: "data de nascimento",
+    responsible: "responsável",
+    contact_phone: "telefone",
+    sex: "sexo",
+    legal_guardian: "responsável legal",
+    blood_type: "tipo sanguíneo",
+    weight: "peso",
+    height: "altura",
+    head_circumference: "perímetro cefálico",
+    allergies: "alergias",
+    current_medications: "medicações em uso",
+    medical_history: "histórico médico",
+  }
+  const keys = (Object.keys(payload) as (keyof UpdatePatientPayload)[]).filter(
+    (key) => payload[key] !== undefined,
+  )
+  if (keys.length === 0) return "Perfil do paciente atualizado."
+  const parts = keys.map((key) => labelForKey[key] ?? String(key))
+  return `Perfil do paciente atualizado: ${parts.join(", ")}.`
+}
+
 function buildAssistantActionsFromPendingAction(
   pendingAction: string,
 ): Array<{ id: AssistantActionId; label: string }> {
@@ -145,6 +174,19 @@ function buildAssistantActionsFromPendingAction(
       {
         id: "keep_previous_anthropometric_reference",
         label: "Manter valores anteriores",
+      },
+    ]
+  }
+
+  if (pendingAction === "review_patient_profile_update") {
+    return [
+      {
+        id: "confirm_update_patient_profile",
+        label: "Confirmar atualização dos dados do paciente",
+      },
+      {
+        id: "decline_update_patient_profile",
+        label: "Não atualizar dados do paciente",
       },
     ]
   }
@@ -249,6 +291,24 @@ export async function sendCaseAssistantMessageAction(
           return parsed > 3 ? parsed / 100 : parsed
         })(),
       },
+      patientProfile: caseDetail?.patient
+        ? {
+          id: caseDetail.patient.id,
+          name: caseDetail.patient.name,
+          birth_date: caseDetail.patient.birth_date,
+          responsible: caseDetail.patient.responsible,
+          contact_phone: caseDetail.patient.contact_phone,
+          sex: caseDetail.patient.sex,
+          legal_guardian: caseDetail.patient.legal_guardian,
+          weight: caseDetail.patient.weight,
+          height: caseDetail.patient.height,
+          head_circumference: caseDetail.patient.head_circumference,
+          blood_type: caseDetail.patient.blood_type,
+          allergies: caseDetail.patient.allergies,
+          current_medications: caseDetail.patient.current_medications,
+          medical_history: caseDetail.patient.medical_history,
+        }
+        : undefined,
     })
 
     let reportId: string | undefined
@@ -280,6 +340,21 @@ export async function sendCaseAssistantMessageAction(
       // Placeholder for future prescription generation flow confirmation.
     }
 
+    let patientProfileUpdateSuccessReply: string | undefined
+    if (routed.action === "confirm_update_patient_profile") {
+      if (caseDetail?.patient?.id && routed.patientProfileUpdatePayload) {
+        await updatePatient(
+          supabase,
+          caseDetail.patient.id,
+          profile.id,
+          routed.patientProfileUpdatePayload,
+        )
+        patientProfileUpdateSuccessReply = formatPatientProfileUpdateSuccessReply(
+          routed.patientProfileUpdatePayload,
+        )
+      }
+    }
+
     if (routed.action === "none") {
       if (routed.intent === "CLOSE_CASE") {
         await updateCasePendingAction(supabase, caseId, profile.id, "close_case")
@@ -297,6 +372,10 @@ export async function sendCaseAssistantMessageAction(
             ? "generate_medical_certificate"
             : routed.intent === "GENERATE_PRESCRIPTION"
               ? "generate_prescription"
+              : routed.intent === "REVIEW_PATIENT_PROFILE_UPDATE"
+                ? routed.showPatientProfileUpdateActions === true
+                  ? "review_patient_profile_update"
+                  : null
               : routed.intent === "REVIEW_ANTHROPOMETRIC_REFERENCE"
                 ? "review_anthropometric_reference"
                 : routed.intent === "REVIEW_GUARDIAN_ALERT"
@@ -309,16 +388,20 @@ export async function sendCaseAssistantMessageAction(
       !reportHasMinimumData
 
     const assistantReplySanitized = stripAssistantUiLabelsFromReply(routed.reply)
-    const polishedAssistantReply = await polishAssistantReplyForDisplay({
-      reply: assistantReplySanitized,
-      intent: routed.intent,
-      userMessage: content,
-    })
+    const polishedAssistantReply =
+      patientProfileUpdateSuccessReply !== undefined
+        ? assistantReplySanitized
+        : await polishAssistantReplyForDisplay({
+            reply: assistantReplySanitized,
+            intent: routed.intent,
+            userMessage: content,
+          })
 
     const replyContent =
-      isReportInsufficientGate
+      patientProfileUpdateSuccessReply ??
+      (isReportInsufficientGate
         ? "Ainda não há conteúdo clínico suficiente para gerar o relatório. Registre sintomas, exame e conduta para continuar."
-        : polishedAssistantReply
+        : polishedAssistantReply)
 
     const storedDataPayload =
       routed.storedData.length > 0

@@ -77,6 +77,30 @@ const navMain = [
 export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
   const pathname = usePathname()
 
+  const isNavItemActive = React.useCallback(
+    (url: string): boolean => {
+      if (url === "/dashboard") return pathname === "/dashboard"
+
+      if (url === "/dashboard/cases/select-patient") {
+        return (
+          pathname === "/dashboard/cases/select-patient" ||
+          pathname.startsWith("/dashboard/cases/new")
+        )
+      }
+
+      if (url === "/dashboard/cases") {
+        return (
+          (pathname === "/dashboard/cases" || pathname.startsWith("/dashboard/cases/")) &&
+          !pathname.startsWith("/dashboard/cases/select-patient") &&
+          !pathname.startsWith("/dashboard/cases/new")
+        )
+      }
+
+      return pathname.startsWith(url)
+    },
+    [pathname],
+  )
+
   return (
     <Sidebar {...props}>
       <SidebarHeader className="flex justify-center items-center border-b border-b-border border-t-8 border-t-primary">
@@ -96,11 +120,7 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
           <SidebarGroupLabel>Plataforma</SidebarGroupLabel>
           <SidebarMenu>
             {navMain.map((group) => {
-              const hasActiveChild = group.items.some((item) =>
-                item.url === "/dashboard"
-                  ? pathname === "/dashboard"
-                  : pathname.startsWith(item.url),
-              )
+              const hasActiveChild = group.items.some((item) => isNavItemActive(item.url))
 
               return (
                 <Collapsible
@@ -120,10 +140,7 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
                     <CollapsibleContent>
                       <SidebarMenuSub>
                         {group.items.map((item) => {
-                          const isActive =
-                            item.url === "/dashboard"
-                              ? pathname === "/dashboard"
-                              : pathname.startsWith(item.url)
+                          const isActive = isNavItemActive(item.url)
                           return (
                             <SidebarMenuSubItem key={item.title}>
                               <SidebarMenuSubButton asChild isActive={isActive}>

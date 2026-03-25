@@ -69,6 +69,8 @@ type AssistantPayload = {
     | "confirm_generate_report"
     | "confirm_generate_medical_certificate"
     | "confirm_generate_prescription"
+    | "confirm_update_patient_profile"
+    | "decline_update_patient_profile"
     | "confirm_anthropometric_reference"
     | "keep_previous_anthropometric_reference"
     | "confirm_guardian_alert_storage"
@@ -605,6 +607,12 @@ export function NewCaseWorkspace({
     }
     if (actionId === "confirm_generate_prescription") {
       handleSend("confirmar geração de receita", bypass)
+    }
+    if (actionId === "confirm_update_patient_profile") {
+      handleSend("confirmar atualização dos dados do paciente", bypass)
+    }
+    if (actionId === "decline_update_patient_profile") {
+      handleSend("não atualizar dados do paciente", bypass)
     }
     if (actionId === "confirm_anthropometric_reference") {
       handleSend("confirmar novos dados antropométricos", bypass)
