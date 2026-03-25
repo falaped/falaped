@@ -3,7 +3,10 @@
 import { createClient } from "@/lib/supabase/server"
 import { GROQ_TRANSCRIPTION_MAX_FILE_BYTES } from "@/lib/constants"
 import { getAuthenticatedUser } from "@/modules/supabase/get-authenticated-user"
-import { transcribeAudioFile } from "@/modules/groq/transcribe-audio"
+import {
+  TRANSCRIPTION_REJECTED_UNUSABLE,
+  transcribeAudioFile,
+} from "@/modules/groq/transcribe-audio"
 
 export type TranscribeNewCaseAudioActionResult =
   | { ok: true; text: string }
@@ -39,6 +42,13 @@ export async function transcribeNewCaseAudioAction(
     return { ok: true, text }
   } catch (error) {
     const message = error instanceof Error ? error.message : "Erro na transcrição."
+    if (message === TRANSCRIPTION_REJECTED_UNUSABLE) {
+      return {
+        ok: false,
+        error:
+          "O áudio não gerou uma transcrição confiável (ruído, silêncio ou interferência). Fale mais perto do microfone e tente novamente.",
+      }
+    }
     if (message.includes("429")) {
       return {
         ok: false,
