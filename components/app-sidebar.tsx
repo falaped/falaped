@@ -48,7 +48,6 @@ const navMain = [
     icon: MessagesSquareIcon,
     isActive: false,
     items: [
-      { title: "Novo caso", url: "/dashboard/cases/select-patient" },
       { title: "Casos", url: "/dashboard/cases" },
       { title: "Discussões", url: "/dashboard/discussions" },
       { title: "Pacientes", url: "/dashboard/patients" },
@@ -81,18 +80,10 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
     (url: string): boolean => {
       if (url === "/dashboard") return pathname === "/dashboard"
 
-      if (url === "/dashboard/cases/select-patient") {
-        return (
-          pathname === "/dashboard/cases/select-patient" ||
-          pathname.startsWith("/dashboard/cases/new")
-        )
-      }
-
       if (url === "/dashboard/cases") {
         return (
-          (pathname === "/dashboard/cases" || pathname.startsWith("/dashboard/cases/")) &&
-          !pathname.startsWith("/dashboard/cases/select-patient") &&
-          !pathname.startsWith("/dashboard/cases/new")
+          pathname === "/dashboard/cases" ||
+          pathname.startsWith("/dashboard/cases/")
         )
       }
 
@@ -142,7 +133,7 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
                         {group.items.map((item) => {
                           const isActive = isNavItemActive(item.url)
                           return (
-                            <SidebarMenuSubItem key={item.title}>
+                            <SidebarMenuSubItem key={item.url}>
                               <SidebarMenuSubButton asChild isActive={isActive}>
                                 <Link href={item.url}>
                                   <span>{item.title}</span>

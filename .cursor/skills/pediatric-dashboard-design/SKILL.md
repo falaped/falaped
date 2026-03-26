@@ -1,13 +1,13 @@
 ---
 name: pediatric-dashboard-design
-description: Expert em design de dashboard pediátrico com foco em UX/UI, modelagem de páginas e padrões visuais. Use ao criar ou alterar páginas do dashboard, componentes feature (PatientCard, CaseList), forms pediátricos, empty states ou ao falar de layout, hierarquia visual e copy em PT-BR para o contexto pediátrico.
+description: Expert em design de dashboard pediátrico com foco em UX/UI, modelagem de páginas e padrões visuais. Use ao criar ou alterar páginas do dashboard, componentes feature (PatientCard, CasesTable), forms pediátricos, empty states ou ao falar de layout, hierarquia visual e copy em PT-BR para o contexto pediátrico.
 ---
 
 # Pediatric Dashboard Design
 
 ## Quando usar
 
-Ao criar ou alterar páginas do dashboard, componentes feature (PatientCard, CaseList), forms pediátricos, empty states, listas de pacientes/casos, ou ao falar de layout, hierarquia visual e copy em PT-BR para o contexto pediátrico.
+Ao criar ou alterar páginas do dashboard, componentes feature (PatientCard, CasesTable), forms pediátricos, empty states, listas de pacientes/casos, ou ao falar de layout, hierarquia visual e copy em PT-BR para o contexto pediátrico.
 
 Rules aplicáveis: `design-system`, `ux-ui-minimalist`, `audience-context`, `forms` (validação técnica).
 
@@ -127,9 +127,9 @@ Schema patients: `name`, `birth_date`, `responsible`, `contact_phone`, `sex`, `a
 </Card>
 ```
 
-### CaseList / CaseCard
+### CasesTable (lista em `/dashboard/cases`)
 
-Prioridade: casos ativos primeiro; acesso rápido à conversa.
+Prioridade: casos ativos primeiro; acesso rápido ao detalhe do caso (linha ou botão Abrir caso).
 
 1. **Identificação**: telefone ou nome do responsável
 2. **Status**: `active` | `closed` — Badge ou texto
@@ -252,7 +252,7 @@ Tom: claro, profissional, orientado à ação quando há CTA.
 - [ ] Página segue anatomia (header h1 + descrição + conteúdo)
 - [ ] Tokens de cor; sem hex/rgb
 - [ ] Empty state com copy apropriado; CTA quando fizer sentido
-- [ ] PatientCard/CaseCard: contact_phone e responsible visíveis quando aplicável
+- [ ] PatientCard/CasesTable: contact_phone e responsible visíveis quando aplicável
 - [ ] Form: responsible e contact_phone com validações; copy PT-BR
 - [ ] Hierarquia tipográfica consistente (text-2xl, text-sm, text-muted-foreground)
 - [ ] Espaço em branco adequado; sem poluição visual

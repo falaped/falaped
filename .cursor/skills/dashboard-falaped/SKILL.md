@@ -15,10 +15,10 @@ Ao criar ou alterar páginas, módulos, rotas, lib; ou quando a tarefa mencionar
 app/
   (auth)/login, callback/     # Auth público
   dashboard/                 # Área restrita
-    cases/                   # Lista de casos
+    cases/                   # Lista de casos (tabela); botão Criar novo caso → select-patient
       [id]/                  # Detalhe do caso (page, not-found)
       new/                   # Redirect para seleção de paciente
-      select-patient/        # Entrada do fluxo Novo Caso
+      select-patient/        # Seleção de paciente para novo caso no painel
       new/[caseId]/          # Workspace de prontuário assistido
     patients/, profile/
 lib/
@@ -80,8 +80,8 @@ modules/
 components/
   ui/                        # Shadcn primitives
   dashboard/                 # Feature components:
-                             #   Cases list: CaseCard, CaseList, CaseEmptyState, CaseSearchInput,
-                             #     CasesToolbarAndList (single list: active first, then closed by started_at),
+                             #   Cases list: CasesTable, CaseEmptyState, CaseSearchInput,
+                             #     CasesToolbarAndList (active first, then closed by started_at),
                              #     CasesContent, CasesLoading
                              #   Case detail: CaseDetailHeader, CasePatientInfo,
                              #     CaseChat, CaseQuickActions, CaseReport,

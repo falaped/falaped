@@ -2,8 +2,9 @@
 
 import { useMemo, useState } from "react"
 
+import { CaseEmptyState } from "@/components/dashboard/cases/case-empty-state"
 import { CaseSearchInput } from "@/components/dashboard/cases/case-search-input"
-import { CaseList } from "@/components/dashboard/cases/case-list"
+import { CasesTable } from "@/components/dashboard/cases/cases-table"
 import type { CaseWithPatient } from "@/modules/cases/get-cases-by-profile-id"
 
 function filterBySearch(cases: CaseWithPatient[], search: string): CaseWithPatient[] {
@@ -32,12 +33,25 @@ export function CasesToolbarAndList({ cases }: { cases: CaseWithPatient[] }) {
     [sortedCases, searchQuery],
   )
 
+  if (sortedCases.length === 0) {
+    return <CaseEmptyState />
+  }
+
   return (
     <>
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-end">
         <CaseSearchInput value={searchQuery} onChange={setSearchQuery} />
       </div>
-      <CaseList cases={filteredCases} />
+      {filteredCases.length === 0 ? (
+        <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-border px-6 py-12 text-center">
+          <p className="font-medium text-muted-foreground">Nenhum resultado encontrado.</p>
+          <p className="mt-1 text-sm text-muted-foreground/80">
+            Tente outro termo de busca ou limpe o filtro.
+          </p>
+        </div>
+      ) : (
+        <CasesTable cases={filteredCases} />
+      )}
     </>
   )
 }

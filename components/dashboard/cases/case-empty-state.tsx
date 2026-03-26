@@ -16,7 +16,8 @@ const emptyConfig = {
   all: {
     icon: SearchXIcon,
     title: "Nenhum caso encontrado.",
-    description: "Os atendimentos aparecem aqui quando iniciados pelo WhatsApp.",
+    description:
+      "Os casos aparecem aqui quando iniciados pelo WhatsApp ou pelo painel (Criar novo caso).",
   },
   search: {
     icon: SearchXIcon,
