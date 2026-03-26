@@ -4,12 +4,23 @@ import { looksLikeCaptionHallucination } from "@/modules/groq/lib/caption-halluc
 const TRANSCRIPTION_MODEL = "whisper-large-v3"
 
 /**
- * Short vocabulary hint for domain terms only. Do not start with "Transcrição" or similar —
- * Whisper often hallucinates YouTube-style captions ("Transcrição e Legendas…") when the prompt
- * contains those words and audio is borderline.
+ * Whisper `prompt`: short domain vocabulary only (not a chat system message).
+ * Do not use words like "Transcrição" or "Legendas" — borderline audio can trigger
+ * YouTube-style caption hallucinations when those tokens appear in the prompt.
  */
-const DOMAIN_VOCABULARY_HINT =
-  "peso, altura, comprimento, perímetro cefálico, febre, vacinas, exame físico, responsável, aleitamento."
+const WHISPER_DOMAIN_TERMS = [
+  "peso",
+  "altura",
+  "comprimento",
+  "perímetro cefálico",
+  "febre",
+  "vacinas",
+  "exame físico",
+  "responsável",
+  "aleitamento",
+] as const
+
+const DOMAIN_VOCABULARY_HINT = `${WHISPER_DOMAIN_TERMS.join(", ")}.`
 
 /** Thrown when the model output matches known caption-style hallucination patterns. */
 export const TRANSCRIPTION_REJECTED_UNUSABLE = "TRANSCRIPTION_REJECTED_UNUSABLE"

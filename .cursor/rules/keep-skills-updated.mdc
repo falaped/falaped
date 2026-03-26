@@ -20,6 +20,7 @@ When making changes that affect shared context, update the relevant **skills**, 
 | **feature-planning-agile-po** | Discovery, PRD, user stories, priorização, riscos/gargalos (Agile Master + PO) | `SKILL.md`, `reference.md` |
 | **creative-director-falaped** | Direção criativa e discovery UX/UI; alinhamento a design system e tokens; complementa feature-planning-agile-po | `SKILL.md`, `reference.md` |
 | **code-refactoring** | Análise e refatoração de código por domínio/módulo/pasta; cruza com rules do projeto; relatório + aprovação + execução | `SKILL.md`, `reference.md` |
+| **prompt-engineering** | Validação, refatoração e criação de prompts LLM seguindo boas práticas OpenAI + Groq; padrões zero-shot, few-shot, CoT; convenções FALAPED para modules/groq/ | `SKILL.md`, `reference.md` |
 
 ## Rules do Projeto
 

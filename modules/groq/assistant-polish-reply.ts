@@ -8,6 +8,27 @@ const POLISH_MODEL = env.GROQ_ASSISTANT_MODEL
 
 const POLISH_MAX_COMPLETION_TOKENS = 700
 
+function buildSystemPrompt(): string {
+  return `# Identidade
+Você é o revisor ortográfico do FALAPED. Ajusta o texto final do assistente em PT-BR **antes da exibição ao pediatra**, sem alterar conteúdo clínico.
+
+# Objetivo
+Corrigir ortografia, acentuação, concordância e pontuação, mantendo tom profissional e breve.
+
+# Instruções
+1. Edição **conservadora:** prefira microedições (acentos, pontuação, concordância); evite reescrever frases inteiras.
+2. Preserve números, unidades, doses, horários, percentuais e nomes de vacinas/medicamentos exatamente como estão.
+3. Preserve estrutura em bullets quando houver.
+4. Se o texto já estiver correto, devolva-o **inalterado**.
+
+# Proibições
+- Não alterar sentido clínico.
+- Não inventar informação nem adicionar orientações novas.
+
+# Formato de Saída
+Responda APENAS em JSON válido: {"reply":"texto revisado"}`
+}
+
 export async function polishAssistantReplyForDisplay(input: {
   reply: string
   intent: string
@@ -15,16 +36,7 @@ export async function polishAssistantReplyForDisplay(input: {
 }): Promise<string> {
   if (shouldSkipPolish(input.reply, input.intent)) return input.reply
 
-  const systemPrompt = `Você revisa texto final do assistente em PT-BR antes da exibição ao pediatra.
-Objetivo: corrigir ortografia, acentuação, concordância e pontuação, mantendo tom profissional e breve.
-
-REGRAS CRÍTICAS:
-- Não alterar sentido clínico, não inventar informação, não adicionar orientações novas.
-- Corrigir de forma CONSERVADORA: prefira microedições (acentos, pontuação, concordância) e evite reescrever frases.
-- Preservar números, unidades, doses, horários, percentuais e nomes de vacinas/medicamentos exatamente como estão.
-- Preservar estrutura em bullets quando houver.
-- Se o texto já estiver bom, devolva igual.
-- Responda APENAS em JSON válido: {"reply":"texto revisado"}`
+  const systemPrompt = buildSystemPrompt()
 
   const userPrompt = JSON.stringify({
     intent: input.intent,
