@@ -169,7 +169,7 @@ export function PrescriptionTemplateTable({
                       <MoreHorizontal className="h-4 w-4" />
                     </Button>
                   </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="min-w-[12rem]">
+                  <DropdownMenuContent align="end" className="min-w-48">
                     <DropdownMenuItem
                       onClick={() => setPreviewId(template.id)}
                     >

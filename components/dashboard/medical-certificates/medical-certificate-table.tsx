@@ -207,86 +207,86 @@ export function MedicalCertificateTable({
         ) : null}
 
         <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead className="w-[40px] pr-0">
-              <Checkbox
-                aria-label="Selecionar todos"
-                disabled={tableBusy}
-                checked={
-                  allSelected ? true : someSelected ? "indeterminate" : false
-                }
-                onCheckedChange={() => toggleAll()}
-              />
-            </TableHead>
-            <TableHead>Data</TableHead>
-            <TableHead>Tipo</TableHead>
-            <TableHead>Paciente</TableHead>
-            <TableHead className="w-[80px] text-right">Ações</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {displayCertificates.map((cert) => {
-            const subtitle = cert.patient_name ?? cert.location_state ?? "—"
-            return (
-              <TableRow key={cert.id} data-state={selected.has(cert.id) ? "selected" : undefined}>
-                <TableCell className="pr-0">
-                  <Checkbox
-                    aria-label={`Selecionar atestado de ${formatDate(cert.issued_at)}`}
-                    disabled={tableBusy}
-                    checked={selected.has(cert.id)}
-                    onCheckedChange={() => toggleOne(cert.id)}
-                  />
-                </TableCell>
-                <TableCell className="whitespace-nowrap font-medium">
-                  {formatDate(cert.issued_at)}
-                </TableCell>
-                <TableCell className="whitespace-nowrap text-muted-foreground">
-                  {TYPE_LABELS[cert.type]}
-                </TableCell>
-                <TableCell className="min-w-0 max-w-[200px] truncate text-muted-foreground">
-                  {subtitle}
-                </TableCell>
-                <TableCell className="text-right">
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8"
-                        disabled={tableBusy}
-                        aria-label="Abrir ações"
-                      >
-                        <MoreHorizontal className="h-4 w-4" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end" className="min-w-[12rem]">
-                      {cert.pdf_storage_path ? (
-                        <DropdownMenuItem asChild>
-                          <Link
-                            href={`/api/medical-certificates/${cert.id}/download`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                          >
-                            <Download className="mr-2 h-4 w-4" />
-                            Baixar PDF
-                          </Link>
+          <TableHeader>
+            <TableRow>
+              <TableHead className="w-[40px] pr-0">
+                <Checkbox
+                  aria-label="Selecionar todos"
+                  disabled={tableBusy}
+                  checked={
+                    allSelected ? true : someSelected ? "indeterminate" : false
+                  }
+                  onCheckedChange={() => toggleAll()}
+                />
+              </TableHead>
+              <TableHead>Data</TableHead>
+              <TableHead>Tipo</TableHead>
+              <TableHead>Paciente</TableHead>
+              <TableHead className="w-[80px] text-right">Ações</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {displayCertificates.map((cert) => {
+              const subtitle = cert.patient_name ?? cert.location_state ?? "—"
+              return (
+                <TableRow key={cert.id} data-state={selected.has(cert.id) ? "selected" : undefined}>
+                  <TableCell className="pr-0">
+                    <Checkbox
+                      aria-label={`Selecionar atestado de ${formatDate(cert.issued_at)}`}
+                      disabled={tableBusy}
+                      checked={selected.has(cert.id)}
+                      onCheckedChange={() => toggleOne(cert.id)}
+                    />
+                  </TableCell>
+                  <TableCell className="whitespace-nowrap font-medium">
+                    {formatDate(cert.issued_at)}
+                  </TableCell>
+                  <TableCell className="whitespace-nowrap text-muted-foreground">
+                    {TYPE_LABELS[cert.type]}
+                  </TableCell>
+                  <TableCell className="min-w-0 max-w-[200px] truncate text-muted-foreground">
+                    {subtitle}
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8"
+                          disabled={tableBusy}
+                          aria-label="Abrir ações"
+                        >
+                          <MoreHorizontal className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end" className="min-w-48">
+                        {cert.pdf_storage_path ? (
+                          <DropdownMenuItem asChild>
+                            <Link
+                              href={`/api/medical-certificates/${cert.id}/download`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                            >
+                              <Download className="mr-2 h-4 w-4" />
+                              Baixar PDF
+                            </Link>
+                          </DropdownMenuItem>
+                        ) : null}
+                        <DropdownMenuItem
+                          variant="destructive"
+                          onClick={() => setDeleteId(cert.id)}
+                        >
+                          <Trash2 className="mr-2 h-4 w-4" />
+                          Excluir atestado
                         </DropdownMenuItem>
-                      ) : null}
-                      <DropdownMenuItem
-                        variant="destructive"
-                        onClick={() => setDeleteId(cert.id)}
-                      >
-                        <Trash2 className="mr-2 h-4 w-4" />
-                        Excluir atestado
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </TableCell>
-              </TableRow>
-            )
-          })}
-        </TableBody>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </TableCell>
+                </TableRow>
+              )
+            })}
+          </TableBody>
         </Table>
       </div>
 

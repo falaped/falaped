@@ -122,7 +122,7 @@ export function ReportTemplateTable({
                 key={template.id}
                 className={cn(
                   isActive &&
-                    "bg-primary/5 font-medium [&_td]:text-foreground",
+                  "bg-primary/5 font-medium [&_td]:text-foreground",
                 )}
               >
                 <TableCell className="whitespace-nowrap font-medium">
@@ -161,7 +161,7 @@ export function ReportTemplateTable({
                         <MoreHorizontal className="h-4 w-4" />
                       </Button>
                     </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end" className="min-w-[12rem]">
+                    <DropdownMenuContent align="end" className="min-w-48">
                       {!isActive && (
                         <>
                           <DropdownMenuItem
