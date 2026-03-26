@@ -15,6 +15,7 @@ Ao criar ou alterar páginas, módulos, rotas, lib; ou quando a tarefa mencionar
 app/
   (auth)/login, callback/     # Auth público
   dashboard/                 # Área restrita
+    page.tsx                 # Início (`/` do dashboard): Suspense + DashboardHomeContent / DashboardHomeLoading
     cases/                   # Lista de casos (tabela); botão Criar novo caso → select-patient
       [id]/                  # Detalhe do caso (page, not-found)
       new/                   # Redirect para seleção de paciente
@@ -29,6 +30,7 @@ lib/
   strip-imc-calculation-template-prefix.ts # remove eco do template de IMC no início da reply (turno sem pedido de IMC)
   parse-anthropometrics-for-bmi.ts      # Peso/comprimento em texto livre; IMC com faixa plausível
 modules/
+  dashboard/get-dashboard-home-data.ts # Resumo Início: contagens + casos ativos recentes (MVP `/dashboard`)
   supabase/get-authenticated-user.ts   # getAuthenticatedUser – profile + authenticatedUser
   falaped-assistant/                   # Módulo principal do assistente clínico
     contracts/                         # Tipos canônicos: AssistantIntent, AssistantTurnContext, RouteResult, turn-queue
@@ -81,6 +83,7 @@ modules/
 components/
   ui/                        # Shadcn primitives
   dashboard/                 # Feature components:
+                             #   Home: DashboardHomeContent, DashboardHomeLoading (`/dashboard`)
                              #   Cases list: CasesTable, CaseEmptyState, CaseSearchInput,
                              #     CasesToolbarAndList (active first, then closed by started_at),
                              #     CasesContent, CasesLoading

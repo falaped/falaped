@@ -22,6 +22,7 @@ import { updateCaseDashboardChatContextSummary } from "@/modules/cases/update-ca
 import { stripAssistantUiLabelsFromReply } from "@/lib/format-clinical-assistant-sections"
 import { polishAssistantReplyForDisplay } from "@/modules/groq/assistant-polish-reply"
 import { updatePatient, type UpdatePatientPayload } from "@/modules/patients/update-patient"
+import { assistantMessageToModelText } from "@/modules/falaped-assistant/assistant-model-message"
 import { processAssistantTurn } from "@/modules/falaped-assistant/orchestrator/process-turn"
 import { updateCaseAssistantTurnQueue } from "@/modules/cases/update-case-assistant-turn-queue"
 import { withBlockedAssistantMessageId } from "@/modules/falaped-assistant/pipeline/assistant-turn-queue"
@@ -363,7 +364,14 @@ export async function sendCaseAssistantMessageAction(
     if (droppedCount > 3) {
       const summaryText = trimmed
         .slice(0, 5)
-        .map((message) => `${message.role === "user" ? "Médico" : "Falaped"}: ${message.content}`)
+        .map((message) => {
+          const label = message.role === "user" ? "Médico" : "Falaped"
+          const body =
+            message.role === "assistant"
+              ? assistantMessageToModelText(message.content)
+              : message.content
+          return `${label}: ${body}`
+        })
         .join(" | ")
       await updateCaseDashboardChatContextSummary(supabase, caseId, profile.id, summaryText)
     }

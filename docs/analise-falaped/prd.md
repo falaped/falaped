@@ -210,6 +210,12 @@ O FALAPED e uma plataforma para pediatras gerenciarem atendimentos originados no
 | Fluxo WhatsApp-bot | Contrato documentado | Impacta ativacao e onboarding |
 | Deploy web (Vercel) | Preparado por configuracao Next | Impacta operacao e observabilidade |
 
+## Documentos complementares
+
+| Documento | Descricao |
+|---|---|
+| [docs/prd/dashboard-home.md](../prd/dashboard-home.md) | PRD da tela Inicio (`/dashboard`), discovery e brief de UX |
+
 ## Fora do escopo deste PRD
 
 - Plano detalhado de GTM (documentado no MRD).
