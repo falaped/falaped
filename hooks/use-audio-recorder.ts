@@ -13,7 +13,7 @@ export function useAudioRecorder() {
   const audioContextRef = useRef<AudioContext | null>(null)
   const analyserRef = useRef<AnalyserNode | null>(null)
   const animationFrameRef = useRef<number | null>(null)
-  const frequencyDataRef = useRef<Uint8Array | null>(null)
+  const frequencyDataRef = useRef<Uint8Array<ArrayBuffer> | null>(null)
 
   const [state, setState] = useState<RecorderState>("idle")
   const [elapsedSeconds, setElapsedSeconds] = useState(0)
@@ -100,7 +100,9 @@ export function useAudioRecorder() {
       analyser.fftSize = 64
       source.connect(analyser)
       analyserRef.current = analyser
-      frequencyDataRef.current = new Uint8Array(analyser.frequencyBinCount)
+      frequencyDataRef.current = new Uint8Array(
+        new ArrayBuffer(analyser.frequencyBinCount),
+      )
 
       const mimeType = MediaRecorder.isTypeSupported("audio/webm")
         ? "audio/webm"
