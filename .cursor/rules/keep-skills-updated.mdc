@@ -19,6 +19,7 @@ When making changes that affect shared context, update the relevant **skills**, 
 | **pediatric-dashboard-design** | UX/UI de dashboard pediátrico, anatomia de páginas, PatientCard, CaseList, empty states | `SKILL.md`, `reference.md` |
 | **feature-planning-agile-po** | Discovery, PRD, user stories, priorização, riscos/gargalos (Agile Master + PO) | `SKILL.md`, `reference.md` |
 | **creative-director-falaped** | Direção criativa e discovery UX/UI; alinhamento a design system e tokens; complementa feature-planning-agile-po | `SKILL.md`, `reference.md` |
+| **code-refactoring** | Análise e refatoração de código por domínio/módulo/pasta; cruza com rules do projeto; relatório + aprovação + execução | `SKILL.md`, `reference.md` |
 
 ## Rules do Projeto
 
@@ -91,7 +92,7 @@ When making changes that affect shared context, update the relevant **skills**, 
 
 ## Quick Reference
 
-- **Skills:** `.cursor/skills/` – queries, arquitetura, auth, storage, dependencies, feature planning (PRD/PO), creative director (UX/UI)
+- **Skills:** `.cursor/skills/` – queries, arquitetura, auth, storage, dependencies, feature planning (PRD/PO), creative director (UX/UI), code refactoring
 - **Rules:** `.cursor/rules/` – convenções e padrões de código
 - **Docs:** `docs/` – referência legível
 

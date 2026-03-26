@@ -1,0 +1,200 @@
+---
+description: Next.js + TypeScript architecture – layers, dependency flow, patterns, route organization, TDD strategy
+alwaysApply: true
+---
+
+# Architecture
+
+## Layered Architecture
+
+```
+UI (app/, components/)
+  ↓ imports
+Server Actions / Route Handlers (app/dashboard/actions/, app/api/)
+  ↓ imports
+Modules (modules/{domain}/)
+  ↓ imports
+Lib (lib/) — pure utilities, clients, parsers
+```
+
+**Dependency direction is always downward.** A lower layer never imports from an upper layer.
+
+- **UI** renders data and dispatches user intent.
+- **Actions / Handlers** orchestrate: auth check → call module(s) → revalidate/redirect.
+- **Modules** own domain logic + data access (Supabase queries). One domain per folder.
+- **Lib** contains zero-dependency utilities: parsers, formatters, error classes, Supabase client setup.
+
+```typescript
+// ❌ BAD – module importing from app layer
+import { PatientCard } from '@/app/(dashboard)/pacientes/components/patient-card';
+
+// ❌ BAD – lib importing from modules
+import { getPatient } from '@/modules/patients/get-patient';
+
+// ✅ GOOD – action orchestrates module + lib
+import { getAuthenticatedUser } from '@/modules/authenticated-users/get-authenticated-user';
+import { createPatient } from '@/modules/patients/create-patient';
+import { ValidationError } from '@/lib/errors';
+```
+
+## No Circular Dependencies
+
+If module A imports from module B, module B must never import from module A. Extract shared logic to `lib/` or a third module.
+
+## Module Contracts
+
+Each module exposes a **public API** through its exported functions. Internal helpers stay unexported.
+
+```
+modules/patients/
+  get-patients-by-user-phone.ts   ← public (exported function)
+  create-patient.ts               ← public
+  validate-patient-age.ts         ← internal helper (not imported outside patients/)
+  types.ts                        ← shared types for the domain
+```
+
+- Prefer **one function per file** with a matching kebab-case filename.
+- Cross-module types used in 3+ domains → extract to `types/` at root or `lib/types.ts`.
+
+## Colocation
+
+Keep related code close to where it's used:
+
+| Artifact | Location |
+|----------|----------|
+| Page-specific component | `app/(dashboard)/pacientes/components/` |
+| Reusable component | `components/` or `components/dashboard/` |
+| Server Action for a feature | `app/dashboard/actions/{module}/` |
+| Module test | `modules/{domain}/<module>.spec.ts` (colocated) |
+| Route-level loading/error | `app/(dashboard)/pacientes/loading.tsx` |
+
+## Design Patterns
+
+### Composition over Inheritance
+
+Never use class hierarchies. Compose behavior through functions and hooks.
+
+```typescript
+// ✅ GOOD – compose small functions
+const enrichedPatient = addAge(addFullName(patient));
+
+// ✅ GOOD – compose hooks
+function usePatientDetails(id: string) {
+  const patient = usePatient(id);
+  const cases = usePatientCases(id);
+  return { patient, cases };
+}
+```
+
+### Repository Pattern (via Modules)
+
+Each `modules/{domain}/` folder acts as a repository. All data access for a domain goes through its module — never query Supabase directly in components or actions.
+
+### Factory Helpers (for Tests and Data Building)
+
+```typescript
+function buildPatient(overrides?: Partial<Patient>): Patient {
+  return { id: 'test-id', name: 'Test', birth_date: null, ...overrides };
+}
+```
+
+## Next.js App Router
+
+### Route Organization
+
+```
+app/
+  (auth)/           # Public auth pages (login, callback)
+  (dashboard)/      # Authenticated dashboard pages
+    layout.tsx       # Sidebar, auth guard
+    pacientes/
+      page.tsx
+      [id]/
+        page.tsx
+        editar/page.tsx
+      components/    # Page-specific client components
+  api/               # Route handlers (webhooks, external integrations only)
+```
+
+- **Route groups** `(auth)`, `(dashboard)` for layout separation without URL impact.
+- **Dynamic segments** `[id]` for entity detail pages.
+- **API routes** only for webhooks and external integrations; prefer Server Actions for internal CRUD.
+
+### Server vs Client Decision
+
+| Need | Use |
+|------|-----|
+| Data fetching | Server Component (RSC) |
+| Hooks (`useState`, `useEffect`) | Client Component |
+| Event handlers (`onClick`, `onSubmit`) | Client Component |
+| Browser APIs (`localStorage`, `window`) | Client Component |
+| Static rendering with data | Server Component |
+| Interactive list with search/filter | Client Component + react-query |
+
+**Default to Server Component.** Add `"use client"` only when the component requires interactivity.
+
+### Data Flow Pattern
+
+```tsx
+// Server Component fetches → passes to Client Component
+export default async function PacientesPage() {
+  const supabase = await createServerClient();
+  const user = await getAuthenticatedUser(supabase);
+  if (!user) redirect('/login');
+  return <PatientListClient userPhone={user.authenticatedUser.phone} />;
+}
+```
+
+### Caching and Revalidation
+
+- `revalidatePath` after mutations in Server Actions.
+- `revalidateTag` for fine-grained cache invalidation when using `fetch` with `next: { tags: [...] }`.
+- Avoid `cache: 'no-store'` globally; be intentional about what's dynamic.
+
+### Streaming and Suspense
+
+Wrap slow data sections in `<Suspense>` with a fallback to unblock the page.
+
+```tsx
+<Suspense fallback={<CaseListSkeleton />}>
+  <CaseList userPhone={userPhone} />
+</Suspense>
+```
+
+Use `loading.tsx` for full-page loading states.
+
+## TDD Integration
+
+### What to Test at Each Layer
+
+| Layer | Test? | How |
+|-------|-------|-----|
+| **Lib** (parsers, formatters, errors) | Yes | Unit tests (`node:test`), pure functions |
+| **Modules** (business logic, transforms) | Yes | Unit tests for pure logic; skip Supabase calls |
+| **Actions / Handlers** | No | Integration-level; covered by E2E if needed |
+| **Components** | No | No jsdom in stack; visual testing or E2E |
+
+### Test-First Architecture
+
+Design modules so business logic is **extractable and testable** without I/O:
+
+```typescript
+// ✅ GOOD – pure logic separated from I/O
+export function calculateAge(birthDate: string): number { /* pure */ }
+export function isEligibleForVaccine(age: number, vaccines: Vaccine[]): boolean { /* pure */ }
+
+// I/O function calls the pure ones
+export async function checkVaccineEligibility(supabase: SupabaseClient, patientId: string) {
+  const patient = await getPatient(supabase, patientId);
+  const age = calculateAge(patient.birth_date);
+  return isEligibleForVaccine(age, patient.vaccines);
+}
+```
+
+### Red → Green → Refactor
+
+1. Write failing test describing behavior.
+2. Minimal code to pass.
+3. Refactor without changing behavior; tests stay green.
+
+Test files colocated: `modules/{domain}/<module>.spec.ts`.

@@ -22,9 +22,9 @@ import { updateCaseDashboardChatContextSummary } from "@/modules/cases/update-ca
 import { stripAssistantUiLabelsFromReply } from "@/lib/format-clinical-assistant-sections"
 import { polishAssistantReplyForDisplay } from "@/modules/groq/assistant-case-chat"
 import { updatePatient, type UpdatePatientPayload } from "@/modules/patients/update-patient"
-import { processDashboardAssistantTurn } from "@/modules/dashboard-assistant/orchestrator/process-turn"
+import { processAssistantTurn } from "@/modules/falaped-assistant/orchestrator/process-turn"
 import { updateCaseAssistantTurnQueue } from "@/modules/cases/update-case-assistant-turn-queue"
-import { withBlockedAssistantMessageId } from "@/modules/dashboard-assistant/pipeline/assistant-turn-queue"
+import { withBlockedAssistantMessageId } from "@/modules/falaped-assistant/pipeline/assistant-turn-queue"
 
 const PAYLOAD_PREFIX = "__FALAPED_JSON__"
 const UUID_PATTERN =
@@ -368,7 +368,7 @@ export async function sendCaseAssistantMessageAction(
       await updateCaseDashboardChatContextSummary(supabase, caseId, profile.id, summaryText)
     }
 
-    const processedTurn = await processDashboardAssistantTurn({
+    const processedTurn = await processAssistantTurn({
       userMessage: content,
       messages: threadMessages.map((message) => ({
         id: message.id,

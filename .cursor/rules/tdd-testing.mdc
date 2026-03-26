@@ -1,0 +1,133 @@
+---
+description: TDD workflow and testing best practices with node:test
+globs: **/*.ts
+alwaysApply: false
+---
+
+# TDD – Test-Driven Development
+
+Follow the **Red → Green → Refactor** cycle. Write the test first, watch it fail, make it pass with minimal code, then refactor.
+
+## Cycle
+
+1. **Red**: Write a failing test that describes the expected behavior.
+2. **Green**: Write the simplest production code to make it pass.
+3. **Refactor**: Clean up duplication and improve design; tests must stay green.
+
+Never skip steps. Never write production code without a failing test first.
+
+## Framework
+
+Use `node:test` and `node:assert/strict`. No external test libraries.
+
+```typescript
+import test from "node:test"
+import assert from "node:assert/strict"
+```
+
+## File Conventions
+
+- **Name**: `<module>.spec.ts` colocated next to the module under test.
+- **Imports**: use `@/` alias for production code.
+- **Structure**: flat `test()` calls; no `describe` nesting unless grouping is essential for clarity.
+
+```
+modules/patients/
+  get-patient.ts
+  get-patient.spec.ts
+```
+
+## Writing Tests
+
+### Test name describes behavior, not implementation
+
+```typescript
+// ✅ GOOD
+test("orderActions deduplicates by kind", () => { ... })
+
+// ❌ BAD
+test("test orderActions", () => { ... })
+test("should work", () => { ... })
+```
+
+### One assertion concept per test
+
+Each test verifies one behavior. Multiple `assert` calls are fine if they assert the same concept.
+
+```typescript
+// ✅ GOOD – one concept (confirmation flags)
+test("actionRequiresConfirmation returns correct values", () => {
+  assert.equal(actionRequiresConfirmation("GENERATE_REPORT"), true)
+  assert.equal(actionRequiresConfirmation("CALCULATE_BMI"), false)
+})
+
+// ❌ BAD – mixing unrelated concerns
+test("actions work correctly", () => {
+  assert.equal(orderActions(actions).length, 3)
+  assert.equal(actionRequiresConfirmation("CHAT"), false)
+})
+```
+
+### Use factory helpers for test data
+
+Extract small helpers to build test objects; keep tests readable.
+
+```typescript
+function action(kind: TurnAction["kind"], source: TurnAction["source"] = "llm"): TurnAction {
+  return {
+    kind,
+    source,
+    originalInput: "test",
+    commandMessage: "test",
+    requiresConfirmation: actionRequiresConfirmation(kind),
+  }
+}
+```
+
+### Arrange–Act–Assert
+
+```typescript
+test("orderActions sorts by canonical priority", () => {
+  // Arrange
+  const actions = [action("GENERATE_REPORT"), action("CALCULATE_BMI")]
+
+  // Act
+  const ordered = orderActions(actions)
+
+  // Assert
+  assert.deepEqual(
+    ordered.map((a) => a.kind),
+    ["CALCULATE_BMI", "GENERATE_REPORT"],
+  )
+})
+```
+
+## Assertions
+
+| Need | Use |
+|------|-----|
+| Primitive equality | `assert.equal(actual, expected)` |
+| Object/array deep comparison | `assert.deepEqual(actual, expected)` |
+| Truthiness | `assert.ok(value)` |
+| Throws | `assert.throws(() => fn(), { message: /expected/ })` |
+| Async throws | `await assert.rejects(async () => fn(), { message: /expected/ })` |
+
+## What to Test
+
+- **Pure functions and business logic** — sorting, filtering, validation, parsing, formatting.
+- **Edge cases** — empty arrays, null, boundary values, duplicates.
+- **Error paths** — invalid input throws the expected error.
+
+## What NOT to Test
+
+- React components or DOM (no jsdom/happy-dom in this stack).
+- Supabase queries directly (those depend on a live database).
+- Next.js route handlers or Server Actions (integration-level).
+
+## Refactor Phase
+
+After green:
+- Extract duplication into helpers or shared factories.
+- Improve naming for clarity.
+- Simplify logic without changing behavior.
+- Run tests again — they must pass unchanged.

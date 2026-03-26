@@ -2,7 +2,7 @@ import { groq } from "@/modules/groq/groq-client"
 import {
   isPipelineStepKind,
   type PipelineStepKind,
-} from "@/modules/dashboard-assistant/contracts/turn-queue"
+} from "@/modules/falaped-assistant/contracts/turn-queue"
 
 const MODEL = process.env.GROQ_ASSISTANT_MODEL?.trim() || "qwen/qwen3-32b"
 const MAX_COMPLETION_TOKENS = 180

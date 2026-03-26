@@ -29,19 +29,34 @@ lib/
   parse-anthropometrics-for-bmi.ts      # Peso/comprimento em texto livre; IMC com faixa plausível
 modules/
   supabase/get-authenticated-user.ts   # getAuthenticatedUser – profile + authenticatedUser
-  dashboard-assistant/
+  falaped-assistant/                   # Módulo principal do assistente clínico
+    contracts/                         # Tipos canônicos: AssistantIntent, AssistantTurnContext, RouteResult, turn-queue
+    lib/                               # Funções puras testáveis:
+      normalize-text.ts                #   normalizeText, normalizeForNearDuplicate
+      message-classification.ts        #   is*Message classifiers (command, greeting, cancel, confirm, etc.)
+      intent-detection.ts              #   detectAssistantIntent (heuristic)
+      patient-profile-parsers.ts       #   parseBloodType, detectPatientProfileUpdate, etc.
+      formatters.ts                    #   formatAgeFromBirthDate, buildPatientDataAccessReply, etc.
+      stored-data-extraction.ts        #   extractStoredData, buildBmiStoredData
+      thread-scanning.ts              #   buildMessagesForModel, getLatestPendingBmi, resolveClinicalSyncMode
+      reply-variation.ts              #   areNearDuplicateReplies, enforceReplyVariation
+      build-command-message.ts         #   buildCommandMessage
+    clinical-alert-from-user-message.ts # Detect guardian alert signals from messages
+    assistant-model-message.ts         # JSON do assistente → texto para contexto do modelo
     planning/                          # Action planning layer (plan → queue → dispatch)
-      turn-action-types.ts             # TurnAction / TurnActionPlan types, order + confirmation tables
-      extract-actions-by-llm.ts        # LLM call (Groq) that extracts ordered actions from user message
-      plan-assistant-turn-actions.ts   # Main planner: LLM actions + anthropometric/alert rules → ordered TurnActionPlan
-    orchestrator/process-turn.ts       # Executes pipeline: detect plan, build queue, dispatch handlers, pause on confirmation
-    intent/detect-intent-and-plan.ts   # Thin adapter: delegates to planner, maps TurnAction[] → PipelineStep[] / DetectedTurnPlan
-    router/dispatch.ts                 # Route orchestrator (dispatch por intent/step)
-    handlers/                          # Handlers por intent (business/ai separados), mantendo contrato RouteResult
-    pipeline/assistant-turn-queue.ts   # Parse/build/advance da fila sequencial em JSONB
-    pipeline/pipeline-policy.ts        # Ordem canônica dos passos + regras de confirmação (execution layer)
-    route-case-assistant-turn.ts       # Motor legado reutilizado por handlers enquanto a migração incremental é concluída
-    assistant-model-message.ts        # JSON do assistente → texto para contexto do modelo
+      turn-action-types.ts             #   TurnAction / TurnActionPlan types
+      llm-action-parsers.ts            #   Pure parsers for LLM output (cleanupRawContent, parseActionsFromPayload)
+      extract-actions-by-llm.ts        #   LLM call (Groq) that extracts ordered actions
+      planning-helpers.ts              #   Pure helpers (hasAnthropometricDivergence, shouldInjectGuardianAlertReview)
+      plan-assistant-turn-actions.ts   #   Main planner: LLM + anthropometric/alert rules → TurnActionPlan
+    pipeline/
+      pipeline-policy.ts               #   ORDER_PRIORITY, CONFIRMATION_REQUIRED, orderPipelineSteps
+      assistant-turn-queue.ts          #   Parse/build/advance da fila sequencial em JSONB
+    intent/detect-intent-and-plan.ts   # Thin adapter: planner → PipelineStep[] / DetectedTurnPlan
+    handlers/                          # 12 handlers por intent, contrato AssistantIntentHandler → RouteResult
+    router/dispatch.ts                 # Dispatch por intent (HANDLERS record)
+    orchestrator/process-turn.ts       # processAssistantTurn: detect → queue → dispatch → pause/advance
+  dashboard-assistant/                 # LEGADO — mantido para referência; sem consumidores externos
   patients/, cases/, case-messages/,
   authenticated-users/, report-templates/
 components/
