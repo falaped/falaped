@@ -75,7 +75,6 @@ modules/
       caption-hallucination.ts      #   looksLikeCaptionHallucination
       split-patient-context.ts      #   splitPatientContext
       template-section-parsers.ts   #   getFallbackResult, parseJsonResponse, normalizeSections
-  dashboard-assistant/                 # LEGADO — mantido para referência; sem consumidores externos
   patients/, cases/, case-messages/,
   authenticated-users/, report-templates/
 components/

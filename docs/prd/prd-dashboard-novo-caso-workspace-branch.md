@@ -112,7 +112,7 @@ flowchart LR
 
 ### 3.1 Roteador e intents
 
-**Arquivo:** `modules/dashboard-assistant/route-case-assistant-turn.ts`
+**Implementação atual:** `modules/falaped-assistant/orchestrator/process-turn.ts` (`processAssistantTurn`), `modules/falaped-assistant/router/dispatch.ts` (dispatch por intent), `modules/falaped-assistant/lib/intent-detection.ts` (heurísticas).
 
 **Intents:** `GENERATE_REPORT` | `CLOSE_CASE` | `SUGGEST_GUARDIAN_QUESTIONS` | `CALCULATE_BMI` | `SUMMARY` | `QUESTION` | `REVIEW_ANTHROPOMETRIC_REFERENCE` | `REVIEW_GUARDIAN_ALERT` | `CHAT`
 
