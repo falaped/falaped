@@ -222,14 +222,28 @@ export function CasesTable({ cases }: { cases: CaseWithPatient[] }) {
                           </div>
                         </TableCell>
                         <TableCell className="py-4">
-                          <div className="flex flex-col gap-0.5 text-sm text-muted-foreground">
-                            <div className="flex items-center gap-2 whitespace-nowrap">
-                              <CalendarDays className="size-4 shrink-0 opacity-70" aria-hidden />
-                              {formatDate(c.started_at)}
+                          <div className="flex min-w-0 flex-col gap-1 text-muted-foreground">
+                            <div className="flex min-w-0 items-center gap-2 text-sm">
+                              <span
+                                className="flex size-4 shrink-0 items-center justify-center"
+                                aria-hidden
+                              >
+                                <CalendarDays className="size-4 opacity-70" />
+                              </span>
+                              <span className="min-w-0 whitespace-nowrap tabular-nums">
+                                {formatDate(c.started_at)}
+                              </span>
                             </div>
-                            <div className="flex items-center gap-2 pl-6 text-xs text-muted-foreground/80">
-                              <Clock className="size-3.5 shrink-0 opacity-70" aria-hidden />
-                              {formatRelativeTime(c.started_at)}
+                            <div className="flex min-w-0 items-center gap-2 text-xs text-muted-foreground/80">
+                              <span
+                                className="flex size-4 shrink-0 items-center justify-center"
+                                aria-hidden
+                              >
+                                <Clock className="size-3.5 opacity-70" />
+                              </span>
+                              <span className="min-w-0 leading-snug">
+                                {formatRelativeTime(c.started_at)}
+                              </span>
                             </div>
                           </div>
                         </TableCell>

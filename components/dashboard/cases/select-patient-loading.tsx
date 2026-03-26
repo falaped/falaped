@@ -10,14 +10,14 @@ import {
 } from "@/components/ui/table"
 
 /**
- * Skeleton for the cases list (Suspense fallback). Mirrors CasesToolbarAndList + CasesTable layout.
+ * Skeleton for select-patient data (Suspense / route loading). Header lives in layout.tsx.
  */
-export function CasesLoading() {
+export function SelectPatientLoading() {
   return (
     <div
       className="flex flex-col gap-3"
       aria-busy="true"
-      aria-label="Carregando casos"
+      aria-label="Carregando lista de pacientes"
     >
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-end">
         <Skeleton className="h-8 w-full max-w-xl rounded-lg" />
@@ -30,10 +30,9 @@ export function CasesLoading() {
               <TableRow className="hover:bg-transparent">
                 <TableHead className="min-w-[140px]">Paciente</TableHead>
                 <TableHead className="min-w-[160px]">Responsável</TableHead>
-                <TableHead className="min-w-[140px] whitespace-nowrap">Início</TableHead>
-                <TableHead className="min-w-[120px]">Canal</TableHead>
-                <TableHead className="min-w-[120px]">Situação</TableHead>
-                <TableHead className="w-48 min-w-48 text-right">Ações</TableHead>
+                <TableHead className="min-w-[120px] whitespace-nowrap">Nascimento</TableHead>
+                <TableHead className="min-w-[140px]">Situação</TableHead>
+                <TableHead className="w-48 min-w-48 text-right">Workspace</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -55,16 +54,10 @@ export function CasesLoading() {
                     <Skeleton className="h-4 w-32 max-w-full rounded-md" />
                   </TableCell>
                   <TableCell className="py-4">
-                    <div className="flex min-w-0 flex-col gap-2">
-                      <Skeleton className="h-4 w-28 rounded-md" />
-                      <Skeleton className="h-3 w-24 rounded-md" />
-                    </div>
+                    <Skeleton className="h-4 w-28 rounded-md" />
                   </TableCell>
                   <TableCell className="py-4">
-                    <Skeleton className="h-6 w-24 rounded-full" />
-                  </TableCell>
-                  <TableCell className="py-4">
-                    <Skeleton className="h-6 w-20 rounded-full" />
+                    <Skeleton className="h-6 w-28 rounded-full" />
                   </TableCell>
                   <TableCell className="w-48 min-w-48 py-4 text-right">
                     <Skeleton className="ml-auto h-7 w-full max-w-48 rounded-md" />

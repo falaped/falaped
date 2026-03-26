@@ -5,12 +5,19 @@ import { useRef } from "react"
 
 import { Input } from "@/components/ui/input"
 
+const DEFAULT_PLACEHOLDER = "Buscar por paciente ou responsável..."
+const DEFAULT_ARIA_LABEL = "Buscar por paciente ou responsável"
+
 export function CaseSearchInput({
   value,
   onChange,
+  placeholder = DEFAULT_PLACEHOLDER,
+  "aria-label": ariaLabel = DEFAULT_ARIA_LABEL,
 }: {
   value: string
   onChange: (value: string) => void
+  placeholder?: string
+  "aria-label"?: string
 }) {
   const inputRef = useRef<HTMLInputElement>(null)
 
@@ -20,7 +27,8 @@ export function CaseSearchInput({
       <Input
         ref={inputRef}
         type="text"
-        placeholder="Buscar por paciente ou responsável..."
+        aria-label={ariaLabel}
+        placeholder={placeholder}
         value={value}
         onChange={(e) => onChange(e.target.value)}
         className="pl-9 pr-8"

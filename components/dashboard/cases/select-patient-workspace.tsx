@@ -8,7 +8,6 @@ import {
   Loader2,
   MessageCircle,
   PanelRightOpen,
-  SearchIcon,
   Stethoscope,
   UserRound,
 } from "lucide-react"
@@ -20,7 +19,7 @@ import { getPatientInitials } from "@/lib/get-patient-initials"
 import { sortPatientsForNewCase } from "@/lib/sort-patients-for-new-case"
 import type { Patient } from "@/modules/patients/types"
 import { formatBrazilianPhone, formatDate } from "@/lib/formatters"
-import { Input } from "@/components/ui/input"
+import { CaseSearchInput } from "@/components/dashboard/cases/case-search-input"
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarBadge, AvatarFallback } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
@@ -193,23 +192,14 @@ export function SelectPatientWorkspace({
   return (
     <section
       aria-label="Área de seleção de paciente para casos no painel"
-      className="flex flex-col gap-6"
+      className="flex flex-col"
     >
-      <div className="space-y-2">
-        <h1 className="text-2xl font-semibold tracking-tight">Criar novo caso</h1>
-        <p className="text-sm text-muted-foreground">
-          Selecione um paciente para iniciar o workspace de prontuário assistido.
-        </p>
-      </div>
-
-      <div className="relative max-w-xl">
-        <SearchIcon className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-        <Input
-          aria-label="Buscar paciente por nome ou responsável"
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-end">
+        <CaseSearchInput
           value={query}
-          onChange={(event) => setQuery(event.target.value)}
-          placeholder="Buscar por nome do paciente ou responsável"
-          className="pl-9"
+          onChange={setQuery}
+          placeholder="Buscar por nome do paciente ou responsável..."
+          aria-label="Buscar paciente por nome ou responsável"
         />
       </div>
 
