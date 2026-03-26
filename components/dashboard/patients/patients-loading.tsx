@@ -1,16 +1,65 @@
+import { Card } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table"
 
+/**
+ * Skeleton for the patients list (Suspense fallback). Mirrors PatientsToolbarAndList + PatientsTable.
+ */
 export function PatientsLoading() {
   return (
-    <div className="flex flex-col gap-4">
-      <div className="flex w-full flex-col gap-3 sm:flex-row sm:items-center sm:justify-end">
-        <Skeleton className="h-9 min-w-[200px] max-w-xs rounded-lg" />
+    <div
+      className="flex flex-col gap-3"
+      aria-busy="true"
+      aria-label="Carregando pacientes"
+    >
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-end">
+        <Skeleton className="h-8 w-full max-w-xl rounded-lg" />
       </div>
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-2">
-        {Array.from({ length: 4 }).map((_, i) => (
-          <Skeleton key={i} className="h-24 rounded-xl" />
-        ))}
-      </div>
+
+      <Card className="overflow-hidden border-border/70 p-0">
+        <div className="overflow-x-auto">
+          <Table>
+            <TableHeader>
+              <TableRow className="hover:bg-transparent">
+                <TableHead className="min-w-[140px]">Paciente</TableHead>
+                <TableHead className="min-w-[160px]">Responsável</TableHead>
+                <TableHead className="min-w-[120px] whitespace-nowrap">Nascimento</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {Array.from({ length: 6 }).map((_, index) => (
+                <TableRow
+                  key={index}
+                  className="border-border/60 hover:bg-transparent"
+                >
+                  <TableCell className="py-4">
+                    <div className="flex min-w-0 items-center gap-3">
+                      <Skeleton className="size-6 shrink-0 rounded-full" />
+                      <div className="min-w-0 flex-1 space-y-2">
+                        <Skeleton className="h-4 w-36 max-w-full rounded-md" />
+                        <Skeleton className="h-3 w-28 max-w-full rounded-md" />
+                      </div>
+                    </div>
+                  </TableCell>
+                  <TableCell className="py-4">
+                    <Skeleton className="h-4 w-32 max-w-full rounded-md" />
+                  </TableCell>
+                  <TableCell className="py-4">
+                    <Skeleton className="h-4 w-28 rounded-md" />
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
+      </Card>
     </div>
   )
 }

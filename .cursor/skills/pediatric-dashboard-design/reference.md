@@ -4,9 +4,11 @@ Exemplos detalhados e variações para consulta quando precisar de mais orienta�
 
 ---
 
-## Variações de PatientCard
+## PatientsTable (listagem `/dashboard/patients`)
 
-### Card compacto (listagem)
+A listagem principal usa tabela em `Card`, não grid de cards. Para **resumo em card** (outras telas, dashboards futuros), use o padrão abaixo.
+
+### Card compacto (resumo opcional)
 
 ```tsx
 <Card className="overflow-hidden">
@@ -19,7 +21,7 @@ Exemplos detalhados e variações para consulta quando precisar de mais orienta�
 </Card>
 ```
 
-### Card expandido (detalhes)
+### Card expandido (detalhes / ficha)
 
 ```tsx
 <Card>
@@ -122,8 +124,8 @@ Exemplos detalhados e variações para consulta quando precisar de mais orienta�
 
 | Cenário | Recomendação |
 |---------|--------------|
-| Muitos itens (>10), busca/filtro | Tabela ou lista compacta; scroll; paginação |
-| Poucos itens (<10), destaque visual | Grid de cards |
+| Muitos itens (>10), busca/filtro | Tabela em `Card` (Casos, Pacientes); scroll; paginação futura |
+| Poucos itens (<10), destaque visual | Cards em outras visões; listagem principal de pacientes = tabela |
 | Busca de paciente para associar a caso | Combobox ou lista compacta com nome + responsável + telefone |
 | Casos ativos (geralmente <5) | Cards ou lista com status em destaque |
 | Histórico de casos (muitos) | Tabela com colunas: data, responsável, paciente, status |
@@ -138,14 +140,11 @@ Exemplos detalhados e variações para consulta quando precisar de mais orienta�
     <h1 className="text-2xl font-semibold tracking-tight">Pacientes</h1>
     <p className="text-sm text-muted-foreground">Gerencie os pacientes cadastrados.</p>
   </div>
-  <div className="flex items-center gap-4">
-    <Input placeholder="Buscar por nome..." className="max-w-sm" />
-    <Button asChild><Link href="/dashboard/patients/new">Cadastrar</Link></Button>
+  <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-end">
+    <CaseSearchInput value={query} onChange={setQuery} />
   </div>
   {patients.length > 0 ? (
-    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-      {patients.map((p) => <PatientCard key={p.id} patient={p} />)}
-    </div>
+    <PatientsTable patients={filteredPatients} />
   ) : (
     <EmptyStatePatients />
   )}
@@ -156,7 +155,7 @@ Exemplos detalhados e variações para consulta quando precisar de mais orienta�
 
 ## Referência de campos Patient (schema)
 
-Para consulta ao modelar PatientCard ou PatientForm:
+Para consulta ao modelar PatientsTable, cards de resumo ou PatientForm:
 
 - **Obrigatórios**: `name`, `responsible`, `contact_phone`
 - **Frequentes**: `birth_date`, `sex`

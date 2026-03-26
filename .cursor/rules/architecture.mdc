@@ -25,8 +25,8 @@ Lib (lib/) — pure utilities, clients, parsers
 - **Lib** contains zero-dependency utilities: parsers, formatters, error classes, Supabase client setup.
 
 ```typescript
-// ❌ BAD – module importing from app layer
-import { PatientCard } from '@/app/(dashboard)/pacientes/components/patient-card';
+// ❌ BAD – module importing from UI layer
+import { PatientsTable } from '@/components/dashboard/patients/patients-table';
 
 // ❌ BAD – lib importing from modules
 import { getPatient } from '@/modules/patients/get-patient';

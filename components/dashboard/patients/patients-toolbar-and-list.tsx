@@ -1,9 +1,10 @@
 "use client"
 
 import { useMemo, useState } from "react"
-import { PatientCard } from "@/components/dashboard/patients/patient-card"
+
+import { CaseSearchInput } from "@/components/dashboard/cases/case-search-input"
 import { PatientEmptyState } from "@/components/dashboard/patients/patient-empty-state"
-import { PatientSearchInput } from "@/components/dashboard/patients/patient-search-input"
+import { PatientsTable } from "@/components/dashboard/patients/patients-table"
 import type { Patient } from "@/modules/patients/types"
 
 function filterBySearch(patients: Patient[], search: string): Patient[] {
@@ -19,36 +20,41 @@ function filterBySearch(patients: Patient[], search: string): Patient[] {
 export function PatientsToolbarAndList({ patients }: { patients: Patient[] }) {
   const [searchQuery, setSearchQuery] = useState("")
 
+  const sortedPatients = useMemo(() => {
+    return [...patients].sort((a, b) =>
+      a.name.localeCompare(b.name, "pt-BR", { sensitivity: "base" }),
+    )
+  }, [patients])
+
   const filteredPatients = useMemo(
-    () => filterBySearch(patients, searchQuery),
-    [patients, searchQuery]
+    () => filterBySearch(sortedPatients, searchQuery),
+    [sortedPatients, searchQuery],
   )
 
-  if (patients.length === 0) {
+  if (sortedPatients.length === 0) {
     return <PatientEmptyState />
   }
 
   return (
     <>
-      <div className="flex w-full flex-col gap-3 sm:flex-row sm:items-center sm:justify-end">
-        <PatientSearchInput value={searchQuery} onChange={setSearchQuery} />
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-end">
+        <CaseSearchInput
+          value={searchQuery}
+          onChange={setSearchQuery}
+          placeholder="Buscar por nome ou responsável..."
+          aria-label="Buscar paciente por nome ou responsável"
+        />
       </div>
 
       {filteredPatients.length === 0 ? (
         <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-border px-6 py-12 text-center">
-          <p className="font-medium text-muted-foreground">
-            Nenhum resultado encontrado.
-          </p>
+          <p className="font-medium text-muted-foreground">Nenhum resultado encontrado.</p>
           <p className="mt-1 text-sm text-muted-foreground/80">
             Tente outro termo de busca ou limpe o filtro.
           </p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 gap-3">
-          {filteredPatients.map((p) => (
-            <PatientCard key={p.id} patient={p} />
-          ))}
-        </div>
+        <PatientsTable patients={filteredPatients} />
       )}
     </>
   )

@@ -20,7 +20,8 @@ app/
       new/                   # Redirect para seleção de paciente
       select-patient/        # Seleção de paciente para novo caso no painel
       new/[caseId]/          # Workspace de prontuário assistido
-    patients/, profile/
+    patients/                  # Lista em tabela (PatientsTable, PatientsToolbarAndList, PatientsContent, PatientsLoading, PatientEmptyState)
+    profile/
 lib/
   supabase/ client, server, middleware
   formatters.ts, parsers.ts, errors.ts
@@ -83,6 +84,8 @@ components/
                              #   Cases list: CasesTable, CaseEmptyState, CaseSearchInput,
                              #     CasesToolbarAndList (active first, then closed by started_at),
                              #     CasesContent, CasesLoading
+                             #   Patients list: PatientsTable, PatientsToolbarAndList (sort by name, CaseSearchInput),
+                             #     PatientsContent, PatientsLoading, PatientEmptyState
                              #   Case detail: CaseDetailHeader, CasePatientInfo,
                              #     CaseChat, CaseQuickActions, CaseReport,
                              #     CaseDetailContent, CaseDetailLoading

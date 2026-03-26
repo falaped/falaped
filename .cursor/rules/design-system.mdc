@@ -23,7 +23,7 @@ alwaysApply: true
 | **1. Primitives** | `components/ui/` | Base atômica, sem lógica de negócio | Button, Input, Label, Badge |
 | **2. Composed** | `components/ui/` ou `components/` | Combinação de primitives | InputWithLabel, SearchInput |
 | **3. Patterns** | `components/` | Padrões de UI recorrentes | EmptyState, DataTable, FormField |
-| **4. Feature** | `components/dashboard/`, `components/forms/` | Específicos do domínio | PatientCard, CaseList |
+| **4. Feature** | `components/dashboard/`, `components/forms/` | Específicos do domínio | PatientsTable, CaseList |
 
 **Regra:** Feature components importam apenas de `ui/` e `patterns/`; nunca al revés.
 

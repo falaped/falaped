@@ -1,13 +1,13 @@
 ---
 name: pediatric-dashboard-design
-description: Expert em design de dashboard pediátrico com foco em UX/UI, modelagem de páginas e padrões visuais. Use ao criar ou alterar páginas do dashboard, componentes feature (PatientCard, CasesTable), forms pediátricos, empty states ou ao falar de layout, hierarquia visual e copy em PT-BR para o contexto pediátrico.
+description: Expert em design de dashboard pediátrico com foco em UX/UI, modelagem de páginas e padrões visuais. Use ao criar ou alterar páginas do dashboard, componentes feature (PatientsTable, CasesTable), forms pediátricos, empty states ou ao falar de layout, hierarquia visual e copy em PT-BR para o contexto pediátrico.
 ---
 
 # Pediatric Dashboard Design
 
 ## Quando usar
 
-Ao criar ou alterar páginas do dashboard, componentes feature (PatientCard, CasesTable), forms pediátricos, empty states, listas de pacientes/casos, ou ao falar de layout, hierarquia visual e copy em PT-BR para o contexto pediátrico.
+Ao criar ou alterar páginas do dashboard, componentes feature (PatientsTable, CasesTable), forms pediátricos, empty states, listas de pacientes/casos, ou ao falar de layout, hierarquia visual e copy em PT-BR para o contexto pediátrico.
 
 Rules aplicáveis: `design-system`, `ux-ui-minimalist`, `audience-context`, `forms` (validação técnica).
 
@@ -104,28 +104,17 @@ Padrão: ícone + título + descrição opcional + CTA.
 
 ## Componentes feature
 
-### PatientCard
+### PatientsTable (lista em `/dashboard/patients`)
 
-Exibir em listagens ou buscas. Hierarquia visual:
+Alinhado ao padrão de **CasesTable**: `Card` + `Table`, toolbar com `CaseSearchInput` (`justify-end`), ordenação padrão por nome (pt-BR).
 
-1. **Nome do paciente** (child) — `font-medium` ou `font-semibold`
-2. **Responsável** — `text-sm text-muted-foreground`
-3. **contact_phone** — visível e clicável (link tel: ou copy); essencial em pediatria
-4. **Dados clínicos** (opcional): birth_date, sex, allergies — `text-sm` se houver espaço
+1. **Paciente**: avatar + nome; **contact_phone** como link `tel:` abaixo do nome (clique não dispara abertura da linha)
+2. **Responsável**: nome completo ou “Não informado”
+3. **Nascimento**: data formatada ou “Não informado”
 
-Schema patients: `name`, `birth_date`, `responsible`, `contact_phone`, `sex`, `allergies`, etc.
+Linha clicável abre apenas a ficha (`/dashboard/patients/[id]`). **Workspace / novo caso pelo painel** não partem da lista de pacientes — usar fluxo em **Casos** ou na ficha do paciente, conforme produto.
 
-```tsx
-<Card>
-  <CardHeader className="pb-2">
-    <CardTitle className="text-base">{patient.name}</CardTitle>
-    <CardDescription>{patient.responsible}</CardDescription>
-  </CardHeader>
-  <CardContent className="text-sm text-muted-foreground">
-    {patient.contact_phone && <span>{formatPhone(patient.contact_phone)}</span>}
-  </CardContent>
-</Card>
-```
+Tooltip orienta o pediatra.
 
 ### CasesTable (lista em `/dashboard/cases`)
 
@@ -252,7 +241,7 @@ Tom: claro, profissional, orientado à ação quando há CTA.
 - [ ] Página segue anatomia (header h1 + descrição + conteúdo)
 - [ ] Tokens de cor; sem hex/rgb
 - [ ] Empty state com copy apropriado; CTA quando fizer sentido
-- [ ] PatientCard/CasesTable: contact_phone e responsible visíveis quando aplicável
+- [ ] PatientsTable/CasesTable: contact_phone e responsible visíveis quando aplicável
 - [ ] Form: responsible e contact_phone com validações; copy PT-BR
 - [ ] Hierarquia tipográfica consistente (text-2xl, text-sm, text-muted-foreground)
 - [ ] Espaço em branco adequado; sem poluição visual
