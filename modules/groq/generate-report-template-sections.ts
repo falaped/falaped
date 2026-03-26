@@ -1,8 +1,12 @@
-import { groq } from "./groq-client"
+import { groq } from "@/modules/groq/groq-client"
 import type { ReportTemplateSection } from "@/modules/report-templates/get-report-template-by-id"
-import { inferFixedSlotFromLegacySectionTitle } from "@/modules/report-templates/fixed-template-sections"
+import {
+  getFallbackResult,
+  parseJsonResponse,
+  normalizeSections,
+} from "@/modules/groq/lib/template-section-parsers"
 
-const MODEL = "llama-3.1-8b-instant"
+const TEMPLATE_GENERATION_MODEL = "llama-3.1-8b-instant"
 
 const PROMPT_MAX_LENGTH = 1000
 
@@ -44,7 +48,7 @@ ${trimmed}
 Return the JSON object with "suggestedName" and "sections" as described in the system message.`
 
   const completion = await groq.chat.completions.create({
-    model: MODEL,
+    model: TEMPLATE_GENERATION_MODEL,
     messages: [
       { role: "system", content: systemPrompt },
       { role: "user", content: userPrompt },
@@ -69,54 +73,4 @@ Return the JSON object with "suggestedName" and "sections" as described in the s
     }
   }
   return getFallbackResult()
-}
-
-function getFallbackResult(): GenerateReportTemplateSectionsResult {
-  return {
-    suggestedName: "Template sugerido pela IA",
-    sections: [
-      { name: "Queixa principal", description: "Motivo da consulta" },
-      { name: "História da moléstia atual", description: "Evolução e sintomas" },
-      { name: "Exame físico", description: "Achados do exame" },
-      { name: "Conduta", description: "Conduta e orientações" },
-    ],
-  }
-}
-
-function parseJsonResponse(raw: string): { suggestedName?: string; sections?: unknown[] } | null {
-  const cleaned = raw
-    .replace(/^```json\s*/i, "")
-    .replace(/\s*```\s*$/i, "")
-    .trim()
-  try {
-    const obj = JSON.parse(cleaned)
-    if (obj && typeof obj === "object" && !Array.isArray(obj)) {
-      return obj as { suggestedName?: string; sections?: unknown[] }
-    }
-  } catch {
-    // ignore
-  }
-  return null
-}
-
-function normalizeSections(sections: unknown[]): ReportTemplateSection[] {
-  const result: ReportTemplateSection[] = []
-  const seen = new Set<string>()
-  for (const item of sections) {
-    if (!item || typeof item !== "object" || Array.isArray(item)) continue
-    const name = (item as { name?: unknown }).name
-    const description = (item as { description?: unknown }).description
-    const nameStr = typeof name === "string" ? name.trim().slice(0, 200) : ""
-    if (!nameStr || seen.has(nameStr)) continue
-    if (inferFixedSlotFromLegacySectionTitle(nameStr)) continue
-    seen.add(nameStr)
-    result.push({
-      name: nameStr,
-      description:
-        typeof description === "string" && description.trim()
-          ? description.trim().slice(0, 2000)
-          : undefined,
-    })
-  }
-  return result
 }

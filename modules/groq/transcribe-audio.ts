@@ -1,6 +1,7 @@
 import { groq } from "@/modules/groq/groq-client"
+import { looksLikeCaptionHallucination } from "@/modules/groq/lib/caption-hallucination"
 
-const MODEL = "whisper-large-v3"
+const TRANSCRIPTION_MODEL = "whisper-large-v3"
 
 /**
  * Short vocabulary hint for domain terms only. Do not start with "Transcrição" or similar —
@@ -13,21 +14,10 @@ const DOMAIN_VOCABULARY_HINT =
 /** Thrown when the model output matches known caption-style hallucination patterns. */
 export const TRANSCRIPTION_REJECTED_UNUSABLE = "TRANSCRIPTION_REJECTED_UNUSABLE"
 
-function looksLikeCaptionHallucination(text: string): boolean {
-  const n = text
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .toLowerCase()
-  if (/transcri(c|ç)ao\s+e\s+legendas/.test(n)) return true
-  if (/\blegendas\b/.test(n) && /\btranscri(c|ç)ao\b/.test(n) && text.length < 160) return true
-  if (/\bamara\.org\b/.test(n) || /\bsubs\s*titulos\b/.test(n)) return true
-  return false
-}
-
 export async function transcribeAudioFile(file: File): Promise<string> {
   const transcription = await groq.audio.transcriptions.create({
     file,
-    model: MODEL,
+    model: TRANSCRIPTION_MODEL,
     language: "pt",
     prompt: DOMAIN_VOCABULARY_HINT,
     temperature: 0,
@@ -40,4 +30,3 @@ export async function transcribeAudioFile(file: File): Promise<string> {
   }
   return text
 }
-

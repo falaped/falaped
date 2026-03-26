@@ -11,7 +11,8 @@ import {
   stripNeonatalBirthMeasuresFromParsedAnthropometrics,
 } from "@/lib/parse-anthropometrics-for-bmi"
 
-export type ClinicalSyncMode = "single_turn" | "global_update" | "balanced"
+import type { ClinicalSyncMode } from "@/modules/groq/assistant-case-chat"
+export type { ClinicalSyncMode }
 
 const ASSISTANT_PAYLOAD_PREFIX = "__FALAPED_JSON__"
 

@@ -1,6 +1,6 @@
-import { groq } from "./groq-client"
+import { groq } from "@/modules/groq/groq-client"
 
-const MODEL = "llama-3.1-8b-instant"
+const REPORT_IMPROVEMENT_MODEL = "llama-3.1-8b-instant"
 
 export type ImproveSectionInput = {
   sectionName: string
@@ -37,7 +37,7 @@ ${currentContent || "(empty)"}
 Return only the improved section text, nothing else.`
 
   const completion = await groq.chat.completions.create({
-    model: MODEL,
+    model: REPORT_IMPROVEMENT_MODEL,
     messages: [
       { role: "system", content: systemPrompt },
       { role: "user", content: userPrompt },

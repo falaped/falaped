@@ -7,12 +7,12 @@ import {
 import { stripImcCalculationTemplatePrefix } from "@/lib/strip-imc-calculation-template-prefix"
 import { assistantMessageToModelText } from "@/modules/dashboard-assistant/assistant-model-message"
 import {
-  classifyQuestionIntentByAi,
   generateAssistantCaseChat,
-  generateCaseClinicalSummary,
-  generateGuardianQuestionSuggestions,
   type ClinicalSyncMode,
 } from "@/modules/groq/assistant-case-chat"
+import { classifyQuestionIntentByAi } from "@/modules/groq/assistant-classify-question"
+import { generateCaseClinicalSummary } from "@/modules/groq/assistant-clinical-summary"
+import { generateGuardianQuestionSuggestions } from "@/modules/groq/assistant-guardian-questions"
 import {
   buildClinicalAlertItemsFromUserMessage,
   hasExplicitGuardianQuotedOrShoutSignal,

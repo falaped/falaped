@@ -56,6 +56,25 @@ modules/
     handlers/                          # 12 handlers por intent, contrato AssistantIntentHandler → RouteResult
     router/dispatch.ts                 # Dispatch por intent (HANDLERS record)
     orchestrator/process-turn.ts       # processAssistantTurn: detect → queue → dispatch → pause/advance
+  groq/                              # Módulo de integração com Groq LLM
+    groq-client.ts                   # Singleton Groq SDK
+    assistant-case-chat.ts           # generateAssistantCaseChat, tipos (ClinicalSyncMode, AssistantCaseChatInput)
+    assistant-clinical-summary.ts    # generateCaseClinicalSummary
+    assistant-polish-reply.ts        # polishAssistantReplyForDisplay
+    assistant-classify-question.ts   # classifyQuestionIntentByAi
+    assistant-guardian-questions.ts  # generateGuardianQuestionSuggestions
+    transcribe-audio.ts             # transcribeAudioFile (Whisper)
+    generate-case-report.ts         # generateCaseReport (via falaped-kit)
+    generate-report-template-sections.ts # generateReportTemplateSections
+    improve-report-section.ts       # improveReportSection
+    lib/                            # Helpers puros (testados com TDD):
+      strip-json-fences.ts          #   stripJsonFences
+      groq-response-parsers.ts      #   getReplyFromUnknownPayload, summaryFromStructuredPediatricPayload
+      parse-groq-json-reply.ts      #   parseGroqJsonReply (strip + parse + extract pipeline)
+      polish-safety.ts              #   tokenJaccardSimilarity, polishLooksSafe, shouldSkipPolish
+      caption-hallucination.ts      #   looksLikeCaptionHallucination
+      split-patient-context.ts      #   splitPatientContext
+      template-section-parsers.ts   #   getFallbackResult, parseJsonResponse, normalizeSections
   dashboard-assistant/                 # LEGADO — mantido para referência; sem consumidores externos
   patients/, cases/, case-messages/,
   authenticated-users/, report-templates/

@@ -3,6 +3,7 @@ import { z } from "zod";
 const envSchema = z.object({
   NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
   GROQ_API_KEY: z.string().optional(),
+  GROQ_ASSISTANT_MODEL: z.string().default("qwen/qwen3-32b"),
   NEXT_PUBLIC_SUPABASE_URL: z.url("NEXT_PUBLIC_SUPABASE_URL must be a valid URL"),
   NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: z
     .string()
