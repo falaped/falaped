@@ -31,6 +31,7 @@ type PatientDetailToolbarProps = {
   isEditing: boolean
   deleteLoading: boolean
   onEdit: () => void
+  onCancelEdit?: () => void
   /** Return true when delete succeeded (dialog may close). */
   onConfirmDelete: () => boolean | Promise<boolean>
   className?: string
@@ -41,6 +42,7 @@ export function PatientDetailToolbar({
   isEditing,
   deleteLoading,
   onEdit,
+  onCancelEdit,
   onConfirmDelete,
   className,
 }: PatientDetailToolbarProps) {
@@ -49,9 +51,16 @@ export function PatientDetailToolbar({
 
   return (
     <div className={cn("flex shrink-0 items-center justify-end gap-2", className)}>
-      <Button variant="outline" asChild>
-        <Link href="/dashboard/patients">Voltar</Link>
-      </Button>
+      {!isEditing ? (
+        <Button variant="outline" asChild>
+          <Link href="/dashboard/patients">Voltar</Link>
+        </Button>
+      ) : null}
+      {isEditing && onCancelEdit ? (
+        <Button type="button" variant="ghost" onClick={onCancelEdit}>
+          Cancelar edição
+        </Button>
+      ) : null}
       {!isEditing ? (
         <>
           <Popover open={menuOpen} onOpenChange={setMenuOpen}>

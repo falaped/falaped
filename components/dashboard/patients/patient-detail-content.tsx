@@ -24,6 +24,7 @@ export async function PatientDetailContent({ id }: { id: string }) {
 
   return (
     <PatientDetailView
+      key={patient.id}
       patient={patient}
       cases={cases}
       certificates={certificates}

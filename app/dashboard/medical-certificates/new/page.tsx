@@ -8,12 +8,24 @@ import { MedicalCertificateWizardWrapper } from "./medical-certificate-wizard-wr
 import { Button } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
 
-export default async function NewMedicalCertificatePage() {
+type PageProps = {
+  searchParams: Promise<{ patientId?: string }>
+}
+
+export default async function NewMedicalCertificatePage({
+  searchParams,
+}: PageProps) {
   const supabase = await createClient()
   const { profile } = await getAuthenticatedUser(supabase)
   if (!profile?.id) redirect("/auth/login")
 
   const patients = await getPatientsByProfileId(supabase, profile.id)
+
+  const resolved = await searchParams
+  const patientId =
+    resolved.patientId && typeof resolved.patientId === "string"
+      ? resolved.patientId
+      : null
 
   return (
     <div className="flex flex-col gap-6">
@@ -38,7 +50,11 @@ export default async function NewMedicalCertificatePage() {
 
       <Separator />
 
-      <MedicalCertificateWizardWrapper patients={patients} profile={profile} />
+      <MedicalCertificateWizardWrapper
+        patients={patients}
+        profile={profile}
+        initialPatientId={patientId}
+      />
     </div>
   )
 }

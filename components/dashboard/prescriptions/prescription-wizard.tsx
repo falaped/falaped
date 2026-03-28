@@ -75,6 +75,8 @@ type PrescriptionWizardProps = {
   profile: PrescriptionWizardProfile
   prescriptionTemplates?: PrescriptionTemplateOption[]
   initialTemplate?: { snapshot: PrescriptionTemplateSnapshot } | null
+  /** When set, pre-selects this patient (e.g. from `?patientId=` on new prescription page). */
+  initialPatientId?: string | null
 }
 
 function applySnapshotToMedications(
@@ -98,10 +100,12 @@ export function PrescriptionWizard({
   profile,
   prescriptionTemplates = [],
   initialTemplate,
+  initialPatientId = null,
 }: PrescriptionWizardProps) {
   const router = useRouter()
   const pathname = usePathname()
   const prevPathnameRef = useRef(pathname)
+  const initialPatientFromUrlApplied = useRef(false)
 
   const [step, setStep] = useState<Step>(1)
   const [dataSource, setDataSource] = useState<"patient" | "manual" | "template" | null>(null)
@@ -146,6 +150,7 @@ export function PrescriptionWizard({
       setTemplateName("")
       setTemplatePickerOpen(false)
       initialTemplateApplied.current = false
+      initialPatientFromUrlApplied.current = false
     }
     prevPathnameRef.current = pathname
   }, [pathname])
@@ -162,6 +167,20 @@ export function PrescriptionWizard({
     setManualConfirmed(true)
     setStep(1)
   }, [initialTemplate])
+
+  useEffect(() => {
+    if (initialTemplate?.snapshot) return
+    const id = initialPatientId?.trim()
+    if (!id || patients.length === 0 || initialPatientFromUrlApplied.current) return
+    const patient = patients.find((p) => p.id === id)
+    if (!patient) return
+    initialPatientFromUrlApplied.current = true
+    setSelectedPatient(patient)
+    setPatientName(patient.name ?? "")
+    setBirthDate(patient.birth_date ?? "")
+    setDataSource("patient")
+    setPickerOpen(false)
+  }, [initialPatientId, patients, initialTemplate])
 
   function applyTemplateSnapshot(snapshot: PrescriptionTemplateSnapshot) {
     setMedications(applySnapshotToMedications(snapshot))

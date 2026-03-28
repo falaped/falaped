@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { toast } from "sonner"
@@ -694,10 +694,17 @@ type MedicalCertificateWizardProfile = {
 type MedicalCertificateWizardProps = {
   patients: Patient[]
   profile: MedicalCertificateWizardProfile
+  /** When set, pre-selects this patient (e.g. from `?patientId=` on new certificate page). */
+  initialPatientId?: string | null
 }
 
-export function MedicalCertificateWizard({ patients, profile }: MedicalCertificateWizardProps) {
+export function MedicalCertificateWizard({
+  patients,
+  profile,
+  initialPatientId = null,
+}: MedicalCertificateWizardProps) {
   const router = useRouter()
+  const initialPatientAppliedRef = useRef(false)
   const [type, setType] = useState<MedicalCertificateType | null>(null)
   const [dataSource, setDataSource] = useState<"patient" | "manual" | null>(null)
   const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null)
@@ -709,6 +716,35 @@ export function MedicalCertificateWizard({ patients, profile }: MedicalCertifica
   const [payload, setPayload] = useState<WizardPayload>(initialPayload)
   const [issuedAt] = useState(format(new Date(), "yyyy-MM-dd"))
   const [generating, setGenerating] = useState(false)
+
+  useEffect(() => {
+    const id = initialPatientId?.trim()
+    if (!id || patients.length === 0 || initialPatientAppliedRef.current) return
+    const patient = patients.find((p) => p.id === id)
+    if (!patient) return
+    initialPatientAppliedRef.current = true
+    setDataSource("patient")
+    setSelectedPatient(patient)
+    setPayload((prev) => {
+      const keys = ["comparecimento", "aptidao_fisica", "medico", "acompanhante"] as const
+      let next: WizardPayload = { ...prev }
+      for (const k of keys) {
+        const slice = next[k]
+        if (slice) {
+          next = {
+            ...next,
+            [k]: {
+              ...slice,
+              patientName: patient.name ?? "",
+              birthDate: patient.birth_date ?? "",
+            },
+          }
+        }
+      }
+      return next
+    })
+    setPickerOpen(false)
+  }, [initialPatientId, patients])
 
   const currentPayload = type ? payload[type] : null
   const hasPatient =

@@ -88,15 +88,6 @@ export function PatientsTable({ patients }: { patients: Patient[] }) {
                               <p className="truncate font-semibold leading-tight tracking-tight">
                                 {patient.name}
                               </p>
-                              {patient.contact_phone ? (
-                                <a
-                                  href={`tel:${patient.contact_phone}`}
-                                  className="mt-0.5 block truncate text-xs tabular-nums text-muted-foreground underline-offset-2 hover:text-foreground hover:underline"
-                                  onClick={(event) => event.stopPropagation()}
-                                >
-                                  {formatBrazilianPhone(patient.contact_phone)}
-                                </a>
-                              ) : null}
                             </div>
                           </div>
                         </TableCell>

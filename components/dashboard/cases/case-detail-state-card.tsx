@@ -1,5 +1,4 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { cn } from "@/lib/utils"
 
 import type { CaseOrigin } from "@/modules/cases/types"
 
@@ -15,8 +14,6 @@ export type CaseDetailStateCardProps = {
   contextSummaryDisplay: string | null
   /** True when raw persisted summary exists but could not be sanitized for display. */
   clinicalSummaryDisplayUnavailable?: boolean
-  /** Hides duplicate title when the parent tab already labels this section. */
-  variant?: "default" | "tabPanel"
 }
 
 /**
@@ -31,22 +28,17 @@ export function CaseDetailStateCard({
   latestReport,
   contextSummaryDisplay,
   clinicalSummaryDisplayUnavailable = false,
-  variant = "default",
 }: CaseDetailStateCardProps) {
-  const isTabPanel = variant === "tabPanel"
-
   return (
     <Card className="border-border/80">
-      {!isTabPanel ? (
-        <CardHeader className="pb-3">
-          <CardTitle className="text-base font-semibold">Visão do caso</CardTitle>
-          <p className="text-sm text-muted-foreground">
-            Linha do tempo e leitura rápida; detalhes da conversa e do relatório
-            estão nas seções ao lado em telas largas.
-          </p>
-        </CardHeader>
-      ) : null}
-      <CardContent className={cn("space-y-4", isTabPanel && "pt-6")}>
+      <CardHeader className="pb-3">
+        <CardTitle className="text-base font-semibold">Visão do caso</CardTitle>
+        <p className="text-sm text-muted-foreground">
+          Linha do tempo e leitura rápida; a conversa e o relatório seguem abaixo
+          nesta página.
+        </p>
+      </CardHeader>
+      <CardContent className="space-y-4">
         <CaseDetailTimeline
           startedAt={startedAt}
           origin={origin}

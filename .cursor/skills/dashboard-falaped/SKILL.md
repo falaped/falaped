@@ -92,9 +92,9 @@ components/
                              #     PatientsContent, PatientsLoading, PatientEmptyState
                              #   Patient form: patient-form/ (PatientForm + seções; export em patients/patient-form.tsx)
                              #   Case detail: CaseDetailHeader (+ CaseDetailHeaderToolbar, ações em Popover),
-                             #     CaseDetailCommandStrip, CasePatientChartLink, CaseDetailTabs (ui/tabs),
-                             #     CaseDetailStateCard, CaseChat (alwaysExpanded na aba Visão), CaseReport,
-                             #     CaseDetailRelatedLinks, CaseDetailContent, CaseDetailLoading
+                             #     CaseDetailCommandStrip, CasePatientChartLink (ficha + novo atestado/receita ?patientId=),
+                             #     CaseDetailStateCard, CaseChat (alwaysExpanded), CaseDetailRelatedLinks,
+                             #     CaseReport, CaseDetailContent, CaseDetailLoading (coluna única, sem tabs)
                              #   New case: SelectPatientWorkspace, NewCaseWorkspace
 ```
 

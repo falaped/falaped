@@ -15,7 +15,6 @@ import { CasePatientChartLink } from "@/components/dashboard/cases/case-patient-
 import { CaseChat } from "@/components/dashboard/cases/case-chat"
 import { CaseDetailRelatedLinks } from "@/components/dashboard/cases/case-detail-related-links"
 import { CaseDetailStateCard } from "@/components/dashboard/cases/case-detail-state-card"
-import { CaseDetailTabs } from "@/components/dashboard/cases/case-detail-tabs"
 import { caseDetailMainStackClassName } from "@/components/dashboard/cases/case-detail-workspace"
 import { CaseReport } from "@/components/dashboard/cases/case-report"
 
@@ -97,37 +96,21 @@ export async function CaseDetailContent({ id }: { id: string }) {
       <div>
         <CasePatientChartLink patient={caseDetail.patient} />
       </div>
-      <CaseDetailTabs
-        overviewSlot={
-          <>
-            <CaseDetailStateCard
-              startedAt={caseDetail.started_at}
-              origin={caseDetail.origin}
-              isActive={isActive}
-              messageCount={messages.length}
-              lastMessageAt={lastMessage?.created_at ?? null}
-              latestReport={latestReport}
-              contextSummaryDisplay={contextSummaryDisplay}
-              clinicalSummaryDisplayUnavailable={
-                clinicalSummaryDisplayUnavailable
-              }
-              variant="tabPanel"
-            />
-            <CaseChat
-              messages={messages}
-              isActive={isActive}
-              alwaysExpanded
-            />
-          </>
-        }
-        documentsSlot={
-          <CaseDetailRelatedLinks
-            patientId={caseDetail.patient?.id ?? null}
-            variant="tabPanel"
-          />
-        }
-        reportSlot={reportBlock}
-      />
+      <div className="flex flex-col gap-6">
+        <CaseDetailStateCard
+          startedAt={caseDetail.started_at}
+          origin={caseDetail.origin}
+          isActive={isActive}
+          messageCount={messages.length}
+          lastMessageAt={lastMessage?.created_at ?? null}
+          latestReport={latestReport}
+          contextSummaryDisplay={contextSummaryDisplay}
+          clinicalSummaryDisplayUnavailable={clinicalSummaryDisplayUnavailable}
+        />
+        <CaseChat messages={messages} isActive={isActive} alwaysExpanded />
+        <CaseDetailRelatedLinks />
+        {reportBlock}
+      </div>
     </div>
   )
 }

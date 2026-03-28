@@ -23,16 +23,17 @@ export function CaseDetailLoading() {
 
       <Skeleton className="h-[88px] rounded-xl" />
 
-      <Skeleton className="h-10 w-full max-w-xs rounded-md" />
+      <div className="flex flex-wrap gap-2">
+        <Skeleton className="h-10 w-44 rounded-md" />
+        <Skeleton className="h-10 w-36 rounded-md" />
+        <Skeleton className="h-10 w-36 rounded-md" />
+      </div>
 
-      <div className="space-y-4">
-        <div className="grid grid-cols-1 gap-1 rounded-lg bg-muted p-1 sm:grid-cols-3">
-          {Array.from({ length: 3 }).map((_, i) => (
-            <Skeleton key={i} className="h-9 rounded-md" />
-          ))}
-        </div>
+      <div className="space-y-6">
         <Skeleton className="h-48 rounded-xl" />
         <Skeleton className="h-[min(420px,55vh)] rounded-xl" />
+        <Skeleton className="h-32 rounded-xl" />
+        <Skeleton className="min-h-[200px] rounded-xl" />
       </div>
     </div>
   )

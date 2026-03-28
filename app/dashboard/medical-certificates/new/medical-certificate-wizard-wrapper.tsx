@@ -20,6 +20,7 @@ type MedicalCertificateWizardProfile = {
 type MedicalCertificateWizardWrapperProps = {
   patients: Patient[]
   profile: MedicalCertificateWizardProfile
+  initialPatientId?: string | null
 }
 
 /**
@@ -29,6 +30,7 @@ type MedicalCertificateWizardWrapperProps = {
 export function MedicalCertificateWizardWrapper({
   patients,
   profile,
+  initialPatientId = null,
 }: MedicalCertificateWizardWrapperProps) {
   const router = useRouter()
   const pathname = usePathname()
@@ -48,6 +50,7 @@ export function MedicalCertificateWizardWrapper({
       key={_t ?? fallbackKey}
       patients={patients}
       profile={profile}
+      initialPatientId={initialPatientId}
     />
   )
 }

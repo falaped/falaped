@@ -10,7 +10,9 @@ import { PrescriptionWizardWrapper } from "./prescription-wizard-wrapper"
 import { Button } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
 
-type PageProps = { searchParams: Promise<{ templateId?: string }> }
+type PageProps = {
+  searchParams: Promise<{ templateId?: string; patientId?: string }>
+}
 
 export default async function NewPrescriptionPage({ searchParams }: PageProps) {
   const supabase = await createClient()
@@ -24,6 +26,10 @@ export default async function NewPrescriptionPage({ searchParams }: PageProps) {
 
   const resolved = await searchParams
   const templateId = resolved.templateId
+  const patientId =
+    resolved.patientId && typeof resolved.patientId === "string"
+      ? resolved.patientId
+      : null
   const initialTemplate =
     templateId && typeof templateId === "string"
       ? await getPrescriptionTemplateByIdForProfile(
@@ -61,6 +67,7 @@ export default async function NewPrescriptionPage({ searchParams }: PageProps) {
         profile={profile}
         prescriptionTemplates={prescriptionTemplates}
         initialTemplate={initialTemplate}
+        initialPatientId={patientId}
       />
     </div>
   )

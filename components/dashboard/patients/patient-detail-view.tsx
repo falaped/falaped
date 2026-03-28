@@ -1,7 +1,7 @@
 "use client"
 
-import { useState } from "react"
-import { useRouter } from "next/navigation"
+import { useLayoutEffect, useState } from "react"
+import { usePathname, useRouter } from "next/navigation"
 import { toast } from "sonner"
 
 import { getFriendlyToastMessage } from "@/lib/get-friendly-toast-message"
@@ -35,8 +35,15 @@ export function PatientDetailView({
   prescriptions?: PrescriptionListItem[]
 }) {
   const router = useRouter()
+  const pathname = usePathname()
   const [isEditing, setIsEditing] = useState(false)
   const [deleteLoading, setDeleteLoading] = useState(false)
+
+  // Next.js may reuse this client boundary when navigating between patients or
+  // when restoring from the client router cache; reset edit mode on route/patient change.
+  useLayoutEffect(() => {
+    setIsEditing(false)
+  }, [pathname, patient.id])
 
   function handleUpdateSuccess() {
     router.refresh()
@@ -72,6 +79,7 @@ export function PatientDetailView({
             isEditing={isEditing}
             deleteLoading={deleteLoading}
             onEdit={() => setIsEditing(true)}
+            onCancelEdit={() => setIsEditing(false)}
             onConfirmDelete={handleConfirmDelete}
           />
         </div>
@@ -85,6 +93,7 @@ export function PatientDetailView({
               isEditing={isEditing}
               deleteLoading={deleteLoading}
               onEdit={() => setIsEditing(true)}
+              onCancelEdit={() => setIsEditing(false)}
               onConfirmDelete={handleConfirmDelete}
             />
           }
