@@ -1,14 +1,9 @@
-import Link from "next/link"
-import { ArrowLeftIcon, CalendarIcon, ClockIcon } from "lucide-react"
+import { CalendarIcon, ClockIcon, MessagesSquareIcon } from "lucide-react"
 
 import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
-import { Separator } from "@/components/ui/separator"
 import { formatDateTime } from "@/lib/formatters"
 import type { CaseDetail } from "@/modules/cases/get-case-by-id"
-import type { Patient } from "@/modules/patients/types"
-import { CaseDetailActions } from "@/components/dashboard/cases/case-detail-actions"
-import { CasePatientPickerTrigger } from "@/components/dashboard/cases/case-patient-picker-trigger"
+import { CaseDetailHeaderToolbar } from "@/components/dashboard/cases/case-detail-header-toolbar"
 
 function StatusBadge({ status }: { status: "active" | "closed" }) {
   if (status === "active") {
@@ -18,7 +13,7 @@ function StatusBadge({ status }: { status: "active" | "closed" }) {
           <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-primary-foreground opacity-75" />
           <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-primary-foreground" />
         </span>
-        Caso Ativo
+        Caso ativo
       </Badge>
     )
   }
@@ -34,62 +29,56 @@ function getCaseTitle(detail: CaseDetail): string {
 
 type CaseDetailHeaderProps = {
   detail: CaseDetail
-  patients: Patient[]
 }
 
-export function CaseDetailHeader({ detail, patients }: CaseDetailHeaderProps) {
+export function CaseDetailHeader({ detail }: CaseDetailHeaderProps) {
   const title = getCaseTitle(detail)
 
   return (
-    <div className="space-y-4">
-      <Button variant="ghost" size="sm" className="-ml-2 gap-1.5 text-muted-foreground" asChild>
-        <Link href="/dashboard/cases">
-          <ArrowLeftIcon className="h-4 w-4" />
-          Voltar para casos
-        </Link>
-      </Button>
-
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-        <div className="space-y-1">
+    <div className="flex flex-col gap-4">
+      <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+        <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-2">
+            <MessagesSquareIcon
+              className="h-5 w-5 shrink-0 text-muted-foreground"
+              aria-hidden
+            />
             <h1 className="text-2xl font-semibold tracking-tight">{title}</h1>
             <StatusBadge status={detail.status} />
-            <CasePatientPickerTrigger
-              caseId={detail.id}
-              patients={patients}
-              hasPatient={!!detail.patient}
-            />
           </div>
-          <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted-foreground">
+          <p className="mt-1 text-sm text-muted-foreground">
+            {detail.status === "active"
+              ? "Cockpit do atendimento: retome a conversa no painel (quando aplicável) e revise o relatório."
+              : "Modo leitura: histórico e relatório permanecem disponíveis para consulta."}
+          </p>
+          <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted-foreground">
             <span className="flex items-center gap-1.5">
-              <CalendarIcon className="h-3.5 w-3.5" />
+              <CalendarIcon className="h-3.5 w-3.5 shrink-0" aria-hidden />
               Iniciado em {formatDateTime(detail.started_at)}
             </span>
-            {detail.ended_at && (
+            {detail.ended_at ? (
               <span className="flex items-center gap-1.5">
-                <ClockIcon className="h-3.5 w-3.5" />
+                <ClockIcon className="h-3.5 w-3.5 shrink-0" aria-hidden />
                 Encerrado em {formatDateTime(detail.ended_at)}
               </span>
-            )}
+            ) : null}
           </div>
         </div>
-        <CaseDetailActions caseId={detail.id} status={detail.status} />
+        <CaseDetailHeaderToolbar caseId={detail.id} status={detail.status} />
       </div>
 
       {(detail.awaiting_patient_choice || detail.awaiting_intent) && (
-        <div className="flex gap-2">
-          {detail.awaiting_patient_choice && (
+        <div className="flex flex-wrap gap-2">
+          {detail.awaiting_patient_choice ? (
             <Badge variant="outline">Aguardando associação de paciente</Badge>
-          )}
-          {detail.awaiting_intent && (
+          ) : null}
+          {detail.awaiting_intent ? (
             <Badge variant="outline" className="text-muted-foreground">
               Aguardando resposta do responsável
             </Badge>
-          )}
+          ) : null}
         </div>
       )}
-
-      <Separator />
     </div>
   )
 }

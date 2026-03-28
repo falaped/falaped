@@ -1,5 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
 
+import type { PatientSex } from "@/modules/patients/patient-sex"
+
 export type CaseMessage = {
   id: string
   role: "user" | "assistant"
@@ -13,7 +15,7 @@ export type CasePatientDetail = {
   birth_date: string | null
   responsible: string | null
   contact_phone: string | null
-  sex: string | null
+  sex: PatientSex | null
   legal_guardian: string | null
   blood_type: string | null
   weight: string | null

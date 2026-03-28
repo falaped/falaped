@@ -32,20 +32,13 @@ import type { CaseForPatient } from "@/modules/cases/get-cases-by-patient-id"
 import { FileCheckIcon, MessageSquareIcon, Pill } from "lucide-react"
 import type { MedicalCertificateListItem } from "@/modules/medical-certificates/get-medical-certificates-by-profile-id"
 import type { PrescriptionListItem } from "@/modules/prescriptions/types"
+import { formatPatientSexForDisplay } from "@/modules/patients/patient-sex"
 
 const CERTIFICATE_TYPE_LABELS: Record<string, string> = {
   comparecimento: "Comparecimento",
   aptidao_fisica: "Aptidão Física",
   medico: "Médico (afastamento)",
   acompanhante: "Acompanhante",
-}
-
-function formatSexForDisplay(sex: string | null | undefined): string {
-  if (!sex?.trim()) return ""
-  const v = sex.trim()
-  if (v === "M") return "Masculino"
-  if (v === "F") return "Feminino"
-  return v
 }
 
 export function PatientDetailView({
@@ -134,11 +127,21 @@ export function PatientDetailView({
       </div>
 
       {isEditing ? (
-        <PatientForm
-          mode="edit"
-          patient={patient}
-          onUpdateSuccess={handleUpdateSuccess}
-        />
+        <Card>
+          <CardHeader>
+            <CardTitle>Editar dados</CardTitle>
+            <CardDescription>
+              Atualize as informações do paciente e salve.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <PatientForm
+              mode="edit"
+              patient={patient}
+              onUpdateSuccess={handleUpdateSuccess}
+            />
+          </CardContent>
+        </Card>
       ) : (
         <div className="grid gap-6 md:grid-cols-1">
           <Card>
@@ -165,16 +168,16 @@ export function PatientDetailView({
                   </p>
                 </div>
               )}
-              {patient.sex && (
+              {formatPatientSexForDisplay(patient.sex) ? (
                 <div className="border-b border-border py-3">
                   <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
                     Sexo
                   </p>
                   <p className="mt-1 text-sm font-medium text-foreground">
-                    {formatSexForDisplay(patient.sex)}
+                    {formatPatientSexForDisplay(patient.sex)}
                   </p>
                 </div>
-              )}
+              ) : null}
               {patient.responsible && (
                 <div className="border-b border-border py-3">
                   <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">

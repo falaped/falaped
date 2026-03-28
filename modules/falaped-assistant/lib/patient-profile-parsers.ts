@@ -3,6 +3,11 @@ import type {
   PatientProfileSnapshot,
   PatientProfileUpdatePayload,
 } from "@/modules/falaped-assistant/contracts/assistant-types"
+import type { PatientSex } from "@/modules/patients/patient-sex"
+import {
+  normalizePatientSexFromDb,
+  PATIENT_SEX_LABELS,
+} from "@/modules/patients/patient-sex"
 import { normalizeText } from "@/modules/falaped-assistant/lib/normalize-text"
 import {
   parseWeightHeightForBmi,
@@ -109,10 +114,17 @@ export function parseBirthDateFromMessage(userMessage: string): string | null {
   return null
 }
 
-export function parseSexFromMessage(userMessage: string): string | null {
+/**
+ * Parses user dictation into canonical DB enum keys (`masculino` | `feminino`).
+ */
+export function parseSexFromMessage(userMessage: string): PatientSex | null {
   const n = normalizeText(userMessage)
-  if (/\bsexo\s*[:=]?\s*masculino\b|\btipicamente masculina\b/.test(n)) return "male"
-  if (/\bsexo\s*[:=]?\s*feminino\b|\btipicamente feminina\b/.test(n)) return "female"
+  if (/\bsexo\s*[:=]?\s*masculino\b|\btipicamente masculina\b/.test(n)) {
+    return "masculino"
+  }
+  if (/\bsexo\s*[:=]?\s*feminino\b|\btipicamente feminina\b/.test(n)) {
+    return "feminino"
+  }
   return null
 }
 
@@ -213,10 +225,10 @@ export function detectPatientProfileUpdateCandidate(params: {
 
   const nextSex = parseSexFromMessage(params.userMessage)
   if (nextSex) {
-    const current = profile.sex?.trim().toLowerCase() ?? null
-    if (current !== nextSex) {
+    const currentKey = normalizePatientSexFromDb(profile.sex)
+    if (currentKey !== nextSex) {
       updates.sex = nextSex
-      summaryLines.push(`Sexo: ${nextSex === "male" ? "Masculino" : "Feminino"}`)
+      summaryLines.push(`Sexo: ${PATIENT_SEX_LABELS[nextSex]}`)
     }
   }
 

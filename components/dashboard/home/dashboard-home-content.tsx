@@ -43,6 +43,13 @@ export async function DashboardHomeContent() {
     formatDashboardChatContextSummaryForDisplay(
       home.activeCase?.contextSummary ?? null,
     )
+  const activeCaseRawSummary =
+    home.activeCase?.contextSummary?.trim() ?? ""
+  const showActiveSummaryUnavailable =
+    home.activeCase != null &&
+    home.activeCase.origin === "dashboard" &&
+    activeCaseRawSummary.length > 0 &&
+    activeContextSummaryDisplay == null
 
   return (
     <div className="flex flex-col gap-6">
@@ -195,6 +202,15 @@ export async function DashboardHomeContent() {
                   {activeContextSummaryDisplay}
                 </p>
               </div>
+            ) : showActiveSummaryUnavailable ? (
+              <div>
+                <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                  Resumo do contexto (painel)
+                </p>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  Resumo indisponível para exibição no momento.
+                </p>
+              </div>
             ) : null}
           </CardContent>
         </Card>
@@ -213,9 +229,11 @@ export async function DashboardHomeContent() {
                 Criar novo caso
               </Link>
             </Button>
-            <Button variant="outline" size="sm" asChild>
-              <Link href="/dashboard/cases">Ver histórico de casos</Link>
-            </Button>
+            {home.totalCasesCount > 0 ? (
+              <Button variant="outline" size="sm" asChild>
+                <Link href="/dashboard/cases">Ver histórico de casos</Link>
+              </Button>
+            ) : null}
           </div>
         </div>
       )}
@@ -289,14 +307,16 @@ export async function DashboardHomeContent() {
               Até cinco encerramentos mais recentes.
             </p>
           </div>
-          <Button
-            variant="ghost"
-            size="sm"
-            className="h-8 text-muted-foreground"
-            asChild
-          >
-            <Link href="/dashboard/cases">Ver todos os casos</Link>
-          </Button>
+          {home.totalCasesCount > 0 ? (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-8 text-muted-foreground"
+              asChild
+            >
+              <Link href="/dashboard/cases">Ver todos os casos</Link>
+            </Button>
+          ) : null}
         </CardHeader>
         <CardContent className="p-0">
           {home.recentClosedCases.length === 0 ? (

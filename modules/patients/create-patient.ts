@@ -1,4 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
+
+import { normalizePatientSexFromDb } from "@/modules/patients/patient-sex"
 import type { Patient } from "./types"
 
 const PATIENT_SELECT =
@@ -35,7 +37,7 @@ export async function createPatient(
     birth_date: payload.birth_date?.trim() || null,
     responsible: payload.responsible.trim() || null,
     contact_phone: payload.contact_phone.replace(/\D/g, "").trim() || null,
-    sex: payload.sex?.trim() || null,
+    sex: normalizePatientSexFromDb(payload.sex ?? null),
     legal_guardian: payload.legal_guardian?.trim() || null,
     blood_type: payload.blood_type?.trim() || null,
     weight: payload.weight?.trim() || null,

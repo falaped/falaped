@@ -1,7 +1,8 @@
----
+***
+
 name: pediatric-dashboard-design
 description: Expert em design de dashboard pediátrico com foco em UX/UI, modelagem de páginas e padrões visuais. Use ao criar ou alterar páginas do dashboard, componentes feature (PatientsTable, CasesTable), forms pediátricos, empty states ou ao falar de layout, hierarquia visual e copy em PT-BR para o contexto pediátrico.
----
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 # Pediatric Dashboard Design
 
@@ -11,7 +12,7 @@ Ao criar ou alterar páginas do dashboard, componentes feature (PatientsTable, C
 
 Rules aplicáveis: `design-system`, `ux-ui-minimalist`, `audience-context`, `forms` (validação técnica).
 
----
+***
 
 ## Princípios
 
@@ -23,7 +24,7 @@ Rules aplicáveis: `design-system`, `ux-ui-minimalist`, `audience-context`, `for
 
 Referência visual: Vercel/Supabase — fundo limpo, tipografia Geist/Inter, bordas sutis.
 
----
+***
 
 ## Audience e terminologia
 
@@ -32,11 +33,11 @@ Referência visual: Vercel/Supabase — fundo limpo, tipografia Geist/Inter, bor
 | **Paciente** | Criança sob cuidado do pediatra |
 | **Responsável** | Guardião; sempre nome completo (Maria Silva), nunca "mãe" ou "pai" |
 | **Caso** | Atendimento por WhatsApp (conversa com responsável) |
-| **contact_phone** | Telefone do responsável; obrigatório no contexto pediátrico (emergência) |
+| **contact\_phone** | Telefone do responsável; obrigatório no contexto pediátrico (emergência) |
 
 Copy em PT-BR; tom profissional e direto.
 
----
+***
 
 ## Anatomia de página
 
@@ -52,9 +53,9 @@ Copy em PT-BR; tom profissional e direto.
 </div>
 ```
 
-- **Container**: `flex flex-col gap-6`; página com `max-w-5xl` ou `max-w-6xl` quando necessário.
-- **Padding de página**: `p-6` ou `p-8`.
-- **Header**: h1 em destaque; descrição em muted; sempre os dois juntos.
+* **Container**: `flex flex-col gap-6`; página com `max-w-5xl` ou `max-w-6xl` quando necessário.
+* **Padding de página**: `p-6` ou `p-8`.
+* **Header**: h1 em destaque; descrição em muted; sempre os dois juntos.
 
 ### Padrão de header
 
@@ -70,7 +71,7 @@ Exemplo:
 <p className="text-sm text-muted-foreground">Gerencie os pacientes cadastrados.</p>
 ```
 
----
+***
 
 ## Empty states
 
@@ -100,7 +101,7 @@ Padrão: ícone + título + descrição opcional + CTA.
 | Relatórios | Nenhum relatório disponível. | Gerar relatório |
 | Busca vazia | Nenhum resultado encontrado. | Limpar filtros |
 
----
+***
 
 ## Componentes feature
 
@@ -108,7 +109,7 @@ Padrão: ícone + título + descrição opcional + CTA.
 
 Alinhado ao padrão de **CasesTable**: `Card` + `Table`, toolbar com `CaseSearchInput` (`justify-end`), ordenação padrão por nome (pt-BR).
 
-1. **Paciente**: avatar + nome; **contact_phone** como link `tel:` abaixo do nome (clique não dispara abertura da linha)
+1. **Paciente**: avatar + nome; **contact\_phone** como link `tel:` abaixo do nome (clique não dispara abertura da linha)
 2. **Responsável**: nome completo ou “Não informado”
 3. **Nascimento**: data formatada ou “Não informado”
 
@@ -122,8 +123,8 @@ Prioridade: casos ativos primeiro; acesso rápido ao detalhe do caso (linha ou b
 
 1. **Identificação**: telefone ou nome do responsável
 2. **Status**: `active` | `closed` — Badge ou texto
-3. **started_at** — data/hora formatada
-4. **patient_id** — se associado, mostrar nome do paciente; senão "Sem paciente associado"
+3. **started\_at** — data/hora formatada
+4. **patient\_id** — se associado, mostrar nome do paciente; senão "Sem paciente associado"
 
 Schema cases: `status`, `started_at`, `ended_at`, `patient_id`, `awaiting_intent`, `awaiting_patient_choice`.
 
@@ -140,7 +141,7 @@ Schema cases: `status`, `started_at`, `ended_at`, `patient_id`, `awaiting_intent
 </div>
 ```
 
----
+***
 
 ## Forms pediátricos
 
@@ -150,47 +151,54 @@ Schema cases: `status`, `started_at`, `ended_at`, `patient_id`, `awaiting_intent
 |-------|-------------|-----------|-------------------|
 | name | Sim | min 2 caracteres | Nome do paciente |
 | responsible | Sim | nome completo; não aceitar "mãe", "pai", etc. | Nome completo do responsável |
-| contact_phone | Sim | min 10 dígitos | Telefone de contato |
-| birth_date | Não | date válida | Data de nascimento |
+| contact\_phone | Sim | min 10 dígitos | Telefone de contato |
+| birth\_date | Não | texto **dd/mm/aaaa** (pt-BR); Zod transforma para **yyyy-mm-dd** ao enviar | `dd/mm/aaaa` + dica "Formato: dd/mm/aaaa" |
 
 Campos opcionais (schema): `sex`, `legal_guardian`, `blood_type`, `weight`, `height`, `head_circumference`, `allergies`, `current_medications`, `medical_history`.
 
+Parser compartilhado: `lib/brazilian-date-form.ts` (`parseBrazilianDateStringToIso`, `maskBrazilianDateInput`).
+
 ### Layout do form
 
-- Usar `Field` + `FieldLabel` + `Input`/`PhoneInput` (de `components/ui/field.tsx`)
-- Labels acima do input; placeholders discretos
-- Botão primário: "Salvar" ou "Cadastrar"; estado `Salvando...` durante submit
-- Erros: `text-destructive text-sm` abaixo do campo
-- Regra `forms`: react-hook-form, Zod, zodResolver; mensagens de validação em PT-BR
+* Componentes em `components/dashboard/patients/patient-form/` (export público em `patient-form.tsx`): seções **Identificação e contato** e **Dados clínicos**; `PatientControlledSelectField` para selects controlados.
+* Usar `Field` + `FieldLabel` + `Input`/`PhoneInput` (de `components/ui/field.tsx`)
+* **Data de nascimento:** `input` texto com máscara `dd/mm/aaaa` (não `type="date"` como única solução).
+* **Campos curtos** (sexo, data, tipo sanguíneo, peso, altura, PC): largura contida (`max-w-*` / grelha); nome, responsável, telefone e textareas em largura total.
+* **Grelha:** data + sexo na mesma linha a partir de `sm`; antropometria em linha compacta em `md+` (`grid` com colunas assimétricas).
+* Páginas: formulário de cadastro dentro de `Card` em `app/dashboard/patients/new/page.tsx`; edição no detalhe do paciente dentro de `Card` ("Editar dados").
+* Labels acima do input; placeholders discretos
+* Botão primário: "Salvar" ou "Cadastrar"; estado `Salvando...` durante submit
+* Erros: `text-destructive text-sm` abaixo do campo
+* Regra `forms`: react-hook-form, Zod, zodResolver; mensagens de validação em PT-BR; tipos de formulário: `CreatePatientFormInput` / `UpdatePatientFormInput` (`z.input`) vs payload `CreatePatientFormData` / `UpdatePatientFormData` (`z.output`)
 
----
+***
 
 ## Data display
 
 ### Tabelas
 
-- Bordes discretas ou dividers
-- Cabeçalho: `font-medium text-muted-foreground` ou `text-sm`
-- Células: `px-4 py-3`
-- Linhas alternadas sutis: `even:bg-muted/50` (opcional)
-- Empty state quando não houver dados
+* Bordes discretas ou dividers
+* Cabeçalho: `font-medium text-muted-foreground` ou `text-sm`
+* Células: `px-4 py-3`
+* Linhas alternadas sutis: `even:bg-muted/50` (opcional)
+* Empty state quando não houver dados
 
 ### Listas vs cards
 
-- **Lista**: muitos itens, busca/filtro; layout compacto
-- **Cards**: menos itens, mais destaque por item; grid `grid-cols-1 md:grid-cols-2 lg:grid-cols-3`
+* **Lista**: muitos itens, busca/filtro; layout compacto
+* **Cards**: menos itens, mais destaque por item; grid `grid-cols-1 md:grid-cols-2 lg:grid-cols-3`
 
----
+***
 
 ## Sidebar e navegação
 
 Itens padrão: Início, Casos, Pacientes, Perfil.
 
-- Estado ativo: `bg-muted` ou `bg-primary/10` + `text-primary`
-- Prioridade de fluxo: Casos (atendimentos) e Pacientes são centrais
-- Sidebar compacta: ícones + labels; tooltip se colapsada
+* Estado ativo: `bg-muted` ou `bg-primary/10` + `text-primary`
+* Prioridade de fluxo: Casos (atendimentos) e Pacientes são centrais
+* Sidebar compacta: ícones + labels; tooltip se colapsada
 
----
+***
 
 ## Design tokens
 
@@ -208,7 +216,7 @@ Sempre usar tokens; nunca hex ou rgb em componentes.
 
 Spacing: `p-2`, `p-4`, `p-6`, `gap-4`, `space-y-4`. Cards: `p-4` ou `p-6`.
 
----
+***
 
 ## Copy (PT-BR) – referência rápida
 
@@ -225,33 +233,33 @@ Spacing: `p-2`, `p-4`, `p-6`, `gap-4`, `space-y-4`. Cards: `p-4` ou `p-6`.
 
 Tom: claro, profissional, orientado à ação quando há CTA.
 
----
+***
 
 ## Loading e feedback
 
-- **Loading**: Skeleton (Shadcn) ou spinner pequeno; evitar bloquear tela inteira
-- **Success**: toast discreto ou feedback inline breve
-- **Erro**: mensagem clara + ação de retry quando aplicável
-- **Hover/focus**: `transition-colors`; `focus-visible:ring-2`
+* **Loading**: Skeleton (Shadcn) ou spinner pequeno; evitar bloquear tela inteira
+* **Success**: toast discreto ou feedback inline breve
+* **Erro**: mensagem clara + ação de retry quando aplicável
+* **Hover/focus**: `transition-colors`; `focus-visible:ring-2`
 
----
+***
 
 ## Checklist antes de entregar
 
-- [ ] Página segue anatomia (header h1 + descrição + conteúdo)
-- [ ] Tokens de cor; sem hex/rgb
-- [ ] Empty state com copy apropriado; CTA quando fizer sentido
-- [ ] PatientsTable/CasesTable: contact_phone e responsible visíveis quando aplicável
-- [ ] Form: responsible e contact_phone com validações; copy PT-BR
-- [ ] Hierarquia tipográfica consistente (text-2xl, text-sm, text-muted-foreground)
-- [ ] Espaço em branco adequado; sem poluição visual
-- [ ] Acessibilidade: labels em inputs; focus-visible; semântica correta
+* \[ ] Página segue anatomia (header h1 + descrição + conteúdo)
+* \[ ] Tokens de cor; sem hex/rgb
+* \[ ] Empty state com copy apropriado; CTA quando fizer sentido
+* \[ ] PatientsTable/CasesTable: contact\_phone e responsible visíveis quando aplicável
+* \[ ] Form: responsible e contact\_phone com validações; copy PT-BR
+* \[ ] Hierarquia tipográfica consistente (text-2xl, text-sm, text-muted-foreground)
+* \[ ] Espaço em branco adequado; sem poluição visual
+* \[ ] Acessibilidade: labels em inputs; focus-visible; semântica correta
 
----
+***
 
 ## Referências
 
-- Rules: `design-system`, `ux-ui-minimalist`, `audience-context`, `forms`
-- Skill: `dashboard-falaped` (estrutura de pastas, rotas)
-- Schema: `supabase-falaped/schema.md` (patients, cases)
-- Exemplos expandidos: [reference.md](reference.md)
+* Rules: `design-system`, `ux-ui-minimalist`, `audience-context`, `forms`
+* Skill: `dashboard-falaped` (estrutura de pastas, rotas)
+* Schema: `supabase-falaped/schema.md` (patients, cases)
+* Exemplos expandidos: [reference.md](reference.md)

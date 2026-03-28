@@ -103,14 +103,14 @@ test("buildPatientGrammarHintForGuardianQuestions without profile", () => {
   assert.ok(result.includes("a criança"))
 })
 
-test("buildPatientGrammarHintForGuardianQuestions with male patient", () => {
+test("buildPatientGrammarHintForGuardianQuestions with masculino key", () => {
   const result = buildPatientGrammarHintForGuardianQuestions({
     id: "p-1",
     name: "João Silva",
     birth_date: null,
     responsible: null,
     contact_phone: null,
-    sex: "male",
+    sex: "masculino",
     legal_guardian: null,
     blood_type: null,
     weight: null,
@@ -122,4 +122,47 @@ test("buildPatientGrammarHintForGuardianQuestions with male patient", () => {
   })
   assert.ok(result.includes("João"))
   assert.ok(result.includes("masculino"))
+  assert.ok(result.includes("ele"))
+})
+
+test("buildPatientGrammarHintForGuardianQuestions with feminino key", () => {
+  const result = buildPatientGrammarHintForGuardianQuestions({
+    id: "p-1",
+    name: "Maria Silva",
+    birth_date: null,
+    responsible: null,
+    contact_phone: null,
+    sex: "feminino",
+    legal_guardian: null,
+    blood_type: null,
+    weight: null,
+    height: null,
+    head_circumference: null,
+    allergies: null,
+    current_medications: null,
+    medical_history: null,
+  })
+  assert.ok(result.includes("Maria"))
+  assert.ok(result.includes("feminino"))
+  assert.ok(result.includes("ela"))
+})
+
+test("buildPatientDataAccessReply shows sex with Portuguese label", () => {
+  const result = buildPatientDataAccessReply({
+    id: "p-1",
+    name: "Ana",
+    birth_date: null,
+    responsible: null,
+    contact_phone: null,
+    sex: "feminino",
+    legal_guardian: null,
+    blood_type: null,
+    weight: null,
+    height: null,
+    head_circumference: null,
+    allergies: null,
+    current_medications: null,
+    medical_history: null,
+  })
+  assert.ok(result.includes("Sexo: Feminino"))
 })

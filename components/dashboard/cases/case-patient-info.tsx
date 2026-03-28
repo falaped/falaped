@@ -2,94 +2,110 @@ import {
   UserIcon,
   PhoneIcon,
   AlertTriangleIcon,
-  BabyIcon,
   CakeIcon,
 } from "lucide-react"
 
-import { formatDate, formatBrazilianPhone } from "@/lib/formatters"
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card"
+import { formatBrazilianPhone, formatDate } from "@/lib/formatters"
+import { formatPatientSexForDisplay } from "@/modules/patients/patient-sex"
 import type { CasePatientDetail } from "@/modules/cases/get-case-by-id"
 
-
-
 export function CasePatientInfo({ patient }: { patient: CasePatientDetail }) {
-  const formattedPhone = patient.contact_phone ? formatBrazilianPhone(patient.contact_phone) : null
+  const formattedPhone = patient.contact_phone
+    ? formatBrazilianPhone(patient.contact_phone)
+    : null
 
   return (
-    <div className="rounded-xl bg-card p-5">
-      <div className="flex items-center justify-start gap-8 flex-wrap w-full">
+    <Card className="border-border">
+      <CardHeader className="pb-2">
+        <CardTitle className="text-base font-semibold">{patient.name}</CardTitle>
+        <CardDescription>Dados do paciente neste caso</CardDescription>
+      </CardHeader>
+      <CardContent className="px-4 pb-4 pt-0 sm:px-6 sm:pb-5">
+        <div className="flex w-full flex-wrap items-center justify-start gap-6 sm:gap-8">
+          {patient.responsible && (
+            <div>
+              <div className="flex items-center gap-2 text-sm">
+                <UserIcon className="h-4 w-4 text-muted-foreground" />
+                <p className="font-medium">{patient.responsible}</p>
+              </div>
+            </div>
+          )}
+          <div className="hidden h-8 w-px bg-border sm:block" />
 
-        {patient.responsible && (
-          <div>
-            <div className="flex items-center gap-2 text-sm">
-              <UserIcon className="h-4 w-4 text-muted-foreground" />
-              <p className="font-medium">{patient.responsible}</p>
+          {formattedPhone && (
+            <div>
+              <div className="flex items-center gap-2 text-sm">
+                <PhoneIcon className="h-4 w-4 text-muted-foreground" />
+                <p className="font-medium">{formattedPhone}</p>
+              </div>
             </div>
-          </div>
-        )}
-        <div className="hidden h-8 w-px bg-border sm:block" />
+          )}
+          <div className="hidden h-8 w-px bg-border sm:block" />
 
-        {formattedPhone && (
-          <div>
-            <div className="flex items-center gap-2 text-sm">
-              <PhoneIcon className="h-4 w-4 text-muted-foreground" />
-              <p className="font-medium">
-                {formattedPhone}
-              </p>
+          {patient.birth_date && (
+            <div>
+              <div className="flex items-center gap-2 text-sm">
+                <CakeIcon className="h-4 w-4 text-muted-foreground" />
+                <p className="font-medium">{formatDate(patient.birth_date)}</p>
+              </div>
             </div>
-          </div>
-        )}
-        <div className="hidden h-8 w-px bg-border sm:block" />
+          )}
+          <div className="hidden h-8 w-px bg-border sm:block" />
 
-        {patient.birth_date && (
-          <div>
-            <div className="flex items-center gap-2 text-sm">
-              <CakeIcon className="h-4 w-4 text-muted-foreground" />
-              <p className="font-medium">{formatDate(patient.birth_date)}</p>
+          {formatPatientSexForDisplay(patient.sex) ? (
+            <div>
+              <div className="flex items-center gap-2 text-sm">
+                <UserIcon className="h-4 w-4 text-muted-foreground" />
+                <p className="font-medium">
+                  {formatPatientSexForDisplay(patient.sex)}
+                </p>
+              </div>
             </div>
-          </div>
-        )}
-        <div className="hidden h-8 w-px bg-border sm:block" />
-
-        {patient.sex && (
-          <div>
-            <div className="flex items-center gap-2 text-sm">
-              <UserIcon className="h-4 w-4 text-muted-foreground" />
-              <p className="font-medium">
-                {patient.sex === "M" ? "Masculino" : patient.sex === "F" ? "Feminino" : patient.sex}
-              </p>
+          ) : null}
+          <div className="hidden h-8 w-px bg-border sm:block" />
+          {patient.allergies && (
+            <div>
+              <div className="flex items-center gap-2 text-sm">
+                <AlertTriangleIcon className="h-4 w-4 text-destructive" />
+                <p className="font-medium text-destructive">
+                  {patient.allergies}
+                </p>
+              </div>
             </div>
-          </div>
-        )}
-        <div className="hidden h-8 w-px bg-border sm:block" />
-        {patient.allergies && (
-          <div>
-            <div className="flex items-center gap-2 text-sm">
-              <AlertTriangleIcon className="h-4 w-4 text-destructive" />
-              <p className="font-medium text-destructive">{patient.allergies}</p>
-            </div>
-          </div>
-        )}
-      </div>
-    </div>
+          )}
+        </div>
+      </CardContent>
+    </Card>
   )
 }
 
 export function CaseNoPatient() {
   return (
-    <div className="rounded-xl border border-dashed border-border bg-card px-5 py-4">
-      <div className="flex items-center gap-3">
-        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-muted">
-          <UserIcon className="h-5 w-5 text-muted-foreground" />
-        </div>
-        <div>
-          <p className="text-sm font-medium text-muted-foreground">
-            Sem paciente associado
+    <Card className="border-dashed border-border">
+      <CardHeader className="pb-2">
+        <CardTitle className="text-base font-semibold text-muted-foreground">
+          Paciente
+        </CardTitle>
+        <CardDescription>Nenhum paciente vinculado a este caso.</CardDescription>
+      </CardHeader>
+      <CardContent className="px-4 pb-4 pt-0 sm:px-6 sm:pb-5">
+        <div className="flex items-center gap-3">
+          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-muted">
+            <UserIcon className="h-5 w-5 text-muted-foreground" />
+          </div>
+          <p className="text-sm text-muted-foreground">
+            Use <span className="font-medium">Associar paciente</span> no cabeçalho
+            para vincular a ficha pediátrica.
           </p>
-          <p className="text-xs text-muted-foreground/70">
-            Este caso ainda não possui um paciente vinculado. Use &quot;Associar paciente&quot; ao lado do status para vincular.
-          </p>
         </div>
-      </div>
-    </div>
+      </CardContent>
+    </Card>
   )
 }

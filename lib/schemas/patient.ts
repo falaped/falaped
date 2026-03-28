@@ -1,5 +1,11 @@
 import { z } from "zod"
 
+import {
+  isCompleteBirthDateInputString,
+  parseBirthDateFormValueToIso,
+} from "@/lib/brazilian-date-form"
+import { PATIENT_SEX_VALUES } from "@/modules/patients/patient-sex"
+
 const GENERIC_TERMS = [
   "mãe",
   "pai",
@@ -15,10 +21,28 @@ const optionalString = z
   .transform((v) => (v?.trim() === "" ? undefined : v?.trim()))
   .optional()
 
-export const SEX_OPTIONS = [
-  { value: "Masculino", label: "Masculino" },
-  { value: "Feminino", label: "Feminino" },
-] as const
+/** Form: dd/mm/aaaa; after client resolver also yyyy-mm-dd; output yyyy-mm-dd for Supabase `date`. */
+const optionalBrazilianBirthDate = z
+  .string()
+  .transform((v) => v.trim())
+  .refine((v) => v === "" || isCompleteBirthDateInputString(v), {
+    message: "Informe a data completa (dd/mm/aaaa).",
+  })
+  .refine((v) => v === "" || parseBirthDateFormValueToIso(v) !== null, {
+    message: "Use uma data válida no formato dd/mm/aaaa.",
+  })
+  .transform((v) => {
+    if (v === "") return undefined
+    return parseBirthDateFormValueToIso(v)!
+  })
+
+/** Empty string or enum keys `masculino` / `feminino`; DB write normalizes via `normalizePatientSexFromDb`. */
+const patientSexFormField = z.string().refine(
+  (v) =>
+    v.trim() === "" ||
+    (PATIENT_SEX_VALUES as readonly string[]).includes(v.trim()),
+  "Selecione Masculino ou Feminino",
+)
 
 export const BLOOD_TYPE_OPTIONS = [
   "A+",
@@ -33,7 +57,7 @@ export const BLOOD_TYPE_OPTIONS = [
 
 export const createPatientSchema = z.object({
   name: z.string().min(2, "Nome deve ter pelo menos 2 caracteres"),
-  birth_date: optionalString,
+  birth_date: optionalBrazilianBirthDate,
   responsible: z
     .string()
     .min(3, "Informe o nome completo do responsável")
@@ -48,14 +72,7 @@ export const createPatientSchema = z.object({
       (val) => val.replace(/\D/g, "").length >= 10,
       "Informe um telefone válido com pelo menos 10 dígitos"
     ),
-  sex: z
-    .string()
-    .transform((v) => (v?.trim() === "" ? undefined : v?.trim()))
-    .refine(
-      (v) => !v || ["Masculino", "Feminino"].includes(v),
-      "Selecione Masculino ou Feminino"
-    )
-    .optional(),
+  sex: patientSexFormField,
   legal_guardian: optionalString,
   blood_type: z
     .string()
@@ -78,7 +95,7 @@ export const updatePatientSchema = z.object({
     .string()
     .min(2, "Nome deve ter pelo menos 2 caracteres")
     .optional(),
-  birth_date: optionalString,
+  birth_date: optionalBrazilianBirthDate,
   responsible: z
     .string()
     .optional()
@@ -98,13 +115,7 @@ export const updatePatientSchema = z.object({
         !val || val.trim() === "" || val.replace(/\D/g, "").length >= 10,
       "Informe um telefone válido com pelo menos 10 dígitos"
     ),
-  sex: z
-    .string()
-    .optional()
-    .refine(
-      (v) => !v || v.trim() === "" || ["Masculino", "Feminino"].includes(v.trim()),
-      "Selecione Masculino ou Feminino"
-    ),
+  sex: patientSexFormField,
   legal_guardian: optionalString,
   blood_type: z
     .string()
@@ -124,5 +135,10 @@ export const updatePatientSchema = z.object({
   medical_history: optionalString,
 })
 
-export type CreatePatientFormData = z.infer<typeof createPatientSchema>
-export type UpdatePatientFormData = z.infer<typeof updatePatientSchema>
+/** Values after Zod parse (e.g. birth_date as yyyy-mm-dd). */
+export type CreatePatientFormData = z.output<typeof createPatientSchema>
+export type UpdatePatientFormData = z.output<typeof updatePatientSchema>
+
+/** Raw form state (e.g. birth_date as dd/mm/aaaa string). */
+export type CreatePatientFormInput = z.input<typeof createPatientSchema>
+export type UpdatePatientFormInput = z.input<typeof updatePatientSchema>

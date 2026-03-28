@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useMemo, useRef, useState, useTransition } from "react"
+import Link from "next/link"
 import { useRouter } from "next/navigation"
 import {
   CalendarDays,
@@ -205,11 +206,14 @@ export function SelectPatientWorkspace({
 
       {patients.length === 0 ? (
         <Card className="border-dashed">
-          <CardContent className="py-12 text-center">
-            <p className="text-sm font-medium">Nenhum paciente encontrado.</p>
-            <p className="mt-1 text-sm text-muted-foreground">
-              Cadastre um novo paciente para iniciar um caso.
+          <CardContent className="flex flex-col items-center py-12 text-center">
+            <p className="text-sm font-medium">Nenhum paciente cadastrado.</p>
+            <p className="mt-1 max-w-md text-sm text-muted-foreground">
+              Cadastre um paciente para poder iniciar um atendimento pelo painel.
             </p>
+            <Button asChild className="mt-6">
+              <Link href="/dashboard/patients/new">Cadastrar paciente</Link>
+            </Button>
           </CardContent>
         </Card>
       ) : filteredSortedPatients.length === 0 ? (

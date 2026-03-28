@@ -14,7 +14,7 @@ test("splitPatientContext splits identity fields", () => {
     birth_date: "2023-01-01",
     responsible: "Maria",
     contact_phone: "11999999999",
-    sex: "M",
+    sex: "masculino",
     legal_guardian: null,
     blood_type: "O+",
     weight: "10.5",
@@ -41,7 +41,7 @@ test("splitPatientContext splits clinical fields", () => {
     birth_date: "2023-01-01",
     responsible: "Maria",
     contact_phone: "11999999999",
-    sex: "F",
+    sex: "feminino",
     legal_guardian: "Pedro",
     blood_type: "A-",
     weight: "8",
@@ -55,7 +55,7 @@ test("splitPatientContext splits clinical fields", () => {
   const result = splitPatientContext(ctx)
 
   assert.deepEqual(result.clinical, {
-    sex: "F",
+    sex: "feminino",
     legal_guardian: "Pedro",
     blood_type: "A-",
     weight: "8",

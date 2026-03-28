@@ -125,12 +125,12 @@ test("parseBirthDateFromMessage returns null when no date", () => {
   assert.equal(parseBirthDateFromMessage("peso 5kg"), null)
 })
 
-test("parseSexFromMessage detects male", () => {
-  assert.equal(parseSexFromMessage("sexo: masculino"), "male")
+test("parseSexFromMessage detects masculino key", () => {
+  assert.equal(parseSexFromMessage("sexo: masculino"), "masculino")
 })
 
-test("parseSexFromMessage detects female", () => {
-  assert.equal(parseSexFromMessage("sexo: feminino"), "female")
+test("parseSexFromMessage detects feminino key", () => {
+  assert.equal(parseSexFromMessage("sexo: feminino"), "feminino")
 })
 
 test("parseSexFromMessage returns null when unspecified", () => {
@@ -162,6 +162,16 @@ test("detectPatientProfileUpdateCandidate returns null when no parseable data", 
     patientProfile: EMPTY_PROFILE,
   })
   assert.equal(result, null)
+})
+
+test("detectPatientProfileUpdateCandidate updates sex to enum key", () => {
+  const result = detectPatientProfileUpdateCandidate({
+    userMessage: "sexo: feminino",
+    patientProfile: { ...EMPTY_PROFILE, sex: "masculino" },
+  })
+  assert.ok(result)
+  assert.equal(result.updates.sex, "feminino")
+  assert.ok(result.summaryLines.some((line) => line.includes("Feminino")))
 })
 
 test("looksLikePatientProfileDictation detects weight/height patterns", () => {

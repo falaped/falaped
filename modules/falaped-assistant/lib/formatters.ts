@@ -1,4 +1,8 @@
 import type { PatientProfileSnapshot } from "@/modules/falaped-assistant/contracts/assistant-types"
+import {
+  formatPatientSexForDisplay,
+  normalizePatientSexFromDb,
+} from "@/modules/patients/patient-sex"
 import { computePediatricBmi } from "@/lib/parse-anthropometrics-for-bmi"
 import { parseNumericValue } from "@/modules/falaped-assistant/lib/patient-profile-parsers"
 
@@ -82,7 +86,10 @@ export function buildPatientDataAccessReply(
   if (patientProfile.head_circumference?.trim()) {
     lines.push(`- Perímetro cefálico: ${patientProfile.head_circumference.trim()}`)
   }
-  if (patientProfile.sex?.trim()) lines.push(`- Sexo: ${patientProfile.sex.trim()}`)
+  {
+    const sexLine = formatPatientSexForDisplay(patientProfile.sex)
+    if (sexLine) lines.push(`- Sexo: ${sexLine}`)
+  }
   if (patientProfile.blood_type?.trim()) {
     lines.push(`- Tipo sanguíneo: ${patientProfile.blood_type.trim()}`)
   }
@@ -113,15 +120,15 @@ export function buildPatientGrammarHintForGuardianQuestions(
     return "Use \"a criança\" nas perguntas quando o sexo não estiver claro; não assuma ele/ela sem dados."
   }
   const firstToken = profile.name?.trim().split(/\s+/).filter(Boolean)[0] ?? ""
-  const sex = profile.sex?.trim().toLowerCase() ?? ""
+  const sexKey = normalizePatientSexFromDb(profile.sex)
   const nameHint = firstToken
     ? `Primeiro nome do paciente para referência: ${firstToken}. `
     : ""
 
-  if (sex === "m" || sex === "masculino" || sex === "male") {
+  if (sexKey === "masculino") {
     return `${nameHint}Concordância em masculino (ele, o menino); não use "ela" para o paciente.`
   }
-  if (sex === "f" || sex === "feminino" || sex === "female") {
+  if (sexKey === "feminino") {
     return `${nameHint}Concordância em feminino (ela, a menina); não use "ele" para o paciente.`
   }
   return `${nameHint}Sexo não informado de forma clara: prefira "a criança" em vez de ele/ela.`

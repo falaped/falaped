@@ -42,7 +42,7 @@ Referência rápida das tabelas. Migrations em `supabase/migrations/`. Tipos em 
 - Uso: armazenar run_id do Trigger.dev por phone para re-agendar (reschedule) em vez de criar novo run quando chega nova mensagem do mesmo phone.
 
 ### patients
-- `id` uuid PK, `user_phone` text not null, `name` text not null, `birth_date` date nullable, `responsible` text, `contact_phone` text nullable, `sex` text, `legal_guardian` text, `blood_type` text, `weight` text, `height` text, `head_circumference` text, `allergies` text, `current_medications` text, `medical_history` text, `created_at` timestamptz default now(), `updated_at` timestamptz default now()
+- `id` uuid PK, `user_phone` text not null, `name` text not null, `birth_date` date nullable, `responsible` text, `contact_phone` text nullable, `sex` enum `patient_sex` (`masculino` \| `feminino`), `legal_guardian` text, `blood_type` text, `weight` text, `height` text, `head_circumference` text, `allergies` text, `current_medications` text, `medical_history` text, `created_at` timestamptz default now(), `updated_at` timestamptz default now()
 - Índices: idx_patients_user_phone, idx_patients_user_phone_name.
 - Uso: pacientes cadastrados por médico (user_phone). Cases associados via cases.patient_id. contact_phone: telefone do responsável; obrigatório ao criar paciente (validação em create-patient). Queries: create-patient, search-patients-by-name, get-patients-by-user-phone, get-patient-by-id; set-case-patient-id para vincular case a paciente.
 

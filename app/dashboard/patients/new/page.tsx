@@ -3,6 +3,13 @@ import Link from "next/link"
 import { createClient } from "@/lib/supabase/server"
 import { getAuthenticatedUser } from "@/modules/supabase/get-authenticated-user"
 import { Button } from "@/components/ui/button"
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card"
 import { PatientForm } from "@/components/dashboard/patients/patient-form"
 
 export default async function NewPatientPage() {
@@ -27,7 +34,17 @@ export default async function NewPatientPage() {
         </Button>
       </div>
 
-      <PatientForm mode="create" />
+      <Card>
+        <CardHeader>
+          <CardTitle>Ficha do paciente</CardTitle>
+          <CardDescription>
+            Preencha os campos abaixo. Campos opcionais podem ficar em branco.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <PatientForm mode="create" />
+        </CardContent>
+      </Card>
     </div>
   )
 }

@@ -1,11 +1,12 @@
 "use client"
 
-import { useCallback, useEffect, useRef, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import { SendIcon, MessagesSquareIcon, ChevronDownIcon } from "lucide-react"
 
 import { cn } from "@/lib/utils"
-import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardHeader } from "@/components/ui/card"
+import { Input } from "@/components/ui/input"
 import { ChatMessageList, type ChatMessage } from "@/components/dashboard/chat-message-list"
 import type { CaseMessage } from "@/modules/cases/get-case-by-id"
 
@@ -19,136 +20,163 @@ function ChatEmpty() {
         Nenhuma mensagem neste caso.
       </p>
       <p className="mt-1 text-xs text-muted-foreground/70">
-        As mensagens trocadas pelo WhatsApp aparecerão aqui.
+        Mensagens do WhatsApp e do painel (quando disponível) aparecem aqui.
       </p>
     </div>
   )
 }
 
-const SCROLL_DURATION_MS = 1200
+function ConversationHeader({
+  messageCount,
+  collapsible,
+  isOpen,
+  onToggle,
+}: {
+  messageCount: number
+  collapsible: boolean
+  isOpen: boolean
+  onToggle: () => void
+}) {
+  const label = (
+    <div className="flex items-center gap-2">
+      <MessagesSquareIcon className="h-4 w-4 text-muted-foreground" aria-hidden />
+      <span className="text-base font-semibold tracking-tight">Conversa</span>
+      <span className="text-xs text-muted-foreground">
+        ({messageCount}{" "}
+        {messageCount === 1 ? "mensagem" : "mensagens"})
+      </span>
+    </div>
+  )
 
-function smoothScrollToBottom(element: HTMLDivElement) {
-  const start = element.scrollTop
-  const target = element.scrollHeight - element.clientHeight
-  const distance = target - start
-
-  if (distance <= 0) return
-
-  let startTime: number | null = null
-
-  function easeOutCubic(t: number): number {
-    return 1 - Math.pow(1 - t, 3)
+  if (!collapsible) {
+    return (
+      <CardHeader className="border-b border-border py-3">
+        {label}
+      </CardHeader>
+    )
   }
 
-  function step(timestamp: number) {
-    if (!startTime) startTime = timestamp
-    const elapsed = timestamp - startTime
-    const progress = Math.min(elapsed / SCROLL_DURATION_MS, 1)
-    const eased = easeOutCubic(progress)
+  return (
+    <CardHeader className="border-b border-border p-0">
+      <button
+        type="button"
+        onClick={onToggle}
+        aria-expanded={isOpen}
+        className="flex w-full items-center justify-between px-4 py-3 text-left transition-colors hover:bg-muted/40"
+      >
+        {label}
+        <ChevronDownIcon
+          className={cn(
+            "h-4 w-4 shrink-0 text-muted-foreground transition-transform duration-200",
+            isOpen && "rotate-180",
+          )}
+        />
+      </button>
+    </CardHeader>
+  )
+}
 
-    element.scrollTop = start + distance * eased
-
-    if (progress < 1) {
-      requestAnimationFrame(step)
-    }
-  }
-
-  requestAnimationFrame(step)
+type CaseChatProps = {
+  messages: CaseMessage[]
+  isActive: boolean
+  /** When omitted, defaults to expanded for active cases and collapsed when closed. */
+  initiallyOpen?: boolean
+  /** When true, conversation is always visible (no accordion). */
+  alwaysExpanded?: boolean
 }
 
 export function CaseChat({
   messages,
   isActive,
-}: {
-  messages: CaseMessage[]
-  isActive: boolean
-}) {
-  const [isOpen, setIsOpen] = useState(false)
+  initiallyOpen,
+  alwaysExpanded = false,
+}: CaseChatProps) {
+  const defaultOpen = initiallyOpen === undefined ? isActive : initiallyOpen
+  const [isOpen, setIsOpen] = useState(alwaysExpanded || defaultOpen)
   const scrollRef = useRef<HTMLDivElement>(null)
 
-  const handleOpen = useCallback(() => {
-    setIsOpen(true)
-  }, [])
+  useEffect(() => {
+    if (alwaysExpanded) return
+    if (!isOpen || !scrollRef.current) return
+    const el = scrollRef.current
+    requestAnimationFrame(() => {
+      el.scrollTop = el.scrollHeight
+    })
+  }, [alwaysExpanded, isOpen, messages.length])
 
   useEffect(() => {
-    if (!isOpen || !scrollRef.current) return
-
-    const timer = setTimeout(() => {
-      if (scrollRef.current) {
-        smoothScrollToBottom(scrollRef.current)
-      }
-    }, 150)
-
-    return () => clearTimeout(timer)
-  }, [isOpen])
+    if (!alwaysExpanded || !scrollRef.current) return
+    const el = scrollRef.current
+    requestAnimationFrame(() => {
+      el.scrollTop = el.scrollHeight
+    })
+  }, [alwaysExpanded, messages.length])
 
   const hasMessages = messages.length > 0
 
-  return (
-    <div className="flex flex-col overflow-hidden rounded-xl border border-border bg-card">
-      <button
-        type="button"
-        onClick={isOpen ? () => setIsOpen(false) : handleOpen}
-        className="flex w-full items-center justify-between px-5 py-3 transition-colors hover:bg-muted/40"
+  const body = (
+    <CardContent className="space-y-0 p-0">
+      <div
+        ref={scrollRef}
+        className="flex max-h-[min(480px,55vh)] min-h-[240px] flex-col gap-4 overflow-y-auto bg-muted/20 px-4 py-4"
       >
-        <div className="flex items-center gap-2">
-          <MessagesSquareIcon className="h-4 w-4 text-muted-foreground" />
-          <h2 className="text-sm font-medium">Conversa</h2>
-          <span className="text-xs text-muted-foreground">
-            ({messages.length} {messages.length === 1 ? "mensagem" : "mensagens"})
-          </span>
-        </div>
-        <ChevronDownIcon
-          className={cn(
-            "h-4 w-4 text-muted-foreground transition-transform duration-300",
-            isOpen && "rotate-180",
-          )}
-        />
-      </button>
+        {!hasMessages ? (
+          <ChatEmpty />
+        ) : (
+          <ChatMessageList messages={messages as ChatMessage[]} />
+        )}
+      </div>
 
+      <div className="border-t border-border bg-muted/30 px-4 py-3">
+        <div className="flex items-center gap-2">
+          <Input
+            placeholder={
+              isActive
+                ? "Responder ao caso... (em breve)"
+                : "Caso encerrado"
+            }
+            disabled
+            className="flex-1 bg-background"
+          />
+          <Button size="icon" disabled className="shrink-0">
+            <SendIcon className="h-4 w-4" />
+            <span className="sr-only">Enviar</span>
+          </Button>
+        </div>
+      </div>
+    </CardContent>
+  )
+
+  if (alwaysExpanded) {
+    return (
+      <Card className="flex flex-col overflow-hidden border-border">
+        <ConversationHeader
+          messageCount={messages.length}
+          collapsible={false}
+          isOpen
+          onToggle={() => {}}
+        />
+        {body}
+      </Card>
+    )
+  }
+
+  return (
+    <Card className="flex flex-col overflow-hidden border-border">
+      <ConversationHeader
+        messageCount={messages.length}
+        collapsible
+        isOpen={isOpen}
+        onToggle={() => setIsOpen((open) => !open)}
+      />
       <div
         className={cn(
-          "grid transition-[grid-template-rows] duration-500 ease-in-out",
+          "grid transition-[grid-template-rows] duration-300 ease-out",
           isOpen ? "grid-rows-[1fr]" : "grid-rows-[0fr]",
         )}
       >
-        <div className="overflow-hidden">
-          <div className="border-t border-border">
-            <div
-              ref={scrollRef}
-              className="flex h-[480px] flex-col gap-4 overflow-y-auto px-5 py-4"
-              style={{
-                backgroundImage: "radial-gradient(circle at 1px 1px, hsl(var(--muted)) 1px, transparent 0)",
-                backgroundSize: "24px 24px",
-              }}
-            >
-              {!hasMessages ? (
-                <ChatEmpty />
-              ) : (
-                <ChatMessageList messages={messages as ChatMessage[]} />
-              )}
-            </div>
-
-            <div className="border-t border-border bg-muted/30 px-4 py-3">
-              <div className="flex items-center gap-2">
-                <Input
-                  placeholder={
-                    isActive
-                      ? "Responder ao caso... (em breve)"
-                      : "Caso encerrado"
-                  }
-                  disabled
-                  className="flex-1 bg-background"
-                />
-                <Button size="icon" disabled className="shrink-0">
-                  <SendIcon className="h-4 w-4" />
-                  <span className="sr-only">Enviar</span>
-                </Button>
-              </div>
-            </div>
-          </div>
-        </div>
+        <div className="overflow-hidden">{body}</div>
       </div>
-    </div>
+    </Card>
   )
 }

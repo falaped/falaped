@@ -4,6 +4,21 @@ Tipos enum do schema `public` no PostgreSQL.
 
 ---
 
+## patient_sex
+
+**Uso:** coluna `patients.sex`.
+
+| Valor (chave no banco / app) | Rótulo na UI (PT-BR) |
+|------------------------------|----------------------|
+| masculino | Masculino |
+| feminino | Feminino |
+
+**TypeScript:** `PatientSex` em `modules/patients/patient-sex.ts` (`masculino` \| `feminino`). Valores legados (`M`, `F`, `male`, `Masculino`, etc.) são normalizados via `normalizePatientSexFromDb` antes de persistir.
+
+**Comentário sugerido no banco:** sexo biológico do paciente pediátrico para concordância e cadastro; chaves em minúsculas, labels capitalizados na interface.
+
+---
+
 ## case_report_source
 
 **Uso:** coluna `case_reports.source` — origem da geração do relatório.

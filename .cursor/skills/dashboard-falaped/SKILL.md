@@ -1,7 +1,8 @@
----
+***
+
 name: dashboard-falaped
 description: Arquitetura e estrutura do dashboard FALAPED (Next.js, modules, app routes, lib). Use ao criar ou alterar páginas, módulos, rotas ou ao falar da estrutura do projeto falaped dashboard.
----
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 # Dashboard FALAPED – Arquitetura
 
@@ -89,27 +90,30 @@ components/
                              #     CasesContent, CasesLoading
                              #   Patients list: PatientsTable, PatientsToolbarAndList (sort by name, CaseSearchInput),
                              #     PatientsContent, PatientsLoading, PatientEmptyState
-                             #   Case detail: CaseDetailHeader, CasePatientInfo,
-                             #     CaseChat, CaseQuickActions, CaseReport,
-                             #     CaseDetailContent, CaseDetailLoading
+                             #   Patient form: patient-form/ (PatientForm + seções; export em patients/patient-form.tsx)
+                             #   Case detail: CaseDetailHeader (+ CaseDetailHeaderToolbar, ações em Popover),
+                             #     CaseDetailCommandStrip, CasePatientChartLink, CaseDetailTabs (ui/tabs),
+                             #     CaseDetailStateCard, CaseChat (alwaysExpanded na aba Visão), CaseReport,
+                             #     CaseDetailRelatedLinks, CaseDetailContent, CaseDetailLoading
                              #   New case: SelectPatientWorkspace, NewCaseWorkspace
 ```
 
 ## Padrão de separação de código em páginas
 
 Pages (`app/.../page.tsx`) são shells finos que importam:
-- `{Feature}Content` — server component com data fetching (em `components/dashboard/`)
-- `{Feature}Loading` — skeleton de loading (em `components/dashboard/`)
-- A page envolve Content com `<Suspense fallback={<Loading />}>`
+
+* `{Feature}Content` — server component com data fetching (em `components/dashboard/`)
+* `{Feature}Loading` — skeleton de loading (em `components/dashboard/`)
+* A page envolve Content com `<Suspense fallback={<Loading />}>`
 
 ## Convenções
 
-- **Módulos**: `modules/{domain}/`, um arquivo por query/action (kebab-case). Client Supabase sempre primeiro argumento.
-- **Rotas**: `dashboard/cases`, `dashboard/cases/select-patient`, `dashboard/cases/new/[caseId]`, `dashboard/patients`, `dashboard/profile`. Proteção via middleware.
-- **user_phone**: chave para filtrar dados do médico; obter via `getAuthenticatedUser(supabase)` e `result.authenticatedUser` (status paid, phone).
+* **Módulos**: `modules/{domain}/`, um arquivo por query/action (kebab-case). Client Supabase sempre primeiro argumento.
+* **Rotas**: `dashboard/cases`, `dashboard/cases/select-patient`, `dashboard/cases/new/[caseId]`, `dashboard/patients`, `dashboard/profile`. Proteção via middleware.
+* **user\_phone**: chave para filtrar dados do médico; obter via `getAuthenticatedUser(supabase)` e `result.authenticatedUser` (status paid, phone).
 
 ## Referências
 
-- [docs/estrutura-do-projeto.md](../../docs/estrutura-do-projeto.md)
-- [docs/plano-fases.md](../../docs/plano-fases.md)
-- Rules: code-placement, supabase-queries
+* [docs/estrutura-do-projeto.md](../../docs/estrutura-do-projeto.md)
+* [docs/plano-fases.md](../../docs/plano-fases.md)
+* Rules: code-placement, supabase-queries

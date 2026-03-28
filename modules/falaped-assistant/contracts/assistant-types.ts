@@ -1,3 +1,5 @@
+import type { PatientSex } from "@/modules/patients/patient-sex"
+
 export type AssistantIntent =
   | "CHAT"
   | "QUESTION"
@@ -42,7 +44,7 @@ export type PatientProfileSnapshot = {
   birth_date: string | null
   responsible: string | null
   contact_phone: string | null
-  sex: string | null
+  sex: PatientSex | null
   legal_guardian: string | null
   blood_type: string | null
   weight: string | null
@@ -58,7 +60,7 @@ export type PatientProfileUpdatePayload = {
   birth_date?: string | null
   responsible?: string | null
   contact_phone?: string | null
-  sex?: string | null
+  sex?: PatientSex | null
   legal_guardian?: string | null
   blood_type?: string | null
   weight?: string | null

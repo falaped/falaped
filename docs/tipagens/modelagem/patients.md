@@ -15,7 +15,7 @@ Pacientes cadastrados por médico (user_phone). Casos podem ser associados via c
 | name | text | NOT NULL | — | |
 | birth_date | date | NULL | — | |
 | responsible | text | NULL | — | |
-| sex | text | NULL | — | |
+| sex | patient_sex (enum) | NULL | — | Chaves `masculino` / `feminino`; UI: Masculino / Feminino. Ver [enums.md](./enums.md#patient_sex). |
 | legal_guardian | text | NULL | — | |
 | blood_type | text | NULL | — | |
 | weight | text | NULL | — | |

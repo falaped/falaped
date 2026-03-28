@@ -15,14 +15,21 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
 import { updateCaseStatusAction, deleteCaseAction } from "@/actions"
+import { cn } from "@/lib/utils"
 import { LockIcon, UnlockIcon, Trash2Icon } from "lucide-react"
 
 type CaseDetailActionsProps = {
   caseId: string
   status: "active" | "closed"
+  /** Vertical stack for popover / narrow menus. */
+  layout?: "inline" | "menu"
 }
 
-export function CaseDetailActions({ caseId, status }: CaseDetailActionsProps) {
+export function CaseDetailActions({
+  caseId,
+  status,
+  layout = "inline",
+}: CaseDetailActionsProps) {
   const router = useRouter()
   const [isPendingStatus, startTransitionStatus] = useTransition()
   const [isPendingDelete, startTransitionDelete] = useTransition()
@@ -56,15 +63,21 @@ export function CaseDetailActions({ caseId, status }: CaseDetailActionsProps) {
     })
   }
 
+  const menu = layout === "menu"
+
   return (
-    <div className="flex flex-wrap items-center gap-2">
+    <div
+      className={cn(
+        menu ? "flex w-full flex-col gap-2" : "flex flex-wrap items-center gap-2",
+      )}
+    >
       {status === "active" ? (
         <AlertDialog>
           <AlertDialogTrigger asChild>
             <Button
               variant="outline"
               size="sm"
-              className="gap-2"
+              className={cn("gap-2", menu && "w-full justify-start")}
               disabled={isPendingStatus}
             >
               <LockIcon className="h-4 w-4" />
@@ -92,7 +105,7 @@ export function CaseDetailActions({ caseId, status }: CaseDetailActionsProps) {
             <Button
               variant="outline"
               size="sm"
-              className="gap-2"
+              className={cn("gap-2", menu && "w-full justify-start")}
               disabled={isPendingStatus}
             >
               <UnlockIcon className="h-4 w-4" />
@@ -122,7 +135,10 @@ export function CaseDetailActions({ caseId, status }: CaseDetailActionsProps) {
           <Button
             variant="outline"
             size="sm"
-            className="gap-2 text-destructive hover:bg-destructive/10 hover:text-destructive"
+            className={cn(
+              "gap-2 text-destructive hover:bg-destructive/10 hover:text-destructive",
+              menu && "w-full justify-start",
+            )}
             disabled={isPendingDelete}
           >
             <Trash2Icon className="h-4 w-4" />

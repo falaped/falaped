@@ -1,5 +1,6 @@
 import { formatBrazilianPhone, formatDate } from "@/lib/formatters"
 import type { CasePatientDetail } from "@/modules/cases/get-case-by-id"
+import { formatPatientSexForDisplay } from "@/modules/patients/patient-sex"
 
 const EMPTY_SECTION = "Sem informação registrada."
 
@@ -69,7 +70,7 @@ export function formatPatientClinicalSectionContent(
     return EMPTY_SECTION
   }
   const lines: string[] = []
-  pushLine(lines, "Sexo", patient.sex)
+  pushLine(lines, "Sexo", formatPatientSexForDisplay(patient.sex) || null)
   pushLine(lines, "Responsável legal", patient.legal_guardian)
   pushLine(lines, "Tipo sanguíneo", patient.blood_type)
   const weightDisplay = formatClinicalWeightDisplay(patient.weight)

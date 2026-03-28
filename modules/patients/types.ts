@@ -1,3 +1,5 @@
+import type { PatientSex } from "@/modules/patients/patient-sex"
+
 /**
  * Patient row from patients table (snake_case aligned with DB).
  */
@@ -9,7 +11,7 @@ export type Patient = {
   birth_date: string | null
   responsible: string | null
   contact_phone: string | null
-  sex: string | null
+  sex: PatientSex | null
   legal_guardian: string | null
   blood_type: string | null
   weight: string | null

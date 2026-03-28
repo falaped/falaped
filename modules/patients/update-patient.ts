@@ -1,4 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
+
+import { normalizePatientSexFromDb } from "@/modules/patients/patient-sex"
 import type { Patient } from "./types"
 
 const PATIENT_SELECT =
@@ -45,7 +47,9 @@ export async function updatePatient(
       payload.contact_phone === null
         ? null
         : String(payload.contact_phone).replace(/\D/g, "").trim() || null
-  if (payload.sex !== undefined) updates.sex = payload.sex?.trim() || null
+  if (payload.sex !== undefined) {
+    updates.sex = normalizePatientSexFromDb(payload.sex ?? null)
+  }
   if (payload.legal_guardian !== undefined)
     updates.legal_guardian = payload.legal_guardian?.trim() || null
   if (payload.blood_type !== undefined)
