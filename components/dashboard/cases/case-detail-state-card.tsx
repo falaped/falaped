@@ -1,16 +1,12 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 
-import type { CaseOrigin } from "@/modules/cases/types"
-
 import { CaseDetailTimeline } from "@/components/dashboard/cases/case-detail-timeline"
 
 export type CaseDetailStateCardProps = {
   startedAt: string
-  origin: CaseOrigin
   isActive: boolean
   messageCount: number
   lastMessageAt: string | null
-  latestReport: { is_finalized: boolean; updated_at: string } | null
   contextSummaryDisplay: string | null
   /** True when raw persisted summary exists but could not be sanitized for display. */
   clinicalSummaryDisplayUnavailable?: boolean
@@ -21,11 +17,9 @@ export type CaseDetailStateCardProps = {
  */
 export function CaseDetailStateCard({
   startedAt,
-  origin,
   isActive,
   messageCount,
   lastMessageAt,
-  latestReport,
   contextSummaryDisplay,
   clinicalSummaryDisplayUnavailable = false,
 }: CaseDetailStateCardProps) {
@@ -34,16 +28,13 @@ export function CaseDetailStateCard({
       <CardHeader className="pb-3">
         <CardTitle className="text-base font-semibold">Visão do caso</CardTitle>
         <p className="text-sm text-muted-foreground">
-          Linha do tempo e leitura rápida; a conversa e o relatório seguem abaixo
-          nesta página.
+          Linha do tempo rápida e resumo do painel quando disponível.
         </p>
       </CardHeader>
       <CardContent className="space-y-4">
         <CaseDetailTimeline
           startedAt={startedAt}
-          origin={origin}
           lastMessageAt={lastMessageAt}
-          latestReport={latestReport}
           isActive={isActive}
         />
 

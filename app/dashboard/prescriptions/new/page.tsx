@@ -11,7 +11,11 @@ import { Button } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
 
 type PageProps = {
-  searchParams: Promise<{ templateId?: string; patientId?: string }>
+  searchParams: Promise<{
+    templateId?: string
+    patientId?: string
+    caseId?: string
+  }>
 }
 
 export default async function NewPrescriptionPage({ searchParams }: PageProps) {
@@ -29,6 +33,10 @@ export default async function NewPrescriptionPage({ searchParams }: PageProps) {
   const patientId =
     resolved.patientId && typeof resolved.patientId === "string"
       ? resolved.patientId
+      : null
+  const caseId =
+    resolved.caseId && typeof resolved.caseId === "string"
+      ? resolved.caseId
       : null
   const initialTemplate =
     templateId && typeof templateId === "string"
@@ -68,6 +76,7 @@ export default async function NewPrescriptionPage({ searchParams }: PageProps) {
         prescriptionTemplates={prescriptionTemplates}
         initialTemplate={initialTemplate}
         initialPatientId={patientId}
+        initialCaseId={caseId}
       />
     </div>
   )

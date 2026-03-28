@@ -8,12 +8,13 @@ import { getReportTemplateById } from "@/modules/report-templates/get-report-tem
 import { getDefaultReportTemplate } from "@/modules/report-templates/get-default-report-template"
 import { normalizeReportTemplateSections } from "@/modules/report-templates/fixed-template-sections"
 import { formatDashboardChatContextSummaryForDisplay } from "@/modules/dashboard/format-dashboard-chat-context-summary-for-display"
+import { getMedicalCertificatesByCaseId } from "@/modules/medical-certificates/get-medical-certificates-by-case-id"
+import { getPrescriptionsByCaseId } from "@/modules/prescriptions/get-prescriptions-by-case-id"
 import { Separator } from "@/components/ui/separator"
 import { CaseDetailCommandStrip } from "@/components/dashboard/cases/case-detail-command-strip"
 import { CaseDetailHeader } from "@/components/dashboard/cases/case-detail-header"
-import { CasePatientChartLink } from "@/components/dashboard/cases/case-patient-chart-link"
-import { CaseChat } from "@/components/dashboard/cases/case-chat"
-import { CaseDetailRelatedLinks } from "@/components/dashboard/cases/case-detail-related-links"
+import { CaseDetailQuickActions } from "@/components/dashboard/cases/case-detail-quick-actions"
+import { CaseDetailDocuments } from "@/components/dashboard/cases/case-detail-documents"
 import { CaseDetailStateCard } from "@/components/dashboard/cases/case-detail-state-card"
 import { caseDetailMainStackClassName } from "@/components/dashboard/cases/case-detail-workspace"
 import { CaseReport } from "@/components/dashboard/cases/case-report"
@@ -23,12 +24,20 @@ export async function CaseDetailContent({ id }: { id: string }) {
   const { profile } = await getAuthenticatedUser(supabase)
   if (!profile) redirect("/auth/login")
 
-  const [caseDetail, templateRaw, caseReports] = await Promise.all([
+  const [
+    caseDetail,
+    templateRaw,
+    caseReports,
+    caseCertificates,
+    casePrescriptions,
+  ] = await Promise.all([
     getCaseById(supabase, id, profile.id),
     profile.report_template_id
       ? getReportTemplateById(supabase, profile.report_template_id)
       : getDefaultReportTemplate(supabase),
     getCaseReports(supabase, id, profile.id),
+    getMedicalCertificatesByCaseId(supabase, profile.id, id),
+    getPrescriptionsByCaseId(supabase, profile.id, id),
   ])
 
   if (!caseDetail) {
@@ -38,22 +47,21 @@ export async function CaseDetailContent({ id }: { id: string }) {
   const template =
     templateRaw != null
       ? {
-        ...templateRaw,
-        sections: normalizeReportTemplateSections(templateRaw.sections),
-      }
+          ...templateRaw,
+          sections: normalizeReportTemplateSections(templateRaw.sections),
+        }
       : null
 
   const messages = caseDetail.messages
   const lastMessage =
     messages.length > 0 ? messages[messages.length - 1] : null
-  const latestReportRow = caseReports[0] ?? null
   const rawDashboardSummary =
     caseDetail.dashboard_chat_context_summary?.trim() ?? ""
   const contextSummaryDisplay =
     caseDetail.origin === "dashboard"
       ? formatDashboardChatContextSummaryForDisplay(
-        caseDetail.dashboard_chat_context_summary,
-      )
+          caseDetail.dashboard_chat_context_summary,
+        )
       : null
   const clinicalSummaryDisplayUnavailable =
     caseDetail.origin === "dashboard" &&
@@ -61,13 +69,7 @@ export async function CaseDetailContent({ id }: { id: string }) {
     contextSummaryDisplay == null
 
   const isActive = caseDetail.status === "active"
-  const latestReport =
-    latestReportRow != null
-      ? {
-        is_finalized: latestReportRow.is_finalized,
-        updated_at: latestReportRow.updated_at,
-      }
-      : null
+  const templateSectionCount = template?.sections?.length ?? 0
 
   const reportBlock =
     template != null ? (
@@ -77,6 +79,7 @@ export async function CaseDetailContent({ id }: { id: string }) {
         caseId={id}
         hasMessages={messages.length > 0}
         patientName={caseDetail.patient?.name ?? "Paciente não associado"}
+        suppressInternalGenerateButtons
       />
     ) : (
       <div className="rounded-xl border border-dashed border-border p-6 text-center text-sm text-muted-foreground">
@@ -94,22 +97,29 @@ export async function CaseDetailContent({ id }: { id: string }) {
         origin={caseDetail.origin}
       />
       <div>
-        <CasePatientChartLink patient={caseDetail.patient} />
+        <CaseDetailQuickActions
+          caseId={id}
+          patient={caseDetail.patient}
+          hasMessages={messages.length > 0}
+          templateSectionCount={templateSectionCount}
+          hasTemplate={template != null}
+          caseReports={caseReports.map((r) => ({ source: r.source }))}
+        />
       </div>
       <div className="flex flex-col gap-6">
         <CaseDetailStateCard
           startedAt={caseDetail.started_at}
-          origin={caseDetail.origin}
           isActive={isActive}
           messageCount={messages.length}
           lastMessageAt={lastMessage?.created_at ?? null}
-          latestReport={latestReport}
           contextSummaryDisplay={contextSummaryDisplay}
           clinicalSummaryDisplayUnavailable={clinicalSummaryDisplayUnavailable}
         />
-        <CaseChat messages={messages} isActive={isActive} alwaysExpanded />
-        <CaseDetailRelatedLinks />
         {reportBlock}
+        <CaseDetailDocuments
+          certificates={caseCertificates}
+          prescriptions={casePrescriptions}
+        />
       </div>
     </div>
   )

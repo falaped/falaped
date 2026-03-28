@@ -77,6 +77,8 @@ type PrescriptionWizardProps = {
   initialTemplate?: { snapshot: PrescriptionTemplateSnapshot } | null
   /** When set, pre-selects this patient (e.g. from `?patientId=` on new prescription page). */
   initialPatientId?: string | null
+  /** When set, associates the generated prescription with this case (`?caseId=`). */
+  initialCaseId?: string | null
 }
 
 function applySnapshotToMedications(
@@ -101,6 +103,7 @@ export function PrescriptionWizard({
   prescriptionTemplates = [],
   initialTemplate,
   initialPatientId = null,
+  initialCaseId = null,
 }: PrescriptionWizardProps) {
   const router = useRouter()
   const pathname = usePathname()
@@ -320,7 +323,7 @@ export function PrescriptionWizard({
       payload: { ...payload, birthDate: birthDate.trim() || undefined },
       issuedAt: issuedAt ? new Date(issuedAt + "T12:00:00").toISOString().slice(0, 10) : undefined,
       patientId: selectedPatient?.id ?? null,
-      caseId: null,
+      caseId: initialCaseId?.trim() || null,
     })
       .then((result) => {
         if (result.ok) {

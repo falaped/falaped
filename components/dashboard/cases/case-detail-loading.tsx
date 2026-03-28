@@ -25,15 +25,15 @@ export function CaseDetailLoading() {
 
       <div className="flex flex-wrap gap-2">
         <Skeleton className="h-10 w-44 rounded-md" />
-        <Skeleton className="h-10 w-36 rounded-md" />
+        <Skeleton className="h-10 w-40 rounded-md" />
+        <Skeleton className="h-10 w-40 rounded-md" />
         <Skeleton className="h-10 w-36 rounded-md" />
       </div>
 
       <div className="space-y-6">
-        <Skeleton className="h-48 rounded-xl" />
-        <Skeleton className="h-[min(420px,55vh)] rounded-xl" />
-        <Skeleton className="h-32 rounded-xl" />
+        <Skeleton className="h-40 rounded-xl" />
         <Skeleton className="min-h-[200px] rounded-xl" />
+        <Skeleton className="h-36 rounded-xl" />
       </div>
     </div>
   )

@@ -696,12 +696,15 @@ type MedicalCertificateWizardProps = {
   profile: MedicalCertificateWizardProfile
   /** When set, pre-selects this patient (e.g. from `?patientId=` on new certificate page). */
   initialPatientId?: string | null
+  /** When set, associates the generated certificate with this case (`?caseId=`). */
+  initialCaseId?: string | null
 }
 
 export function MedicalCertificateWizard({
   patients,
   profile,
   initialPatientId = null,
+  initialCaseId = null,
 }: MedicalCertificateWizardProps) {
   const router = useRouter()
   const initialPatientAppliedRef = useRef(false)
@@ -809,7 +812,7 @@ export function MedicalCertificateWizard({
         ? new Date(`${issuedAt}T12:00:00`).toISOString().slice(0, 10)
         : undefined,
       patientId: selectedPatient?.id ?? null,
-      caseId: null,
+      caseId: initialCaseId?.trim() || null,
     })
       .then((result) => {
         if (result.ok) {

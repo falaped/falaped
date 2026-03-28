@@ -1,6 +1,13 @@
 "use client"
 
-import { useEffect, useMemo, useRef, useState, useTransition } from "react"
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  useTransition,
+} from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import {
@@ -60,6 +67,9 @@ function matchesSearch(patient: Patient, query: string): boolean {
   )
 }
 
+/** Dedupes auto-start under React Strict Mode; reset when `initialPatientId` clears (see effect). */
+let selectPatientAutostartLastId: string | null = null
+
 export function SelectPatientWorkspace({
   patients,
   initialPatientId,
@@ -98,54 +108,86 @@ export function SelectPatientWorkspace({
     highlightedRowRef.current?.scrollIntoView({ block: "nearest", behavior: "smooth" })
   }, [initialPatientId, filteredSortedPatients])
 
-  const handleCreateCase = (patientId: string) => {
-    setWorkspaceBusyPatientId(patientId)
-    startTransition(async () => {
-      try {
-        const precheck = await precheckNewDashboardCaseAction()
+  const handleCreateCase = useCallback(
+    (patientId: string) => {
+      setWorkspaceBusyPatientId(patientId)
+      startTransition(async () => {
+        try {
+          const precheck = await precheckNewDashboardCaseAction()
 
-        if (!precheck.ok && precheck.code === "whatsapp_active" && precheck.activeCaseId) {
-          toast.error("Existe um caso ativo do WhatsApp.", {
-            action: {
-              label: "Abrir caso",
-              onClick: () => router.push(`/dashboard/cases/${precheck.activeCaseId}`),
-            },
-          })
-          return
-        }
-
-        if (!precheck.ok) {
-          toast.error(getFriendlyToastMessage(precheck.error))
-          return
-        }
-
-        if (precheck.willClosePriorActiveDashboardCases) {
-          setPendingPatientId(patientId)
-          setWillCloseCurrentCaseDialogOpen(true)
-          return
-        }
-
-        const created = await createDashboardCaseWithPatientAction(patientId)
-        if (!created.ok) {
-          if (created.code === "whatsapp_active" && created.activeCaseId) {
-            toast.error(getFriendlyToastMessage(created.error), {
+          if (!precheck.ok && precheck.code === "whatsapp_active" && precheck.activeCaseId) {
+            toast.error("Existe um caso ativo do WhatsApp.", {
               action: {
                 label: "Abrir caso",
-                onClick: () => router.push(`/dashboard/cases/${created.activeCaseId}`),
+                onClick: () => router.push(`/dashboard/cases/${precheck.activeCaseId}`),
               },
             })
             return
           }
-          toast.error(getFriendlyToastMessage(created.error))
-          return
-        }
 
-        router.push(`/dashboard/cases/new/${created.caseId}`)
-      } finally {
-        setWorkspaceBusyPatientId(null)
-      }
+          if (!precheck.ok) {
+            toast.error(getFriendlyToastMessage(precheck.error))
+            return
+          }
+
+          if (precheck.willClosePriorActiveDashboardCases) {
+            setPendingPatientId(patientId)
+            setWillCloseCurrentCaseDialogOpen(true)
+            return
+          }
+
+          const created = await createDashboardCaseWithPatientAction(patientId)
+          if (!created.ok) {
+            if (created.code === "whatsapp_active" && created.activeCaseId) {
+              toast.error(getFriendlyToastMessage(created.error), {
+                action: {
+                  label: "Abrir caso",
+                  onClick: () => router.push(`/dashboard/cases/${created.activeCaseId}`),
+                },
+              })
+              return
+            }
+            toast.error(getFriendlyToastMessage(created.error))
+            return
+          }
+
+          router.push(`/dashboard/cases/new/${created.caseId}`)
+        } finally {
+          setWorkspaceBusyPatientId(null)
+        }
+      })
+    },
+    [router],
+  )
+
+  /**
+   * Deep link from patient profile (?patientId=): same flow as "Abrir workspace" (precheck,
+   * confirm to close prior dashboard case if needed, then create or WhatsApp toast).
+   */
+  useEffect(() => {
+    const rawId = initialPatientId?.trim() ?? ""
+
+    if (!rawId) {
+      selectPatientAutostartLastId = null
+      return
+    }
+
+    if (patients.length === 0) return
+
+    const patientExists = patients.some((p) => p.id === rawId)
+    if (!patientExists) {
+      toast.error("Paciente não encontrado ou sem acesso.")
+      selectPatientAutostartLastId = rawId
+      return
+    }
+
+    if (selectPatientAutostartLastId === rawId) return
+    selectPatientAutostartLastId = rawId
+
+    queueMicrotask(() => {
+      handleCreateCase(rawId)
     })
-  }
+  }, [initialPatientId, patients, handleCreateCase])
 
   const handleConfirmReplaceAndCreate = () => {
     if (!pendingPatientId) return
@@ -414,14 +456,18 @@ export function SelectPatientWorkspace({
 
       <AlertDialog
         open={willCloseCurrentCaseDialogOpen}
-        onOpenChange={setWillCloseCurrentCaseDialogOpen}
+        onOpenChange={(open) => {
+          setWillCloseCurrentCaseDialogOpen(open)
+          if (!open) setPendingPatientId(null)
+        }}
       >
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Substituir caso ativo do painel?</AlertDialogTitle>
+            <AlertDialogTitle>Encerrar atendimento ativo no painel?</AlertDialogTitle>
             <AlertDialogDescription>
-              Existe um caso ativo iniciado no painel. Ao continuar, esse caso será encerrado
-              para abrir um novo atendimento.
+              Já existe um atendimento aberto no painel (pode ser deste paciente ou de outro).
+              Para iniciar o novo atendimento, o caso ativo atual será encerrado. Deseja
+              continuar?
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

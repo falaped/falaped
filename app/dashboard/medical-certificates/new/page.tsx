@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
 
 type PageProps = {
-  searchParams: Promise<{ patientId?: string }>
+  searchParams: Promise<{ patientId?: string; caseId?: string }>
 }
 
 export default async function NewMedicalCertificatePage({
@@ -25,6 +25,10 @@ export default async function NewMedicalCertificatePage({
   const patientId =
     resolved.patientId && typeof resolved.patientId === "string"
       ? resolved.patientId
+      : null
+  const caseId =
+    resolved.caseId && typeof resolved.caseId === "string"
+      ? resolved.caseId
       : null
 
   return (
@@ -54,6 +58,7 @@ export default async function NewMedicalCertificatePage({
         patients={patients}
         profile={profile}
         initialPatientId={patientId}
+        initialCaseId={caseId}
       />
     </div>
   )

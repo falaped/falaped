@@ -25,6 +25,7 @@ type PrescriptionWizardWrapperProps = {
   prescriptionTemplates?: PrescriptionTemplateOption[]
   initialTemplate?: { snapshot: PrescriptionTemplateSnapshot } | null
   initialPatientId?: string | null
+  initialCaseId?: string | null
 }
 
 /**
@@ -37,6 +38,7 @@ export function PrescriptionWizardWrapper({
   prescriptionTemplates,
   initialTemplate,
   initialPatientId = null,
+  initialCaseId = null,
 }: PrescriptionWizardWrapperProps) {
   const router = useRouter()
   const pathname = usePathname()
@@ -59,6 +61,7 @@ export function PrescriptionWizardWrapper({
       prescriptionTemplates={prescriptionTemplates}
       initialTemplate={initialTemplate}
       initialPatientId={initialPatientId}
+      initialCaseId={initialCaseId}
     />
   )
 }

@@ -48,6 +48,10 @@ import { cn } from "@/lib/utils"
 import { formatDateTime } from "@/lib/formatters"
 import { toast } from "sonner"
 import { getFriendlyToastMessage } from "@/lib/get-friendly-toast-message"
+import {
+  canGenerateCaseReport,
+  caseReportGenerateDisabledReason,
+} from "@/lib/case-report-generate-eligibility"
 
 function reportSourceLabel(source: string): string {
   if (source === "web") return "Web"
@@ -88,6 +92,8 @@ type CaseReportProps = {
   caseId: string
   hasMessages: boolean
   patientName: string
+  /** When true, "Gerar relatório" is shown only in the case toolbar; this block lists/edits only. */
+  suppressInternalGenerateButtons?: boolean
 }
 
 function sortSections(sections: CaseReportSection[] | null | undefined): CaseReportSection[] {
@@ -231,6 +237,7 @@ export function CaseReport({
   caseId,
   hasMessages,
   patientName,
+  suppressInternalGenerateButtons = false,
 }: CaseReportProps) {
   const router = useRouter()
   const [selectedReportId, setSelectedReportId] = useState<string | null>(null)
@@ -249,18 +256,16 @@ export function CaseReport({
   const [deletingReportId, setDeletingReportId] = useState<string | null>(null)
 
   const canEdit = !selectedReport?.is_finalized
-  const hasWebReport = caseReports.some((r) => r.source === "web")
-  const canGenerateReport =
-    hasMessages &&
-    (template.sections?.length ?? 0) > 0 &&
-    !hasWebReport
-  const generateDisabledReason = hasWebReport
-    ? "Já existe um relatório gerado pela web para este caso."
-    : !hasMessages
-      ? "Necessário ter conversa"
-      : (template.sections?.length ?? 0) === 0
-        ? "Nenhum template de relatório configurado."
-        : null
+  const templateSectionCount = template.sections?.length ?? 0
+  const generateEligibilityParams = {
+    caseReports: caseReports.map((r) => ({ source: r.source })),
+    hasMessages,
+    templateSectionCount,
+    hasTemplate: true,
+  }
+  const canGenerateReport = canGenerateCaseReport(generateEligibilityParams)
+  const generateDisabledReason =
+    caseReportGenerateDisabledReason(generateEligibilityParams)
   const hasUnsavedEdits =
     !!selectedReport && !sectionsEqual(sections, selectedReport.sections)
 
@@ -469,6 +474,33 @@ export function CaseReport({
   )
 
   if (caseReports.length === 0) {
+    if (suppressInternalGenerateButtons) {
+      return (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-base font-medium">
+              <Sparkles className="h-4 w-4 text-primary" />
+              Relatório do atendimento
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-border px-6 py-12 text-center">
+              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-muted">
+                <FileText className="h-6 w-6 text-muted-foreground" aria-hidden />
+              </div>
+              <p className="mt-4 font-medium text-muted-foreground">
+                Nenhum relatório gerado para este caso
+              </p>
+              <p className="mt-1 max-w-sm text-sm text-muted-foreground/80">
+                Use o botão &quot;Gerar relatório&quot; acima para criar o relatório a partir do
+                histórico de mensagens.
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+      )
+    }
+
     return (
       <Card>
         <CardHeader>
@@ -518,7 +550,7 @@ export function CaseReport({
             <Sparkles className="h-4 w-4 text-primary" />
             Relatório do atendimento
           </CardTitle>
-          {canGenerateReport && (
+          {canGenerateReport && !suppressInternalGenerateButtons ? (
             <Button
               onClick={handleGenerateReport}
               disabled={isGenerating}
@@ -532,7 +564,7 @@ export function CaseReport({
               )}
               <span className="ml-1.5">Gerar relatório</span>
             </Button>
-          )}
+          ) : null}
         </div>
       </CardHeader>
       <CardContent className="space-y-4">
