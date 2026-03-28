@@ -2,10 +2,9 @@
 
 import { useState } from "react"
 import { useRouter } from "next/navigation"
-import Link from "next/link"
 import { toast } from "sonner"
+
 import { getFriendlyToastMessage } from "@/lib/get-friendly-toast-message"
-import { Trash2Icon } from "lucide-react"
 import {
   Card,
   CardContent,
@@ -13,33 +12,16 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import {
-  AlertDialog,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog"
 import { PatientForm } from "@/components/dashboard/patients/patient-form"
+import { PatientDetailHero } from "@/components/dashboard/patients/patient-detail-hero"
+import { PatientDetailToolbar } from "@/components/dashboard/patients/patient-detail-toolbar"
+import { PatientClinicalOverview } from "@/components/dashboard/patients/patient-clinical-overview"
+import { PatientDetailTimeline } from "@/components/dashboard/patients/patient-detail-timeline"
 import { deletePatientAction } from "@/actions"
-import { formatDate, formatBrazilianPhone } from "@/lib/formatters"
 import type { Patient } from "@/modules/patients/types"
 import type { CaseForPatient } from "@/modules/cases/get-cases-by-patient-id"
-import { FileCheckIcon, MessageSquareIcon, Pill } from "lucide-react"
 import type { MedicalCertificateListItem } from "@/modules/medical-certificates/get-medical-certificates-by-profile-id"
 import type { PrescriptionListItem } from "@/modules/prescriptions/types"
-import { formatPatientSexForDisplay } from "@/modules/patients/patient-sex"
-
-const CERTIFICATE_TYPE_LABELS: Record<string, string> = {
-  comparecimento: "Comparecimento",
-  aptidao_fisica: "Aptidão Física",
-  medico: "Médico (afastamento)",
-  acompanhante: "Acompanhante",
-}
 
 export function PatientDetailView({
   patient,
@@ -61,78 +43,59 @@ export function PatientDetailView({
     setIsEditing(false)
   }
 
-  async function handleConfirmDelete() {
+  async function handleConfirmDelete(): Promise<boolean> {
     setDeleteLoading(true)
     try {
       const result = await deletePatientAction(patient.id)
       if (result.ok) {
         toast.success("Paciente excluído.")
         router.push("/dashboard/patients")
-      } else {
-        toast.error(getFriendlyToastMessage(result.error))
+        return true
       }
+      toast.error(getFriendlyToastMessage(result.error))
+      return false
     } finally {
       setDeleteLoading(false)
     }
   }
 
   return (
-    <div className="flex flex-col gap-6">
-      <div className="flex items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight">
-            {patient.name}
-          </h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Dados do paciente
-          </p>
+    <div className="flex flex-col gap-8">
+      {isEditing ? (
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between sm:gap-6">
+          <div className="min-w-0 flex-1">
+            <h1 className="text-2xl font-semibold tracking-tight">{patient.name}</h1>
+            <p className="mt-1 text-sm text-muted-foreground">Edição da ficha cadastral e clínica</p>
+          </div>
+          <PatientDetailToolbar
+            patientId={patient.id}
+            isEditing={isEditing}
+            deleteLoading={deleteLoading}
+            onEdit={() => setIsEditing(true)}
+            onConfirmDelete={handleConfirmDelete}
+          />
         </div>
-        <div className="flex flex-wrap gap-2">
-          <Button variant="outline" asChild>
-            <Link href="/dashboard/patients">Voltar</Link>
-          </Button>
-          {!isEditing && (
-            <>
-              <Button onClick={() => setIsEditing(true)}>Editar</Button>
-              <AlertDialog>
-                <AlertDialogTrigger asChild>
-                  <Button variant="destructive" size="icon" aria-label="Excluir paciente">
-                    <Trash2Icon className="h-4 w-4" />
-                  </Button>
-                </AlertDialogTrigger>
-                <AlertDialogContent className="max-w-md">
-                  <AlertDialogHeader>
-                    <AlertDialogTitle>Excluir paciente?</AlertDialogTitle>
-                    <AlertDialogDescription>
-                      Esta ação não pode ser desfeita. O paciente será removido e os casos vinculados a ele ficarão sem paciente associado.
-                    </AlertDialogDescription>
-                  </AlertDialogHeader>
-                  <AlertDialogFooter>
-                    <AlertDialogCancel disabled={deleteLoading}>
-                      Cancelar
-                    </AlertDialogCancel>
-                    <Button
-                      variant="destructive"
-                      onClick={handleConfirmDelete}
-                      disabled={deleteLoading}
-                    >
-                      {deleteLoading ? "Excluindo..." : "Excluir"}
-                    </Button>
-                  </AlertDialogFooter>
-                </AlertDialogContent>
-              </AlertDialog>
-            </>
-          )}
-        </div>
-      </div>
+      ) : (
+        <PatientDetailHero
+          patient={patient}
+          className="w-full"
+          toolbar={
+            <PatientDetailToolbar
+              patientId={patient.id}
+              isEditing={isEditing}
+              deleteLoading={deleteLoading}
+              onEdit={() => setIsEditing(true)}
+              onConfirmDelete={handleConfirmDelete}
+            />
+          }
+        />
+      )}
 
       {isEditing ? (
         <Card>
           <CardHeader>
             <CardTitle>Editar dados</CardTitle>
-            <CardDescription>
-              Atualize as informações do paciente e salve.
-            </CardDescription>
+            <CardDescription>Atualize as informações do paciente e salve.</CardDescription>
           </CardHeader>
           <CardContent>
             <PatientForm
@@ -143,309 +106,14 @@ export function PatientDetailView({
           </CardContent>
         </Card>
       ) : (
-        <div className="grid gap-6 md:grid-cols-1">
-          <Card>
-            <CardHeader>
-              <CardTitle>Dados pessoais</CardTitle>
-              <CardDescription>Identificação e contato</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-0 [&>div:last-child]:border-b-0">
-              <div className="border-b border-border py-3 first:pt-0">
-                <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                  Nome
-                </p>
-                <p className="mt-1 text-base font-semibold text-foreground">
-                  {patient.name}
-                </p>
-              </div>
-              {patient.birth_date && (
-                <div className="border-b border-border py-3">
-                  <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                    Data de nascimento
-                  </p>
-                  <p className="mt-1 text-sm font-medium text-foreground">
-                    {formatDate(patient.birth_date)}
-                  </p>
-                </div>
-              )}
-              {formatPatientSexForDisplay(patient.sex) ? (
-                <div className="border-b border-border py-3">
-                  <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                    Sexo
-                  </p>
-                  <p className="mt-1 text-sm font-medium text-foreground">
-                    {formatPatientSexForDisplay(patient.sex)}
-                  </p>
-                </div>
-              ) : null}
-              {patient.responsible && (
-                <div className="border-b border-border py-3">
-                  <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                    Responsável
-                  </p>
-                  <p className="mt-1 text-sm font-medium text-foreground">
-                    {patient.responsible}
-                  </p>
-                </div>
-              )}
-              {patient.contact_phone && (
-                <div className="border-b border-border py-3">
-                  <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                    Telefone de contato
-                  </p>
-                  <p className="mt-1 text-sm font-medium text-foreground">
-                    <a
-                      href={`tel:${patient.contact_phone}`}
-                      className="text-primary hover:underline"
-                    >
-                      {formatBrazilianPhone(patient.contact_phone)}
-                    </a>
-                  </p>
-                </div>
-              )}
-              {patient.legal_guardian && (
-                <div className="border-b border-border py-3">
-                  <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                    Responsável legal
-                  </p>
-                  <p className="mt-1 text-sm font-medium text-foreground">
-                    {patient.legal_guardian}
-                  </p>
-                </div>
-              )}
-              {!patient.birth_date &&
-                !patient.sex &&
-                !patient.responsible &&
-                !patient.contact_phone &&
-                !patient.legal_guardian && (
-                  <div className="py-3">
-                    <p className="text-sm text-muted-foreground">
-                      Apenas o nome está cadastrado. Edite para preencher mais dados.
-                    </p>
-                  </div>
-                )}
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle>Dados clínicos</CardTitle>
-              <CardDescription>Informações médicas</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-3 text-sm">
-              {patient.blood_type && (
-                <div>
-                  <span className="font-medium text-muted-foreground">
-                    Tipo sanguíneo
-                  </span>
-                  <p className="mt-0.5">{patient.blood_type}</p>
-                </div>
-              )}
-              {(patient.weight ||
-                patient.height ||
-                patient.head_circumference) && (
-                  <div className="flex flex-wrap gap-4">
-                    {patient.weight && (
-                      <div>
-                        <span className="font-medium text-muted-foreground">
-                          Peso
-                        </span>
-                        <p className="mt-0.5">{patient.weight} kg</p>
-                      </div>
-                    )}
-                    {patient.height && (
-                      <div>
-                        <span className="font-medium text-muted-foreground">
-                          Altura
-                        </span>
-                        <p className="mt-0.5">{patient.height} cm</p>
-                      </div>
-                    )}
-                    {patient.head_circumference && (
-                      <div>
-                        <span className="font-medium text-muted-foreground">
-                          Perímetro cefálico
-                        </span>
-                        <p className="mt-0.5">
-                          {patient.head_circumference} cm
-                        </p>
-                      </div>
-                    )}
-                  </div>
-                )}
-              {patient.allergies && (
-                <div>
-                  <span className="font-medium text-muted-foreground">
-                    Alergias
-                  </span>
-                  <p className="mt-0.5 whitespace-pre-wrap">
-                    {patient.allergies}
-                  </p>
-                </div>
-              )}
-              {patient.current_medications && (
-                <div>
-                  <span className="font-medium text-muted-foreground">
-                    Medicamentos em uso
-                  </span>
-                  <p className="mt-0.5 whitespace-pre-wrap">
-                    {patient.current_medications}
-                  </p>
-                </div>
-              )}
-              {patient.medical_history && (
-                <div>
-                  <span className="font-medium text-muted-foreground">
-                    Histórico médico
-                  </span>
-                  <p className="mt-0.5 whitespace-pre-wrap">
-                    {patient.medical_history}
-                  </p>
-                </div>
-              )}
-              {!patient.blood_type &&
-                !patient.weight &&
-                !patient.height &&
-                !patient.head_circumference &&
-                !patient.allergies &&
-                !patient.current_medications &&
-                !patient.medical_history && (
-                  <p className="text-muted-foreground">
-                    Nenhum dado clínico cadastrado.
-                  </p>
-                )}
-            </CardContent>
-          </Card>
-
-          <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <MessageSquareIcon className="h-5 w-5" />
-                Casos associados
-              </CardTitle>
-              <CardDescription>
-                Atendimentos vinculados a este paciente
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              {cases.length === 0 ? (
-                <p className="text-sm text-muted-foreground">
-                  Nenhum caso associado a este paciente.
-                </p>
-              ) : (
-                <ul className="space-y-2">
-                  {cases.map((c) => (
-                    <li key={c.id}>
-                      <Link
-                        href={`/dashboard/cases/${c.id}`}
-                        className="flex items-center justify-between rounded-md border border-border px-3 py-2 text-sm transition-colors hover:bg-muted/50"
-                      >
-                        <span>
-                          {c.status === "active" ? "Ativo" : "Encerrado"} ·{" "}
-                          {formatDate(c.started_at)}
-                        </span>
-                        <span className="text-muted-foreground">
-                          Ver atendimento →
-                        </span>
-                      </Link>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <FileCheckIcon className="h-5 w-5" />
-                Atestados
-              </CardTitle>
-              <CardDescription>
-                Atestados gerados e associados a este paciente.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              {certificates.length === 0 ? (
-                <p className="text-sm text-muted-foreground">
-                  Nenhum atestado associado a este paciente.
-                </p>
-              ) : (
-                <ul className="space-y-2">
-                  {certificates.map((cert) => (
-                    <li key={cert.id}>
-                      <div className="flex items-center justify-between rounded-md border border-border px-3 py-2 text-sm transition-colors hover:bg-muted/50">
-                        <span>
-                          {CERTIFICATE_TYPE_LABELS[cert.type] ?? cert.type} ·{" "}
-                          {formatDate(cert.issued_at)}
-                        </span>
-                        {cert.pdf_storage_path ? (
-                          <Link
-                            href={`/api/medical-certificates/${cert.id}/download`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-primary hover:underline"
-                          >
-                            Baixar PDF
-                          </Link>
-                        ) : (
-                          <span className="text-muted-foreground">
-                            PDF não disponível
-                          </span>
-                        )}
-                      </div>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Pill className="h-5 w-5" />
-                Receitas
-              </CardTitle>
-              <CardDescription>
-                Receitas geradas e associadas a este paciente.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              {prescriptions.length === 0 ? (
-                <p className="text-sm text-muted-foreground">
-                  Nenhuma receita associada a este paciente.
-                </p>
-              ) : (
-                <ul className="space-y-2">
-                  {prescriptions.map((rx) => (
-                    <li key={rx.id}>
-                      <div className="flex items-center justify-between rounded-md border border-border px-3 py-2 text-sm transition-colors hover:bg-muted/50">
-                        <span>{formatDate(rx.issued_at)}</span>
-                        {rx.pdf_storage_path ? (
-                          <Link
-                            href={`/api/prescriptions/${rx.id}/download`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-primary hover:underline"
-                          >
-                            Baixar PDF
-                          </Link>
-                        ) : (
-                          <span className="text-muted-foreground">
-                            PDF não disponível
-                          </span>
-                        )}
-                      </div>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </CardContent>
-          </Card>
-          </div>
-        </div>
+        <>
+          <PatientClinicalOverview patient={patient} />
+          <PatientDetailTimeline
+            cases={cases}
+            certificates={certificates}
+            prescriptions={prescriptions}
+          />
+        </>
       )}
     </div>
   )
