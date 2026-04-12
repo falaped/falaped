@@ -82,11 +82,11 @@ export function CaseDetailCommandStrip({
     <Card className="border-border/80">
       <CardContent className="py-4">
         <p className="text-sm font-medium text-foreground">
-          Conversa pelo WhatsApp
+          Atendimento em outro canal
         </p>
         <p className="mt-1 text-xs text-muted-foreground">
-          Este caso foi conduzido pelo canal WhatsApp. O histórico abaixo reflete
-          as mensagens registradas no sistema.
+          Este caso foi conduzido fora do painel. O histórico abaixo reflete as
+          mensagens registradas no sistema.
         </p>
       </CardContent>
     </Card>

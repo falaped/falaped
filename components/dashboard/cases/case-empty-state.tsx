@@ -6,7 +6,8 @@ const emptyConfig = {
   active: {
     icon: MessagesSquareIcon,
     title: "Nenhum caso ativo.",
-    description: "Os atendimentos aparecem aqui quando iniciados pelo WhatsApp.",
+    description:
+      "Os atendimentos ativos aparecem aqui quando houver um caso em andamento.",
   },
   closed: {
     icon: MessagesSquareIcon,
@@ -17,7 +18,7 @@ const emptyConfig = {
     icon: SearchXIcon,
     title: "Nenhum caso encontrado.",
     description:
-      "Os casos aparecem aqui quando iniciados pelo WhatsApp ou pelo painel (Criar novo caso).",
+      "Os casos aparecem aqui quando iniciados pelo painel (Criar novo caso) ou por outros canais integrados.",
   },
   search: {
     icon: SearchXIcon,

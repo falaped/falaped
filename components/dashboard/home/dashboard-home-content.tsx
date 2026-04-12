@@ -24,7 +24,7 @@ import { getAuthenticatedUser } from "@/modules/supabase/get-authenticated-user"
 import type { CaseOrigin } from "@/modules/cases/types"
 
 function originLabel(origin: CaseOrigin): string {
-  return origin === "whatsapp" ? "WhatsApp" : "Painel"
+  return origin === "whatsapp" ? "Outro canal" : "Painel"
 }
 
 function truncateText(text: string, maxChars: number): string {
@@ -220,8 +220,8 @@ export async function DashboardHomeContent() {
             Nenhum caso ativo no momento.
           </p>
           <p className="mt-1 text-sm text-muted-foreground">
-            Inicie um atendimento pelo painel ou pelo WhatsApp (quando
-            vinculado).
+            Inicie um atendimento pelo painel ou retome um caso já existente no
+            histórico.
           </p>
           <div className="mt-4 flex flex-wrap justify-center gap-2">
             <Button asChild size="sm">

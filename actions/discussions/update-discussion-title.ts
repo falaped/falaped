@@ -19,7 +19,7 @@ export async function updateDiscussionTitleAction(
   const { profile } = await getAuthenticatedUser(supabase)
   if (!profile) return { ok: false, error: "Sessão não encontrada." }
   if (profile.status !== "paid")
-    return { ok: false, error: "Perfil não ativo. Conecte o WhatsApp no perfil." }
+    return { ok: false, error: "Perfil não ativo. Conclua a configuração da conta em Perfil." }
 
   const trimmed = title?.trim() ?? null
   if (trimmed !== null && trimmed.length > TITLE_MAX_LENGTH) {

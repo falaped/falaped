@@ -28,7 +28,7 @@ export async function updateCaseReportAction(
   const { profile } = await getAuthenticatedUser(supabase)
   if (!profile) return { ok: false, error: "Sessão não encontrada." }
   if (profile.status !== "paid")
-    return { ok: false, error: "Perfil não ativo. Conecte o WhatsApp no perfil." }
+    return { ok: false, error: "Perfil não ativo. Conclua a configuração da conta em Perfil." }
 
   try {
     await updateCaseReport(supabase, {

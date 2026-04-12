@@ -136,7 +136,7 @@ export function NavUser() {
             <DropdownMenuItem asChild>
               <Link href="/dashboard/link-whatsapp">
                 <Link2 />
-                Vincular WhatsApp
+                Vincular telefone
               </Link>
             </DropdownMenuItem>
             <DropdownMenuSeparator />

@@ -784,7 +784,7 @@ export function ProfileContent({ profile, reportTemplateOptions }: ProfileConten
             </div>
             <CardDescription>
               Excluir sua conta é irreversível. Todos os seus dados serão
-              removidos: casos, mensagens, pacientes e vínculos com WhatsApp.
+              removidos: casos, mensagens, pacientes e vínculos de telefone da conta.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
@@ -806,7 +806,7 @@ export function ProfileContent({ profile, reportTemplateOptions }: ProfileConten
                   </AlertDialogTitle>
                   <AlertDialogDescription>
                     Você perderá todos os seus casos, mensagens de atendimento,
-                    pacientes cadastrados e o vínculo com o WhatsApp. Esta ação
+                    pacientes cadastrados e o vínculo de telefone da conta. Esta ação
                     não pode ser desfeita.
                   </AlertDialogDescription>
                 </AlertDialogHeader>

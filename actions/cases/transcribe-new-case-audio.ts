@@ -19,7 +19,7 @@ export async function transcribeNewCaseAudioAction(
   const { profile } = await getAuthenticatedUser(supabase)
   if (!profile?.id) return { ok: false, error: "Sessão não encontrada." }
   if (profile.status !== "paid") {
-    return { ok: false, error: "Perfil não ativo. Conecte seu WhatsApp para continuar." }
+    return { ok: false, error: "Perfil não ativo. Conclua a configuração da conta em Perfil." }
   }
 
   if (!audio || audio.size === 0) {

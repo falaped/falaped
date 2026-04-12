@@ -116,7 +116,7 @@ export function SelectPatientWorkspace({
           const precheck = await precheckNewDashboardCaseAction()
 
           if (!precheck.ok && precheck.code === "whatsapp_active" && precheck.activeCaseId) {
-            toast.error("Existe um caso ativo do WhatsApp.", {
+            toast.error("Já existe um caso ativo em outro canal.", {
               action: {
                 label: "Abrir caso",
                 onClick: () => router.push(`/dashboard/cases/${precheck.activeCaseId}`),
@@ -162,7 +162,7 @@ export function SelectPatientWorkspace({
 
   /**
    * Deep link from patient profile (?patientId=): same flow as "Abrir workspace" (precheck,
-   * confirm to close prior dashboard case if needed, then create or WhatsApp toast).
+   * confirm to close prior dashboard case if needed, then create or show toast for other-channel active case).
    */
   useEffect(() => {
     const rawId = initialPatientId?.trim() ?? ""
@@ -383,7 +383,7 @@ export function SelectPatientWorkspace({
                           ) : (
                             <Badge variant="outline" className="gap-1.5 pl-1.5 font-medium">
                               <MessageCircle className="size-3.5 shrink-0" aria-hidden />
-                              Caso no WhatsApp
+                              Caso em outro canal
                             </Badge>
                           )
                         ) : (

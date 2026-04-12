@@ -61,8 +61,8 @@ export function PatientDetailTimeline({
             Atendimentos
           </h2>
           <p className="mt-1 text-sm text-muted-foreground">
-            Casos de WhatsApp ou do painel vinculados a este paciente, do mais recente ao mais
-            antigo.
+            Casos do painel ou de outros canais vinculados a este paciente, do mais
+            recente ao mais antigo.
           </p>
         </div>
 

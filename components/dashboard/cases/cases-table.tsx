@@ -259,7 +259,7 @@ export function CasesTable({ cases }: { cases: CaseWithPatient[] }) {
                           ) : (
                             <Badge variant="outline" className="gap-1.5 pl-1.5 font-medium">
                               <MessageCircle className="size-3.5 shrink-0" aria-hidden />
-                              WhatsApp
+                              Outro canal
                             </Badge>
                           )}
                         </TableCell>

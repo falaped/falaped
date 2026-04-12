@@ -55,7 +55,7 @@ import {
 
 function reportSourceLabel(source: string): string {
   if (source === "web") return "Web"
-  if (source === "whatsapp") return "WhatsApp"
+  if (source === "whatsapp") return "Outro canal"
   return source.charAt(0).toUpperCase() + source.slice(1)
 }
 
@@ -580,7 +580,7 @@ export function CaseReport({
               )
             }
             const isSelected = selectedReportId === report.id
-            const isWhatsApp = report.source === "whatsapp"
+            const isExternalChannel = report.source === "whatsapp"
             return (
               <button
                 key={report.id}
@@ -597,11 +597,11 @@ export function CaseReport({
                   <div className="flex min-w-0 flex-1 items-center gap-2">
                     <FileText className="h-5 w-5 shrink-0 text-muted-foreground" />
                     <Badge
-                      variant={isWhatsApp ? "secondary" : "default"}
+                      variant={isExternalChannel ? "secondary" : "default"}
                       className={cn(
                         "shrink-0 text-xs",
-                        isWhatsApp &&
-                        "border-0 bg-[#25D366] text-white hover:bg-[#20BD5A]",
+                        isExternalChannel &&
+                          "border-transparent bg-muted text-muted-foreground hover:bg-muted/80",
                       )}
                     >
                       {reportSourceLabel(report.source)}

@@ -17,7 +17,7 @@ export default async function CasesPage() {
             <h1 className="text-2xl font-semibold tracking-tight">Casos</h1>
           </div>
           <p className="mt-1 text-sm text-muted-foreground">
-            Casos ativos e encerrados pelo painel ou pelo WhatsApp.
+            Casos ativos e encerrados pelo painel ou por outros canais.
           </p>
         </div>
         <Button asChild className="w-full shrink-0 sm:w-auto">

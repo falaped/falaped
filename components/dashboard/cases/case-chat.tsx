@@ -20,7 +20,7 @@ function ChatEmpty() {
         Nenhuma mensagem neste caso.
       </p>
       <p className="mt-1 text-xs text-muted-foreground/70">
-        Mensagens do WhatsApp e do painel (quando disponível) aparecem aqui.
+        Mensagens registradas no sistema para este caso aparecem aqui.
       </p>
     </div>
   )

@@ -20,7 +20,7 @@ export async function precheckNewDashboardCaseAction(): Promise<PrecheckNewDashb
     return {
       ok: false,
       code: "unpaid",
-      error: "Perfil não ativo. Conecte seu WhatsApp para abrir um novo caso.",
+      error: "Perfil não ativo. Conclua a configuração da conta para abrir um novo caso.",
     }
   }
 
@@ -30,7 +30,7 @@ export async function precheckNewDashboardCaseAction(): Promise<PrecheckNewDashb
       return {
         ok: false,
         code: "whatsapp_active",
-        error: "Existe um caso ativo do WhatsApp. Finalize ou abra esse caso para continuar.",
+        error: "Já existe um caso ativo em outro canal. Finalize ou abra esse caso para continuar.",
         activeCaseId: result.activeCaseId,
       }
     }
