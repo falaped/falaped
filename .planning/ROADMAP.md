@@ -28,7 +28,13 @@ This milestone secures the multi-tenant foundation before any patient-facing sur
   3. The admin Supabase client (`server-admin.ts`) is invoked only by `delete-account.ts` — no other action file imports it
   4. Deleting 10 prescriptions in bulk issues exactly one DB delete and one storage remove call (no per-item loop)
   5. `@supabase/ssr` and `@supabase/supabase-js` show explicit semver ranges (not `latest`) in `package.json`; `yarn install --frozen-lockfile` succeeds in CI; typecheck, lint, and test all pass on push
-**Plans**: TBD
+**Plans**: 4 plans
+
+Plans:
+- [ ] 01-01-PLAN.md — IDOR fix + admin-client removal + batched bulk deletes (SEC-01/03/04) with ownership specs
+- [ ] 01-02-PLAN.md — Supabase dep pinning, GitHub Actions CI (typecheck/lint/test/build, frozen lockfile), dead-scaffold cleanup (HYG-04/TEST-03)
+- [ ] 01-03-PLAN.md — Incremental RLS rollout on every public table via Supabase MCP on live prod, with reversal scripts (SEC-02)
+- [ ] 01-04-PLAN.md — Branch protection on main requiring the CI check (TEST-03 enforcement)
 
 ### Phase 2: Code Hygiene & Refactoring
 **Goal**: The codebase has one canonical route per resource, all environment variables flow through validated `lib/env.ts`, errors in critical paths are logged, and the three largest components are decomposed into testable hooks and subcomponents
@@ -79,7 +85,7 @@ This milestone secures the multi-tenant foundation before any patient-facing sur
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Security Foundation | 0/TBD | Not started | - |
+| 1. Security Foundation | 0/4 | Planned | - |
 | 2. Code Hygiene & Refactoring | 0/TBD | Not started | - |
 | 3. Patient Share-Links | 0/TBD | Not started | - |
 | 4. Patient Timeline | 0/TBD | Not started | - |

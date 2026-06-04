@@ -1,8 +1,8 @@
 ---
 phase: 1
 slug: security-foundation
-status: draft
-nyquist_compliant: false
+status: ready
+nyquist_compliant: true
 wave_0_complete: false
 created: 2026-06-04
 ---
@@ -38,17 +38,19 @@ created: 2026-06-04
 
 | Task ID | Plan | Wave | Requirement | Threat Ref | Secure Behavior | Test Type | Automated Command | File Exists | Status |
 |---------|------|------|-------------|------------|-----------------|-----------|-------------------|-------------|--------|
-| TBD | TBD | TBD | SEC-01 | TBD | Doctor deleting another doctor's prescription returns no-op (0 rows affected) | unit (mocked Supabase) | `tsx --test modules/prescriptions/delete-prescription.spec.ts` | ❌ W0 | ⬜ pending |
-| TBD | TBD | TBD | SEC-01 | TBD | Doctor deleting own prescription succeeds | unit | `tsx --test modules/prescriptions/delete-prescription.spec.ts` | ❌ W0 | ⬜ pending |
-| TBD | TBD | TBD | SEC-01 | TBD | Same ownership tests for medical certificates | unit | `tsx --test modules/medical-certificates/delete-medical-certificate.spec.ts` | ❌ W0 | ⬜ pending |
-| TBD | TBD | TBD | SEC-03 | TBD | `server-admin.ts` not imported by any action other than `delete-account.ts` | static | `grep -r "createAdminClient" actions/ --include="*.ts" \| grep -v delete-account` | ❌ W0 | ⬜ pending |
-| TBD | TBD | TBD | SEC-04 | TBD | Bulk delete of 10 prescriptions issues exactly one DB call and one storage call | unit (spy/mock) | `tsx --test modules/prescriptions/delete-prescriptions-bulk.spec.ts` | ❌ W0 | ⬜ pending |
-| TBD | TBD | TBD | HYG-04 | TBD | `package.json` has explicit semver for `@supabase/*` | static | `yarn install --frozen-lockfile` | ❌ W0 | ⬜ pending |
-| TBD | TBD | TBD | TEST-03 | TBD | CI workflow exists and passes typecheck, lint, test on push | integration | GitHub Actions run | ❌ W0 | ⬜ pending |
+| 01-01-T1/T2 | 01-01 | 1 | SEC-01 | T-01-01 | Doctor deleting another doctor's prescription returns no-op (0 rows affected) | unit (mocked Supabase) | `tsx --test modules/prescriptions/delete-prescription.spec.ts` | ❌ W0 | ⬜ pending |
+| 01-01-T1/T2 | 01-01 | 1 | SEC-01 | T-01-01 | Doctor deleting own prescription succeeds | unit | `tsx --test modules/prescriptions/delete-prescription.spec.ts` | ❌ W0 | ⬜ pending |
+| 01-01-T1/T2 | 01-01 | 1 | SEC-01 | T-01-01 | Same ownership tests for medical certificates | unit | `tsx --test modules/medical-certificates/delete-medical-certificate.spec.ts` | ❌ W0 | ⬜ pending |
+| 01-01-T3 | 01-01 | 1 | SEC-03 | T-01-02 | `server-admin.ts` not imported by any action other than `delete-account.ts` | static | `grep -rc "createAdminClient" actions/ --include="*.ts" \| grep -v "delete-account" \| grep -v ":0" \| wc -l` | ❌ W0 | ⬜ pending |
+| 01-01-T1/T3 | 01-01 | 1 | SEC-04 | T-01-03 | Bulk delete of 10 prescriptions issues exactly one DB call and one storage call | unit (spy/mock) | `tsx --test modules/prescriptions/delete-prescriptions-bulk.spec.ts` | ❌ W0 | ⬜ pending |
+| 01-02-T1 | 01-02 | 1 | HYG-04 | T-01-05 | `package.json` has explicit semver for `@supabase/*` | static | `yarn install --frozen-lockfile` | ❌ W0 | ⬜ pending |
+| 01-02-T2 | 01-02 | 1 | TEST-03 | T-01-05 | CI workflow exists and passes typecheck, lint, test, build on push | integration | GitHub Actions run | ❌ W0 | ⬜ pending |
+| 01-04-T1/T2 | 01-04 | 2 | TEST-03 | T-01-11 | Branch protection blocks merge to main unless CI green | integration | `gh api repos/falaped/falaped/branches/main/protection` | ❌ W0 | ⬜ pending |
+| 01-03-T3 | 01-03 | 2 | SEC-02 | T-01-07 | Every public.* table has rowsecurity=true | manual (live DB) | `SELECT tablename, rowsecurity FROM pg_tables WHERE schemaname='public'` via MCP | n/a live | ⬜ pending |
 
 *Status: ⬜ pending · ✅ green · ❌ red · ⚠️ flaky*
 
-*Task IDs to be filled by planner — map derived from RESEARCH.md Validation Architecture.*
+*Task IDs mapped to plans 01-01 .. 01-04 by planner (2026-06-04).*
 
 ---
 
