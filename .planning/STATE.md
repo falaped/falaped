@@ -2,9 +2,9 @@
 gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: Hardening & Experiência do Paciente
-status: planning
+status: executing
 stopped_at: Phase 1 context gathered
-last_updated: "2026-06-04T16:57:47.698Z"
+last_updated: "2026-06-04T22:37:25.763Z"
 last_activity: 2026-06-04 — Roadmap created for milestone v1.1
 progress:
   total_phases: 5
@@ -27,7 +27,7 @@ See: .planning/PROJECT.md (updated 2026-06-04)
 
 Phase: 1 of 5 (Security Foundation)
 Plan: —
-Status: Ready to plan
+Status: Ready to execute
 Last activity: 2026-06-04 — Roadmap created for milestone v1.1
 
 Progress: [░░░░░░░░░░] 0%
