@@ -80,13 +80,33 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| (populated by roadmap) | | |
+| SEC-01 | Phase 1 | Pending |
+| SEC-02 | Phase 1 | Pending |
+| SEC-03 | Phase 1 | Pending |
+| SEC-04 | Phase 1 | Pending |
+| HYG-04 | Phase 1 | Pending |
+| TEST-03 | Phase 1 | Pending |
+| HYG-01 | Phase 2 | Pending |
+| HYG-02 | Phase 2 | Pending |
+| HYG-03 | Phase 2 | Pending |
+| REF-01 | Phase 2 | Pending |
+| REF-02 | Phase 2 | Pending |
+| REF-03 | Phase 2 | Pending |
+| SHARE-01 | Phase 3 | Pending |
+| SHARE-02 | Phase 3 | Pending |
+| SHARE-03 | Phase 3 | Pending |
+| SHARE-04 | Phase 3 | Pending |
+| TLINE-01 | Phase 4 | Pending |
+| TLINE-02 | Phase 4 | Pending |
+| TLINE-03 | Phase 4 | Pending |
+| TEST-01 | Phase 5 | Pending |
+| TEST-02 | Phase 5 | Pending |
 
 **Coverage:**
-- v1.1 requirements: 18 total
-- Mapped to phases: 0
-- Unmapped: 18 ⚠️ (pending roadmap)
+- v1.1 requirements: 21 total
+- Mapped to phases: 21
+- Unmapped: 0 ✓
 
 ---
 *Requirements defined: 2026-06-04*
-*Last updated: 2026-06-04 after initial definition*
+*Last updated: 2026-06-04 after roadmap creation (v1.1)*
