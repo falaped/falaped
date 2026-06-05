@@ -4,12 +4,12 @@ milestone: v1.1
 milestone_name: Hardening & Experiência do Paciente
 status: executing
 stopped_at: Phase 1 context gathered
-last_updated: "2026-06-04T22:37:25.763Z"
-last_activity: 2026-06-04 — Roadmap created for milestone v1.1
+last_updated: "2026-06-04T23:50:18.378Z"
+last_activity: 2026-06-04 -- Phase 01 execution started
 progress:
   total_phases: 5
   completed_phases: 0
-  total_plans: 0
+  total_plans: 4
   completed_plans: 0
   percent: 0
 ---
@@ -21,14 +21,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-06-04)
 
 **Core value:** O médico documenta a consulta falando — e sai com ficha, relatório, receita e atestado prontos, sem digitação manual.
-**Current focus:** Phase 1 — Security Foundation
+**Current focus:** Phase 01 — security-foundation
 
 ## Current Position
 
-Phase: 1 of 5 (Security Foundation)
-Plan: —
-Status: Ready to execute
-Last activity: 2026-06-04 — Roadmap created for milestone v1.1
+Phase: 01 (security-foundation) — EXECUTING
+Plan: 1 of 4
+Status: Executing Phase 01
+Last activity: 2026-06-04 -- Phase 01 execution started
 
 Progress: [░░░░░░░░░░] 0%
 
