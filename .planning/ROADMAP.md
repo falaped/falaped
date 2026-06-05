@@ -35,8 +35,8 @@ This milestone secures the multi-tenant foundation before any patient-facing sur
 Plans:
 **Wave 1**
 
-- [ ] 01-01-PLAN.md — IDOR fix + admin-client removal + batched bulk deletes (SEC-01/03/04) with ownership specs
-- [ ] 01-02-PLAN.md — Supabase dep pinning, GitHub Actions CI (typecheck/lint/test/build, frozen lockfile), dead-scaffold cleanup (HYG-04/TEST-03)
+- [x] 01-01-PLAN.md — IDOR fix + admin-client removal + batched bulk deletes (SEC-01/03/04) with ownership specs
+- [x] 01-02-PLAN.md — Supabase dep pinning, GitHub Actions CI (typecheck/lint/test/build, frozen lockfile), dead-scaffold cleanup (HYG-04/TEST-03)
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
@@ -104,7 +104,7 @@ Plans:
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Security Foundation | 0/4 | Planned | - |
+| 1. Security Foundation | 2/4 | In Progress|  |
 | 2. Code Hygiene & Refactoring | 0/TBD | Not started | - |
 | 3. Patient Share-Links | 0/TBD | Not started | - |
 | 4. Patient Timeline | 0/TBD | Not started | - |
