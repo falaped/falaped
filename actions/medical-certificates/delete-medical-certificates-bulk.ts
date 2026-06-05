@@ -3,9 +3,8 @@
 import { revalidatePath } from "next/cache"
 import { z } from "zod"
 import { createClient } from "@/lib/supabase/server"
-import { createAdminClient } from "@/lib/supabase/server-admin"
 import { getAuthenticatedUser } from "@/modules/supabase/get-authenticated-user"
-import { deleteMedicalCertificate } from "@/modules/medical-certificates/delete-medical-certificate"
+import { deleteMedicalCertificatesBulk } from "@/modules/medical-certificates/delete-medical-certificates-bulk"
 
 const bulkItemSchema = z.object({
   id: z.string().uuid(),
@@ -19,7 +18,8 @@ export type DeleteMedicalCertificatesBulkResult =
 const MAX_BULK = 100
 
 /**
- * Deletes multiple medical certificates owned by the current profile (RLS on delete).
+ * Deletes multiple medical certificates owned by the current profile in a single batched operation.
+ * Replaces the per-item for loop with a single DB delete + single storage remove (SEC-04).
  */
 export async function deleteMedicalCertificatesBulkAction(
   items: { id: string; pdfStoragePath: string | null }[],
@@ -39,24 +39,15 @@ export async function deleteMedicalCertificatesBulkAction(
     }
   }
 
-  let storageClient: Awaited<ReturnType<typeof createAdminClient>> | undefined
   try {
-    storageClient = createAdminClient()
-  } catch {
-    // SUPABASE_SERVICE_ROLE_KEY not set
-  }
-
-  try {
-    for (const item of parsed.data) {
-      await deleteMedicalCertificate(
-        supabase,
-        item.id,
-        item.pdfStoragePath,
-        storageClient,
-      )
-    }
+    const { deletedCount } = await deleteMedicalCertificatesBulk(
+      supabase,
+      parsed.data.map((i) => i.id),
+      profile.id,
+      parsed.data.map((i) => i.pdfStoragePath),
+    )
     revalidatePath("/dashboard/medical-certificates")
-    return { ok: true, deletedCount: parsed.data.length }
+    return { ok: true, deletedCount }
   } catch (e) {
     console.error("[MEDICAL_CERTIFICATES] bulk delete failed", e)
     return {
