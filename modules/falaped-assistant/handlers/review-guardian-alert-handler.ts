@@ -1,6 +1,6 @@
 import type { AssistantIntentHandler } from "@/modules/falaped-assistant/handlers/handler-contract"
 import { buildClinicalAlertItemsFromUserMessage } from "@/modules/falaped-assistant/clinical-alert-from-user-message"
-import { findLatestUserTurnTextForAlertSave, hasIdenticalConfirmedClinicalAlertInThread } from "@/modules/falaped-assistant/lib/thread-scanning"
+import { hasIdenticalConfirmedClinicalAlertInThread } from "@/modules/falaped-assistant/lib/thread-scanning"
 
 export const handleReviewGuardianAlert: AssistantIntentHandler = async (context) => {
   const alertItems = buildClinicalAlertItemsFromUserMessage(context.userMessage)

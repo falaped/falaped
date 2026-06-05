@@ -19,7 +19,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip"
-import { formatBrazilianPhone, formatDate } from "@/lib/formatters"
+import { formatDate } from "@/lib/formatters"
 import { getPatientInitials } from "@/lib/get-patient-initials"
 import type { Patient } from "@/modules/patients/types"
 import { cn } from "@/lib/utils"

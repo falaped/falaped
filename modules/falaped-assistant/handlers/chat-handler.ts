@@ -1,7 +1,7 @@
 import type { AssistantIntentHandler } from "@/modules/falaped-assistant/handlers/handler-contract"
 import { generateAssistantCaseChat } from "@/modules/groq/assistant-case-chat"
 import { isLikelyDictationMessage, isLikelyVaccineOrientationMessage } from "@/modules/falaped-assistant/lib/message-classification"
-import { buildMessagesForModel, resolveClinicalSyncMode, buildThreadTextForAuxiliaryModel } from "@/modules/falaped-assistant/lib/thread-scanning"
+import { buildMessagesForModel, resolveClinicalSyncMode } from "@/modules/falaped-assistant/lib/thread-scanning"
 import { extractStoredData } from "@/modules/falaped-assistant/lib/stored-data-extraction"
 import { enforceReplyVariation, refineChatReplyAfterModel, needsAntiBmiEchoRecovery, buildDeterministicAcknowledgement, vaccineReplyViolatesCondutaOnly } from "@/modules/falaped-assistant/lib/reply-variation"
 

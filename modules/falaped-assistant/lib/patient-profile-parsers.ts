@@ -13,7 +13,6 @@ import {
   parseWeightHeightForBmi,
   stripNeonatalBirthMeasuresFromParsedAnthropometrics,
 } from "@/lib/parse-anthropometrics-for-bmi"
-import { isCommandLikeMessage } from "@/modules/falaped-assistant/lib/message-classification"
 
 export function parseNumericValue(labelValue: string): number | null {
   const match = labelValue.replace(",", ".").match(/(\d+(?:\.\d+)?)/)

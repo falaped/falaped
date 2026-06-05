@@ -1,7 +1,5 @@
 import { MessagesSquareIcon, SearchXIcon } from "lucide-react"
 
-type CaseEmptyFilter = "active" | "closed" | "all" | "search"
-
 const emptyConfig = {
   active: {
     icon: MessagesSquareIcon,
