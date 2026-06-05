@@ -10,7 +10,7 @@ This milestone secures the multi-tenant foundation before any patient-facing sur
 
 ## Phases
 
-- [ ] **Phase 1: Security Foundation** — IDOR fix, RLS on all data tables, admin client restricted, bulk delete batched, deps pinned, CI pipeline established
+- [x] **Phase 1: Security Foundation** — IDOR fix, RLS on all data tables, admin client restricted, bulk delete batched, deps pinned, CI pipeline established (completed 2026-06-05)
 - [ ] **Phase 2: Code Hygiene & Refactoring** — Duplicate routes unified, env centralised, silent catches logged, oversized components decomposed
 - [ ] **Phase 3: Patient Share-Links** — Doctor generates/copies/revokes expiring links; patient downloads PDF on public page without a Falaped account
 - [ ] **Phase 4: Patient Timeline** — Doctor views chronological unified feed of cases, prescriptions, and certificates with inline share buttons
@@ -40,7 +40,7 @@ Plans:
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
-- [ ] 01-03-PLAN.md — Incremental RLS rollout on every public table via Supabase MCP on live prod, with reversal scripts (SEC-02)
+- [x] 01-03-PLAN.md — Incremental RLS rollout on every public table via Supabase MCP on live prod, with reversal scripts (SEC-02)
 - [x] 01-04-PLAN.md — Branch protection on main requiring the CI check (TEST-03 enforcement)
 
 ### Phase 2: Code Hygiene & Refactoring
@@ -104,7 +104,7 @@ Plans:
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Security Foundation | 3/4 | In Progress|  |
+| 1. Security Foundation | 4/4 | Complete   | 2026-06-05 |
 | 2. Code Hygiene & Refactoring | 0/TBD | Not started | - |
 | 3. Patient Share-Links | 0/TBD | Not started | - |
 | 4. Patient Timeline | 0/TBD | Not started | - |
