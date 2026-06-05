@@ -41,7 +41,7 @@ Plans:
 **Wave 2** *(blocked on Wave 1 completion)*
 
 - [ ] 01-03-PLAN.md — Incremental RLS rollout on every public table via Supabase MCP on live prod, with reversal scripts (SEC-02)
-- [ ] 01-04-PLAN.md — Branch protection on main requiring the CI check (TEST-03 enforcement)
+- [x] 01-04-PLAN.md — Branch protection on main requiring the CI check (TEST-03 enforcement)
 
 ### Phase 2: Code Hygiene & Refactoring
 
@@ -104,7 +104,7 @@ Plans:
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Security Foundation | 2/4 | In Progress|  |
+| 1. Security Foundation | 3/4 | In Progress|  |
 | 2. Code Hygiene & Refactoring | 0/TBD | Not started | - |
 | 3. Patient Share-Links | 0/TBD | Not started | - |
 | 4. Patient Timeline | 0/TBD | Not started | - |
