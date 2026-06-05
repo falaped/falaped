@@ -2,40 +2,40 @@ import type { SupabaseClient } from "@supabase/supabase-js"
 import { PRESCRIPTIONS_BUCKET } from "@/lib/constants"
 
 /**
- * Deletes a prescription by id. RLS ensures only the profile owner can delete.
- * Removes the PDF from storage if pdf_storage_path is set. Use storageClient
- * (e.g. admin) when the user client cannot delete due to RLS.
+ * Deletes a prescription by id, scoped to the owning profile (IDOR fix: SEC-01).
+ * Uses the user-scoped Supabase client throughout — no admin client.
+ * DB row is deleted first; storage PDF removal is best-effort (orphan logged, not thrown).
  */
 export async function deletePrescription(
-  supabase: SupabaseClient,
+  supabase: SupabaseClient, // user-scoped client; storage RLS handles bucket access
   prescriptionId: string,
+  profileId: string, // ownership anchor for IDOR fix
   pdfStoragePath: string | null,
-  storageClient?: SupabaseClient,
 ): Promise<void> {
-  if (pdfStoragePath?.trim()) {
-    const client = storageClient ?? supabase
-    const { error: storageError } = await client.storage
-      .from(PRESCRIPTIONS_BUCKET)
-      .remove([pdfStoragePath])
-
-    if (storageError) {
-      console.error(
-        `[PRESCRIPTIONS] Failed to remove PDF from storage: ${storageError.message}`,
-      )
-      throw new Error(
-        `[PRESCRIPTIONS] Falha ao remover PDF do storage: ${storageError.message}`,
-      )
-    }
-  }
-
+  // 1. Delete DB row first — scoped by ownership (IDOR fix)
   const { error } = await supabase
     .from("prescriptions")
     .delete()
     .eq("id", prescriptionId)
+    .eq("profile_id", profileId) // ownership filter — SEC-01
 
   if (error) {
     throw new Error(
       `[PRESCRIPTIONS] Failed to delete prescription: ${error.message}`,
     )
+  }
+
+  // 2. Remove PDF from storage (user client; storage RLS "Prescriptions delete own" applies)
+  if (pdfStoragePath?.trim()) {
+    const { error: storageError } = await supabase.storage
+      .from(PRESCRIPTIONS_BUCKET)
+      .remove([pdfStoragePath])
+
+    if (storageError) {
+      // Log but do NOT throw — DB row is gone; orphan PDF is preferable to IDOR
+      console.error(
+        `[PRESCRIPTIONS] Orphan PDF not removed: ${storageError.message}`,
+      )
+    }
   }
 }
