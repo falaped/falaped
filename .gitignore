@@ -44,3 +44,6 @@ next-env.d.ts
 
 
 /data-msg
+
+# dev repro output (CONS-04 PDF verification — scripts/repro-report-pdf.ts)
+/tmp
