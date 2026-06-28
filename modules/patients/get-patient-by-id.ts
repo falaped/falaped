@@ -2,7 +2,7 @@ import type { SupabaseClient } from "@supabase/supabase-js"
 import type { Patient } from "./types"
 
 const PATIENT_SELECT =
-  "id, profile_id, user_phone, name, birth_date, responsible, contact_phone, sex, legal_guardian, blood_type, weight, height, head_circumference, allergies, current_medications, medical_history, created_at, updated_at"
+  "id, profile_id, user_phone, name, birth_date, responsible, contact_phone, sex, legal_guardian, blood_type, gestational_age_weeks, weight, height, head_circumference, allergies, current_medications, medical_history, photo_path, consent_given, consent_at, created_at, updated_at"
 
 /**
  * Fetches a single patient by id, only if it belongs to the given profile_id.

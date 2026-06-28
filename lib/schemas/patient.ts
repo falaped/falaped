@@ -157,6 +157,19 @@ export const updatePatientSchema = z.object({
   medical_history: optionalString,
 })
 
+/**
+ * Schema de envio de foto do paciente. `consent` usa `z.literal(true)` para
+ * rejeitar no servidor qualquer upload sem o consentimento do responsável (D-04,
+ * Pitfall 4). O `File` em si não é validado aqui — é lido do FormData na action.
+ */
+export const uploadPatientPhotoSchema = z.object({
+  patientId: z.string().uuid(),
+  consent: z.literal(true, {
+    message:
+      "É necessário confirmar o consentimento do responsável para enviar a foto.",
+  }),
+})
+
 /** Values after Zod parse (e.g. birth_date as yyyy-mm-dd). */
 export type CreatePatientFormData = z.output<typeof createPatientSchema>
 export type UpdatePatientFormData = z.output<typeof updatePatientSchema>

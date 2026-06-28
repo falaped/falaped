@@ -22,6 +22,9 @@ function patient(id: string, name: string): Patient {
     allergies: null,
     current_medications: null,
     medical_history: null,
+    photo_path: null,
+    consent_given: null,
+    consent_at: null,
     created_at: "",
     updated_at: "",
   }

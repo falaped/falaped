@@ -21,6 +21,9 @@ export type Patient = {
   allergies: string | null
   current_medications: string | null
   medical_history: string | null
+  photo_path: string | null
+  consent_given: boolean | null
+  consent_at: string | null
   created_at: string
   updated_at: string
 }
