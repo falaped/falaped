@@ -62,8 +62,21 @@ Plans:
   2. A foto é servida por URL assinada de curta duração; uma requisição não autenticada (`curl`) ao objeto falha (bucket `public=false`, escopo por `profile_id`, caminho — não URL pública — guardado no banco)
   3. Apagar a foto remove tanto o objeto do storage quanto a referência no banco, e o fluxo captura/registra o consentimento do responsável (postura LGPD para dado de menor)
 
-**Plans**: TBD
+**Plans**: 3 plans
 **UI hint**: yes
+Plans:
+
+**Wave 1**
+
+- [ ] 02-01-PLAN.md — Foundation: photo/consent columns + private patient-photos bucket & storage RLS + Patient type/selects + upload schema + [BLOCKING] schema push (wave 1)
+
+**Wave 2** *(blocked on Wave 1)*
+
+- [ ] 02-02-PLAN.md — Upload + display slice (PHOTO-01/02): client compression + photo modules + gated upload action + form photo field & consent checkbox + AvatarImage on hero/list/case header (wave 2)
+
+**Wave 3** *(blocked on Wave 2)*
+
+- [ ] 02-03-PLAN.md — Delete + consent-completeness + security verification (PHOTO-03 criterion 3): idempotent storage remove + delete-patient cleanup + remove-photo AlertDialog + curl-fails security check (wave 3)
 
 ### Phase 3: Documentos Clínicos Novos
 
@@ -123,7 +136,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Experiência da Consulta | 5/5 | Complete   | 2026-06-28 |
-| 2. Foto Privada do Paciente | 0/TBD | Not started | - |
+| 2. Foto Privada do Paciente | 0/3 | Planned | - |
 | 3. Documentos Clínicos Novos | 0/TBD | Not started | - |
 | 4. Calendário de Vacinas (Referência) | 0/TBD | Not started | - |
 | 5. Carteira de Vacinação por Paciente | 0/TBD | Not started | - |
