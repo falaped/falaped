@@ -47,7 +47,15 @@ export async function updateCaseStatus(
   const payload =
     status === "closed"
       ? { status: "closed" as const, ended_at: new Date().toISOString() }
-      : { status: "active" as const, ended_at: null }
+      : {
+          // Reopening starts a fresh consultation: reset the timer anchor and
+          // clear any accumulated/active pause so the cronômetro restarts at 0 (D-02).
+          status: "active" as const,
+          ended_at: null,
+          started_at: new Date().toISOString(),
+          consultation_paused_ms: 0,
+          consultation_paused_at: null,
+        }
 
   const { error: updateError } = await supabase
     .from("cases")

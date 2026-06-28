@@ -51,6 +51,7 @@ import {
   ASSISTANT_TYPING_MIN_DISPLAY_MS,
 } from "@/lib/constants"
 import { CLINICAL_NOTATION_SUMMARY_MESSAGE } from "@/lib/format-clinical-assistant-sections"
+import { ConsultationTimerWidget } from "@/components/dashboard/cases/consultation-timer-widget"
 
 type WorkspaceMessage = {
   id: string
@@ -515,6 +516,10 @@ export function NewCaseWorkspace({
   initialMessages,
   patient,
   userDisplayName,
+  startedAt,
+  endedAt,
+  consultationPausedMs,
+  consultationPausedAt,
 }: {
   caseId: string
   initialMessages: WorkspaceMessage[]
@@ -526,6 +531,10 @@ export function NewCaseWorkspace({
     contact_phone: string | null
   } | null
   userDisplayName: string
+  startedAt: string
+  endedAt: string | null
+  consultationPausedMs: number
+  consultationPausedAt: string | null
 }) {
   const router = useRouter()
   const scrollRef = useRef<HTMLDivElement | null>(null)
@@ -828,6 +837,13 @@ export function NewCaseWorkspace({
       aria-label="Área do novo caso"
       className="-m-8 flex h-[calc(100dvh-2rem)] flex-col overflow-hidden bg-sidebar"
     >
+      <ConsultationTimerWidget
+        caseId={caseId}
+        startedAt={startedAt}
+        endedAt={endedAt}
+        consultationPausedMs={consultationPausedMs}
+        consultationPausedAt={consultationPausedAt}
+      />
       <header className="shrink-0 border-b border-border/60 bg-transparent px-8 py-4 backdrop-blur-md">
         <div className="flex items-center justify-between gap-4 rounded-xl border border-border/60 bg-card/80 px-4 py-3 shadow-xs backdrop-blur-sm">
           <div className="min-w-0 space-y-2">

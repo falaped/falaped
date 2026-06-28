@@ -27,6 +27,10 @@ export default async function NewCaseWorkspacePage({
       initialMessages={caseDetail.messages}
       patient={caseDetail.patient}
       userDisplayName={profile.first_name?.trim() || "Pediatra"}
+      startedAt={caseDetail.started_at}
+      endedAt={caseDetail.ended_at}
+      consultationPausedMs={caseDetail.consultation_paused_ms}
+      consultationPausedAt={caseDetail.consultation_paused_at}
     />
   )
 }

@@ -12,20 +12,19 @@ import {
   useSensor,
   useSensors,
 } from "@dnd-kit/core"
-import { GripVerticalIcon, PauseIcon, PlayIcon } from "lucide-react"
+import { GripVerticalIcon, PauseIcon, PlayIcon, TimerIcon } from "lucide-react"
 
 import { useConsultationTimer } from "@/hooks/use-consultation-timer"
 import {
   pauseConsultationAction,
   resumeConsultationAction,
 } from "@/actions"
-import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 
 const POSITION_STORAGE_KEY = "falaped:consultation-timer-position"
-const WIDGET_WIDTH = 200
-const WIDGET_HEIGHT = 72
+const WIDGET_WIDTH = 232
+const WIDGET_HEIGHT = 96
 const VIEWPORT_MARGIN = 8
 
 type Position = { x: number; y: number }
@@ -108,55 +107,60 @@ function TimerPanel({
     <div
       ref={setNodeRef}
       style={{ left, top }}
-      className="fixed z-50 w-auto min-w-[180px] rounded-lg border border-border bg-card p-3 shadow-md"
+      className={cn(
+        "fixed z-50 w-[232px] select-none rounded-2xl border border-border bg-card/95 shadow-lg backdrop-blur-sm",
+        isEnded && "opacity-90",
+      )}
     >
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-1.5 p-2.5">
         <div
           {...attributes}
           {...listeners}
           aria-label="Mover cronômetro"
-          className="flex min-h-11 min-w-11 cursor-grab touch-none items-center justify-center text-muted-foreground active:cursor-grabbing"
+          className="flex h-12 w-6 shrink-0 cursor-grab touch-none items-center justify-center rounded-lg text-muted-foreground/40 transition-colors hover:bg-muted hover:text-muted-foreground active:cursor-grabbing"
         >
-          <GripVerticalIcon className="size-4 opacity-60" />
+          <GripVerticalIcon className="size-4" />
         </div>
 
-        <div className="flex flex-1 flex-col gap-1">
-          <span className="text-base font-semibold tabular-nums">
+        <div className="flex flex-1 flex-col gap-0.5">
+          <span className="flex items-center gap-1.5 text-[11px] font-medium uppercase tracking-[0.08em] text-muted-foreground">
+            <TimerIcon className="size-3.5" aria-hidden />
+            Consulta
+          </span>
+          <span className="font-mono text-2xl font-semibold leading-none tabular-nums tracking-tight text-foreground">
             {formatElapsed(elapsedMs)}
           </span>
-          {isPaused ? (
-            <Badge
-              variant="outline"
-              className="w-fit text-xs font-normal text-muted-foreground"
-            >
-              Pausado
-            </Badge>
-          ) : isEnded ? (
-            <Badge
-              variant="outline"
-              className="w-fit text-xs font-normal text-muted-foreground"
-            >
-              Encerrado
-            </Badge>
-          ) : (
-            <span className="flex items-center gap-1.5 text-xs font-normal text-muted-foreground">
-              <span className="relative flex size-1.5">
-                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-primary opacity-75 motion-reduce:hidden" />
-                <span className="relative inline-flex size-1.5 rounded-full bg-primary" />
-              </span>
-              Em andamento
-            </span>
-          )}
+          <span className="mt-0.5 inline-flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
+            {isPaused ? (
+              <>
+                <span className="size-1.5 rounded-full bg-muted-foreground/60" />
+                Pausado
+              </>
+            ) : isEnded ? (
+              <>
+                <span className="size-1.5 rounded-full border border-muted-foreground/50" />
+                Encerrado
+              </>
+            ) : (
+              <>
+                <span className="relative flex size-1.5">
+                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-primary opacity-75 motion-reduce:hidden" />
+                  <span className="relative inline-flex size-1.5 rounded-full bg-primary" />
+                </span>
+                Em andamento
+              </>
+            )}
+          </span>
         </div>
 
         {!isEnded ? (
           <Button
-            variant="ghost"
+            variant="secondary"
             size="icon"
             disabled={isPending}
             onClick={onToggle}
             aria-label={isPaused ? "Retomar consulta" : "Pausar consulta"}
-            className={cn("min-h-11 min-w-11", "transition-colors")}
+            className="size-10 shrink-0 rounded-xl"
           >
             {isPaused ? (
               <PlayIcon className="size-4" />
