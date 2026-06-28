@@ -48,7 +48,7 @@ Plans:
 
 **Wave 3** *(blocked on Wave 2 completion)*
 
-- [ ] 01-05-PLAN.md — Consultation timer slice: elapsed helper + pause/resume + draggable widget (wave 3)
+- [x] 01-05-PLAN.md — Consultation timer slice: elapsed helper + pause/resume + draggable widget (wave 3)
 
 ### Phase 2: Foto Privada do Paciente
 
@@ -120,7 +120,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Experiência da Consulta | 3/5 | In Progress|  |
+| 1. Experiência da Consulta | 4/5 | In Progress|  |
 | 2. Foto Privada do Paciente | 0/TBD | Not started | - |
 | 3. Documentos Clínicos Novos | 0/TBD | Not started | - |
 | 4. Calendário de Vacinas (Referência) | 0/TBD | Not started | - |
