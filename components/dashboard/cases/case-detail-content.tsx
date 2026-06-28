@@ -18,7 +18,6 @@ import { CaseDetailDocuments } from "@/components/dashboard/cases/case-detail-do
 import { CaseDetailStateCard } from "@/components/dashboard/cases/case-detail-state-card"
 import { caseDetailMainStackClassName } from "@/components/dashboard/cases/case-detail-workspace"
 import { CaseReport } from "@/components/dashboard/cases/case-report"
-import { ConsultationTimerWidget } from "@/components/dashboard/cases/consultation-timer-widget"
 
 export async function CaseDetailContent({ id }: { id: string }) {
   const supabase = await createClient()
@@ -122,13 +121,6 @@ export async function CaseDetailContent({ id }: { id: string }) {
           prescriptions={casePrescriptions}
         />
       </div>
-      <ConsultationTimerWidget
-        caseId={id}
-        startedAt={caseDetail.started_at}
-        endedAt={caseDetail.ended_at}
-        consultationPausedMs={caseDetail.consultation_paused_ms}
-        consultationPausedAt={caseDetail.consultation_paused_at}
-      />
     </div>
   )
 }

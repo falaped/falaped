@@ -12,14 +12,26 @@ import {
   useSensor,
   useSensors,
 } from "@dnd-kit/core"
-import { GripVerticalIcon, PauseIcon, PlayIcon, TimerIcon } from "lucide-react"
+import { GripVerticalIcon, PauseIcon, PlayIcon, RotateCcwIcon, TimerIcon } from "lucide-react"
 
 import { useConsultationTimer } from "@/hooks/use-consultation-timer"
 import {
   pauseConsultationAction,
   resumeConsultationAction,
+  resetConsultationAction,
 } from "@/actions"
 import { Button } from "@/components/ui/button"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog"
 import { cn } from "@/lib/utils"
 
 const POSITION_STORAGE_KEY = "falaped:consultation-timer-position"
@@ -103,6 +115,18 @@ function TimerPanel({
     }
   }, [caseId, isPaused, router])
 
+  const onReset = useCallback(async () => {
+    setIsPending(true)
+    try {
+      const result = await resetConsultationAction(caseId)
+      if (result.ok) {
+        router.refresh()
+      }
+    } finally {
+      setIsPending(false)
+    }
+  }, [caseId, router])
+
   return (
     <div
       ref={setNodeRef}
@@ -123,9 +147,36 @@ function TimerPanel({
         </div>
 
         <div className="flex flex-1 flex-col gap-0.5">
-          <span className="flex items-center gap-1.5 text-[11px] font-medium uppercase tracking-[0.08em] text-muted-foreground">
-            <TimerIcon className="size-3.5" aria-hidden />
-            Consulta
+          <span className="flex items-center justify-between gap-1.5 text-[11px] font-medium uppercase tracking-[0.08em] text-muted-foreground">
+            <span className="flex items-center gap-1.5">
+              <TimerIcon className="size-3.5" aria-hidden />
+              Consulta
+            </span>
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <button
+                  type="button"
+                  disabled={isPending}
+                  aria-label="Resetar cronômetro"
+                  className="flex size-6 items-center justify-center rounded-md text-muted-foreground/50 transition-colors hover:bg-muted hover:text-muted-foreground disabled:opacity-50"
+                >
+                  <RotateCcwIcon className="size-3.5" />
+                </button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Resetar cronômetro?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    O tempo decorrido volta para 00:00 e qualquer pausa é descartada. Esta ação
+                    não pode ser desfeita.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                  <AlertDialogAction onClick={onReset}>Resetar</AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
           </span>
           <span className="font-mono text-2xl font-semibold leading-none tabular-nums tracking-tight text-foreground">
             {formatElapsed(elapsedMs)}
@@ -175,6 +226,13 @@ function TimerPanel({
 }
 
 export function ConsultationTimerWidget(props: ConsultationTimerWidgetProps) {
+  // Encerrado: o caso não está mais em andamento — não exibir o cronômetro.
+  if (props.endedAt != null) return null
+
+  return <ConsultationTimerWidgetInner {...props} />
+}
+
+function ConsultationTimerWidgetInner(props: ConsultationTimerWidgetProps) {
   const [position, setPosition] = useState<Position>({ x: 0, y: 0 })
 
   const sensors = useSensors(

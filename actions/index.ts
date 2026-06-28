@@ -4,6 +4,7 @@ export {
   updateCaseStatusAction,
   pauseConsultationAction,
   resumeConsultationAction,
+  resetConsultationAction,
   generateCaseReportAction,
   downloadCaseReportPdfAction,
   improveReportSectionAction,
