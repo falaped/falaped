@@ -24,6 +24,8 @@ export {
   createPatientAction,
   deletePatientAction,
   updatePatientAction,
+  uploadPatientPhotoAction,
+  type UploadPatientPhotoResult,
 } from "./patients"
 export {
   deleteMyAccountAction,
