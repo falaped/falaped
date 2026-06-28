@@ -39,7 +39,7 @@ Plans:
 **Wave 1**
 
 - [ ] 01-01-PLAN.md — Schema foundation: gestational_age + cases pause columns + started_at default + db push (wave 1)
-- [ ] 01-02-PLAN.md — Pediatric age engine (pure, tested) + PT-BR formatter (wave 1, TDD)
+- [x] 01-02-PLAN.md — Pediatric age engine (pure, tested) + PT-BR formatter (wave 1, TDD)
 - [ ] 01-03-PLAN.md — CONS-04 PDF fix: Path B sanitization + console.log removal + repro script + Path A decision (wave 1)
 
 **Wave 2** *(blocked on Wave 1 completion)*
@@ -120,7 +120,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Experiência da Consulta | 0/5 | Not started | - |
+| 1. Experiência da Consulta | 1/5 | In Progress|  |
 | 2. Foto Privada do Paciente | 0/TBD | Not started | - |
 | 3. Documentos Clínicos Novos | 0/TBD | Not started | - |
 | 4. Calendário de Vacinas (Referência) | 0/TBD | Not started | - |

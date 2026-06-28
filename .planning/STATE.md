@@ -4,13 +4,13 @@ milestone: v1.0
 milestone_name: milestone
 status: executing
 stopped_at: Phase 1 UI-SPEC approved
-last_updated: "2026-06-28T18:53:28.170Z"
-last_activity: 2026-06-28 — Roadmap criado (5 fases coarse, 20/20 requisitos mapeados)
+last_updated: "2026-06-28T19:09:06.728Z"
+last_activity: 2026-06-28 -- Phase 01 execution started
 progress:
   total_phases: 5
   completed_phases: 0
-  total_plans: 0
-  completed_plans: 0
+  total_plans: 5
+  completed_plans: 1
   percent: 0
 ---
 
@@ -21,14 +21,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-06-27)
 
 **Core value:** A consulta pediátrica flui sem fricção — abrir o paciente, conduzir a consulta e gerar os documentos certos (impressos corretamente) em poucos cliques.
-**Current focus:** Phase 1 — Experiência da Consulta
+**Current focus:** Phase 01 — experi-ncia-da-consulta
 
 ## Current Position
 
-Phase: 1 of 5 (Experiência da Consulta)
-Plan: 0 of TBD in current phase
+Phase: 01 (experi-ncia-da-consulta) — EXECUTING
+Plan: 2 of 5
 Status: Ready to execute
-Last activity: 2026-06-28 — Roadmap criado (5 fases coarse, 20/20 requisitos mapeados)
+Last activity: 2026-06-28 -- Phase 01 execution started
 
 Progress: [░░░░░░░░░░] 0%
 
@@ -52,6 +52,7 @@ Progress: [░░░░░░░░░░] 0%
 - Trend: —
 
 *Updated after each plan completion*
+| Phase 01 P02 | 10min | 1 tasks | 4 files |
 
 ## Accumulated Context
 
@@ -64,6 +65,7 @@ Recent decisions affecting current work:
 - [Roadmap]: Correção de PDF (CONS-04) precede os documentos novos (Phase 3), que herdam o builder `@falaped/falaped-kit/pdf`
 - [Roadmap]: Vacinas separadas em referência (dado estático, Phase 4) vs carteira por paciente (tabela owned, Phase 5)
 - [Roadmap]: Foto da criança em bucket privado + URL assinada — NÃO reusar o bucket público de logos (LGPD)
+- [Phase ?]: Pediatric age band boundary at 24 months (a 1-year-old reads '12 meses'); months/days via differenceInMonths + intervalToDuration remainder; corrected age by shifting birth date forward and re-banding, capped at 24 months corrected.
 
 ### Pending Todos
 
@@ -90,6 +92,6 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-06-28T18:10:57.625Z
+Last session: 2026-06-28T19:08:51.881Z
 Stopped at: Phase 1 UI-SPEC approved
 Resume file: .planning/phases/01-experi-ncia-da-consulta/01-UI-SPEC.md

@@ -9,7 +9,7 @@ Requisitos deste ciclo. Cada um mapeia para uma fase do roadmap. Tudo escopado p
 
 ### Experiência da Consulta (CONS)
 
-- [ ] **CONS-01**: Médico vê a idade da criança exibida por faixa etária a partir da data de nascimento — dias (0–28 dias), meses + dias (~1–24 meses) e anos + meses (≥24 meses)
+- [x] **CONS-01**: Médico vê a idade da criança exibida por faixa etária a partir da data de nascimento — dias (0–28 dias), meses + dias (~1–24 meses) e anos + meses (≥24 meses)
 - [ ] **CONS-02**: Médico inicia um cronômetro de consulta e vê o tempo decorrido ao vivo durante o atendimento
 - [ ] **CONS-03**: O início (e fim) da consulta é persistido no registro do atendimento e sobrevive a recarregar a página
 - [ ] **CONS-04**: Médico imprime/gera PDF de relatórios e documentos sem espaçamento excessivo nem página em branco extra (correção no `@falaped/falaped-kit/pdf`)
@@ -73,7 +73,7 @@ Cada requisito mapeia para exatamente uma fase do roadmap. Sem órfãos, sem dup
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| CONS-01 | Phase 1 | Pending |
+| CONS-01 | Phase 1 | Complete |
 | CONS-02 | Phase 1 | Pending |
 | CONS-03 | Phase 1 | Pending |
 | CONS-04 | Phase 1 | Pending |
@@ -95,6 +95,7 @@ Cada requisito mapeia para exatamente uma fase do roadmap. Sem órfãos, sem dup
 | VAC-07 | Phase 5 | Pending |
 
 **Coverage:**
+
 - v1 requirements: 20 total
 - Mapped to phases: 20 ✓
 - Unmapped: 0 ✓
