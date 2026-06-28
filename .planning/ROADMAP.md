@@ -1,111 +1,97 @@
-# Roadmap: Falaped — v1.1 Hardening & Experiência do Paciente
+# Roadmap: Falaped
 
 ## Overview
 
-This milestone secures the multi-tenant foundation before any patient-facing surface is exposed: first close the live IDOR and enable RLS across all data tables plus lock down CI and dep-pinning; then clean up code hygiene and decompose oversized components; then ship the patient share-link feature and the patient timeline (which converges on share at its inline share button); finally close the milestone with ownership regression tests and share-link unit tests that verify the security work holds.
-
-## Milestones
-
-- 🚧 **v1.1 Hardening & Experiência do Paciente** — Phases 1–5 (in progress)
+Este ciclo melhora a experiência da consulta pediátrica, amplia os tipos de documento clínico e adiciona suporte completo a vacinação — sem trocar a arquitetura. O caminho segue a cadeia de dependências da pesquisa: primeiro as correções de dor de uso e o motor de idade (a "keystone" que tudo de vacina consome, e a correção de PDF que todo documento novo herda); depois a foto privada da criança (decisão de privacidade isolada); então os documentos clínicos novos sobre o padrão de receitas; em seguida o calendário de vacinas como dado de referência; e por fim a carteira por paciente, que cruza idade × calendário × doses aplicadas. Cada fase entrega uma capacidade observável de ponta a ponta.
 
 ## Phases
 
-- [x] **Phase 1: Security Foundation** — IDOR fix, RLS on all data tables, admin client restricted, bulk delete batched, deps pinned, CI pipeline established (completed 2026-06-05)
-- [ ] **Phase 2: Code Hygiene & Refactoring** — Duplicate routes unified, env centralised, silent catches logged, oversized components decomposed
-- [ ] **Phase 3: Patient Share-Links** — Doctor generates/copies/revokes expiring links; patient downloads PDF on public page without a Falaped account
-- [ ] **Phase 4: Patient Timeline** — Doctor views chronological unified feed of cases, prescriptions, and certificates with inline share buttons
-- [ ] **Phase 5: Test Verification** — Ownership regression tests for delete actions; share-link token unit tests; CI green
+**Phase Numbering:**
+- Integer phases (1, 2, 3): Planned milestone work
+- Decimal phases (2.1, 2.2): Urgent insertions (marked with INSERTED)
+
+Decimal phases appear between their surrounding integers in numeric order.
+
+- [ ] **Phase 1: Experiência da Consulta** - Idade pediátrica precisa, cronômetro de consulta e impressão de PDF sem páginas extras
+- [ ] **Phase 2: Foto Privada do Paciente** - Foto da criança em armazenamento privado com URL assinada e consentimento (LGPD)
+- [ ] **Phase 3: Documentos Clínicos Novos** - Encaminhamento, pedido de exames, relatório médico, receituário em branco e biblioteca de orientações
+- [ ] **Phase 4: Calendário de Vacinas (Referência)** - Tabelas SUS/PNI, particular/SBIm e gestante como dado versionado, somente leitura
+- [ ] **Phase 5: Carteira de Vacinação por Paciente** - Registro de doses aplicadas com pendentes/atrasadas e próxima dose por idade
 
 ## Phase Details
 
-### Phase 1: Security Foundation
-
-**Goal**: The application's data layer is safe to expose to patients — every delete is ownership-scoped, every table is RLS-protected, the admin client is restricted to account deletion, bulk deletes are atomic, deps are pinned, and CI enforces reproducible builds on every push
+### Phase 1: Experiência da Consulta
+**Goal**: O médico vê a idade da criança com precisão pediátrica, cronometra o atendimento e imprime/gera PDFs sem espaçamento excessivo nem página em branco extra — resolvendo a dor de uso diária (prioridade #1 do PROJECT.md) e estabelecendo o motor de idade que toda lógica de vacina vai consumir.
+**Mode:** mvp
 **Depends on**: Nothing (first phase)
-**Requirements**: SEC-01, SEC-02, SEC-03, SEC-04, HYG-04, TEST-03
+**Requirements**: CONS-01, CONS-02, CONS-03, CONS-04
 **Success Criteria** (what must be TRUE):
+  1. Ao abrir um paciente, o médico vê a idade exibida pela faixa etária correta — dias para recém-nascido (0–28d), meses + dias para lactente (~1–24m) e anos + meses (≥24m) — derivada da data de nascimento e correta nos casos de borda (fim de mês, ano bissexto, virada de ano, perto da meia-noite local)
+  2. O médico inicia um cronômetro de consulta e vê o tempo decorrido contando ao vivo durante o atendimento
+  3. O tempo decorrido continua correto após recarregar a página ou navegar e voltar (calculado a partir de um timestamp de início persistido, não de um contador que zera)
+  4. O médico gera/imprime um relatório existente e o PDF não tem página em branco extra nem faixa de espaço sobrando no rodapé — verificado em conteúdo de 1 página, no limite (~1,05 página) e em múltiplas páginas
+**Plans**: TBD
 
-  1. A doctor calling a delete action with another doctor's document UUID gets a no-op (row untouched) — confirmed by a manual test against staging
-  2. Every `public.*` data table has `rowsecurity = true` when queried with `SELECT tablename, rowsecurity FROM pg_tables WHERE schemaname = 'public'`
-  3. The admin Supabase client (`server-admin.ts`) is invoked only by `delete-account.ts` — no other action file imports it
-  4. Deleting 10 prescriptions in bulk issues exactly one DB delete and one storage remove call (no per-item loop)
-  5. `@supabase/ssr` and `@supabase/supabase-js` show explicit semver ranges (not `latest`) in `package.json`; `yarn install --frozen-lockfile` succeeds in CI; typecheck, lint, and test all pass on push
-
-**Plans**: 4 plans
-Plans:
-**Wave 1**
-
-- [x] 01-01-PLAN.md — IDOR fix + admin-client removal + batched bulk deletes (SEC-01/03/04) with ownership specs
-- [x] 01-02-PLAN.md — Supabase dep pinning, GitHub Actions CI (typecheck/lint/test/build, frozen lockfile), dead-scaffold cleanup (HYG-04/TEST-03)
-
-**Wave 2** *(blocked on Wave 1 completion)*
-
-- [x] 01-03-PLAN.md — Incremental RLS rollout on every public table via Supabase MCP on live prod, with reversal scripts (SEC-02)
-- [x] 01-04-PLAN.md — Branch protection on main requiring the CI check (TEST-03 enforcement)
-
-### Phase 2: Code Hygiene & Refactoring
-
-**Goal**: The codebase has one canonical route per resource, all environment variables flow through validated `lib/env.ts`, errors in critical paths are logged, and the three largest components are decomposed into testable hooks and subcomponents
+### Phase 2: Foto Privada do Paciente
+**Goal**: O médico anexa uma foto na identificação de cada criança e a vê no perfil, com a foto guardada em armazenamento privado acessível só ao médico dono — fechando a decisão de privacidade/LGPD (bucket privado, URL assinada, consentimento, exclusão) antes que qualquer atalho de "copiar o bucket público de logos" se espalhe.
+**Mode:** mvp
 **Depends on**: Phase 1
-**Requirements**: HYG-01, HYG-02, HYG-03, REF-01, REF-02, REF-03
+**Requirements**: PHOTO-01, PHOTO-02, PHOTO-03
 **Success Criteria** (what must be TRUE):
-
-  1. Navigating to the removed route (e.g. `/dashboard/patients/novo`) redirects to the canonical route — no 404
-  2. Starting the dev server with a missing env var produces an aggregated Zod validation error from `lib/env.ts`, not a runtime crash with `!`
-  3. A PDF generation failure in `generate-prescription.ts` or `generate-medical-certificate.ts` produces a `console.error` log with error context — no silent swallow
-  4. `new-case-workspace.tsx` is under 400 lines; prescription and certificate wizards each have extracted hooks with no resulting file over 400 lines
-
+  1. O médico envia uma foto na identificação da criança e ela aparece no perfil/identificação do paciente
+  2. A foto é servida por URL assinada de curta duração; uma requisição não autenticada (`curl`) ao objeto falha (bucket `public=false`, escopo por `profile_id`, caminho — não URL pública — guardado no banco)
+  3. Apagar a foto remove tanto o objeto do storage quanto a referência no banco, e o fluxo captura/registra o consentimento do responsável (postura LGPD para dado de menor)
 **Plans**: TBD
 **UI hint**: yes
 
-### Phase 3: Patient Share-Links
-
-**Goal**: A doctor can generate a time-limited, revocable link for any prescription or medical certificate and copy it to send to a patient; the patient opens the link on a branded public page and downloads the PDF without needing a Falaped account; the doctor can revoke the link at any time and see expiry countdowns and one-click regeneration
-**Depends on**: Phase 1
-**Requirements**: SHARE-01, SHARE-02, SHARE-03, SHARE-04
+### Phase 3: Documentos Clínicos Novos
+**Goal**: O médico gera três novos tipos de documento (encaminhamento, pedido de exames, relatório médico) mais receituário em branco e uma biblioteca de orientações — cada um reaproveitando o padrão das receitas (wizard + template salvável + PDF), auto-preenchido com os dados do paciente e herdando o builder de PDF já corrigido na Phase 1.
+**Mode:** mvp
+**Depends on**: Phase 1 (correção de PDF deve preceder os novos documentos, que reusam o mesmo `@falaped/falaped-kit/pdf`)
+**Requirements**: DOC-01, DOC-02, DOC-03, DOC-04, DOC-05, DOC-06
 **Success Criteria** (what must be TRUE):
-
-  1. Doctor clicks "Gerar link" on a prescription or certificate and receives a copyable URL of the form `{APP_URL}/share/{token}` within the dashboard
-  2. Pasting the link into an incognito browser (no Falaped session) opens a branded page and allows downloading the PDF — the download goes through `/api/share/[token]/download` and never exposes a raw Supabase storage URL
-  3. Doctor clicks "Revogar" — the link immediately stops working (patient gets an error page, not the PDF) and `accessed_at` is populated for any link that was opened at least once
-  4. Doctor sees "expira em N dias" for active links and can regenerate with one click (old token revoked, new token created)
-
+  1. O médico gera um encaminhamento (especialidade/serviço, motivo, resumo clínico/hipótese, urgência) e um relatório médico de corpo livre (rich text), ambos com PDF auto-preenchido com nome/DOB/idade do paciente, sem página em branco extra
+  2. O médico monta um pedido de exames selecionando itens e gera o PDF com hipótese/indicação e observações
+  3. O médico salva e reutiliza templates de encaminhamento, pedido de exames e relatório médico (mesmo padrão das receitas)
+  4. O médico gera um receituário em branco (layout de receita, corpo vazio) e seleciona/imprime orientações de uma biblioteca por marco (1ª consulta, 1 mês, 2 meses...)
+  5. Cada novo documento aplica o gate de assinatura (`paid`) e escopa toda leitura/escrita/exclusão por `profile_id` — uma requisição de outro médico não acessa nem apaga o documento
 **Plans**: TBD
 **UI hint**: yes
 
-### Phase 4: Patient Timeline
-
-**Goal**: Doctor opens a patient's detail page and sees a single chronological feed of all cases, prescriptions, and certificates grouped by month, can filter by event type, and can trigger a share-link generation inline from any document row
-**Depends on**: Phase 1, Phase 3
-**Requirements**: TLINE-01, TLINE-02, TLINE-03
+### Phase 4: Calendário de Vacinas (Referência)
+**Goal**: O médico consulta, durante o atendimento, o calendário de vacinas por idade — SUS/PNI e particular/SBIm lado a lado, mais a referência da gestante — modelado como dado versionado com fonte e data de vigência, somente leitura, para responder "o que está previsto nesta idade?".
+**Mode:** mvp
+**Depends on**: Phase 1 (motor de idade é a keystone para apresentar o calendário por idade da criança)
+**Requirements**: VAC-01, VAC-02, VAC-03, VAC-04
 **Success Criteria** (what must be TRUE):
-
-  1. Doctor opens a patient detail page and sees cases, prescriptions, and certificates interleaved in reverse-chronological order, grouped under month/year headings
-  2. Doctor clicks a filter pill ("Consultas", "Receitas", "Atestados") and the feed instantly narrows to that event type — no page reload
-  3. Doctor clicks "Compartilhar" inline on a document row in the timeline and receives a share link (same flow as Phase 3 SHARE-01) without leaving the patient page
-
+  1. O médico consulta a tabela de referência do calendário SUS/PNI por idade
+  2. O médico vê o calendário particular (SBIm) por idade ao lado do SUS, e consulta a referência de vacinação da gestante (Hepatite B, dTpa a partir de 20 sem, Influenza, COVID-19, VSR/Abrysvo a partir de 28 sem)
+  3. Cada calendário (SUS, particular, gestante) é um dataset separado e claramente rotulado, com fonte e data de vigência visíveis na UI (vintage + aviso de "confirmar contra o calendário oficial atual")
 **Plans**: TBD
 **UI hint**: yes
 
-### Phase 5: Test Verification
-
-**Goal**: The ownership guarantees introduced in Phase 1 and the token lifecycle of Phase 3 are locked in by automated tests, and the CI pipeline (from Phase 1) runs all of them on every push
-**Depends on**: Phase 1, Phase 3
-**Requirements**: TEST-01, TEST-02
+### Phase 5: Carteira de Vacinação por Paciente
+**Goal**: O médico registra na carteira de cada paciente as doses aplicadas e o sistema mostra o que está pendente/atrasado por idade e destaca a próxima dose devida — cruzando o motor de idade (Phase 1) com o calendário-como-dado (Phase 4) e as doses aplicadas, transformando a carteira de papel em apoio à decisão.
+**Mode:** mvp
+**Depends on**: Phase 1 (motor de idade testado) e Phase 4 (calendário de referência como dado; o diff pendente/atrasado precisa dos dois)
+**Requirements**: VAC-05, VAC-06, VAC-07
 **Success Criteria** (what must be TRUE):
-
-  1. Running `yarn test` executes ownership tests for delete and generate actions — a test that calls the action with a mismatched `profile_id` asserts the target row is untouched
-  2. Running `yarn test` executes unit tests for share-link token create, validate, expiry, and revocation — all four scenarios have a passing spec
-  3. The CI pipeline introduced in Phase 1 runs the new ownership and token tests on every push and fails the build if any assertion fails
-
+  1. O médico registra na carteira de um paciente uma dose aplicada (vacina, dose, data, lote e local opcionais), e ela persiste escopada por `profile_id` + `patient_id`
+  2. O sistema mostra, por idade atual da criança, quais vacinas estão pendentes/atrasadas (diff entre o calendário e as doses aplicadas), usando o helper de idade testado da Phase 1
+  3. Durante a consulta, a próxima dose devida é destacada conforme a idade atual da criança
+  4. O registro e a leitura da carteira aplicam o gate de assinatura (`paid`) e escopam por `profile_id` em leitura/escrita/exclusão — sem acesso entre tenants
 **Plans**: TBD
+**UI hint**: yes
 
 ## Progress
 
+**Execution Order:**
+Phases execute in numeric order: 1 → 2 → 3 → 4 → 5
+
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Security Foundation | 4/4 | Complete   | 2026-06-05 |
-| 2. Code Hygiene & Refactoring | 0/TBD | Not started | - |
-| 3. Patient Share-Links | 0/TBD | Not started | - |
-| 4. Patient Timeline | 0/TBD | Not started | - |
-| 5. Test Verification | 0/TBD | Not started | - |
+| 1. Experiência da Consulta | 0/TBD | Not started | - |
+| 2. Foto Privada do Paciente | 0/TBD | Not started | - |
+| 3. Documentos Clínicos Novos | 0/TBD | Not started | - |
+| 4. Calendário de Vacinas (Referência) | 0/TBD | Not started | - |
+| 5. Carteira de Vacinação por Paciente | 0/TBD | Not started | - |

@@ -69,36 +69,36 @@ Excluído explicitamente para evitar scope creep. Vários são anti-features sin
 
 ## Traceability
 
-Preenchida durante a criação do roadmap (cada requisito mapeia para exatamente uma fase).
+Cada requisito mapeia para exatamente uma fase do roadmap. Sem órfãos, sem duplicatas.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| CONS-01 | TBD | Pending |
-| CONS-02 | TBD | Pending |
-| CONS-03 | TBD | Pending |
-| CONS-04 | TBD | Pending |
-| PHOTO-01 | TBD | Pending |
-| PHOTO-02 | TBD | Pending |
-| PHOTO-03 | TBD | Pending |
-| DOC-01 | TBD | Pending |
-| DOC-02 | TBD | Pending |
-| DOC-03 | TBD | Pending |
-| DOC-04 | TBD | Pending |
-| DOC-05 | TBD | Pending |
-| DOC-06 | TBD | Pending |
-| VAC-01 | TBD | Pending |
-| VAC-02 | TBD | Pending |
-| VAC-03 | TBD | Pending |
-| VAC-04 | TBD | Pending |
-| VAC-05 | TBD | Pending |
-| VAC-06 | TBD | Pending |
-| VAC-07 | TBD | Pending |
+| CONS-01 | Phase 1 | Pending |
+| CONS-02 | Phase 1 | Pending |
+| CONS-03 | Phase 1 | Pending |
+| CONS-04 | Phase 1 | Pending |
+| PHOTO-01 | Phase 2 | Pending |
+| PHOTO-02 | Phase 2 | Pending |
+| PHOTO-03 | Phase 2 | Pending |
+| DOC-01 | Phase 3 | Pending |
+| DOC-02 | Phase 3 | Pending |
+| DOC-03 | Phase 3 | Pending |
+| DOC-04 | Phase 3 | Pending |
+| DOC-05 | Phase 3 | Pending |
+| DOC-06 | Phase 3 | Pending |
+| VAC-01 | Phase 4 | Pending |
+| VAC-02 | Phase 4 | Pending |
+| VAC-03 | Phase 4 | Pending |
+| VAC-04 | Phase 4 | Pending |
+| VAC-05 | Phase 5 | Pending |
+| VAC-06 | Phase 5 | Pending |
+| VAC-07 | Phase 5 | Pending |
 
 **Coverage:**
 - v1 requirements: 20 total
-- Mapped to phases: 0 (roadmap pendente)
-- Unmapped: 20 ⚠️ (será resolvido pelo roadmapper)
+- Mapped to phases: 20 ✓
+- Unmapped: 0 ✓
 
 ---
 *Requirements defined: 2026-06-28*
-*Last updated: 2026-06-28 after initial definition*
+*Last updated: 2026-06-28 after roadmap creation (traceability mapped)*
