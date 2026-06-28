@@ -1,10 +1,11 @@
 ---
 phase: 1
 slug: experi-ncia-da-consulta
-status: draft
+status: approved
 shadcn_initialized: true
 preset: radix-nova
 created: 2026-06-28
+reviewed_at: 2026-06-28
 ---
 
 # Phase 1 — UI Design Contract
