@@ -13,7 +13,7 @@ Este ciclo melhora a experiência da consulta pediátrica, amplia os tipos de do
 
 Decimal phases appear between their surrounding integers in numeric order.
 
-- [ ] **Phase 1: Experiência da Consulta** - Idade pediátrica precisa, cronômetro de consulta e impressão de PDF sem páginas extras
+- [x] **Phase 1: Experiência da Consulta** - Idade pediátrica precisa, cronômetro de consulta e impressão de PDF sem páginas extras (completed 2026-06-28)
 - [ ] **Phase 2: Foto Privada do Paciente** - Foto da criança em armazenamento privado com URL assinada e consentimento (LGPD)
 - [ ] **Phase 3: Documentos Clínicos Novos** - Encaminhamento, pedido de exames, relatório médico, receituário em branco e biblioteca de orientações
 - [ ] **Phase 4: Calendário de Vacinas (Referência)** - Tabelas SUS/PNI, particular/SBIm e gestante como dado versionado, somente leitura
@@ -40,7 +40,7 @@ Plans:
 
 - [x] 01-01-PLAN.md — Schema foundation: gestational_age + cases pause columns + started_at default + db push (wave 1)
 - [x] 01-02-PLAN.md — Pediatric age engine (pure, tested) + PT-BR formatter (wave 1, TDD)
-- [ ] 01-03-PLAN.md — CONS-04 PDF fix: Path B sanitization + console.log removal + repro script + Path A decision (wave 1)
+- [x] 01-03-PLAN.md — CONS-04 PDF fix: Path B (in-repo) shipped — sanitization + console.log removal + repro script. **Path A (@falaped/falaped-kit release for the ~1.05-page boundary) deferred to Phase 5** (kit is a published external package; in-repo Path B covers 1-page and multi-page). (wave 1)
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
@@ -113,6 +113,8 @@ Plans:
 **Plans**: TBD
 **UI hint**: yes
 
+**Carried over from Phase 1 — CONS-04 Path A (kit release):** publish a new `@falaped/falaped-kit` version that removes the forced 200pt footer reserve (early `addPage()`) and fixes the `heightOfString` estimate≠render drift, then bump the pin in this app and re-verify `repro-1.05.pdf` collapses to 1 page. Phase 1 shipped the in-repo Path B (1-page + multi-page clean); this closes the ~1.05-page boundary. Note: Phase 3 documents reuse the same PDF builder and inherit Path B until this lands.
+
 ## Progress
 
 **Execution Order:**
@@ -120,7 +122,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Experiência da Consulta | 4/5 | In Progress|  |
+| 1. Experiência da Consulta | 5/5 | Complete   | 2026-06-28 |
 | 2. Foto Privada do Paciente | 0/TBD | Not started | - |
 | 3. Documentos Clínicos Novos | 0/TBD | Not started | - |
 | 4. Calendário de Vacinas (Referência) | 0/TBD | Not started | - |
