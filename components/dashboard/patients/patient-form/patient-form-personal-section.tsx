@@ -16,6 +16,7 @@ import {
 import { PATIENT_SEX_FORM_OPTIONS } from "@/modules/patients/patient-sex"
 import { PatientControlledSelectField } from "./patient-controlled-select-field"
 import { PatientFormBirthDateField } from "./patient-form-birth-date-field"
+import { PatientFormGestationalAgeField } from "./patient-form-gestational-age-field"
 
 export function PatientFormPersonalSection({
   form,
@@ -50,6 +51,11 @@ export function PatientFormPersonalSection({
             form={form}
             name="birth_date"
             error={form.formState.errors.birth_date}
+          />
+          <PatientFormGestationalAgeField
+            form={form}
+            name="gestational_age_weeks"
+            error={form.formState.errors.gestational_age_weeks}
           />
           <PatientControlledSelectField
             form={form}
