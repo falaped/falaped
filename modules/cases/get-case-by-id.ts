@@ -18,6 +18,7 @@ export type CasePatientDetail = {
   sex: PatientSex | null
   legal_guardian: string | null
   blood_type: string | null
+  gestational_age_weeks: number | null
   weight: string | null
   height: string | null
   head_circumference: string | null
@@ -86,6 +87,7 @@ export async function getCaseById(
         sex,
         legal_guardian,
         blood_type,
+        gestational_age_weeks,
         weight,
         height,
         head_circumference,

@@ -87,6 +87,7 @@ export function PatientDetailView({
         <PatientDetailHero
           patient={patient}
           className="w-full"
+          onEditRequest={() => setIsEditing(true)}
           toolbar={
             <PatientDetailToolbar
               patientId={patient.id}

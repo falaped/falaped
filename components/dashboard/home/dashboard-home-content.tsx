@@ -18,7 +18,8 @@ import { formatBrazilianPhone, formatDate, formatRelativeTime } from "@/lib/form
 import { formatDashboardChatContextSummaryForDisplay } from "@/modules/dashboard/format-dashboard-chat-context-summary-for-display"
 import { cn } from "@/lib/utils"
 import { getDashboardHomeData } from "@/modules/dashboard/get-dashboard-home-data"
-import { formatAgeFromBirthDate } from "@/modules/falaped-assistant/lib/formatters"
+import { computePediatricAge } from "@/lib/compute-pediatric-age"
+import { formatPediatricAge } from "@/lib/format-pediatric-age"
 import { getAuthenticatedUser } from "@/modules/supabase/get-authenticated-user"
 
 import type { CaseOrigin } from "@/modules/cases/types"
@@ -102,8 +103,12 @@ export async function DashboardHomeContent() {
                 </p>
                 {home.activeCase.patient?.birthDate ? (
                   <p className="mt-0.5 text-sm text-muted-foreground">
-                    {formatAgeFromBirthDate(home.activeCase.patient.birthDate)}
-                    {" · "}
+                    {(() => {
+                      const ageText = formatPediatricAge(
+                        computePediatricAge(home.activeCase.patient.birthDate),
+                      )
+                      return ageText ? `${ageText} · ` : ""
+                    })()}
                     Nasc. {formatDate(home.activeCase.patient.birthDate)}
                   </p>
                 ) : null}

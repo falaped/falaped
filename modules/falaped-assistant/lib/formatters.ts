@@ -5,26 +5,20 @@ import {
 } from "@/modules/patients/patient-sex"
 import { computePediatricBmi } from "@/lib/parse-anthropometrics-for-bmi"
 import { parseNumericValue } from "@/modules/falaped-assistant/lib/patient-profile-parsers"
+import { computePediatricAge } from "@/lib/compute-pediatric-age"
+import { formatPediatricAge } from "@/lib/format-pediatric-age"
 
+/**
+ * Thin adapter over the shared pediatric-age engine (single source of truth —
+ * Pitfall 5). Returns the by-extenso chronological age, or null on a
+ * missing/invalid/future birth date so the `- Idade:` assistant line is omitted.
+ * No inline date math here — the engine + formatter own the bands and wording.
+ */
 export function formatAgeFromBirthDate(birthDate: string | null | undefined): string | null {
-  if (!birthDate) return null
-  const birth = new Date(`${birthDate}T12:00:00`)
-  if (Number.isNaN(birth.getTime())) return null
-
-  const now = new Date()
-  let years = now.getFullYear() - birth.getFullYear()
-  let months = now.getMonth() - birth.getMonth()
-  if (now.getDate() < birth.getDate()) months -= 1
-  if (months < 0) {
-    years -= 1
-    months += 12
-  }
-
-  if (years <= 0) {
-    if (months <= 0) return "0 meses"
-    return `${months} ${months === 1 ? "mês" : "meses"}`
-  }
-  return `${years} ${years === 1 ? "ano" : "anos"}${months > 0 ? ` e ${months} ${months === 1 ? "mês" : "meses"}` : ""}`
+  const age = computePediatricAge(birthDate)
+  if (age.status !== "ok") return null
+  const text = formatPediatricAge(age)
+  return text === "" ? null : text
 }
 
 export function formatPtDecimal(value: number, fractionDigits = 1): string {
