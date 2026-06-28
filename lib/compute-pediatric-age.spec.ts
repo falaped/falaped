@@ -119,20 +119,22 @@ test("months+days band: exact months, 0 days remainder", () => {
   assert.deepEqual(r.parts, { months: 4, days: 0 })
 })
 
-test("end-of-month trap: birth Jan-31, now Mar-01 (calendar-correct via duration)", () => {
-  // intervalToDuration handles variable month lengths; must NOT manual-subtract.
-  const r = computePediatricAge("2025-01-31", new Date(2025, 2, 1))
+test("end-of-month trap: birth Jan-31, now May-01 (calendar-correct, not manual subtraction)", () => {
+  // Inside the months band (90 days). Manual May-Jan would yield 4 months; the
+  // calendar-correct anniversary clamp (Jan-31 → Apr-30 → May-01) is 3 months 1 day.
+  const r = computePediatricAge("2025-01-31", new Date(2025, 4, 1))
   assert.equal(r.band, "months_days")
-  // Jan-31 → Feb-28 is 1 month (anniversary clamps), then Feb-28 → Mar-01 is 1 day.
-  assert.equal(r.parts?.months, 1)
-  assert.ok((r.parts?.days ?? -1) >= 0)
+  assert.equal(r.parts?.months, 3)
+  assert.equal(r.parts?.days, 1)
 })
 
-test("leap year: birth 2024-02-29, now 2025-03-01 (non-leap) → ~1 year, years_months band", () => {
+test("leap year: birth 2024-02-29, now 2025-03-01 (non-leap) → 12 months (~1 year)", () => {
+  // 366 days. Per D-07 / UI-SPEC the months band runs to < 24 months, so a 1-year-old
+  // reads "12 meses"; the years_months band begins at 24 months. Feb-29 anniversary
+  // (intervalToDuration) lands exactly on 12 months across the leap boundary.
   const r = computePediatricAge("2024-02-29", new Date(2025, 2, 1))
-  assert.equal(r.band, "years_months")
-  assert.equal(r.parts?.years, 1)
-  assert.equal(r.parts?.months, 0)
+  assert.equal(r.band, "months_days")
+  assert.equal(r.parts?.months, 12)
 })
 
 test("year rollover: birth 2024-12-20, now 2025-01-05 → 16 days across the boundary", () => {
