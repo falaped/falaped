@@ -3,8 +3,8 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Phase 2 context gathered
-last_updated: "2026-06-28T22:16:01.216Z"
+stopped_at: Phase 2 UI-SPEC approved
+last_updated: "2026-06-28T23:12:14.989Z"
 last_activity: 2026-06-28 -- Completed 01-01-PLAN.md (schema foundation)
 progress:
   total_phases: 5
@@ -92,6 +92,6 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-06-28T22:16:01.202Z
-Stopped at: Phase 2 context gathered
-Resume file: .planning/phases/02-foto-privada-do-paciente/02-CONTEXT.md
+Last session: 2026-06-28T22:39:19.120Z
+Stopped at: Phase 2 UI-SPEC approved
+Resume file: .planning/phases/02-foto-privada-do-paciente/02-UI-SPEC.md
