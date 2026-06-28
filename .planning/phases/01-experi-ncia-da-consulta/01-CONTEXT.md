@@ -25,8 +25,8 @@ Fora desta fase: novos tipos de documento (Fase 3), foto do paciente (Fase 2), q
 ### Exibição da Idade
 - **D-05:** Idade aparece no **perfil/cabeçalho do paciente**, no **cabeçalho do caso/atendimento** (junto do cronômetro) e (intenção) **nos documentos gerados** — a parte dos documentos se concretiza na Fase 3; aqui só registra a intenção. NÃO mostrar em listas de pacientes.
 - **D-06:** A idade calculada **acompanha a data de nascimento** (exibe ambos, ex: "12/03/2025 · 3 meses e 12 dias").
-- **D-07:** Convenção de faixa etária (refina o padrão pediátrico com semanas): **0–28 dias → dias**; **~1–3 meses → semanas** (até ~12 semanas); **~3–24 meses → meses + dias**; **≥24 meses → anos + meses**. Tudo derivado da data de nascimento, sem armazenar idade.
-- **D-08:** Texto **por extenso** ("3 meses e 12 dias", "2 anos e 4 meses"). Forma abreviada em espaços compactos fica a critério do Claude.
+- **D-07:** Convenção de faixa etária (refina o padrão pediátrico com semanas): **0–28 dias → dias**; **~1–3 meses → semanas** (até ~12 semanas); **~3–24 meses → meses + dias**; **≥24 meses → anos + meses + dias**. Tudo derivado da data de nascimento, sem armazenar idade. _(Refinamento pós-execução: a faixa de anos também exibe os dias restantes, não só anos + meses.)_
+- **D-08:** Texto **por extenso** ("3 meses e 12 dias", "2 anos, 1 mês e 13 dias"; componentes zerados são omitidos → "2 anos e 4 meses", "2 anos e 5 dias"). Forma abreviada em espaços compactos fica a critério do Claude ("2a 1m 13d").
 
 ### Casos de Borda da Idade
 - **D-09:** Sem data de nascimento → mostrar **aviso/CTA para completar o cadastro** (não vazio, não quebrar).

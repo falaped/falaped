@@ -118,11 +118,11 @@ All copy PT-BR, professional, domain terms per `audience-context` (paciente, res
   - 0–28 days → `"5 dias"` / `"1 dia"`
   - 1–~12 weeks → `"6 semanas"` / `"1 semana"`
   - ~3–24 months → `"3 meses e 12 dias"` / `"1 mês e 1 dia"` (omit the days clause when 0 days → `"4 meses"`)
-  - ≥24 months → `"2 anos e 4 meses"` / `"1 ano e 1 mês"` (omit months clause when 0 → `"3 anos"`)
+  - ≥24 months → years + months + **remaining days**: `"2 anos, 1 mês e 13 dias"` (PT-BR 3-part list join; omit any zero clause → `"2 anos e 4 meses"`, `"2 anos e 5 dias"`, `"3 anos"`)
 - Corrected age (D-10, preterm): append a second, distinctly labelled chip/line — **"idade corrigida"** prefix, e.g. `"idade corrigida: 2 meses e 4 dias"`. The chronological age stays primary; corrected age is the secondary line. When the child is full-term or gestational age is absent, show ONLY chronological (no "corrigida" label). Stop showing corrected age after ~24 months corrected.
 - Chronological label when corrected is also shown: prefix the primary with **"idade cronológica"** so the two are unambiguous (only when both are present; when corrected is absent, the primary age needs no prefix).
 
-**Case-header age (abbreviated — Claude's discretion, D-08):** in the tight case header next to the timer, abbreviate to conserve width: `"3m 12d"`, `"6 sem"`, `"5 d"`, `"2a 4m"`. Wrap in `Badge variant="secondary"` with a `Tooltip` exposing the full by-extenso text and DOB. Corrected age in the header: append `" (corr.)"` to the abbreviated value with the full "idade corrigida" text in the tooltip.
+**Case-header age (abbreviated — Claude's discretion, D-08):** in the tight case header next to the timer, abbreviate to conserve width: `"3m 12d"`, `"6 sem"`, `"5 d"`, `"2a 1m 13d"` (years band: `Aa Bm Cd`, omit zero segments). Wrap in `Badge variant="secondary"` with a `Tooltip` exposing the full by-extenso text and DOB. Corrected age in the header: append `" (corr.)"` to the abbreviated value with the full "idade corrigida" text in the tooltip.
 
 **Timer copy (D-02/D-03):**
 - Running: no label needed; show elapsed `mm:ss` (or `h:mm:ss` past 1h) with the pinging primary dot.

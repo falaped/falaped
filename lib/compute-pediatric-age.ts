@@ -13,7 +13,7 @@ import {
  * - `days`         → 0–28 days
  * - `weeks`        → 29 days up to (but not including) ~12 weeks (84 days)
  * - `months_days`  → ~3 months up to (but not including) 24 months
- * - `years_months` → 24 months and older
+ * - `years_months` → 24 months and older (years + months + remaining days)
  */
 export type AgeBand = "days" | "weeks" | "months_days" | "years_months"
 
@@ -114,7 +114,11 @@ function bandFor(from: Date, to: Date): { band: AgeBand; parts: PediatricAgePart
 
   return {
     band: "years_months",
-    parts: { years: duration.years ?? 0, months: duration.months ?? 0 },
+    parts: {
+      years: duration.years ?? 0,
+      months: duration.months ?? 0,
+      days: duration.days ?? 0,
+    },
   }
 }
 

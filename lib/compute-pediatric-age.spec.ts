@@ -144,17 +144,24 @@ test("year rollover: birth 2024-12-20, now 2025-01-05 → 16 days across the bou
   assert.deepEqual(r.parts, { days: 16 })
 })
 
-test("years+months band: 2 anos e 4 meses", () => {
+test("years+months band: 2 anos, 4 meses e 0 dias (exact anniversary)", () => {
   const r = computePediatricAge("2023-02-10", new Date(2025, 5, 10))
   assert.equal(r.band, "years_months")
-  assert.deepEqual(r.parts, { years: 2, months: 4 })
+  assert.deepEqual(r.parts, { years: 2, months: 4, days: 0 })
 })
 
-test("years band: exact years, 0 months remainder", () => {
-  // birth 2022-06-10, now 2025-06-10 → 3 years, 0 months
+test("years+months+days band: includes the remaining days (D-07 refinement)", () => {
+  // birth 2023-05-02, now 2025-06-15 → 2 years, 1 month, 13 days
+  const r = computePediatricAge("2023-05-02", new Date(2025, 5, 15))
+  assert.equal(r.band, "years_months")
+  assert.deepEqual(r.parts, { years: 2, months: 1, days: 13 })
+})
+
+test("years band: exact years, 0 months / 0 days remainder", () => {
+  // birth 2022-06-10, now 2025-06-10 → 3 years, 0 months, 0 days
   const r = computePediatricAge("2022-06-10", new Date(2025, 5, 10))
   assert.equal(r.band, "years_months")
-  assert.deepEqual(r.parts, { years: 3, months: 0 })
+  assert.deepEqual(r.parts, { years: 3, months: 0, days: 0 })
 })
 
 test("24 months cutoff → years_months band (not months_days)", () => {

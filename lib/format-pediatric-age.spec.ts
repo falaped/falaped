@@ -107,6 +107,27 @@ test("1 year 0 months → '1 ano' (singular, omit months)", () => {
   )
 })
 
+test("2 years 1 month 13 days → '2 anos, 1 mês e 13 dias' (3-part, D-07 refinement)", () => {
+  assert.equal(
+    formatPediatricAge(ok({ band: "years_months", parts: { years: 2, months: 1, days: 13 } })),
+    "2 anos, 1 mês e 13 dias",
+  )
+})
+
+test("2 years 0 months 5 days → '2 anos e 5 dias' (omit zero months clause)", () => {
+  assert.equal(
+    formatPediatricAge(ok({ band: "years_months", parts: { years: 2, months: 0, days: 5 } })),
+    "2 anos e 5 dias",
+  )
+})
+
+test("2 years 4 months 0 days → '2 anos e 4 meses' (omit zero days clause)", () => {
+  assert.equal(
+    formatPediatricAge(ok({ band: "years_months", parts: { years: 2, months: 4, days: 0 } })),
+    "2 anos e 4 meses",
+  )
+})
+
 // ── Abbreviated form ─────────────────────────────────────────────────────────
 
 test("abbrev days → '5 d'", () => {
@@ -142,6 +163,20 @@ test("abbrev years, 0 months → '3a'", () => {
   assert.equal(
     formatPediatricAgeAbbrev(ok({ band: "years_months", parts: { years: 3, months: 0 } })),
     "3a",
+  )
+})
+
+test("abbrev years+months+days → '2a 1m 13d'", () => {
+  assert.equal(
+    formatPediatricAgeAbbrev(ok({ band: "years_months", parts: { years: 2, months: 1, days: 13 } })),
+    "2a 1m 13d",
+  )
+})
+
+test("abbrev years+days, 0 months → '2a 5d'", () => {
+  assert.equal(
+    formatPediatricAgeAbbrev(ok({ band: "years_months", parts: { years: 2, months: 0, days: 5 } })),
+    "2a 5d",
   )
 })
 

@@ -16,21 +16,22 @@ export function formatPediatricAge(age: PediatricAge): string {
     case "weeks":
       return pluralize(p.weeks ?? 0, "semana", "semanas")
     case "months_days":
-      return joinAnd(
+      return joinClausesPtBr([
         pluralize(p.months ?? 0, "mês", "meses"),
         (p.days ?? 0) > 0 ? pluralize(p.days ?? 0, "dia", "dias") : null,
-      )
+      ])
     case "years_months":
-      return joinAnd(
+      return joinClausesPtBr([
         pluralize(p.years ?? 0, "ano", "anos"),
         (p.months ?? 0) > 0 ? pluralize(p.months ?? 0, "mês", "meses") : null,
-      )
+        (p.days ?? 0) > 0 ? pluralize(p.days ?? 0, "dia", "dias") : null,
+      ])
   }
 }
 
 /**
  * Abbreviated rendering for tight surfaces (e.g. the case header): "5 d", "6 sem",
- * "3m 12d", "2a 4m". Renders only; non-"ok" status returns an empty string.
+ * "3m 12d", "2a 1m 13d". Renders only; non-"ok" status returns an empty string.
  */
 export function formatPediatricAgeAbbrev(age: PediatricAge): string {
   if (age.status !== "ok" || !age.band || !age.parts) return ""
@@ -43,8 +44,12 @@ export function formatPediatricAgeAbbrev(age: PediatricAge): string {
       return `${p.weeks ?? 0} sem`
     case "months_days":
       return (p.days ?? 0) > 0 ? `${p.months ?? 0}m ${p.days ?? 0}d` : `${p.months ?? 0}m`
-    case "years_months":
-      return (p.months ?? 0) > 0 ? `${p.years ?? 0}a ${p.months ?? 0}m` : `${p.years ?? 0}a`
+    case "years_months": {
+      const segs = [`${p.years ?? 0}a`]
+      if ((p.months ?? 0) > 0) segs.push(`${p.months}m`)
+      if ((p.days ?? 0) > 0) segs.push(`${p.days}d`)
+      return segs.join(" ")
+    }
   }
 }
 
@@ -53,7 +58,13 @@ function pluralize(count: number, singular: string, plural: string): string {
   return `${count} ${count === 1 ? singular : plural}`
 }
 
-/** Join two clauses with " e ", dropping the second when null. */
-function joinAnd(primary: string, secondary: string | null): string {
-  return secondary ? `${primary} e ${secondary}` : primary
+/**
+ * Join PT-BR clauses dropping nulls: 1 → "A", 2 → "A e B", 3 → "A, B e C".
+ * Used by both the months+days and years+months+days bands.
+ */
+function joinClausesPtBr(clauses: Array<string | null>): string {
+  const parts = clauses.filter((c): c is string => !!c)
+  if (parts.length === 0) return ""
+  if (parts.length === 1) return parts[0]
+  return `${parts.slice(0, -1).join(", ")} e ${parts[parts.length - 1]}`
 }
