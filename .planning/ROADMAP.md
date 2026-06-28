@@ -44,7 +44,7 @@ Plans:
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
-- [ ] 01-04-PLAN.md — Age display slice: gestational field + hero/case-header badge + assistant adapter (wave 2)
+- [x] 01-04-PLAN.md — Age display slice: gestational field + hero/case-header badge + assistant adapter (wave 2)
 
 **Wave 3** *(blocked on Wave 2 completion)*
 
@@ -120,7 +120,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Experiência da Consulta | 2/5 | In Progress|  |
+| 1. Experiência da Consulta | 3/5 | In Progress|  |
 | 2. Foto Privada do Paciente | 0/TBD | Not started | - |
 | 3. Documentos Clínicos Novos | 0/TBD | Not started | - |
 | 4. Calendário de Vacinas (Referência) | 0/TBD | Not started | - |
