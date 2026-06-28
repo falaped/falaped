@@ -393,20 +393,18 @@ import { DndContext, useDraggable } from "@dnd-kit/core"
 | A4 | Accumulated `paused_ms` model (vs time segments) is acceptable per discretion clause | Pitfall 3 | If per-segment audit/analytics is later wanted (AI-02), segments would be richer — but AI-02 is explicitly deferred, so accumulator is fine for v1. |
 | A5 | Storing draggable widget position in localStorage is acceptable for D-04 persistence | Architecture | Per-device only; acceptable since position persistence is explicitly Claude's discretion. |
 
-## Open Questions
+## Open Questions (RESOLVED)
 
-1. **Kit editability (A1) — blocking for full CONS-04.**
-   - What we know: root cause is in the kit; the kit is a published, pinned, dist-only package not present as source in this repo.
-   - What's unclear: whether the team can edit + release `@falaped/falaped-kit` this phase.
-   - Recommendation: Planner confirms with the kit owner. If yes → Path A + Path B. If no → Path B only, and flag success criterion #4 as partially met (no phantom-page guarantee at the boundary).
+> All three questions below were resolved with the user/physician during planning revision (2026-06-28). Recorded inline; no longer blocking.
 
-2. **Corrected-age threshold + full-term baseline (A3).**
-   - What we know: corrected age applies to preterm up to ~24 months corrected.
-   - What's unclear: exact cutoff month and the gestational baseline (37 vs 40 weeks) the physician wants.
-   - Recommendation: Default to 40-week baseline, 24-month corrected cutoff, label "idade corrigida"; confirm with the doctor in planning/UAT.
+1. **Kit editability (A1) — RESOLVED.**
+   - Decision: `@falaped/falaped-kit` IS editable and releasable by the team this cycle. CONS-04 **Path A is IN SCOPE** (kit source fix → release → bump the pin here). CONS-04 is fully in scope — all three page sizes (1-page, ~1.05-page boundary, multi-page) must render clean; the boundary phantom page is fixed by the Path A kit release (Plan 01-03, Task 4), not deferred.
 
-3. **`cases.started_at` default (A2).**
-   - Recommendation: Verify the column has a DB default / is set on insert; if not, set it explicitly in `createDashboardCaseWithPatient` (auto-start, D-02).
+2. **Corrected-age threshold + full-term baseline (A3) — RESOLVED.**
+   - Decision (confirmed by physician/user): full-term baseline `FULL_TERM_GESTATIONAL_WEEKS = 40`, premature threshold `< 37` weeks, corrected-age cutoff `24` months corrected (D-10). Label "idade corrigida". Plan 01-02 encodes these as the single named `FULL_TERM_GESTATIONAL_WEEKS = 40` and `CORRECTED_AGE_CUTOFF_MONTHS = 24` constants.
+
+3. **`cases.started_at` default (A2) — RESOLVED.**
+   - Decision: Plan 01-01 adds `default now()` to `cases.started_at` AND writes `started_at` explicitly on case open (auto-start, D-02), so the timer anchor is always present regardless of insert path.
 
 ## Environment Availability
 
