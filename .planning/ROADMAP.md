@@ -38,7 +38,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 Plans:
 **Wave 1**
 
-- [ ] 01-01-PLAN.md — Schema foundation: gestational_age + cases pause columns + started_at default + db push (wave 1)
+- [x] 01-01-PLAN.md — Schema foundation: gestational_age + cases pause columns + started_at default + db push (wave 1)
 - [x] 01-02-PLAN.md — Pediatric age engine (pure, tested) + PT-BR formatter (wave 1, TDD)
 - [ ] 01-03-PLAN.md — CONS-04 PDF fix: Path B sanitization + console.log removal + repro script + Path A decision (wave 1)
 
@@ -120,7 +120,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Experiência da Consulta | 1/5 | In Progress|  |
+| 1. Experiência da Consulta | 2/5 | In Progress|  |
 | 2. Foto Privada do Paciente | 0/TBD | Not started | - |
 | 3. Documentos Clínicos Novos | 0/TBD | Not started | - |
 | 4. Calendário de Vacinas (Referência) | 0/TBD | Not started | - |
