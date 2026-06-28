@@ -44,6 +44,8 @@ export async function updatePatientAction(
       payload.legal_guardian = parsed.data.legal_guardian ?? null
     if (parsed.data.blood_type !== undefined)
       payload.blood_type = parsed.data.blood_type ?? null
+    if (parsed.data.gestational_age_weeks !== undefined)
+      payload.gestational_age_weeks = parsed.data.gestational_age_weeks ?? null
     if (parsed.data.weight !== undefined)
       payload.weight = parsed.data.weight ?? null
     if (parsed.data.height !== undefined)

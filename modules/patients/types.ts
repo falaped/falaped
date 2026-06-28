@@ -14,6 +14,7 @@ export type Patient = {
   sex: PatientSex | null
   legal_guardian: string | null
   blood_type: string | null
+  gestational_age_weeks: number | null
   weight: string | null
   height: string | null
   head_circumference: string | null

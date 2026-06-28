@@ -15,6 +15,7 @@ function patient(id: string, name: string): Patient {
     sex: null,
     legal_guardian: null,
     blood_type: null,
+    gestational_age_weeks: null,
     weight: null,
     height: null,
     head_circumference: null,

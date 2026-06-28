@@ -36,6 +36,26 @@ const optionalBrazilianBirthDate = z
     return parseBirthDateFormValueToIso(v)!
   })
 
+/**
+ * Optional gestational age at birth, in weeks (D-10). Accepts a string from the
+ * form: empty -> undefined (no error, never required), otherwise coerced to an
+ * integer and refined to the inclusive plausible range 20-42. Out of range yields
+ * the PT-BR message used by the gestational-age field.
+ */
+const optionalGestationalAgeWeeks = z
+  .string()
+  .transform((v) => (v?.trim() === "" ? undefined : v?.trim()))
+  .optional()
+  .refine(
+    (v) => {
+      if (v === undefined) return true
+      const n = Number(v)
+      return Number.isInteger(n) && n >= 20 && n <= 42
+    },
+    "Informe um valor entre 20 e 42 semanas.",
+  )
+  .transform((v) => (v === undefined ? undefined : Number(v)))
+
 /** Empty string or enum keys `masculino` / `feminino`; DB write normalizes via `normalizePatientSexFromDb`. */
 const patientSexFormField = z.string().refine(
   (v) =>
@@ -82,6 +102,7 @@ export const createPatientSchema = z.object({
       "Selecione um tipo sanguíneo válido"
     )
     .optional(),
+  gestational_age_weeks: optionalGestationalAgeWeeks,
   weight: optionalString,
   height: optionalString,
   head_circumference: optionalString,
@@ -127,6 +148,7 @@ export const updatePatientSchema = z.object({
         BLOOD_TYPE_OPTIONS.includes(v.trim() as (typeof BLOOD_TYPE_OPTIONS)[number]),
       "Selecione um tipo sanguíneo válido"
     ),
+  gestational_age_weeks: optionalGestationalAgeWeeks,
   weight: optionalString,
   height: optionalString,
   head_circumference: optionalString,

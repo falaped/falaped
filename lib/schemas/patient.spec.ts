@@ -5,6 +5,7 @@ import { createPatientSchema, updatePatientSchema } from "./patient"
 
 const baseCreate = {
   name: "João Silva",
+  birth_date: "02/05/2023",
   responsible: "Maria Silva",
   contact_phone: "11999999999",
   sex: "masculino",
@@ -89,7 +90,11 @@ describe("createPatientSchema gestational_age_weeks", () => {
 
 describe("updatePatientSchema gestational_age_weeks", () => {
   it("coerces a valid string to a number", () => {
-    const parsed = updatePatientSchema.safeParse({ gestational_age_weeks: "32" })
+    const parsed = updatePatientSchema.safeParse({
+      birth_date: "",
+      sex: "",
+      gestational_age_weeks: "32",
+    })
     assert.equal(parsed.success, true)
     if (parsed.success) {
       assert.equal(parsed.data.gestational_age_weeks, 32)
@@ -97,7 +102,11 @@ describe("updatePatientSchema gestational_age_weeks", () => {
   })
 
   it("treats empty string as undefined (clears optional)", () => {
-    const parsed = updatePatientSchema.safeParse({ gestational_age_weeks: "" })
+    const parsed = updatePatientSchema.safeParse({
+      birth_date: "",
+      sex: "",
+      gestational_age_weeks: "",
+    })
     assert.equal(parsed.success, true)
     if (parsed.success) {
       assert.equal(parsed.data.gestational_age_weeks, undefined)
@@ -105,7 +114,11 @@ describe("updatePatientSchema gestational_age_weeks", () => {
   })
 
   it("rejects out-of-range values with the PT-BR message", () => {
-    const parsed = updatePatientSchema.safeParse({ gestational_age_weeks: "10" })
+    const parsed = updatePatientSchema.safeParse({
+      birth_date: "",
+      sex: "",
+      gestational_age_weeks: "10",
+    })
     assert.equal(parsed.success, false)
     if (!parsed.success) {
       assert.equal(
