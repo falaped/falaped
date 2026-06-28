@@ -30,7 +30,14 @@ Decimal phases appear between their surrounding integers in numeric order.
   2. O médico inicia um cronômetro de consulta e vê o tempo decorrido contando ao vivo durante o atendimento
   3. O tempo decorrido continua correto após recarregar a página ou navegar e voltar (calculado a partir de um timestamp de início persistido, não de um contador que zera)
   4. O médico gera/imprime um relatório existente e o PDF não tem página em branco extra nem faixa de espaço sobrando no rodapé — verificado em conteúdo de 1 página, no limite (~1,05 página) e em múltiplas páginas
-**Plans**: TBD
+**Plans**: 5 plans
+
+Plans:
+- [ ] 01-01-PLAN.md — Schema foundation: gestational_age + cases pause columns + started_at default + db push (wave 1)
+- [ ] 01-02-PLAN.md — Pediatric age engine (pure, tested) + PT-BR formatter (wave 1, TDD)
+- [ ] 01-03-PLAN.md — CONS-04 PDF fix: Path B sanitization + console.log removal + repro script + Path A decision (wave 1)
+- [ ] 01-04-PLAN.md — Age display slice: gestational field + hero/case-header badge + assistant adapter (wave 2)
+- [ ] 01-05-PLAN.md — Consultation timer slice: elapsed helper + pause/resume + draggable widget (wave 3)
 
 ### Phase 2: Foto Privada do Paciente
 **Goal**: O médico anexa uma foto na identificação de cada criança e a vê no perfil, com a foto guardada em armazenamento privado acessível só ao médico dono — fechando a decisão de privacidade/LGPD (bucket privado, URL assinada, consentimento, exclusão) antes que qualquer atalho de "copiar o bucket público de logos" se espalhe.
@@ -90,7 +97,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Experiência da Consulta | 0/TBD | Not started | - |
+| 1. Experiência da Consulta | 0/5 | Not started | - |
 | 2. Foto Privada do Paciente | 0/TBD | Not started | - |
 | 3. Documentos Clínicos Novos | 0/TBD | Not started | - |
 | 4. Calendário de Vacinas (Referência) | 0/TBD | Not started | - |
