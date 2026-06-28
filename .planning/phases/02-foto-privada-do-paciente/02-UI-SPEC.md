@@ -1,10 +1,11 @@
 ---
 phase: 2
 slug: foto-privada-do-paciente
-status: draft
+status: approved
 shadcn_initialized: true
 preset: radix-nova
 created: 2026-06-28
+reviewed_at: 2026-06-28
 ---
 
 # Phase 2 — UI Design Contract: Foto Privada do Paciente
