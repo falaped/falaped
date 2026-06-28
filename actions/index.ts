@@ -2,6 +2,8 @@ export {
   setCasePatientIdAction,
   deleteCaseAction,
   updateCaseStatusAction,
+  pauseConsultationAction,
+  resumeConsultationAction,
   generateCaseReportAction,
   downloadCaseReportPdfAction,
   improveReportSectionAction,

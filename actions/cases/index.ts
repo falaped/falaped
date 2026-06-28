@@ -1,6 +1,8 @@
 export { setCasePatientIdAction } from "./set-case-patient-id"
 export { deleteCaseAction } from "./delete-case"
 export { updateCaseStatusAction } from "./update-case-status"
+export { pauseConsultationAction } from "./pause-consultation"
+export { resumeConsultationAction } from "./resume-consultation"
 export { generateCaseReportAction } from "./generate-case-report"
 export { downloadCaseReportPdfAction } from "./download-case-report-pdf"
 export { improveReportSectionAction } from "./improve-report-section"
