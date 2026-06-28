@@ -26,6 +26,7 @@ export async function pauseConsultationAction(
     await pauseConsultation(supabase, caseId, profile.id)
     revalidatePath("/dashboard/cases")
     revalidatePath(`/dashboard/cases/${caseId}`)
+    revalidatePath(`/dashboard/cases/new/${caseId}`)
     return { ok: true }
   } catch (e) {
     const message =
