@@ -15,6 +15,8 @@ export type CaseWithPatient = {
   origin: CaseOrigin
   started_at: string
   ended_at: string | null
+  consultation_paused_ms: number
+  consultation_paused_at: string | null
   patient_id: string | null
   awaiting_intent: boolean
   awaiting_patient_choice: boolean

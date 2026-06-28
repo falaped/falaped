@@ -34,6 +34,8 @@ export type CaseDetail = {
   origin: "dashboard" | "whatsapp"
   started_at: string
   ended_at: string | null
+  consultation_paused_ms: number
+  consultation_paused_at: string | null
   patient_id: string | null
   awaiting_intent: boolean
   awaiting_patient_choice: boolean
@@ -72,6 +74,8 @@ export async function getCaseById(
       origin,
       started_at,
       ended_at,
+      consultation_paused_ms,
+      consultation_paused_at,
       patient_id,
       awaiting_intent,
       awaiting_patient_choice,
