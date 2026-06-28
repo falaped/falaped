@@ -878,7 +878,7 @@ export function NewCaseWorkspace({
               className={buttonPressFeedbackClass}
               onClick={() => {
                 if (userHasSentMessages) {
-                  router.push("/dashboard/cases")
+                  router.push(`/dashboard/cases/${caseId}`)
                   return
                 }
                 setShowDiscardDialog(true)
