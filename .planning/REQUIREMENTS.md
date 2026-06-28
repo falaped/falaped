@@ -18,7 +18,7 @@ Requisitos deste ciclo. Cada um mapeia para uma fase do roadmap. Tudo escopado p
 
 - [ ] **PHOTO-01**: Médico pode enviar uma foto na identificação de cada criança
 - [ ] **PHOTO-02**: A foto é exibida no perfil/identificação do paciente
-- [ ] **PHOTO-03**: As fotos ficam em armazenamento privado, acessíveis apenas ao médico dono (bucket privado, escopo por `profile_id`, URL assinada — não reutilizar o bucket público de logos)
+- [x] **PHOTO-03**: As fotos ficam em armazenamento privado, acessíveis apenas ao médico dono (bucket privado, escopo por `profile_id`, URL assinada — não reutilizar o bucket público de logos)
 
 ### Documentos Clínicos (DOC)
 
@@ -79,7 +79,7 @@ Cada requisito mapeia para exatamente uma fase do roadmap. Sem órfãos, sem dup
 | CONS-04 | Phase 1 | Pending |
 | PHOTO-01 | Phase 2 | Pending |
 | PHOTO-02 | Phase 2 | Pending |
-| PHOTO-03 | Phase 2 | Pending |
+| PHOTO-03 | Phase 2 | Complete |
 | DOC-01 | Phase 3 | Pending |
 | DOC-02 | Phase 3 | Pending |
 | DOC-03 | Phase 3 | Pending |

@@ -68,7 +68,7 @@ Plans:
 
 **Wave 1**
 
-- [ ] 02-01-PLAN.md — Foundation: photo/consent columns + private patient-photos bucket & storage RLS + Patient type/selects + upload schema + [BLOCKING] schema push (wave 1)
+- [x] 02-01-PLAN.md — Foundation: photo/consent columns + private patient-photos bucket & storage RLS + Patient type/selects + upload schema + [BLOCKING] schema push (wave 1)
 
 **Wave 2** *(blocked on Wave 1)*
 
@@ -136,7 +136,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Experiência da Consulta | 5/5 | Complete   | 2026-06-28 |
-| 2. Foto Privada do Paciente | 0/3 | Planned | - |
+| 2. Foto Privada do Paciente | 1/3 | In Progress|  |
 | 3. Documentos Clínicos Novos | 0/TBD | Not started | - |
 | 4. Calendário de Vacinas (Referência) | 0/TBD | Not started | - |
 | 5. Carteira de Vacinação por Paciente | 0/TBD | Not started | - |

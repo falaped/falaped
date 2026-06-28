@@ -4,13 +4,13 @@ milestone: v1.0
 milestone_name: milestone
 status: executing
 stopped_at: Phase 2 UI-SPEC approved
-last_updated: "2026-06-28T23:12:14.989Z"
-last_activity: 2026-06-28 -- Completed 01-01-PLAN.md (schema foundation)
+last_updated: "2026-06-28T23:36:46.463Z"
+last_activity: 2026-06-28 -- Phase 02 execution started
 progress:
   total_phases: 5
   completed_phases: 1
-  total_plans: 5
-  completed_plans: 5
+  total_plans: 8
+  completed_plans: 6
   percent: 20
 ---
 
@@ -21,14 +21,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-06-27)
 
 **Core value:** A consulta pediátrica flui sem fricção — abrir o paciente, conduzir a consulta e gerar os documentos certos (impressos corretamente) em poucos cliques.
-**Current focus:** Phase 01 — experi-ncia-da-consulta
+**Current focus:** Phase 02 — foto-privada-do-paciente
 
 ## Current Position
 
-Phase: 01 (experi-ncia-da-consulta) — EXECUTING
-Plan: 3 of 5
+Phase: 02 (foto-privada-do-paciente) — EXECUTING
+Plan: 2 of 3
 Status: Ready to execute
-Last activity: 2026-06-28 -- Completed 01-01-PLAN.md (schema foundation)
+Last activity: 2026-06-28 -- Phase 02 execution started
 
 Progress: [████░░░░░░] 40%
 
@@ -53,6 +53,7 @@ Progress: [████░░░░░░] 40%
 
 *Updated after each plan completion*
 | Phase 01 P02 | 10min | 1 tasks | 4 files |
+| Phase 02 P01 | 10min | 3 tasks | 10 files |
 
 ## Accumulated Context
 
@@ -66,6 +67,8 @@ Recent decisions affecting current work:
 - [Roadmap]: Vacinas separadas em referência (dado estático, Phase 4) vs carteira por paciente (tabela owned, Phase 5)
 - [Roadmap]: Foto da criança em bucket privado + URL assinada — NÃO reusar o bucket público de logos (LGPD)
 - [Phase ?]: Pediatric age band boundary at 24 months (a 1-year-old reads '12 meses'); months/days via differenceInMonths + intervalToDuration remainder; corrected age by shifting birth date forward and re-banding, capped at 24 months corrected.
+- [Phase ?]: [Phase 2] Foto da criança em bucket privado patient-photos (public=false) + 4 storage RLS owner-scoped via foldername[1] — aplicado ao DB live (D-01/D-03)
+- [Phase ?]: [Phase 2] Armazenar o path do objeto (profile_id/patient_id.ext), nunca a URL; consentimento server-side via z.literal(true) + colunas consent_given/consent_at (D-02/D-04/D-05)
 
 ### Pending Todos
 
@@ -92,6 +95,6 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-06-28T22:39:19.120Z
+Last session: 2026-06-28T23:35:12.233Z
 Stopped at: Phase 2 UI-SPEC approved
 Resume file: .planning/phases/02-foto-privada-do-paciente/02-UI-SPEC.md
