@@ -1,231 +1,150 @@
 # Pitfalls Research
 
-**Domain:** Medical SaaS — Supabase RLS retrofit, public share-links (LGPD), large component decomposition, CI on broken Yarn/corepack
-**Researched:** 2026-06-04
-**Confidence:** HIGH (codebase directly audited; Supabase pitfalls confirmed against Context7/official docs)
+**Domain:** Brazilian pediatric medical practice web app (Falaped) — brownfield Next.js 16 + Supabase + pdfkit
+**Researched:** 2026-06-28
+**Confidence:** HIGH for pdfkit (read the actual kit source + repo) and Supabase brownfield (read the actual migrations/concerns); MEDIUM-HIGH for age math, vaccine calendar, and LGPD (verified against official sources + library docs).
 
 ---
 
 ## Critical Pitfalls
 
-### Pitfall 1: RLS enable blocks ALL rows for the authenticated role until policies exist
+### Pitfall 1: pdfkit manual `y`-tracking diverges from `doc.y`, producing extra whitespace and phantom page breaks
 
 **What goes wrong:**
-`ALTER TABLE prescriptions ENABLE ROW LEVEL SECURITY` with no policies immediately causes every query from the `authenticated` role to return 0 rows (or fail silent on writes). The SSR client uses the publishable (anon/authenticated) key, so every existing SSR page and Server Action that reads prescriptions, medical_certificates, cases, patients, case_reports, case_messages, prescription_templates, or report_templates will silently return empty results or fail — with no error, no log, just missing data. RLS default-deny is by design.
+This is the active "relatório sobra espaço / às vezes gera página extra" bug. In the kit (`@falaped/falaped-kit/dist/pdf/index.js`), report sections are laid out with a hand-tracked `let y` variable: each block calls `doc.text(content, ml(), y, opts)` and then reads `y = doc.y + paragraphSpacing` (`mountSectionsHead`, lines 389-411; `mountLastSection`, 357-388). Height is independently *estimated* up front via `estimateReportBodyHeight` / `estimateSectionBlockHeight` using `doc.heightOfString` (lines 147-160, 330-342), and the page-break decision compares the estimate against `contentLimit`/`maxY` (`preparePageForLastSection`, 343-356). The PDF ends up taller than the rendered content (trailing blank space) and sometimes spills onto an extra near-empty page.
+
+Three independent root causes stack up:
+1. **Estimate ≠ render.** `heightOfString` is computed with a particular `{ width, lineGap, align }`, but the actual `doc.text` adds `reportBodyParagraphGapPt` (6pt) *between* paragraphs (line 143) and `paragraphSpacing`/`sectionSpacing` after blocks. If the estimate and the render don't add *exactly* the same inter-paragraph/section gaps, the page-break math reserves space that never gets used → trailing whitespace, or under-reserves → overflow onto a new page.
+2. **`doc.text` auto-page-breaks behind the tracker's back.** When a section's text reaches the bottom margin, pdfkit silently inserts a page and resets `doc.y` to the top margin. The code then does `y = doc.y + paragraphSpacing` — so the manual `y` jumps to the *new page top*, the separator line (`drawHorizontalLine`, line 407) is drawn there, and `sectionSpacing` is added on top, compounding the gap. The first page is left with a tall empty tail.
+3. **`heightOfString` with a `height` cap is unreliable for break decisions.** The "last section" path passes `opts.height = cap` to clip (lines 364-381); but `heightOfString` does not account for the same clipping, so the reserved footer zone (`REPORT_MIN_GAP_SECTION_TO_FOOTER = 200`) and the estimate fight each other.
 
 **Why it happens:**
-Developers treat `ENABLE ROW LEVEL SECURITY` as an atomic hardening step. It is only the first half; the second half is `CREATE POLICY`. Shipping the `ALTER TABLE` migration without the policies in the same migration is the single most common RLS retrofit mistake.
+pdfkit has *two* layout models and mixing them is the classic trap: (a) the **flow model**, where you call `doc.text(...)` repeatedly and let pdfkit advance `doc.y` and auto-page-break; and (b) the **absolute model**, where you pass explicit `x, y` and manage placement yourself. The kit mixes both — it passes explicit `y` *and* relies on `doc.y` after the call *and* pre-estimates with `heightOfString`. Each model has a different idea of "where the cursor is," and they drift. `heightOfString` is also famously approximate when `lineGap`, `paragraphGap`, and wrapping interact, and it does not include the gaps the caller adds manually.
 
 **How to avoid:**
-Always write `ENABLE ROW LEVEL SECURITY` and the corresponding `FOR ALL USING (profile_id = (select id from public.profiles where auth_user_id = auth.uid()))` policy in the same migration file, applied atomically. Test the migration against a staging database with an authenticated session before promoting to production.
+Pick ONE model and make estimate and render share a single code path.
+- **Recommended:** Use the flow model consistently. After setting font/size, call `doc.text(content, { width, align, lineGap, paragraphGap })` *without* an explicit `y` (let pdfkit own the cursor), and use `doc.moveDown()` or a single known `paragraphGap` for spacing — never both a manual `y +=` and reliance on `doc.y`. Never re-read `doc.y` into a manual tracker after a call that can auto-break.
+- For page-break-before-block decisions, compute the block height with the *exact same* options object you will render with, including any manual gaps, by routing both through one helper (e.g. `measureBlock(opts)` and `renderBlock(opts)` that share `opts`). Don't compute the estimate one way and render another.
+- To force a clean break instead of letting a section dribble onto a new page, check `doc.y + measuredHeight > doc.page.height - doc.page.margins.bottom` and call `doc.addPage()` deliberately — but only with a measurement that matches the render.
+- Reserve the footer with `setFutureMargins` / bottom margin *once*, and let pdfkit's own bottom-margin handling do the breaking, rather than a separate `REPORT_MIN_GAP_SECTION_TO_FOOTER` constant racing the estimate.
+- Verify visually: generate the same report at 1, 2, and ~1.05 pages of content (the boundary case) and confirm no trailing blank page and no large bottom gap.
 
 **Warning signs:**
-- Listing pages load with no records immediately after a migration
-- No error in Next.js server logs or Supabase logs — just empty arrays returned
-- The admin client (service role) still sees rows, but the SSR client sees none
+- Generated PDF page count is one more than the visible content warrants.
+- A consistent tall blank band at the bottom of a page before content continues.
+- Separator lines or section titles appearing flush at the top of a fresh page with extra space above the next block.
+- The bug is content-length-sensitive (short reports fine, longer ones break) — a tell that the estimate/render gap accumulates per paragraph.
 
-**Phase to address:** Phase 1 (Security: RLS + IDOR fix) — the first thing deployed
+**Phase to address:**
+Bloco 1 / "Corrigir espaçamento de impressão" phase — this is the named active bug. Fix in the kit's report builder (or wrap/override it) before adding the new document types (Bloco 3), because the new documents (encaminhamento, pedido de exames, relatório médico) will reuse the same builder and inherit the bug.
 
 ---
 
-### Pitfall 2: The service-role admin client silently bypasses RLS even after policies are added
+### Pitfall 2: Pediatric age computed with timezone-naive or off-by-one date math
 
 **What goes wrong:**
-`createAdminClient()` uses `SUPABASE_SERVICE_ROLE_KEY`, which carries `bypassrls` privilege at the Postgres role level. Any query executed through this client ignores all RLS policies. The current codebase uses `createAdminClient()` as the `storageClient` in both single and bulk delete actions. If ownership is not enforced in application code before calling these actions, the admin client becomes an unrestricted delete path regardless of RLS.
+Pediatric care needs age in **days** and in **months + days** with real precision (dosing, vaccine eligibility, milestones). Common failures: (a) `new Date("2024-03-15")` parses as **UTC midnight**, so in Brazil (UTC-3) it becomes 21:00 on Mar 14 local — every age in days is silently off by one near midnight; (b) naive `(now - birth) / 86400000` ignores DST transitions (Brazil has had DST historically; even if currently off, libraries and historical dates carry the assumption) and can yield 1.96 days where it should be 2; (c) "months + days" computed by subtracting month numbers mishandles month-length differences — e.g. born Jan 31, "1 month" has no Feb 31, so the remainder days are wrong; (d) Feb 29 birthdays in non-leap years (`differenceInMonths` rounding) flip the day count.
 
 **Why it happens:**
-RLS retrofit gives false confidence: "now the DB enforces ownership." But the admin client was always outside that enforcement — and it remains outside after RLS is enabled. The comment in `delete-prescription.ts` that says "RLS ensures only the profile owner can delete" is literally false when the admin client is used for the storage leg and no `profile_id` filter exists on the DB leg.
+JavaScript `Date` is a UTC timestamp with a local-time façade; string parsing rules differ between `"2024-03-15"` (UTC) and `"2024-03-15T00:00"` (local). Developers reach for millisecond subtraction because it's one line, not realizing it conflates calendar arithmetic (which is what age is) with elapsed-time arithmetic. `differenceInMonths`-style functions return *whole* months and the "+days" remainder must be computed by adding those months back and diffing — a step people skip.
 
 **How to avoid:**
-1. Add `.eq("profile_id", profileId)` to every `delete()` call in `modules/prescriptions/delete-prescription.ts` and `modules/medical-certificates/delete-medical-certificate.ts` before or simultaneously with enabling RLS.
-2. Replace the admin client for storage deletes with user-scoped storage RLS policies so the regular SSR client can delete its own objects without needing the admin bypass.
-3. Reserve `createAdminClient()` exclusively for `auth.admin.deleteUser` in account deletion. Never pass it into a user-triggered delete path.
+- Treat birth date as a **calendar date, not an instant.** Store and compute on `YYYY-MM-DD` only; build local-midnight dates explicitly (`new Date(y, m-1, d)`) or use a calendar-date library (`date-fns` with care, or Temporal `PlainDate` where available) so no timezone is involved.
+- Compute "days" as a calendar-day difference of two local-midnight dates, not a millisecond divide-and-floor.
+- Compute "months + days" by: take whole months via `differenceInMonths`, add them back to the birth date, then take `differenceInDays` to the consultation date for the remainder. This is the only way the remainder respects variable month lengths.
+- Decide an explicit policy for Feb 29 birthdays and document it (treat as Feb 28 or Mar 1 in non-leap years) — pick one and unit-test it.
+- Anchor "today" to the doctor's local date, not the server's UTC `Date.now()`.
+- **Unit test the edge cases** (this app's `modules/`/`lib/` is where tests live): birth on month-end (Jan 31), leap-day birth, age across a year boundary, a date near local midnight, and newborn (0 days, 1 day).
 
 **Warning signs:**
-- Any call to `deletePrescription` or `deleteMedicalCertificate` where `storageClient` is the admin client and `prescriptionId`/`certificateId` lacks a profile ownership check
-- Any server action that instantiates `createAdminClient()` for a non-auth-admin operation
+- Age in days flips by 1 depending on what time of day the doctor opens the patient.
+- "1 month and -2 days" or a negative/zero remainder appearing.
+- Newborns showing "1 day" on the day of birth (or "0 days" the day after).
+- Tests pass on the developer's machine (whose TZ may be UTC or local) but field reports of wrong ages.
 
-**Phase to address:** Phase 1 (Security: RLS + IDOR fix) — required before Phase 2 (share-links)
+**Phase to address:**
+Bloco 1 / "Exibir idade em dias e meses+dias" phase. Build a single, unit-tested `computePediatricAge(birthDate, today)` helper in `lib/` and reuse it everywhere (display, and later vaccine-eligibility). Do not inline the math in components.
 
 ---
 
-### Pitfall 3: `profiles` table uses `auth_user_id` not `id` as the FK anchor — policies written against `auth.uid()` must traverse the join
+### Pitfall 3: Vaccine calendar data is hard-coded, goes stale, and gives unsafe guidance
 
 **What goes wrong:**
-The standard Supabase RLS pattern is `user_id = auth.uid()`. In this schema, `public.profiles.id` is an auto-generated UUID that is NOT the same as `auth.users.id`. `public.profiles.auth_user_id` is the FK to `auth.users.id`. All data tables reference `profile_id` which maps to `public.profiles.id`. A policy written as `profile_id = auth.uid()` will never match any row and silently blocks all access — identical symptom to Pitfall 1 but harder to diagnose because the migration "looks correct."
+The Brazilian PNI/SUS calendar is **revised annually** — there is a published *Instrução Normativa do Calendário Nacional de Vacinação 2026*, and recent additions (gestante VSR vaccine from 28 weeks; nirsevimab/anticorpo monoclonal for infants/preemies) landed only in the last cycle. A schedule hard-coded once will silently become wrong; for a clinical tool, "wrong vaccine age/dose" is a patient-safety defect, not a cosmetic bug. Additional traps: conflating the **SUS (PNI)** schedule with the **private/SBIm** schedule (they differ — e.g. some vaccines/doses available privately but not SUS), and computing "pending/overdue by age" using the buggy age math from Pitfall 2, so eligibility windows are off.
 
 **Why it happens:**
-Non-standard indirection. Most Supabase tutorials assume `profiles.id = auth.uid()`. This schema has a one-hop join: `auth.uid()` → `profiles.auth_user_id` → `profiles.id` → data tables `profile_id`.
+It's tempting to bake the calendar into a TypeScript constant and move on. Medical content feels static until you learn it has a yearly normative cycle plus mid-year additions. The SUS-vs-private distinction is easy to flatten into one table.
 
 **How to avoid:**
-All RLS policies on data tables must use a subquery:
-```sql
-profile_id = (
-  select id from public.profiles
-  where auth_user_id = auth.uid()
-)
-```
-Wrap this in a `SECURITY DEFINER` function (e.g., `private.current_profile_id()`) to avoid re-evaluating it per row and to prevent the infinite-recursion risk if the `profiles` table itself ever has a policy that joins back.
+- Treat the calendar as **versioned reference data with a source and an effective date**, not code. Store each schedule (SUS, private, gestante) with `source`, `version`/`effectiveDate`, and a visible "based on PNI/SBIm <date>" label in the UI so the doctor knows the vintage and can sanity-check.
+- Keep SUS, private, and gestante as **separate, clearly-labeled datasets** — never merge into one ambiguous table.
+- Make the dataset **easy to update without a code deploy where feasible** (e.g. data table/seed), or at minimum isolate it in one file with a clear "verified against <official PDF> on <date>" comment and an owner.
+- Source from official references: gov.br PNI / Calendário Nacional (SUS), SBIm/SBP (private + gestante). Cite the document and date in the data.
+- Per-patient "pending/overdue" must consume the single tested age helper (Pitfall 2), and present recommendations as **decision support, not prescription** — the doctor confirms. Add a disclaimer that the doctor verifies against the current official calendar.
+- Add a recurring review reminder (annual, around the new Instrução Normativa) to re-verify the data.
 
 **Warning signs:**
-- Policies compiled without error but all data returns empty for authenticated users
-- `SELECT id FROM profiles WHERE auth_user_id = auth.uid()` returns a row in the SQL editor but application queries return nothing
+- The calendar table has no source/date metadata.
+- SUS and private vaccines appear interchangeably in one list.
+- "Overdue" flags that don't match what the pediatrician expects (often a symptom of age-math errors feeding eligibility).
+- The dataset hasn't been touched since the last annual revision.
 
-**Phase to address:** Phase 1 (Security: RLS + IDOR fix)
+**Phase to address:**
+Bloco 2 / Vacinas phase. Define the data model (with source + effective date + schedule type) before building the UI. Gate the per-patient vaccination card on the tested age helper from Bloco 1.
 
 ---
 
-### Pitfall 4: `authenticated_users` table has its own `profile_id` column — forgetting to add RLS to it creates a second unprotected path
+### Pitfall 4: Child photos stored in a public bucket (LGPD violation for minors' sensitive data)
 
 **What goes wrong:**
-`public.authenticated_users` stores `profile_id`, `phone`, `status`. It does not appear in the CONCERNS.md RLS list but it is a public-schema table. If RLS is added to `profiles` and all data tables but forgotten on `authenticated_users`, an authenticated user can query another user's subscription status and phone number via the anon/authenticated API. The signup trigger and the `getAuthenticatedUser` module both read from this table.
+Photos of children are personal data of a minor under the LGPD, requiring processing in the child's *best interest* with specific, highlighted consent from a parent/guardian — and they're especially sensitive (a photo of the doctor with the child). The concrete brownfield trap: the existing **`profile-logos` bucket is `public = true`** (`supabase/migrations/20260228200000_storage_profile_logos_rls.sql`), even though it has RLS *write* policies. **RLS does not restrict reads on a public bucket** — anyone with the object URL can fetch it. The natural instinct ("a child photo is just another profile image, copy the logo bucket pattern") would put minors' photos in a world-readable bucket and likely persist the public URL in the DB, leaking it forever once shared/logged.
 
 **Why it happens:**
-Checklist-driven RLS retrofits can miss tables that are not obviously "data" tables. `authenticated_users` looks like a join/link table.
+The logo bucket is public *on purpose* (logos go on PDFs via a public URL), so copying that pattern feels consistent. Supabase's public/private distinction is subtle: RLS policies on `storage.objects` look like protection, but for a public bucket they only govern mutations, not GET-by-URL. `getPublicUrl` returns a permanent unauthenticated link.
 
 **How to avoid:**
-Enumerate every table in `public.*` (not just the ones in CONCERNS.md) and add RLS to each. SQL to audit: `SELECT schemaname, tablename, rowsecurity FROM pg_tables WHERE schemaname = 'public' AND rowsecurity = false`.
+- Put child photos in a **private bucket** (`public = false`), modeled on the existing **`prescriptions`** bucket (`supabase/migrations/20260315010000_storage_prescriptions.sql`), not on `profile-logos`. Path-scope objects to `profile_id/...` and add owner-scoped RLS select/insert/update/delete policies exactly like the prescriptions bucket.
+- Serve images via **short-lived signed URLs** (`createSignedUrl`) generated server-side per request, never `getPublicUrl`. Do not store a public URL in the DB; store only the storage path.
+- Enforce ownership at the action layer too (this app has no table RLS per CONCERNS.md — see Pitfall 5): the photo upload/read action must scope by the authenticated `profile_id`.
+- LGPD posture: record that photos are processed for clinical identification, capture guardian consent, support deletion (right to erasure) that removes both the storage object and any DB reference, and minimize retention. Don't send child photos to third parties (e.g. don't pass them to the Groq AI flows).
+- Verify with an unauthenticated `curl` of the object URL: a private bucket returns 400/403, a public one returns the image — make this an explicit acceptance check.
 
 **Warning signs:**
-- `pg_tables` query shows any `public` table with `rowsecurity = false` after the migration
+- The migration for the photo bucket has `public = true`.
+- Code calls `getPublicUrl` for child photos, or a `*_url` column stores an unauthenticated link.
+- The photo loads in an incognito window with no auth.
+- No consent capture / deletion path for the photo.
 
-**Phase to address:** Phase 1 (Security: RLS + IDOR fix)
+**Phase to address:**
+Bloco 1 / "Foto na identificação da criança" phase. Decide bucket privacy + signed-URL serving + consent/deletion *before* writing the upload feature; a public-bucket mistake is expensive to walk back once URLs are in the wild.
 
 ---
 
-### Pitfall 5: Share-link tokens stored as UUIDs are enumerable / guessable if not using cryptographically random tokens
+### Pitfall 5: New slices break the app-layer-only tenant isolation, the paid gate, or the per-request client pattern
 
 **What goes wrong:**
-If the share-link token is a UUID v4, it is 122 bits of entropy — practically safe. If the token is derived from a sequential ID, a `created_at` timestamp, the `prescription.id` itself, or a short-hash, it becomes guessable. An attacker who receives one valid token can brute-force adjacent tokens, exposing another patient's prescription or medical certificate. In a medical context this is a LGPD Art. 11 violation (sensitive personal health data processed without valid legal basis or consent).
+Per CONCERNS.md and ARCHITECTURE.md, this app has **no table RLS** — multi-tenant isolation depends *entirely* on every query carrying `.eq("profile_id", ...)` (or `user_phone`), and there is already a live IDOR (deletes filter by `id` only). New slices this cycle (photos, vaccination card, three new document types, blank prescription, orientation templates) multiply the query surface. Each new module is a fresh chance to: (a) forget the `profile_id` filter → cross-tenant read/delete; (b) reuse the dangerous pattern of passing the **service-role admin client** into a delete path (which bypasses even storage RLS); (c) skip the `profile.status === "paid"` gate in a new action; (d) construct a Supabase client inside a module or use a global client, violating the per-request/Fluid-compute constraint; (e) import `next/cache`/`next/headers` in `modules/`.
 
 **Why it happens:**
-Developers often reuse the document's own primary key as the "token" to avoid adding a `token` column. Or they use `crypto.randomBytes(8).toString('hex')` (64 bits) thinking that's sufficient, when token storage in a database makes offline brute-force irrelevant but online enumeration still applies.
+The three-layer pattern is conventions, not enforcement — nothing stops a new action from skipping a step, and there are zero tests on `actions/`/`components/`. Copy-paste from an existing module that happens to omit the owner filter (like the known-buggy deletes) propagates the bug. The paid gate is easy to forget when you're focused on the feature.
 
 **How to avoid:**
-1. Add a dedicated `share_token` column (`text not null unique default encode(gen_random_bytes(32), 'hex')`) — 256 bits, unguessable.
-2. Never expose the prescription's `id` UUID in the share URL path (use only the token).
-3. Add a `share_token_expires_at timestamptz` column and enforce expiry server-side (not only via Supabase signed URL TTL, because CDN caching can outlive token expiry — confirmed in Context7 docs).
+- For **every** new module data function: filter by `profile_id` on reads, writes, **and deletes** (`.delete().eq("id", x).eq("profile_id", profileId)`). Thread `profile.id` from the action into the module — never delete by `id` alone (don't copy the existing prescription/certificate delete bug).
+- For **every** new action/route handler: build a per-request client, call `getAuthenticatedUser(supabase)`, gate on `profile.status === "paid"`, validate input with Zod, return a `{ ok } | { ok:false; error }` union. Use this as a literal checklist for each new slice.
+- Reserve `createAdminClient()` for `auth.admin.*` only; never use the service-role client on a query lacking an explicit ownership filter (it bypasses storage RLS — the exact blast-radius widener flagged in CONCERNS.md).
+- In `modules/`: inject the `SupabaseClient`, never construct it; never import `next/cache`/`next/headers`.
+- **Add the missing tests** for the new slices' ownership enforcement — CONCERNS.md notes a single ownership test would have caught the IDOR. While RLS is absent, an ownership unit test per new module is the cheapest defense.
+- Strongly consider enabling **table RLS** as defense-in-depth as part of this cycle (or at least for the new tables: photos, vaccination records, new documents) so a forgotten filter isn't catastrophic.
 
 **Warning signs:**
-- Share URL contains `prescriptionId` or `certificateId` in path
-- Token column is missing; URL embeds the storage signed URL directly (signed URLs are enumerable via token query param rotation)
+- A new query with no `.eq("profile_id", ...)` / `user_phone`.
+- A new action without the `getAuthenticatedUser` + paid-status check.
+- `createAdminClient()` appearing in a new feature path.
+- A module that imports `createClient`/`next/headers` or references a module-level client.
+- New tables created without RLS while handling another tenant's data.
 
-**Phase to address:** Phase 2 (Patient share-links) — but the token schema must be designed before building the feature
-
----
-
-### Pitfall 6: Supabase storage signed URLs continue serving from CDN cache after token expiry — deleting the object is the only reliable revocation
-
-**What goes wrong:**
-A share-link that uses `createSignedUrl` with a TTL (e.g., 1 hour) appears to expire, but if the URL has been cached at Supabase's Smart CDN edge, the cached response continues serving until the CDN cache TTL expires, independently of the token's `expiresIn`. Per official Supabase docs: "Token expiry and the object's response cache TTL are independent. Once a response is cached at the edge, that cached response can continue to be served for the same signed URL until the CDN cache duration expires, even if the token in that URL has already expired."
-
-**Why it happens:**
-Developers assume token expiry = access revocation. CDN caching breaks this assumption.
-
-**How to avoid:**
-For medical documents under LGPD:
-1. Store a token in a DB table with `expires_at`, serve the PDF through your own API route (`/api/share/[token]/download`), validate the token server-side, stream the file. Do NOT hand the patient a signed Supabase storage URL directly.
-2. If you must use signed URLs, set `cacheControl: "no-store"` when generating them, and set the TTL to a short window (e.g., 60 seconds) that the patient uses immediately.
-3. If a document must be revoked (patient request, LGPD Art. 18 erasure), delete the storage object — that is the only reliable way to purge CDN cache.
-
-**Warning signs:**
-- Share-link route hands the patient a `signedUrl` from Supabase storage directly
-- No server-side expiry validation in the API route
-- No revocation mechanism (doctor cannot invalidate a previously shared link)
-
-**Phase to address:** Phase 2 (Patient share-links)
-
----
-
-### Pitfall 7: Public share-link endpoint exposes protected health data to the `anon` role without explicit LGPD consent record
-
-**What goes wrong:**
-A URL shared via WhatsApp is effectively public — it can be forwarded, indexed, or accessed by anyone with the link. Under LGPD, personal health data is sensitive data (Art. 11). Sharing it requires either the data subject's explicit consent or another legal basis (e.g., health treatment). If a doctor shares a prescription link and the patient's WhatsApp is compromised, the link enables third-party access with no audit trail or consent record in the system.
-
-**Why it happens:**
-Developers treat "the patient asked for it" as sufficient. LGPD requires that the legal basis be documented and the data subject notified of sharing.
-
-**How to avoid:**
-1. Log every share-link generation event: who generated it, for which patient, which document, when, and the expiry.
-2. Log every access to the share-link endpoint (IP, timestamp, user-agent).
-3. Keep links short-lived (24–48 hours maximum for prescriptions; atestados may need longer but should default short).
-4. Add a `revoked_at` column and honor it server-side.
-5. Do not build the share-link feature until the access log table and the revocation mechanism are implemented — never ship the happy path alone.
-
-**Warning signs:**
-- No `share_link_audit_log` table (or equivalent) in the schema
-- The API route for download does not write an access event to the DB
-- No revocation UI for the doctor
-
-**Phase to address:** Phase 2 (Patient share-links) — audit log required before launch
-
----
-
-### Pitfall 8: Decomposing large client components breaks implicit state contracts between co-located sections
-
-**What goes wrong:**
-`new-case-workspace.tsx` (1175 lines) and `medical-certificate-wizard.tsx` (1023 lines) have multi-step flows where state transitions, validation, and submission are tightly coupled inside one component tree. When sections are extracted into child components, prop-drilling gaps or lifted-state mismatches cause steps to re-initialize, lose data between transitions, or submit stale values. With zero component tests, these regressions ship silently.
-
-**Why it happens:**
-Large components feel like they can be split along visual boundaries ("step 1 goes here, step 2 goes there"). The actual dependency is on shared `useState`/`useRef` that was never formalized into a hook or context. Extraction exposes the implicit contract only at runtime.
-
-**How to avoid:**
-1. Before extracting any JSX, extract the state logic first into a dedicated hook (e.g., `use-case-workspace-state.ts`). The hook owns all state and returns stable refs/callbacks.
-2. Only after the hook is stable and tested (pure function tests where possible), wire child components to it via props or a narrow context.
-3. Write a "smoke test" for the extracted hook's state machine before touching the component tree — `node:test` can test hooks extracted to plain functions.
-4. Extract one section at a time; verify end-to-end manually between each extraction.
-
-**Warning signs:**
-- Form values resetting when navigating between wizard steps after extraction
-- `useEffect` dependencies growing unexpectedly after extraction (signals shared state leaking)
-- TypeScript compiles but runtime shows `undefined` where a value was previously always present
-
-**Phase to address:** Phase 3 (Component decomposition) — after security phases are complete
-
----
-
-### Pitfall 9: Refactoring the 662-line `send-case-assistant-message` action breaks the `__FALAPED_JSON__` payload contract consumed by the client renderer
-
-**What goes wrong:**
-`actions/cases/send-case-assistant-message.ts` emits a `PAYLOAD_PREFIX + JSON.stringify(...)` string that the client component parses to render assistant actions. If refactoring changes the shape of `AssistantActionId`, the payload structure, or the prefix string, the client renderer silently renders nothing or crashes. There are no tests for this serialization contract.
-
-**Why it happens:**
-The payload format is an ad-hoc protocol embedded in string concatenation. It is not typed end-to-end between server and client. Refactoring feels safe because TypeScript compiles — but the string encoding is invisible to the type system.
-
-**How to avoid:**
-1. Before any refactoring, write a test that asserts the exact shape of the serialized payload for each `AssistantActionId` variant using the existing module functions.
-2. Define a Zod schema for the payload and parse it on the client side — this makes the contract explicit and failures throw immediately with a useful message instead of silently empty UI.
-3. Do not rename or restructure `AssistantActionId` union members without updating the client renderer simultaneously (they must be deployed together).
-
-**Warning signs:**
-- Assistant response appears but no action cards are rendered in the case workspace
-- `JSON.parse` error in client console after an action response
-- `PAYLOAD_PREFIX` constant is referenced in more than two files (signals the contract has leaked)
-
-**Phase to address:** Phase 3 (Component decomposition) — if this action is touched at all
-
----
-
-### Pitfall 10: CI setup with broken local Yarn/corepack produces a "green CI, red local" gap that delays catching real failures
-
-**What goes wrong:**
-`yarn test` fails locally due to `Cannot find module .../yarn/1.22.22/bin/yarn.js`. CI runs on a clean GitHub Actions runner where corepack and Yarn are installed correctly. Developers start trusting CI as the source of truth and stop running tests locally. The feedback loop lengthens. Meanwhile, if CI is set up to use `yarn install` without `--frozen-lockfile`, new (unpinned) versions of `@supabase/ssr` or `@supabase/supabase-js` can be pulled in silently on each CI run.
-
-**Why it happens:**
-Local tooling problems are treated as "my machine, not the code" — true initially, but they mask whether tests are actually passing in the right environment. `latest` pinning in `package.json` means `yarn install` in CI might resolve different package versions than what the local `yarn.lock` specifies if the lockfile is not respected.
-
-**How to avoid:**
-1. CI must use `yarn install --frozen-lockfile` to prevent silent dependency drift.
-2. Fix the local corepack issue by running `corepack enable && corepack prepare yarn@1.22.22 --activate` once on each developer machine — document this in a `CONTRIBUTING.md` or `Makefile`.
-3. Pin `@supabase/ssr` and `@supabase/supabase-js` to explicit semver (e.g., `^2.x.x`) in `package.json` immediately — the `latest` tag is an active supply-chain and breaking-change risk.
-4. Run `npx tsx --test <file>` directly in CI instead of `yarn test` if yarn resolution is unstable, to decouple the test run from the package manager.
-
-**Warning signs:**
-- CI passes but `yarn test` fails locally on a fresh clone
-- `yarn.lock` has a diff after a fresh `yarn install` in CI (means `--frozen-lockfile` is not set)
-- `@supabase/ssr` version in CI `node_modules` differs from what is in `yarn.lock`
-
-**Phase to address:** Phase 4 (Tests & CI) — the very first step before writing any CI workflow
+**Phase to address:**
+Cross-cutting — every Bloco 2/3/4 slice. Add an explicit "scoping + paid-gate + ownership-test" success criterion to each new-data-table/new-action phase. Consider a dedicated early "enable RLS on new (and ideally existing) tables" hardening step so the rest of the cycle is built on a safe backstop.
 
 ---
 
@@ -233,116 +152,90 @@ Local tooling problems are treated as "my machine, not the code" — true initia
 
 | Shortcut | Immediate Benefit | Long-term Cost | When Acceptable |
 |----------|-------------------|----------------|-----------------|
-| Enable RLS without a policy on `authenticated_users` table | Fewer migration lines | Second unprotected path; phone + status exposed | Never — add RLS to every public table |
-| Use the admin client for storage deletes because "user RLS is complex to set up" | Faster to ship | God-mode client in user-triggered path; IDOR blast radius stays wide | Never in a user-triggered delete |
-| Share signed Supabase storage URL directly with patient | No API route needed | CDN cache outlives token; no revocation; no audit trail | Never for medical PHI |
-| Split component JSX before extracting state into a hook | Smaller files sooner | State contract breaks silently; re-initialization bugs | Never — always extract state first |
-| Skip `--frozen-lockfile` in CI | Simpler CI config | `latest` packages silently upgrade between runs; non-reproducible | Never when dependencies include `latest` |
-| Reuse `prescription.id` as the share-link token | No extra column | UUID is guessable relative to known UUIDs; violates LGPD minimization | Never for medical data |
-
----
+| Hard-code the vaccine calendar in a TS constant | Ship the reference table fast | Goes stale at the next annual PNI revision → unsafe clinical guidance | Only with a visible source+date label and an annual review reminder; never silently |
+| Reuse the `profile-logos` (public) bucket pattern for child photos | One less migration | World-readable minors' photos; LGPD violation; permanent leaked URLs | Never — child photos must be private + signed URLs |
+| Inline age math in the display component | Quick visible result | Bug duplicated into vaccine eligibility; untestable; TZ/leap bugs | Never — extract one tested `lib/` helper |
+| Copy an existing delete module for a new doc type | Matches house style | Inherits the known IDOR (deletes by `id` only) | Only after adding `.eq("profile_id", ...)` and an ownership test |
+| Skip the paid gate "just for now" on a new action | Faster local testing | Unpaid access to paid features; inconsistent gate | Never in committed code |
+| Patch the report spacing by nudging gap constants | Looks fixed for sample data | Estimate/render drift persists; breaks at other content lengths | Never — fix the model mismatch, not the constants |
 
 ## Integration Gotchas
 
 | Integration | Common Mistake | Correct Approach |
 |-------------|----------------|------------------|
-| Supabase RLS + SSR server client | Writing policy as `profile_id = auth.uid()` — wrong because `profiles.id ≠ auth.uid()` | Use `profile_id = (select id from profiles where auth_user_id = auth.uid())` |
-| Supabase RLS + service-role admin client | Assuming RLS protects admin-client queries | Service role always bypasses RLS; ownership must be enforced in application code before calling admin client |
-| Supabase storage signed URLs + CDN | Treating token expiry as access revocation | Use own API route for serving files; signed URL TTL ≠ CDN eviction |
-| Supabase storage RLS | Using admin client for user-triggered deletes because storage policies seem complex | Add `(select auth.uid()) = owner_id` policy to `storage.objects`; user client can delete its own objects |
-| GitHub Actions + Yarn 1.x + corepack | Not setting `--frozen-lockfile`; trusting runner's default yarn | Pin `actions/setup-node` with `cache: 'yarn'`; always pass `--frozen-lockfile` |
-| `node:test` runner in CI | Glob expansion in `find` behaves differently on macOS vs Linux | Use `find . -name '*.spec.ts'` with explicit path; verify glob works on ubuntu-latest |
-
----
+| Supabase Storage (child photos) | Public bucket + `getPublicUrl`; RLS write policies assumed to protect reads | Private bucket (model on `prescriptions`), path-scoped RLS, server-side `createSignedUrl` per request, store path not URL |
+| Supabase data (new tables) | New query missing `profile_id` filter (no RLS backstop) | Owner-scoped filter on every read/write/delete + ownership unit test; ideally enable table RLS |
+| Supabase admin client | Using `createAdminClient()` in feature/delete paths | Restrict to `auth.admin.*`; never on unfiltered queries |
+| pdfkit (`@falaped/falaped-kit/pdf`) | Mixing flow (`doc.y`) and absolute (`x,y`) layout; estimate ≠ render | Single layout model; one shared options path for measure + render |
+| Groq AI flows | Passing child photos / minors' identifiable data to the LLM | Keep minors' images out of AI calls (LGPD third-party transfer); photos are display-only |
+| date-fns / JS Date | `new Date("YYYY-MM-DD")` parsed as UTC; ms-divide for days | Calendar-date math at local midnight; months-then-remainder for months+days |
 
 ## Performance Traps
 
 | Trap | Symptoms | Prevention | When It Breaks |
 |------|----------|------------|----------------|
-| Sequential storage + DB deletes in bulk action loop | Bulk delete of 10 prescriptions takes 10× longer than expected; partial failures leave orphaned rows | Replace loop with `.delete().in("id", ids).eq("profile_id", profileId)` and a single `storage.remove([...paths])` | Any bulk operation with N > 5 |
-| RLS policy subquery re-evaluated per row without a `SECURITY DEFINER` wrapper | Slow list pages after RLS enabled (N+1 auth lookups in Postgres) | Wrap the `profiles` lookup in a `SECURITY DEFINER` function and call it in policies | At ~1,000+ rows per query |
-| Re-generating a new signed URL on every page render | Smart CDN never warms; every request is a cache miss + Supabase origin hit | Cache the signed URL on the server (Redis/KV or short-lived DB column) and reuse within the TTL window | At >10 concurrent share-link views |
-
----
+| Sequential per-item storage+DB ops (existing bulk-delete antipattern) repeated for photos/vaccine records | Slow bulk actions, partial-failure inconsistency | Batch with `.in("id", ids).eq("profile_id", pid)` + single `storage.remove([...])` | Bulk operations on many records |
+| Re-fetching/regenerating signed URLs on every render | Latency + storage API churn on photo-heavy lists | Generate signed URLs server-side once per request with a sensible TTL | Patient lists with many photos |
+| Large photo uploads through the 25mb server-action body limit | Upload failures on big images | Resize/compress client-side before upload, or presigned direct-to-storage upload | High-res phone photos |
 
 ## Security Mistakes
 
 | Mistake | Risk | Prevention |
 |---------|------|------------|
-| Forgetting `WITH CHECK` clause on `INSERT`/`UPDATE` RLS policies (only `USING` defined) | Users can write rows with any `profile_id`, bypassing tenant isolation on writes | Always define both `USING` (read) and `WITH CHECK` (write) for `INSERT`, `UPDATE` policies |
-| No `FORCE ROW LEVEL SECURITY` on tables where the Postgres table owner runs queries | Table owner bypasses RLS; seed scripts or edge functions running as owner expose all data | Add `ALTER TABLE ... FORCE ROW LEVEL SECURITY` after enabling RLS |
-| Using `anon` role to serve share-link document without verifying token in application code | Anyone with a valid anon key can construct a Supabase API call and fetch any row if the policy is too permissive | Never expose `share_token` rows directly via anon REST API; always serve through an authenticated API route that validates the token server-side |
-| Logging `pdfStoragePath` in error messages that flow to a client-visible toast | Storage paths contain sufficient information to reconstruct download URLs | Log storage paths only to `console.error` (server-only); never include them in user-facing error strings |
-| No expiry enforcement on share tokens at the application layer | Expired tokens remain valid if the DB row is not checked | Always validate `share_token_expires_at > now()` in the API route, independent of the Supabase signed URL TTL |
-
----
+| Child photo in public bucket | Minors' sensitive images world-readable; LGPD breach | Private bucket + signed URLs + owner RLS; verify with unauth `curl` |
+| New delete/query without owner filter | Cross-tenant data access/destruction (active IDOR class) | `.eq("profile_id", ...)` everywhere + ownership tests; enable RLS |
+| Admin (service-role) client in feature paths | God-mode logic bug bypasses all RLS | Admin client only for `auth.admin.*` |
+| Storing public photo URL in DB | Permanent unauthenticated link leaks even after "deletion" | Store storage path; serve via signed URL; deletion removes object + reference |
+| No consent/erasure for minors' photos | LGPD non-compliance (consent + best-interest + erasure) | Capture guardian consent; implement photo deletion (object + DB) |
 
 ## UX Pitfalls
 
 | Pitfall | User Impact | Better Approach |
 |---------|-------------|-----------------|
-| Share-link sends patient a raw Supabase storage URL | URL contains project ID, bucket name, file path — confusing and leaks infra details | Route through `/api/share/[token]/download`; short, opaque URL |
-| No confirmation step before bulk delete of prescriptions | Doctor accidentally deletes all selected with one click | Show a modal with count; require confirmation; show undo option (soft-delete first) |
-| Wizard component loses form state when a large subcomponent is extracted and re-mounted | Doctor fills step 1, navigates to step 2, sees step 1 reset | Extract state to a hook above the wizard; children receive stable callbacks only |
-| Silent catch blocks in generation actions cause doctor to see empty document with no error message | Doctor thinks document was generated; saves/shares empty PDF | Replace `catch {}` with `catch (e) { console.error(...); throw e; }` in generation paths; surface errors via toast |
-
----
+| Showing age without unit clarity (days vs months) | Doctor misreads age for dosing | Show both "X dias" and "Y meses e Z dias" explicitly, labeled |
+| Vaccine recommendations presented as authoritative | Doctor over-trusts possibly-stale data | Label source+date, frame as decision support, doctor confirms |
+| Extra blank page in printed report (current bug) | Wasted paper, looks unprofessional mid-consultation | Fix the pdfkit layout model so page count matches content |
+| Consultation timer that resets/loses state on navigation or refresh | Lost consultation time tracking | Persist timer start (e.g. server/DB or durable client state), compute elapsed from start timestamp not a tick counter |
 
 ## "Looks Done But Isn't" Checklist
 
-- [ ] **RLS enabled:** Verify with `SELECT tablename, rowsecurity FROM pg_tables WHERE schemaname = 'public' AND rowsecurity = false` — must return 0 rows after migration
-- [ ] **RLS policies complete:** Verify `SELECT * FROM pg_policies WHERE schemaname = 'public'` — every data table has both `SELECT` and `INSERT`/`UPDATE`/`DELETE` policies
-- [ ] **IDOR fixed:** Verify `DELETE FROM prescriptions WHERE id = $1` query includes `.eq("profile_id", profileId)` — search codebase for `.delete().eq("id",` with no subsequent `.eq("profile_id"`
-- [ ] **Share-link token entropy:** Verify token column is 32 bytes (`gen_random_bytes(32)`) — not a UUID, not a short hash
-- [ ] **Share-link audit log:** Verify every access to `/api/share/[token]/download` writes a record to an audit table before streaming the file
-- [ ] **Share-link revocation:** Verify the doctor can invalidate a previously issued token from the UI
-- [ ] **CI frozen lockfile:** Verify `.github/workflows/*.yml` includes `yarn install --frozen-lockfile`
-- [ ] **Supabase deps pinned:** Verify `package.json` no longer shows `"@supabase/ssr": "latest"` or `"@supabase/supabase-js": "latest"`
-- [ ] **Component decomposition:** Verify state hooks exist and have tests before any JSX extraction
-- [ ] **Payload contract test:** Verify at least one test covers `send-case-assistant-message` serialization output shape
-
----
+- [ ] **Report PDF spacing fix:** Often verified only on one sample — verify at 1 page, exactly-at-boundary (~1.05 pages), and multi-page content; confirm no trailing blank page and no large bottom gap. Verify it holds for the NEW document types too (they share the builder).
+- [ ] **Child photo upload:** Often missing privacy — verify the bucket is `public=false`, the URL is a signed URL (expires), an unauthenticated `curl` of the object fails, and a deletion removes both object and DB reference.
+- [ ] **Pediatric age:** Often missing edge cases — verify Jan-31 birth, Feb-29 birth in a non-leap year, newborn (0/1 day), year-boundary, and a near-midnight local time; confirm it uses the shared `lib/` helper, not inline math.
+- [ ] **Vaccine calendar:** Often missing provenance — verify each schedule carries source + effective date, SUS/private/gestante are separate, and the UI shows the vintage + a "confirm against current official calendar" note.
+- [ ] **New document types & actions:** Often missing scoping — verify each has the paid gate, `getAuthenticatedUser`, `profile_id` filter on read/write/delete, and an ownership test; no admin client; no client construction in `modules/`.
+- [ ] **Consultation timer:** Often missing persistence — verify it survives a page refresh/navigation and computes elapsed from a stored start time.
 
 ## Recovery Strategies
 
 | Pitfall | Recovery Cost | Recovery Steps |
 |---------|---------------|----------------|
-| RLS enabled with no policy — production shows no data | HIGH | Write and deploy emergency migration adding policies immediately; monitor Supabase logs for auth errors; notify affected users if data appeared missing |
-| Admin client used for delete without ownership check — IDOR exploited | HIGH | Rotate service role key immediately; audit `prescriptions` and `medical_certificates` tables for cross-profile deletes (compare `profile_id` vs deleted-by auth session logs); notify DPA if PHI accessed |
-| Share-link token enumeration detected | HIGH | Rotate all existing tokens (set `revoked_at = now()` on all rows); delete and re-upload affected PDFs to new storage paths; notify affected patients per LGPD Art. 48 (breach notification within 2 business days to ANPD) |
-| Component refactor causes wizard state loss | MEDIUM | Revert extraction; re-extract state hook first; add smoke tests before re-attempting |
-| CI picks up a breaking `@supabase/ssr latest` version | MEDIUM | Pin `yarn.lock` to previous resolved version; use `yarn add @supabase/ssr@<last-known-good>`; add version pinning to `package.json` |
-| Local yarn corepack never fixed — developers skip tests | LOW | Document `corepack enable && corepack prepare yarn@1.22.22 --activate` in onboarding; add `npx tsx --test` fallback to CI so it does not depend on yarn script |
-
----
+| Report extra-page/whitespace bug | MEDIUM | Refactor the kit report builder to a single layout model with shared measure/render options; regression-test at content-length boundaries |
+| Child photos in public bucket | HIGH | Flip bucket to private, migrate objects, replace `getPublicUrl` with signed URLs, purge stored public URLs; assume already-shared URLs are compromised |
+| Wrong age math shipped | LOW-MEDIUM | Centralize into tested helper, replace call sites; recompute on display (no stored derived age to backfill) |
+| Stale vaccine data | LOW (data) / HIGH (if it caused clinical error) | Update versioned dataset, bump effective date; add annual review reminder |
+| Missing owner filter / IDOR in new slice | MEDIUM | Add `.eq("profile_id", ...)`, add ownership test, enable table RLS as backstop, audit logs for cross-tenant access |
 
 ## Pitfall-to-Phase Mapping
 
 | Pitfall | Prevention Phase | Verification |
 |---------|------------------|--------------|
-| RLS enable with no policy blocks all rows | Phase 1 (Security) | `pg_tables` query shows 0 unprotected public tables |
-| Admin client bypasses RLS in user-triggered deletes | Phase 1 (Security) | Code search for `createAdminClient()` outside `delete-account.ts`; none found |
-| `profiles.id ≠ auth.uid()` — wrong policy anchor | Phase 1 (Security) | Authenticated API call from test session returns correct owned rows |
-| `authenticated_users` table missing RLS | Phase 1 (Security) | `pg_tables` query includes `authenticated_users` with `rowsecurity = true` |
-| Share-link token guessable / enumerable | Phase 2 (Share-links) | Token column is 64-char hex (`gen_random_bytes(32)`); no document UUID in URL |
-| Signed URL CDN cache outlives token expiry | Phase 2 (Share-links) | Share-link served via own API route with server-side token validation; no direct signed URL returned to patient |
-| No LGPD audit log for share-link access | Phase 2 (Share-links) | `share_link_audit_log` table exists; every download route writes a record |
-| Component state breaks on JSX extraction | Phase 3 (Decomposition) | Each extracted hook has at least one `node:test` spec; manual wizard flow passes end-to-end |
-| `__FALAPED_JSON__` payload contract broken by refactor | Phase 3 (Decomposition) | Payload shape test exists; CI runs it; client renders assistant actions correctly |
-| CI runs with unfrozen lockfile + `latest` Supabase | Phase 4 (Tests & CI) | `yarn install --frozen-lockfile` in CI; `@supabase/ssr` and `@supabase/supabase-js` pinned in `package.json` |
-| Local yarn corepack broken masks test failures | Phase 4 (Tests & CI) | CI test step uses `npx tsx --test` directly; does not depend on `yarn test` binary resolution |
-
----
+| pdfkit whitespace / extra page | Bloco 1 — print-spacing fix (before Bloco 3 new docs) | PDF page count matches content at boundary cases; holds for new doc types |
+| Pediatric age math | Bloco 1 — age display | Unit tests for month-end/leap/newborn/year-boundary/near-midnight; single `lib/` helper reused |
+| Vaccine data staleness / SUS-vs-private | Bloco 2 — vaccines (data model first) | Each schedule has source+effective date; schedules separated; UI shows vintage |
+| Child photo LGPD / public bucket | Bloco 1 — child photo | Private bucket, signed URL, unauth `curl` fails, consent + deletion path |
+| Brownfield scoping / paid gate / per-request client | Cross-cutting, every Bloco 2/3/4 slice (+ optional early RLS hardening) | Per-slice: paid gate + `profile_id` filter on all ops + ownership test; no admin client; no module-constructed client |
 
 ## Sources
 
-- Supabase RLS official docs (Context7 `/supabase/supabase`, retrieved 2026-06-04): enable RLS, policy structure, `bypassrls` for service role, `FORCE ROW LEVEL SECURITY`, CDN signed URL caching behavior
-- Supabase storage docs (Context7): signed URL TTL vs CDN cache independence; `createSignedUrl` patterns; public vs private buckets
-- Codebase audit: `.planning/codebase/CONCERNS.md` (2026-06-04) — IDOR finding confirmed in `modules/prescriptions/delete-prescription.ts:33`, `modules/medical-certificates/delete-medical-certificate.ts:33`; admin client usage in delete actions confirmed
-- Direct file reads: `lib/supabase/server.ts`, `lib/supabase/server-admin.ts`, `actions/prescriptions/delete-prescription.ts`, `modules/prescriptions/delete-prescription.ts`, `supabase/migrations/20260315000000_prescriptions.sql`, `supabase/migrations/20260228120000_profiles_and_authenticated_users_phase1.sql`
-- LGPD Lei 13.709/2018 Art. 11 (sensitive personal data), Art. 18 (data subject rights), Art. 48 (incident notification to ANPD) — training knowledge, MEDIUM confidence; verify against current ANPD guidance
-- `.planning/codebase/TESTING.md` (2026-06-04) — corepack/yarn local failure documented; `node:test` runner confirmed
+- Read directly: `node_modules/@falaped/falaped-kit/dist/pdf/index.js` (report/prescription/certificate builders — confirmed the mixed flow/absolute layout model and estimate-vs-render gap), `node_modules/@falaped/falaped-kit/README.md`, `modules/prescriptions/generate-prescription-pdf.ts`
+- Read directly: `supabase/migrations/20260228200000_storage_profile_logos_rls.sql` (public logo bucket), `supabase/migrations/20260315010000_storage_prescriptions.sql` (private prescriptions bucket — correct model), `.planning/codebase/CONCERNS.md` (no RLS, IDOR, admin-client misuse, 25mb limit), `.planning/codebase/ARCHITECTURE.md` (three-layer + per-request client constraints)
+- pdfkit docs & issues: [Text in PDFKit](https://pdfkit.org/docs/text.html), [Text measurement and calculations](https://app.studyraid.com/en/read/11913/379546/text-measurement-and-calculations), [Page breaks and content flow](https://app.studyraid.com/en/read/11913/379562/page-breaks-and-content-flow), [foliojs/pdfkit #666 (measure before render)](https://github.com/foliojs/pdfkit/issues/666), [#363 (line height)](https://github.com/foliojs/pdfkit/issues/363)
+- Age math: [Stop miscalculating age in JavaScript (leap years, Feb 29, Jan 31 trap) — DEV](https://dev.to/momin_ali_e002a22d102ff40/stop-miscalculating-age-in-javascript-leap-years-feb-29-and-the-jan-31-trap-22aj), [Accurate JS Age Calculator — kevinleary.net](https://www.kevinleary.net/blog/javascript-age-birthdate-mm-dd-yyyy/), [date-fns](https://date-fns.org/)
+- Vaccine calendar: [Calendário de Vacinação — Ministério da Saúde](https://www.gov.br/saude/pt-br/vacinacao/calendario), [Instrução Normativa Calendário Nacional 2026 (PDF)](https://www.gov.br/saude/pt-br/vacinacao/publicacoes/instrucao-normativa-que-instrui-o-calendario-nacional-de-vacinacao-2026.pdf), [SBIm atualizações](https://sbim.org.br/atualizacoes), [SBP calendário 2025/2026](https://www.sbp.com.br/imprensa/detalhe/news/sbp-lanca-calendario-de-vacinacao-atualizado-20252026/)
+- LGPD minors' data: [ANPD — enunciado dados de crianças e adolescentes](https://www.gov.br/anpd/pt-br/assuntos/noticias/anpd-divulga-enunciado-sobre-o-tratamento-de-dados-pessoais-de-criancas-e-adolescentes), [LGPD Art. 14](https://lgpd-brasil.info/capitulo_02/artigo_14), [Guia orientativo MPCE (PDF)](https://www.mpce.mp.br/wp-content/uploads/2023/10/Guia-orientativo-de-tratamento-de-dados-pessoais-de-criancas-e-adolescentes.pdf)
+- Supabase Storage: [Storage Buckets fundamentals](https://supabase.com/docs/guides/storage/buckets/fundamentals), [Storage Access Control](https://supabase.com/docs/guides/storage/security/access-control), [public bucket vs signedURL discussion #6458](https://github.com/orgs/supabase/discussions/6458)
 
 ---
-*Pitfalls research for: Falaped v1.1 — RLS retrofit, share-links, component decomposition, CI*
-*Researched: 2026-06-04*
+*Pitfalls research for: Brazilian pediatric medical practice web app (Falaped) — brownfield Next.js 16 + Supabase + pdfkit*
+*Researched: 2026-06-28*
