@@ -47,18 +47,23 @@ created: 2026-06-28
 
 Declared values (multiples of 4, alinhadas ao Tailwind/shadcn já em uso no dashboard):
 
+Conjunto-padrão declarado (todos múltiplos de 4): **4, 8, 12, 16, 24, 32, 40, 48, 64**. Alinhado ao Tailwind/shadcn já em uso no dashboard.
+
 | Token | Value | Tailwind | Usage nesta fase |
 |-------|-------|----------|------------------|
 | xs | 4px | `gap-1` / `p-1` | Gap entre ícone e texto inline |
 | sm | 8px | `gap-2` / `p-2` | Gap checkbox↔label; gap avatar↔nome compacto |
-| md | 12px | `gap-3` | Gap avatar↔nome na lista (`gap-3`, padrão atual da `patients-table`) |
+| md | 12px | `gap-3` | Gap avatar↔nome na lista (`gap-3`, padrão vigente em `patients-table.tsx` — `flex items-center gap-3`). Mantido para consistência com a tabela existente. |
 | md+ | 16px | `gap-4` / `p-4` | Espaçamento padrão de campos do form; padding de card compacto |
 | lg | 24px | `gap-6` / `p-6` | Padding de página/card; gap entre avatar e bloco de dados no hero |
 | xl | 32px | `gap-8` | Quebras entre grupos no cabeçalho do caso |
+| touch | 40px | `size-10` | **Alvo de toque mínimo** do botão "Remover foto" (ícone) — acessibilidade de clique. `Button size="icon"`/`size="sm"` do projeto. |
+| 2xl | 48px | `gap-12` / `p-12` | Reservado da escala-base (não usado diretamente nesta fase) |
+| 3xl | 64px | `gap-16` | Reservado da escala-base (não usado diretamente nesta fase) |
 
-Exceptions:
-- **`gap-3` (12px)** entre avatar e nome na lista é exceção consciente à escala de 8: já é o valor vigente em `patients-table.tsx` (linha `flex items-center gap-3`) — manter para consistência com a tabela existente, não introduzir 8px só nesta linha.
-- Alvo de toque do botão "Remover foto" (ícone): mínimo **40px** (`size-10` ou `h-9` com padding) para acessibilidade de clique — usar `Button` `size="sm"`/`icon` padrão do projeto (já ≥ 36px).
+Notas (ambos os valores são múltiplos de 4 e fazem parte do conjunto-padrão acima):
+- **12px (`gap-3`)** é token de primeira classe, não exceção: reflete o espaçamento vigente entre avatar e nome em `patients-table.tsx` — não introduzir 8px só nesta linha quebraria a consistência da tabela existente.
+- **40px (`size-10`)** é o token de **alvo de toque** para o botão "Remover foto" (ícone), justificado por acessibilidade de clique.
 
 ---
 
@@ -70,10 +75,15 @@ Herda a hierarquia tipográfica do dashboard (skill `pediatric-dashboard-design`
 |------|------|--------|-------------|----------|--------------------------|
 | Display (nome no hero) | 24px → 30px (`sm:`) | 600 (semibold) | 1.2 (tight) | `text-2xl sm:text-3xl font-semibold tracking-tight` | Nome do paciente ao lado do avatar do hero (já existe) |
 | Heading (nome no caso/card) | 16px | 600 (semibold) | 1.25 | `text-base font-semibold` | `CardTitle` do cabeçalho do caso (já existe) |
+| Nome na lista | 14px | 600 (semibold) | 1.4 | `text-sm font-semibold` | Nome do paciente na `patients-table` (vigente — `font-semibold`) |
 | Body | 14px | 400 (regular) | 1.5 | `text-sm` | Label do consentimento; mensagens de estado; hint do input |
-| Label | 14px | 500 (medium) | 1.4 | `text-sm font-medium` | `FieldLabel` "Foto do paciente"; nome na lista (`font-semibold`) |
+| Label do campo | 14px | 500 (medium) — **herdado** | 1.4 | `text-sm font-medium` | `FieldLabel` "Foto do paciente" |
 
-**Pesos declarados (2):** regular **400** e semibold **600**; o dashboard também usa medium **500** em labels (vigente em `FieldLabel`/nome da lista) — mantido por consistência, não introduzido aqui.
+**Pesos — contagem reconciliada:**
+- **2 pesos visuais introduzidos/usados como decisão desta fase:** regular **400** (body, hints, mensagens) e semibold **600** (ênfase — nome no hero, `CardTitle`, nome na lista, iniciais do fallback).
+- **+1 peso herdado: medium 500.** NÃO é introduzido por esta fase. É um TOKEN DO DESIGN SYSTEM VIGENTE, fixado dentro do componente compartilhado `components/ui/field.tsx` (`FieldLabel` aplica `font-medium`/500). Como esta fase reutiliza `FieldLabel` para o rótulo "Foto do paciente", o peso 500 entra por herança semântica do componente compartilhado — não há escolha tipográfica nova aqui, nem `font-medium` aplicado manualmente por código desta fase.
+
+Logo: a coluna **Weight**, a contagem acima e as regras de fallback abaixo concordam entre si — só os pesos 400 e 600 são decisão desta fase; 500 aparece exclusivamente via `FieldLabel` herdado.
 
 **Iniciais no fallback do avatar:**
 - Hero: `text-xl sm:text-2xl font-semibold` (já vigente)
