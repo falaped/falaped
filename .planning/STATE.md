@@ -3,9 +3,9 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 02-02-PLAN.md
-last_updated: "2026-06-28T23:55:00.000Z"
-last_activity: 2026-06-28 -- Completed 02-02 (photo upload + display slice)
+stopped_at: 02-03 mark-and-skip (implementado+commitado, sem summary/verificação)
+last_updated: "2026-06-29T13:55:00.000Z"
+last_activity: 2026-06-29 -- Completed quick task 260629-egq: correções da foto do paciente (3 bugs)
 progress:
   total_phases: 5
   completed_phases: 1
@@ -25,10 +25,10 @@ See: .planning/PROJECT.md (updated 2026-06-27)
 
 ## Current Position
 
-Phase: 02 (foto-privada-do-paciente) — EXECUTING
+Phase: 02 (foto-privada-do-paciente) — EXECUTING (02-03 anomaly, see Blockers)
 Plan: 3 of 3
-Status: 02-02 complete; ready to execute 02-03
-Last activity: 2026-06-28 -- Completed 02-02 (photo upload + display slice)
+Status: 02-03 implementado+commitado mas SEM summary/verificação (mark-and-skip 2026-06-29)
+Last activity: 2026-06-29 -- 02-03 mark-and-skip: anomalia registrada, execução não re-disparada
 
 Progress: [██████░░░░] 60%
 
@@ -87,6 +87,13 @@ None yet.
 - [Phase 4] Acurácia dos dados PNI/SBIm deve ser verificada com o médico contra as fontes oficiais atuais no momento do build (tarefa de conteúdo, não de stack)
 - [Phase 1] Correção de PDF cruza dois repos (kit + app) e pode exigir bump coordenado do `@falaped/falaped-kit` (>=0.2.7)
 - [Cross-cutting] App não tem RLS de tabela — todo slice novo precisa filtro `profile_id` em read/write/delete + gate `paid` + teste de ownership (Pitfall 5)
+- [Phase 2 / ANOMALY — mark-and-skip 2026-06-29] 02-03 (PHOTO-03 remove-photo) foi IMPLEMENTADO e commitado (ca769f3, 69cf2a2, 4eb4998) mas NÃO tem 02-03-SUMMARY.md e a verificação da fase nunca rodou. Por decisão explícita do usuário (mark-and-skip), o executor NÃO foi re-disparado e o SUMMARY NÃO foi gerado. Estado pendente: (1) escrever 02-03-SUMMARY.md, (2) rodar `yarn typecheck && yarn test && yarn lint`, (3) verificar critério de segurança "curl não autenticado a objeto patient-photos retorna 400/403", (4) rodar verificação da fase. Resolver com `/gsd-verify-work 02` ou re-disparo de execução antes de considerar a Phase 02 completa.
+
+### Quick Tasks Completed
+
+| # | Description | Date | Commit | Directory |
+|---|-------------|------|--------|-----------|
+| 260629-egq | Corrigir 3 pontos da foto do paciente (avatar persiste no refresh; foto na lista; upload em modal) | 2026-06-29 | 87468f8 | [260629-egq-corrigir-3-pontos-da-foto-do-paciente-1-](./quick/260629-egq-corrigir-3-pontos-da-foto-do-paciente-1-/) |
 
 ## Deferred Items
 
