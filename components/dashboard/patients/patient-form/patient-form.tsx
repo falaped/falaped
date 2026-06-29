@@ -40,6 +40,8 @@ export type PatientFormProps =
       mode: "edit"
       patient: Patient
       onUpdateSuccess?: () => void
+      /** Signed URL (short-lived) resolvida no servidor para o avatar de edição; null cai nas iniciais. */
+      photoUrl?: string | null
     }
 
 export function PatientForm(props: PatientFormProps) {
@@ -114,6 +116,7 @@ export function PatientForm(props: PatientFormProps) {
         photo={{
           patientId: props.patient.id,
           patientName: props.patient.name,
+          initialPhotoUrl: props.photoUrl,
         }}
       />
       <PatientFormClinicalSection form={editForm as unknown as LooseForm} />

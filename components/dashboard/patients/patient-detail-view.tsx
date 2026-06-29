@@ -115,6 +115,7 @@ export function PatientDetailView({
             <PatientForm
               mode="edit"
               patient={patient}
+              photoUrl={photoUrl}
               onUpdateSuccess={handleUpdateSuccess}
             />
           </CardContent>

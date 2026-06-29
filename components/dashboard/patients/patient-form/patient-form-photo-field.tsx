@@ -1,6 +1,7 @@
 "use client"
 
-import { useRef, useState } from "react"
+import { useEffect, useRef, useState } from "react"
+import { useRouter } from "next/navigation"
 import { Trash2 } from "lucide-react"
 import { toast } from "sonner"
 
@@ -52,7 +53,10 @@ export function PatientFormPhotoField({
   patientName: string
   initialPhotoUrl?: string | null
 }) {
+  const router = useRouter()
   const inputRef = useRef<HTMLInputElement>(null)
+  // Object-URL efêmero do arquivo selecionado; revogado para não vazar memória.
+  const objectUrlRef = useRef<string | null>(null)
   const [previewUrl, setPreviewUrl] = useState<string | null>(
     initialPhotoUrl ?? null,
   )
@@ -64,11 +68,39 @@ export function PatientFormPhotoField({
 
   const isBusy = status !== "idle"
 
+  // Após o refresh do servidor, a signed URL injetada via initialPhotoUrl é a
+  // fonte da verdade do avatar — desde que não haja um arquivo selecionado
+  // ainda aguardando envio (cujo preview é o object-URL local).
+  useEffect(() => {
+    if (selectedFile) return
+    setPreviewUrl(initialPhotoUrl ?? null)
+    setHasPhoto(Boolean(initialPhotoUrl))
+  }, [initialPhotoUrl, selectedFile])
+
+  // Revoga o object-URL ao desmontar.
+  useEffect(() => {
+    return () => {
+      if (objectUrlRef.current) {
+        URL.revokeObjectURL(objectUrlRef.current)
+        objectUrlRef.current = null
+      }
+    }
+  }, [])
+
+  function revokeObjectUrl() {
+    if (objectUrlRef.current) {
+      URL.revokeObjectURL(objectUrlRef.current)
+      objectUrlRef.current = null
+    }
+  }
+
   function handleFileChange(event: React.ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0]
     setError(null)
     if (!file) {
+      revokeObjectUrl()
       setSelectedFile(null)
+      setPreviewUrl(initialPhotoUrl ?? null)
       return
     }
 
@@ -84,8 +116,11 @@ export function PatientFormPhotoField({
       return
     }
 
-    // Preview local imediato.
-    setPreviewUrl(URL.createObjectURL(file))
+    // Preview local imediato — revoga o object-URL anterior antes de criar um novo.
+    revokeObjectUrl()
+    const nextUrl = URL.createObjectURL(file)
+    objectUrlRef.current = nextUrl
+    setPreviewUrl(nextUrl)
     setSelectedFile(file)
     // Re-exigir consentimento a cada nova foto / substituição (D-06).
     setConsent(false)
@@ -117,6 +152,11 @@ export function PatientFormPhotoField({
         toast.success("Foto atualizada.")
         setHasPhoto(true)
         setSelectedFile(null)
+        // Limpa o object-URL local; o servidor re-resolve uma signed URL real.
+        revokeObjectUrl()
+        // Re-resolve a signed URL no servidor e injeta via initialPhotoUrl,
+        // em vez de depender do object-URL efêmero do cliente.
+        router.refresh()
       } else {
         setError(result.error)
         toast.error(result.error)
@@ -137,10 +177,12 @@ export function PatientFormPhotoField({
       if (result.ok) {
         toast.success("Foto removida.")
         // Avatar volta para as iniciais.
+        revokeObjectUrl()
         setPreviewUrl(null)
         setHasPhoto(false)
         setSelectedFile(null)
         setConsent(false)
+        router.refresh()
       } else {
         setError(result.error)
         toast.error(result.error)
