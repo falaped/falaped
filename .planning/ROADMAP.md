@@ -72,7 +72,7 @@ Plans:
 
 **Wave 2** *(blocked on Wave 1)*
 
-- [ ] 02-02-PLAN.md — Upload + display slice (PHOTO-01/02): client compression + photo modules + gated upload action + form photo field & consent checkbox + AvatarImage on hero/list/case header (wave 2)
+- [x] 02-02-PLAN.md — Upload + display slice (PHOTO-01/02): client compression + photo modules + gated upload action + form photo field & consent checkbox + AvatarImage on hero/list/case header (wave 2)
 
 **Wave 3** *(blocked on Wave 2)*
 
@@ -136,7 +136,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Experiência da Consulta | 5/5 | Complete   | 2026-06-28 |
-| 2. Foto Privada do Paciente | 1/3 | In Progress|  |
+| 2. Foto Privada do Paciente | 2/3 | In Progress|  |
 | 3. Documentos Clínicos Novos | 0/TBD | Not started | - |
 | 4. Calendário de Vacinas (Referência) | 0/TBD | Not started | - |
 | 5. Carteira de Vacinação por Paciente | 0/TBD | Not started | - |

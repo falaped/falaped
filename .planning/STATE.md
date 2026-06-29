@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Phase 2 UI-SPEC approved
-last_updated: "2026-06-28T23:36:46.463Z"
-last_activity: 2026-06-28 -- Phase 02 execution started
+stopped_at: Completed 02-02-PLAN.md
+last_updated: "2026-06-28T23:55:00.000Z"
+last_activity: 2026-06-28 -- Completed 02-02 (photo upload + display slice)
 progress:
   total_phases: 5
   completed_phases: 1
   total_plans: 8
-  completed_plans: 6
-  percent: 20
+  completed_plans: 7
+  percent: 30
 ---
 
 # Project State
@@ -26,11 +26,11 @@ See: .planning/PROJECT.md (updated 2026-06-27)
 ## Current Position
 
 Phase: 02 (foto-privada-do-paciente) — EXECUTING
-Plan: 2 of 3
-Status: Ready to execute
-Last activity: 2026-06-28 -- Phase 02 execution started
+Plan: 3 of 3
+Status: 02-02 complete; ready to execute 02-03
+Last activity: 2026-06-28 -- Completed 02-02 (photo upload + display slice)
 
-Progress: [████░░░░░░] 40%
+Progress: [██████░░░░] 60%
 
 ## Performance Metrics
 
@@ -54,6 +54,7 @@ Progress: [████░░░░░░] 40%
 *Updated after each plan completion*
 | Phase 01 P02 | 10min | 1 tasks | 4 files |
 | Phase 02 P01 | 10min | 3 tasks | 10 files |
+| Phase 02 P02 | 20min | 6 tasks | 24 files |
 
 ## Accumulated Context
 
@@ -69,6 +70,8 @@ Recent decisions affecting current work:
 - [Phase ?]: Pediatric age band boundary at 24 months (a 1-year-old reads '12 meses'); months/days via differenceInMonths + intervalToDuration remainder; corrected age by shifting birth date forward and re-banding, capped at 24 months corrected.
 - [Phase ?]: [Phase 2] Foto da criança em bucket privado patient-photos (public=false) + 4 storage RLS owner-scoped via foldername[1] — aplicado ao DB live (D-01/D-03)
 - [Phase ?]: [Phase 2] Armazenar o path do objeto (profile_id/patient_id.ext), nunca a URL; consentimento server-side via z.literal(true) + colunas consent_given/consent_at (D-02/D-04/D-05)
+- [Phase 2]: Compressão client-side via browser-image-compression@2.0.2 (Free plan sem transforms nativas — D-09); upload upsert = foto única substituível (D-08); input clássico sem capture (D-07)
+- [Phase 2]: Helper singular (TTL 60s) alimenta hero + cabeçalho do caso; helper de lote (createSignedUrls) alimenta a lista (TTL 300s, sem N+1); <AvatarImage> Radix em todas as superfícies, nunca next/image (D-10/D-11)
 
 ### Pending Todos
 
@@ -95,6 +98,6 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-06-28T23:35:12.233Z
-Stopped at: Phase 2 UI-SPEC approved
-Resume file: .planning/phases/02-foto-privada-do-paciente/02-UI-SPEC.md
+Last session: 2026-06-28T23:55:00.000Z
+Stopped at: Completed 02-02-PLAN.md
+Resume file: .planning/phases/02-foto-privada-do-paciente/02-03-PLAN.md
