@@ -109,7 +109,13 @@ export function PatientForm(props: PatientFormProps) {
       })}
       className="flex flex-col gap-8"
     >
-      <PatientFormPersonalSection form={editForm as unknown as LooseForm} />
+      <PatientFormPersonalSection
+        form={editForm as unknown as LooseForm}
+        photo={{
+          patientId: props.patient.id,
+          patientName: props.patient.name,
+        }}
+      />
       <PatientFormClinicalSection form={editForm as unknown as LooseForm} />
       <div className="flex flex-wrap justify-end gap-3">
         <Button type="submit" disabled={isSubmitting} className="min-h-9">

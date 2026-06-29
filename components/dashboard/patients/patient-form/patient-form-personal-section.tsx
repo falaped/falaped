@@ -17,11 +17,23 @@ import { PATIENT_SEX_FORM_OPTIONS } from "@/modules/patients/patient-sex"
 import { PatientControlledSelectField } from "./patient-controlled-select-field"
 import { PatientFormBirthDateField } from "./patient-form-birth-date-field"
 import { PatientFormGestationalAgeField } from "./patient-form-gestational-age-field"
+import { PatientFormPhotoField } from "./patient-form-photo-field"
 
 export function PatientFormPersonalSection({
   form,
+  photo,
 }: {
   form: UseFormReturn<FieldValues>
+  /**
+   * Foto do paciente. Só disponível no modo edição — exige um `patientId`
+   * existente (o objeto é armazenado em `profile_id/patient_id.ext`). No
+   * cadastro o paciente ainda não existe, então o campo não é renderizado.
+   */
+  photo?: {
+    patientId: string
+    patientName: string
+    initialPhotoUrl?: string | null
+  }
 }) {
   const contactPhone = form.watch("contact_phone") ?? ""
 
@@ -29,6 +41,13 @@ export function PatientFormPersonalSection({
     <FieldSet>
       <FieldLegend variant="legend">Identificação e contato</FieldLegend>
       <FieldGroup className="mt-4 gap-6">
+        {photo ? (
+          <PatientFormPhotoField
+            patientId={photo.patientId}
+            patientName={photo.patientName}
+            initialPhotoUrl={photo.initialPhotoUrl}
+          />
+        ) : null}
         <div className="flex flex-col gap-4 md:flex-row md:items-start md:gap-4">
           <Field className="min-w-0 w-full flex-1 md:min-w-[10rem]">
             <FieldLabel htmlFor="patient-name">Nome do paciente</FieldLabel>
