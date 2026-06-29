@@ -2,10 +2,13 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: executing
+current_phase: 02
+current_phase_name: foto-privada-do-paciente
+status: "Phase 02 shipped — PR #1"
 stopped_at: 02-03 mark-and-skip (implementado+commitado, sem summary/verificação)
-last_updated: "2026-06-29T13:55:00.000Z"
-last_activity: 2026-06-29 -- Completed quick task 260629-egq: correções da foto do paciente (3 bugs)
+last_updated: "2026-06-29T16:43:01.804Z"
+last_activity: 2026-06-29
+last_activity_desc: "Shipped milestone v1.0 (Fases 01+02) — PR #1"
 progress:
   total_phases: 5
   completed_phases: 1
@@ -27,8 +30,8 @@ See: .planning/PROJECT.md (updated 2026-06-27)
 
 Phase: 02 (foto-privada-do-paciente) — EXECUTING (02-03 anomaly, see Blockers)
 Plan: 3 of 3
-Status: 02-03 implementado+commitado mas SEM summary/verificação (mark-and-skip 2026-06-29)
-Last activity: 2026-06-29 -- 02-03 mark-and-skip: anomalia registrada, execução não re-disparada
+Status: Phase 02 shipped — PR #1
+Last activity: 2026-06-29 -- Shipped milestone v1.0 (Fases 01+02) — PR #1
 
 Progress: [██████░░░░] 60%
 
