@@ -47,3 +47,5 @@ next-env.d.ts
 
 # dev repro output (CONS-04 PDF verification — scripts/repro-report-pdf.ts)
 /tmp
+# Supabase CLI local cache
+supabase/.temp/
