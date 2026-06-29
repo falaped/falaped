@@ -20,6 +20,14 @@ import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
 import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog"
+import {
   Field,
   FieldContent,
   FieldLabel,
@@ -65,8 +73,27 @@ export function PatientFormPhotoField({
   const [consent, setConsent] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [status, setStatus] = useState<Status>("idle")
+  const [isDialogOpen, setIsDialogOpen] = useState(false)
 
   const isBusy = status !== "idle"
+
+  // Limpa a seleção pendente (arquivo, preview local, consentimento e input).
+  function resetSelection() {
+    revokeObjectUrl()
+    setSelectedFile(null)
+    setPreviewUrl(initialPhotoUrl ?? null)
+    setConsent(false)
+    setError(null)
+    if (inputRef.current) inputRef.current.value = ""
+  }
+
+  // Estado controlado do modal: enquanto ocupado não permite fechar; ao abrir/fechar
+  // reseta a seleção e re-exige consentimento a cada nova foto (D-06).
+  function handleDialogOpenChange(open: boolean) {
+    if (isBusy) return
+    setIsDialogOpen(open)
+    resetSelection()
+  }
 
   // Após o refresh do servidor, a signed URL injetada via initialPhotoUrl é a
   // fonte da verdade do avatar — desde que não haja um arquivo selecionado
@@ -152,8 +179,12 @@ export function PatientFormPhotoField({
         toast.success("Foto atualizada.")
         setHasPhoto(true)
         setSelectedFile(null)
+        setConsent(false)
         // Limpa o object-URL local; o servidor re-resolve uma signed URL real.
         revokeObjectUrl()
+        if (inputRef.current) inputRef.current.value = ""
+        // Fecha o modal após o sucesso.
+        setIsDialogOpen(false)
         // Re-resolve a signed URL no servidor e injeta via initialPhotoUrl,
         // em vez de depender do object-URL efêmero do cliente.
         router.refresh()
@@ -222,104 +253,136 @@ export function PatientFormPhotoField({
             </AvatarFallback>
           </Avatar>
 
-          <div className="flex min-w-0 flex-col gap-2">
-            <input
-              ref={inputRef}
-              id="patient-photo"
-              type="file"
-              accept="image/png,image/jpeg,image/webp"
-              className="hidden"
-              onChange={handleFileChange}
-              disabled={isBusy}
-            />
-            <div className="flex flex-wrap items-center gap-2">
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={() => inputRef.current?.click()}
-                disabled={isBusy}
-              >
-                {buttonLabel}
-              </Button>
-              {selectedFile ? (
+          <div className="flex min-w-0 flex-wrap items-center gap-2">
+            <Dialog open={isDialogOpen} onOpenChange={handleDialogOpenChange}>
+              <DialogTrigger asChild>
                 <Button
                   type="button"
+                  variant="outline"
                   size="sm"
-                  onClick={handleUpload}
-                  disabled={isBusy || !consent}
+                  disabled={isBusy}
                 >
-                  {status === "uploading" ? "Enviando…" : "Salvar foto"}
+                  {buttonLabel}
                 </Button>
-              ) : null}
-              {hasPhoto ? (
-                <AlertDialog>
-                  <AlertDialogTrigger asChild>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Foto do paciente</DialogTitle>
+                  <DialogDescription>
+                    Selecione a imagem, confirme o consentimento do responsável e
+                    salve. PNG, JPEG ou WebP, até 2 MB.
+                  </DialogDescription>
+                </DialogHeader>
+
+                <div className="flex flex-col gap-4">
+                  <input
+                    ref={inputRef}
+                    id="patient-photo"
+                    type="file"
+                    accept="image/png,image/jpeg,image/webp"
+                    onChange={handleFileChange}
+                    disabled={isBusy}
+                    className="text-sm file:mr-3 file:rounded-md file:border file:border-border file:bg-muted file:px-3 file:py-1.5 file:text-sm file:font-medium"
+                  />
+
+                  {previewUrl ? (
+                    <div className="flex justify-center">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={previewUrl}
+                        alt={`Pré-visualização da foto de ${patientName}`}
+                        className="h-40 w-40 rounded-lg border border-border/80 object-cover"
+                      />
+                    </div>
+                  ) : null}
+
+                  <label className="flex items-start gap-2 text-sm">
+                    <Checkbox
+                      checked={consent}
+                      onCheckedChange={(value) => {
+                        setConsent(value === true)
+                        if (value === true) setError(null)
+                      }}
+                      disabled={isBusy}
+                      className="mt-0.5"
+                    />
+                    <span>
+                      Confirmo o consentimento do responsável para armazenar esta
+                      foto.
+                    </span>
+                  </label>
+
+                  {error ? (
+                    <p className="text-sm text-destructive" role="alert">
+                      {error}
+                    </p>
+                  ) : null}
+
+                  <div className="flex flex-wrap items-center justify-end gap-2">
+                    {statusLabel ? (
+                      <span className="mr-auto text-sm text-muted-foreground">
+                        {statusLabel}
+                      </span>
+                    ) : null}
                     <Button
                       type="button"
-                      variant="ghost"
-                      size="icon"
-                      className="size-10 text-destructive hover:text-destructive"
-                      disabled={isBusy}
-                      aria-label="Remover foto"
+                      onClick={handleUpload}
+                      disabled={isBusy || !selectedFile || !consent}
                     >
-                      <Trash2 className="size-4" />
+                      {status === "uploading" ? "Enviando…" : "Salvar foto"}
                     </Button>
-                  </AlertDialogTrigger>
-                  <AlertDialogContent>
-                    <AlertDialogHeader>
-                      <AlertDialogTitle>
-                        Remover foto do paciente?
-                      </AlertDialogTitle>
-                      <AlertDialogDescription>
-                        A foto será excluída permanentemente do armazenamento.
-                        Esta ação não pode ser desfeita.
-                      </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                      <AlertDialogCancel disabled={isBusy}>
-                        Cancelar
-                      </AlertDialogCancel>
-                      <AlertDialogAction
-                        variant="destructive"
-                        onClick={handleRemove}
-                        disabled={isBusy}
-                      >
-                        Remover
-                      </AlertDialogAction>
-                    </AlertDialogFooter>
-                  </AlertDialogContent>
-                </AlertDialog>
-              ) : null}
-              {statusLabel ? (
-                <span className="text-sm text-muted-foreground">
-                  {statusLabel}
-                </span>
-              ) : null}
-            </div>
+                  </div>
+                </div>
+              </DialogContent>
+            </Dialog>
+
+            {hasPhoto ? (
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="size-10 text-destructive hover:text-destructive"
+                    disabled={isBusy}
+                    aria-label="Remover foto"
+                  >
+                    <Trash2 className="size-4" />
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>
+                      Remover foto do paciente?
+                    </AlertDialogTitle>
+                    <AlertDialogDescription>
+                      A foto será excluída permanentemente do armazenamento.
+                      Esta ação não pode ser desfeita.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel disabled={isBusy}>
+                      Cancelar
+                    </AlertDialogCancel>
+                    <AlertDialogAction
+                      variant="destructive"
+                      onClick={handleRemove}
+                      disabled={isBusy}
+                    >
+                      Remover
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            ) : null}
+
+            {statusLabel && !isDialogOpen ? (
+              <span className="text-sm text-muted-foreground">
+                {statusLabel}
+              </span>
+            ) : null}
           </div>
         </div>
-
-        <label className="flex items-start gap-2 text-sm">
-          <Checkbox
-            checked={consent}
-            onCheckedChange={(value) => {
-              setConsent(value === true)
-              if (value === true) setError(null)
-            }}
-            disabled={isBusy}
-            className="mt-0.5"
-          />
-          <span>
-            Confirmo o consentimento do responsável para armazenar esta foto.
-          </span>
-        </label>
-
-        {error ? (
-          <p className="text-sm text-destructive" role="alert">
-            {error}
-          </p>
-        ) : null}
 
         <FieldDescription>
           PNG, JPEG ou WebP. A imagem é otimizada automaticamente antes do envio.
