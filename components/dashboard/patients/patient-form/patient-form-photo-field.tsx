@@ -1,8 +1,20 @@
 "use client"
 
 import { useRef, useState } from "react"
+import { Trash2 } from "lucide-react"
 import { toast } from "sonner"
 
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog"
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import { Checkbox } from "@/components/ui/checkbox"
@@ -14,7 +26,10 @@ import {
 } from "@/components/ui/field"
 import { compressPatientPhoto } from "@/lib/compress-image"
 import { getPatientInitials } from "@/lib/get-patient-initials"
-import { uploadPatientPhotoAction } from "@/actions"
+import {
+  removePatientPhotoAction,
+  uploadPatientPhotoAction,
+} from "@/actions"
 
 const ALLOWED_TYPES = ["image/png", "image/jpeg", "image/webp"]
 const MAX_SIZE_BYTES = 2 * 1024 * 1024 // 2 MB
@@ -26,7 +41,7 @@ const MSG_NO_CONSENT =
   "É necessário confirmar o consentimento do responsável para enviar a foto."
 const MSG_GENERIC = "Não foi possível enviar a foto. Tente novamente."
 
-type Status = "idle" | "optimizing" | "uploading"
+type Status = "idle" | "optimizing" | "uploading" | "removing"
 
 export function PatientFormPhotoField({
   patientId,
@@ -114,13 +129,39 @@ export function PatientFormPhotoField({
     }
   }
 
+  async function handleRemove() {
+    setError(null)
+    try {
+      setStatus("removing")
+      const result = await removePatientPhotoAction(patientId)
+      if (result.ok) {
+        toast.success("Foto removida.")
+        // Avatar volta para as iniciais.
+        setPreviewUrl(null)
+        setHasPhoto(false)
+        setSelectedFile(null)
+        setConsent(false)
+      } else {
+        setError(result.error)
+        toast.error(result.error)
+      }
+    } catch {
+      setError(MSG_GENERIC)
+      toast.error(MSG_GENERIC)
+    } finally {
+      setStatus("idle")
+    }
+  }
+
   const buttonLabel = hasPhoto ? "Trocar foto" : "Enviar foto"
   const statusLabel =
     status === "optimizing"
       ? "Otimizando imagem…"
       : status === "uploading"
         ? "Enviando…"
-        : null
+        : status === "removing"
+          ? "Removendo…"
+          : null
 
   return (
     <Field>
@@ -168,6 +209,45 @@ export function PatientFormPhotoField({
                 >
                   {status === "uploading" ? "Enviando…" : "Salvar foto"}
                 </Button>
+              ) : null}
+              {hasPhoto ? (
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      className="size-10 text-destructive hover:text-destructive"
+                      disabled={isBusy}
+                      aria-label="Remover foto"
+                    >
+                      <Trash2 className="size-4" />
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>
+                        Remover foto do paciente?
+                      </AlertDialogTitle>
+                      <AlertDialogDescription>
+                        A foto será excluída permanentemente do armazenamento.
+                        Esta ação não pode ser desfeita.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel disabled={isBusy}>
+                        Cancelar
+                      </AlertDialogCancel>
+                      <AlertDialogAction
+                        variant="destructive"
+                        onClick={handleRemove}
+                        disabled={isBusy}
+                      >
+                        Remover
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
               ) : null}
               {statusLabel ? (
                 <span className="text-sm text-muted-foreground">
