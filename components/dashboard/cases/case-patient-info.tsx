@@ -12,11 +12,20 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar"
 import { formatBrazilianPhone, formatDate } from "@/lib/formatters"
+import { getPatientInitials } from "@/lib/get-patient-initials"
 import { formatPatientSexForDisplay } from "@/modules/patients/patient-sex"
 import type { CasePatientDetail } from "@/modules/cases/get-case-by-id"
 
-export function CasePatientInfo({ patient }: { patient: CasePatientDetail }) {
+export function CasePatientInfo({
+  patient,
+  photoUrl = null,
+}: {
+  patient: CasePatientDetail
+  /** Signed URL (short-lived); null cai para iniciais (Pitfall 1). */
+  photoUrl?: string | null
+}) {
   const formattedPhone = patient.contact_phone
     ? formatBrazilianPhone(patient.contact_phone)
     : null
@@ -24,8 +33,20 @@ export function CasePatientInfo({ patient }: { patient: CasePatientDetail }) {
   return (
     <Card className="border-border">
       <CardHeader className="pb-2">
-        <CardTitle className="text-base font-semibold">{patient.name}</CardTitle>
-        <CardDescription>Dados do paciente neste caso</CardDescription>
+        <div className="flex items-center gap-3">
+          <Avatar className="h-10 w-10 shrink-0 border border-border/80">
+            {photoUrl ? (
+              <AvatarImage src={photoUrl} alt={`Foto de ${patient.name}`} />
+            ) : null}
+            <AvatarFallback className="bg-primary/10 text-sm font-semibold text-primary">
+              {getPatientInitials(patient.name)}
+            </AvatarFallback>
+          </Avatar>
+          <div className="min-w-0">
+            <CardTitle className="text-base font-semibold">{patient.name}</CardTitle>
+            <CardDescription>Dados do paciente neste caso</CardDescription>
+          </div>
+        </div>
       </CardHeader>
       <CardContent className="px-4 pb-4 pt-0 sm:px-6 sm:pb-5">
         <div className="flex w-full flex-wrap items-center justify-start gap-6 sm:gap-8">

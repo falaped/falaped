@@ -7,7 +7,13 @@ import { PatientEmptyState } from "@/components/dashboard/patients/patient-empty
 import { PatientsTable } from "@/components/dashboard/patients/patients-table"
 import type { Patient } from "@/modules/patients/types"
 
-function filterBySearch(patients: Patient[], search: string): Patient[] {
+/** Patient enriquecido com a signed URL resolvida server-side (lista). */
+type PatientWithPhoto = Patient & { photoUrl?: string | null }
+
+function filterBySearch(
+  patients: PatientWithPhoto[],
+  search: string,
+): PatientWithPhoto[] {
   if (!search.trim()) return patients
   const term = search.toLowerCase().trim()
   return patients.filter((p) => {
@@ -17,7 +23,11 @@ function filterBySearch(patients: Patient[], search: string): Patient[] {
   })
 }
 
-export function PatientsToolbarAndList({ patients }: { patients: Patient[] }) {
+export function PatientsToolbarAndList({
+  patients,
+}: {
+  patients: PatientWithPhoto[]
+}) {
   const [searchQuery, setSearchQuery] = useState("")
 
   const sortedPatients = useMemo(() => {

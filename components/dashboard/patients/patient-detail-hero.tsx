@@ -1,7 +1,7 @@
 import type { ReactNode } from "react"
 import { AlertTriangleIcon, CalendarIcon, PhoneIcon, UserRoundIcon } from "lucide-react"
 
-import { Avatar, AvatarFallback } from "@/components/ui/avatar"
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { formatDate, formatBrazilianPhone } from "@/lib/formatters"
@@ -16,6 +16,8 @@ import { cn } from "@/lib/utils"
 
 type PatientDetailHeroProps = {
   patient: Patient
+  /** Short-lived signed URL for the photo; null falls back to initials (Pitfall 1). */
+  photoUrl?: string | null
   /** Actions anchored top-right inside the hero (e.g. Voltar + menu). */
   toolbar?: ReactNode
   /** Opens the edit form (D-09 "Completar cadastro" CTA target). */
@@ -25,6 +27,7 @@ type PatientDetailHeroProps = {
 
 export function PatientDetailHero({
   patient,
+  photoUrl = null,
   toolbar,
   onEditRequest,
   className,
@@ -65,10 +68,10 @@ export function PatientDetailHero({
               "order-2 flex min-w-0 flex-1 flex-col gap-5 sm:order-1 sm:flex-row sm:items-start sm:gap-6",
             )}
           >
-            <Avatar
-              className="h-20 w-20 shrink-0 border border-border/80 bg-background shadow-xs sm:h-24 sm:w-24"
-              aria-hidden
-            >
+            <Avatar className="h-20 w-20 shrink-0 border border-border/80 bg-background shadow-xs sm:h-24 sm:w-24">
+              {photoUrl ? (
+                <AvatarImage src={photoUrl} alt={`Foto de ${patient.name}`} />
+              ) : null}
               <AvatarFallback className="bg-primary/10 text-xl font-semibold text-primary sm:text-2xl">
                 {initials}
               </AvatarFallback>

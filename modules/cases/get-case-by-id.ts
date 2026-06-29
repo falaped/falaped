@@ -25,6 +25,7 @@ export type CasePatientDetail = {
   allergies: string | null
   current_medications: string | null
   medical_history: string | null
+  photo_path: string | null
 }
 
 export type CaseDetail = {
@@ -97,7 +98,8 @@ export async function getCaseById(
         head_circumference,
         allergies,
         current_medications,
-        medical_history
+        medical_history,
+        photo_path
       )
     `)
     .eq("id", caseId)

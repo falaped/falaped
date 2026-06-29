@@ -2,6 +2,7 @@ import { notFound, redirect } from "next/navigation"
 import { createClient } from "@/lib/supabase/server"
 import { getAuthenticatedUser } from "@/modules/supabase/get-authenticated-user"
 import { getPatientById } from "@/modules/patients/get-patient-by-id"
+import { getPatientPhotoSignedUrl } from "@/modules/patients/get-patient-photo-signed-url"
 import { getCasesByPatientId } from "@/modules/cases/get-cases-by-patient-id"
 import { getMedicalCertificatesByPatientId } from "@/modules/medical-certificates/get-medical-certificates-by-patient-id"
 import { getPrescriptionsByPatientId } from "@/modules/prescriptions/get-prescriptions-by-patient-id"
@@ -16,10 +17,11 @@ export async function PatientDetailContent({ id }: { id: string }) {
   const patient = await getPatientById(supabase, id, profile.id)
   if (!patient) notFound()
 
-  const [cases, certificates, prescriptions] = await Promise.all([
+  const [cases, certificates, prescriptions, photoUrl] = await Promise.all([
     getCasesByPatientId(supabase, profile.id, patient.id),
     getMedicalCertificatesByPatientId(supabase, profile.id, patient.id),
     getPrescriptionsByPatientId(supabase, profile.id, patient.id),
+    getPatientPhotoSignedUrl(supabase, patient.photo_path),
   ])
 
   return (
@@ -29,6 +31,7 @@ export async function PatientDetailContent({ id }: { id: string }) {
       cases={cases}
       certificates={certificates}
       prescriptions={prescriptions}
+      photoUrl={photoUrl}
     />
   )
 }

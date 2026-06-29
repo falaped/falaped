@@ -3,7 +3,7 @@
 import { useRouter } from "next/navigation"
 import { useState } from "react"
 import { CalendarDays, UserRound } from "lucide-react"
-import { Avatar, AvatarFallback } from "@/components/ui/avatar"
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar"
 import { Card } from "@/components/ui/card"
 import {
   Table,
@@ -24,11 +24,18 @@ import { getPatientInitials } from "@/lib/get-patient-initials"
 import type { Patient } from "@/modules/patients/types"
 import { cn } from "@/lib/utils"
 
+/** Patient enriquecido com a signed URL resolvida server-side (lista). */
+type PatientWithPhoto = Patient & { photoUrl?: string | null }
+
 function patientProfileHref(patientId: string): string {
   return `/dashboard/patients/${patientId}`
 }
 
-export function PatientsTable({ patients }: { patients: Patient[] }) {
+export function PatientsTable({
+  patients,
+}: {
+  patients: PatientWithPhoto[]
+}) {
   const router = useRouter()
   const [rowNavigatingId, setRowNavigatingId] = useState<string | null>(null)
 
@@ -78,8 +85,10 @@ export function PatientsTable({ patients }: { patients: Patient[] }) {
                             <Avatar
                               size="sm"
                               className="ring-1 ring-border/80 transition-shadow group-hover/row:ring-border"
-                              aria-hidden
                             >
+                              {patient.photoUrl ? (
+                                <AvatarImage src={patient.photoUrl} alt="" />
+                              ) : null}
                               <AvatarFallback className="bg-primary/15 text-xs font-semibold text-primary">
                                 {getPatientInitials(patient.name)}
                               </AvatarFallback>
