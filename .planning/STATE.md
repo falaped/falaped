@@ -5,16 +5,16 @@ milestone_name: milestone
 current_phase: 02
 current_phase_name: foto-privada-do-paciente
 status: "Phase 02 shipped — PR #1"
-stopped_at: 02-03 mark-and-skip (implementado+commitado, sem summary/verificação)
-last_updated: "2026-06-29T16:43:01.804Z"
+stopped_at: "Fase 3 discuss em andamento — 4 áreas escolhidas; pendente: 1ª pergunta DOC-02 (fonte do catálogo de exames), usuário quer esclarecer antes de responder. Sem CONTEXT.md ainda."
+last_updated: "2026-06-30T11:57:26.305Z"
 last_activity: 2026-06-29
 last_activity_desc: "Shipped milestone v1.0 (Fases 01+02) — PR #1"
 progress:
   total_phases: 5
-  completed_phases: 1
+  completed_phases: 2
   total_plans: 8
-  completed_plans: 7
-  percent: 30
+  completed_plans: 8
+  percent: 40
 ---
 
 # Project State
@@ -108,6 +108,6 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-06-28T23:55:00.000Z
-Stopped at: Completed 02-02-PLAN.md
-Resume file: .planning/phases/02-foto-privada-do-paciente/02-03-PLAN.md
+Last session: 2026-06-30T11:57:26.300Z
+Stopped at: Fase 3 discuss em andamento — 4 áreas escolhidas; pendente: 1ª pergunta DOC-02 (fonte do catálogo de exames), usuário quer esclarecer antes de responder. Sem CONTEXT.md ainda.
+Resume file: .planning/ROADMAP.md
