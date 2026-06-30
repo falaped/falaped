@@ -2,6 +2,9 @@ export {
   setCasePatientIdAction,
   deleteCaseAction,
   updateCaseStatusAction,
+  pauseConsultationAction,
+  resumeConsultationAction,
+  resetConsultationAction,
   generateCaseReportAction,
   downloadCaseReportPdfAction,
   improveReportSectionAction,
@@ -21,6 +24,10 @@ export {
   createPatientAction,
   deletePatientAction,
   updatePatientAction,
+  uploadPatientPhotoAction,
+  type UploadPatientPhotoResult,
+  removePatientPhotoAction,
+  type RemovePatientPhotoResult,
 } from "./patients"
 export {
   deleteMyAccountAction,

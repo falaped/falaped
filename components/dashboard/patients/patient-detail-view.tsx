@@ -28,11 +28,14 @@ export function PatientDetailView({
   cases = [],
   certificates = [],
   prescriptions = [],
+  photoUrl = null,
 }: {
   patient: Patient
   cases?: CaseForPatient[]
   certificates?: MedicalCertificateListItem[]
   prescriptions?: PrescriptionListItem[]
+  /** Signed URL (short-lived) resolved server-side for the hero avatar; null falls back to initials. */
+  photoUrl?: string | null
 }) {
   const router = useRouter()
   const pathname = usePathname()
@@ -86,7 +89,9 @@ export function PatientDetailView({
       ) : (
         <PatientDetailHero
           patient={patient}
+          photoUrl={photoUrl}
           className="w-full"
+          onEditRequest={() => setIsEditing(true)}
           toolbar={
             <PatientDetailToolbar
               patientId={patient.id}
@@ -110,6 +115,7 @@ export function PatientDetailView({
             <PatientForm
               mode="edit"
               patient={patient}
+              photoUrl={photoUrl}
               onUpdateSuccess={handleUpdateSuccess}
             />
           </CardContent>

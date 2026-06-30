@@ -18,12 +18,14 @@ export type CasePatientDetail = {
   sex: PatientSex | null
   legal_guardian: string | null
   blood_type: string | null
+  gestational_age_weeks: number | null
   weight: string | null
   height: string | null
   head_circumference: string | null
   allergies: string | null
   current_medications: string | null
   medical_history: string | null
+  photo_path: string | null
 }
 
 export type CaseDetail = {
@@ -33,6 +35,8 @@ export type CaseDetail = {
   origin: "dashboard" | "whatsapp"
   started_at: string
   ended_at: string | null
+  consultation_paused_ms: number
+  consultation_paused_at: string | null
   patient_id: string | null
   awaiting_intent: boolean
   awaiting_patient_choice: boolean
@@ -71,6 +75,8 @@ export async function getCaseById(
       origin,
       started_at,
       ended_at,
+      consultation_paused_ms,
+      consultation_paused_at,
       patient_id,
       awaiting_intent,
       awaiting_patient_choice,
@@ -86,12 +92,14 @@ export async function getCaseById(
         sex,
         legal_guardian,
         blood_type,
+        gestational_age_weeks,
         weight,
         height,
         head_circumference,
         allergies,
         current_medications,
-        medical_history
+        medical_history,
+        photo_path
       )
     `)
     .eq("id", caseId)

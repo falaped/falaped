@@ -36,6 +36,10 @@ export function buildEditPatientDefaultValues(patient: Patient) {
     sex: sexToFormValue(patient.sex),
     legal_guardian: toFormValue(patient.legal_guardian),
     blood_type: bloodTypeToFormValue(patient.blood_type),
+    gestational_age_weeks:
+      patient.gestational_age_weeks != null
+        ? String(patient.gestational_age_weeks)
+        : "",
     weight: toFormValue(patient.weight),
     height: toFormValue(patient.height),
     head_circumference: toFormValue(patient.head_circumference),
@@ -53,6 +57,7 @@ export const CREATE_PATIENT_DEFAULT_VALUES = {
   sex: "",
   legal_guardian: "",
   blood_type: "",
+  gestational_age_weeks: "",
   weight: "",
   height: "",
   head_circumference: "",

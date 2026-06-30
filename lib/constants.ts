@@ -7,6 +7,13 @@ export const MEDICAL_CERTIFICATES_BUCKET = "medical-certificates"
 /** Supabase Storage bucket for prescription PDFs (receitas). Path: {profile_id}/{prescription_id}.pdf */
 export const PRESCRIPTIONS_BUCKET = "prescriptions"
 
+/**
+ * Supabase Storage bucket privado para fotos de pacientes (crianças). Path:
+ * {profile_id}/{patient_id}.ext. Bucket privado (public=false): acesso somente
+ * via signed URL e RLS escopada ao dono. Armazene o PATH do objeto, nunca a URL (D-02).
+ */
+export const PATIENT_PHOTOS_BUCKET = "patient-photos"
+
 export const ASSISTANT_CASE_CHAT_MAX_HISTORY_MESSAGES = 48
 export const ASSISTANT_CASE_CHAT_MAX_HISTORY_CHARS = 14_000
 export const CASE_CHAT_CHIP_MAX_PER_RESPONSE = 4

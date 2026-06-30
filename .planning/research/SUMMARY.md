@@ -1,186 +1,160 @@
 # Project Research Summary
 
-**Project:** Falaped v1.1 — Secure Patient Share-Links, Patient Timeline, Supabase RLS Hardening
-**Domain:** Medical SaaS — LGPD-compliant document sharing, chronological patient history, multi-tenant data isolation
-**Researched:** 2026-06-04
+**Project:** Falaped — pediatric consultation-experience, vaccines, and new-documents milestone
+**Domain:** Brazilian pediatric medical-practice web app (brownfield, in production)
+**Researched:** 2026-06-28
 **Confidence:** HIGH
 
 ## Executive Summary
 
-Falaped is a doctor-facing medical SaaS that needs three tightly interdependent capabilities added in v1.1: (1) expiring, revocable share-links so doctors can send prescriptions and medical certificates to patients via WhatsApp without exposing raw Supabase storage URLs; (2) a unified chronological patient timeline merging cases, prescriptions, and certificates into a single filtered feed; and (3) full Supabase RLS enforcement across all `public.*` data tables to close a documented IDOR vulnerability. The defining characteristic of this work is that all three features are achievable with zero new npm dependencies — the entire implementation lives in SQL migrations, Next.js Route Handlers, and server actions using `@supabase/supabase-js` and `@supabase/ssr` already installed.
+Falaped is a mature, production brownfield pediatric EMR built on Next.js 16, React 19, Supabase (Postgres + Storage), and a strict three-tier slice pattern (`app/ -> actions/ -> modules/`) with all PDF rendering owned by `@falaped/falaped-kit/pdf` (PDFKit). This milestone does **not** introduce a new architecture or new runtime dependencies — every capability in scope (child photo, consultation timer, precise pediatric age, vaccine calendar/card, three new clinical documents, blank prescription, orientation templates, and the PDF spacing fix) is achievable by replicating existing slices and reusing already-installed libraries (`date-fns` 4.4.0, `supabase-js` 2.108.2, the kit, `react-hook-form`, `zod`, TipTap). The only conditional new dependency is `browser-image-compression`, needed solely if the Supabase project is **not** on the Pro plan (image transforms are Pro-gated) or to strip EXIF/GPS from minors' photos.
 
-The recommended approach is a strict sequential build order that treats RLS + IDOR fix as a hard prerequisite for everything else. A share-link generator that does not enforce document ownership is exploitable on day one. The architecture is straightforward: a public `/share/[token]` SSR page bypasses auth middleware, a `/api/share/[token]/download` Route Handler validates the DB token and generates a short-lived storage signed URL server-side, and the existing layered `actions/ → modules/ → Supabase` pattern is extended rather than replaced. The patient timeline requires only a new `get-patient-timeline.ts` module that runs three parallel queries and merges in TypeScript — no SQL UNION view is needed in v1.
+The recommended approach is "reuse the pattern, not the table": each new document type (encaminhamento, pedido de exames, relatorio medico) is an independent end-to-end clone of the `prescriptions` slice, the vaccine **reference** calendar ships as static typed data while the **per-patient** card is a `profile_id`-scoped table, and the consultation timer derives elapsed time from the existing `cases.started_at` timestamp rather than persisting ticks. Age math is centralized in a single unit-tested `lib/` helper consumed by both the age display and vaccine-eligibility logic.
 
-The critical risks cluster around RLS rollout correctness and share-link security. The project's `profiles.id` is not the same as `auth.uid()` — every RLS policy must use a one-hop subquery through `profiles.auth_user_id`, and omitting this produces silent empty results indistinguishable from working code. Separately, Supabase Storage signed URLs must never be handed directly to patients because CDN caching outlives token expiry with no revocation mechanism; LGPD Art. 18 requires the doctor be able to invalidate a link, which is only possible via the app-level token table. Both risks have well-defined mitigations documented in the research.
+The dominant risks are not technology choices but correctness and safety. Five critical pitfalls drive the plan: (1) the active PDF whitespace/extra-page bug stems from PDFKit mixing flow and absolute layout models with estimate-vs-render drift — it must be fixed in the kit before new documents inherit it; (2) timezone-naive/off-by-one pediatric age math is a clinical-accuracy defect; (3) hard-coded vaccine calendars go stale annually and give unsafe guidance unless versioned with source + effective date; (4) child photos in a public bucket are an LGPD violation for minors' sensitive data (the existing `profile-logos` bucket is public — do NOT copy it); and (5) the app has **no table RLS** — tenant isolation depends entirely on every query carrying a `profile_id` filter plus a `paid` gate, so each new slice is a fresh chance to introduce an IDOR.
 
 ## Key Findings
 
 ### Recommended Stack
 
-All three features require zero new npm packages. The existing `@supabase/supabase-js`, `@supabase/ssr`, Next.js App Router, and plain Postgres migrations cover every requirement. The service-role admin client is used sparingly — only for storage signed URL generation inside the public download route, after token validation. The existing `phone_link_codes` table establishes the project's internal precedent for token tables; `share_links` follows the identical pattern.
+Zero new runtime dependencies are required. The work is engineering and data-correctness inside the existing stack, plus a coordinated `@falaped/falaped-kit` release (the PDF fix and any new doc-type entrypoints live in the kit, not the app). See `STACK.md` for full detail.
 
 **Core technologies:**
-- `@supabase/supabase-js` (already installed): token table CRUD, `createSignedUrl`, RLS policy enforcement — no upgrade needed
-- `@supabase/ssr` (already installed): SSR server client for both authenticated dashboard routes and the unauthenticated `/share/[token]` page
-- PostgreSQL / Supabase migrations (already used): `ALTER TABLE … ENABLE ROW LEVEL SECURITY` + policies, new `share_links` table
-- Next.js App Router (already installed): `/share/[token]` public route segment outside the `/dashboard` auth layout
-- `NEXT_PUBLIC_APP_URL` env var (new): constructs the share URL; add to `lib/env.ts` Zod schema and Vercel project config
-
-**Critical version note:** `@supabase/ssr` and `@supabase/supabase-js` are currently pinned to `latest` in `package.json`. Both must be pinned to an explicit semver range before CI is set up.
+- **Supabase Storage (private bucket + signed URLs + RLS):** child photo storage — minors' PII must never use a public bucket; serve via short-lived `createSignedUrl`.
+- **date-fns 4.4.0 (`intervalToDuration`, `differenceInDays`):** precise pediatric age (days, months+days) — already installed; calendar-correct decomposition.
+- **Custom React hook (no library):** consultation timer — compute `Date.now() - startedAt`, never increment a `setInterval` counter (drifts/freezes when backgrounded).
+- **Static seeded Postgres data + `@falaped/falaped-kit/pdf` + TipTap + react-hook-form + Zod:** vaccine calendar and new clinical documents — pure composition of existing pieces.
+- **`browser-image-compression` (CONDITIONAL, ^2.0.2):** client-side photo resize/EXIF strip — only if not on Supabase Pro.
 
 ### Expected Features
 
-**Must have (table stakes — v1):**
-- Share token DB table (`share_links`) with `expires_at`, `revoked_at`, `accessed_at` — required before any share-link UI
-- Public download route `GET /api/share/[token]/download` — validates token, generates 300 s signed URL, 302 redirect
-- Generate share token server action (auth-gated, Zod-validated) — doctor creates a link for an owned document
-- Revoke token action — sets `revoked_at`; required for LGPD Art. 18 compliance
-- `accessed_at` audit field — written on first successful download; minimal LGPD Art. 37 audit trail
-- Unified chronological timeline — merge cases + prescriptions + certificates into one sorted, month-grouped feed
-- Event-type filter (client-side pill group) — scope timeline to consultations / prescriptions / certificates
-- Share button on timeline document rows — inline "Compartilhar" triggers token generation
+Scoped to NEW features this cycle (the app already ships patients, prescriptions, atestados, laudos, AI assistant). See `FEATURES.md`.
 
-**Should have (competitive — v1.x, post-validation):**
-- Branded public download page with clinic name/logo — trust signal replacing raw redirect
-- Expiry countdown in doctor UI ("expira em N dias")
-- One-click link regeneration — revoke old + insert new
+**Must have (table stakes):**
+- Age in days / months+days / years by pediatric range — dosing and scheduling are age-precise.
+- Vaccine reference tables (SUS/PNI + private/SBIm + gestante) as versioned seeded data.
+- Per-patient carteira de vacinacao (record applied doses) with pending/overdue computation by age.
+- Encaminhamento, pedido de exames, relatorio medico — three thin slices over the existing receita pattern.
+- Receita em branco + Orientacoes template library.
+- Correct PDF print spacing (fixes the active extra-blank-page bug).
+- Consultation timer (start/elapsed).
+
+**Should have (competitive):**
+- Next-due vaccine logic surfaced in-consult ("Proxima: VIP reforco aos 15 meses").
+- SUS vs particular side-by-side per age (counseling moment).
+- Auto-fill documents from patient context (name, DOB, age-in-months, IMC).
+- Print-perfect single-page documents across all new doc types.
 
 **Defer (v2+):**
-- Email/SMS delivery — requires transactional provider and LGPD consent trail
-- Patient authentication on share page — requires patient identity system
-- Case reports in timeline — requires PHI access-level decision
-- Permanent/no-expiry links — violates LGPD data minimization; never ship
+- Exam photo AI extraction (explicitly deferred); exam panels/catalog; AI document drafting from transcription; outbound vaccine reminders (LGPD-heavy); RNDS/ConecteSUS sync; consultation-time analytics.
 
 ### Architecture Approach
 
-The architecture extends the existing strict layered pattern (`actions/ → modules/ → Supabase client`) with two new surface areas: a public route segment (`app/share/`) carved out of auth middleware via an `isShareRoute` guard in `lib/supabase/proxy.ts`, and a new `modules/share-links/` domain. Token validation in the public download route uses the anon Supabase client with an explicit RLS policy for anon SELECT on valid tokens, then switches to the admin client exclusively for storage signed URL generation. The patient timeline uses `Promise.all` across three existing query modules, merged in TypeScript.
+This is a brownfield integration job: fold each new feature into the strict three-tier slice pattern that already ships in production. One directory per new document type (not a generic polymorphic `documents` table — the house style keeps `prescriptions` and `medical_certificates` separate despite identical shape). Reference vaccine data is static TS; per-patient data is a `profile_id`-scoped table. Patient photo and timer are extensions to existing `patients`/`cases` slices, not new slices. Binary PDF delivery uses the established `app/api/<domain>/[id]/download/route.ts` signed-URL route. See `ARCHITECTURE.md`.
 
 **Major components:**
-1. `lib/supabase/proxy.ts` (modified) — `isShareRoute` guard; `/share` stays in matcher scope for session cookie hygiene
-2. `app/share/[token]/page.tsx` + `app/api/share/[token]/download/route.ts` (new) — public SSR page and binary download handler
-3. `actions/share-links/` + `modules/share-links/` (new) — doctor-facing create/revoke and token CRUD
-4. `modules/patients/get-patient-timeline.ts` (new) — parallel queries + TypeScript merge
-5. `supabase/migrations/` (new) — two migrations: RLS on all data tables; `share_links` table with anon/authenticated policies
+1. **Document-type slices (`referrals`, `exam-requests`, `medical-reports`)** — each a verbatim `prescriptions` clone: wizard -> action (auth + paid gate + Zod) -> modules (insert/get/generate-pdf/upload-pdf) -> table + RLS in one migration.
+2. **Vaccines split: static `VACCINE_CALENDAR` (no DB) + `patient_vaccinations` table** — pending/late computed at read time by merging applied rows against the calendar for the patient's age.
+3. **Extensions: `patients.photo_storage_path` (private bucket) + timer from `cases.started_at`** — no new slice; signed-URL render for photos, client-side elapsed for the timer.
 
 ### Critical Pitfalls
 
-1. **RLS enable without policies blocks all rows silently** — Always write `ENABLE ROW LEVEL SECURITY` and all `CREATE POLICY` statements in the same migration file. A deployment gap causes every SSR page to return empty arrays with no error.
+Top items from `PITFALLS.md`:
 
-2. **`profiles.id` ≠ `auth.uid()` — wrong policy anchor** — The standard Supabase pattern `profile_id = auth.uid()` never matches in this schema. Every policy must use the subquery `profile_id = (select id from public.profiles where auth_user_id = auth.uid())`. Wrap in a `SECURITY DEFINER` function to avoid per-row re-evaluation.
-
-3. **Admin client bypasses RLS in user-triggered deletes (live IDOR)** — `delete-prescription.ts` and `delete-medical-certificate.ts` use the admin client without a `profile_id` filter. Fix with `.eq("profile_id", profileId)` and user-scoped storage RLS before enabling table RLS.
-
-4. **Supabase Storage signed URLs are not revocable via CDN** — Always serve PDFs through `/api/share/[token]/download` which validates the DB token on every request and generates a fresh 300 s signed URL as a 302 redirect. Never pass a signed URL directly to the patient.
-
-5. **Share-link token entropy — never reuse the document UUID** — Token column must be `encode(gen_random_bytes(32), 'hex')` (256 bits). Using `prescription.id` or any derived value enables enumeration attacks on medical PHI.
+1. **PDFKit whitespace / phantom extra page** — fix the mixed flow/absolute layout model in the kit so measure and render share one options path; verify at 1-page, boundary (~1.05 pages), and multi-page content. Must land before new doc types inherit the builder.
+2. **Timezone-naive / off-by-one pediatric age** — treat DOB as a calendar date at local midnight; compute months-then-remainder; build one unit-tested `computePediatricAge` helper in `lib/` with edge-case tests (Jan-31, Feb-29 non-leap, newborn, year-boundary, near-midnight).
+3. **Stale / unsafe vaccine calendar** — store SUS/private/gestante as separate versioned datasets with source + effective date; show vintage + "confirm against current official calendar" in the UI; present as decision support, not prescription.
+4. **Child photos in a public bucket (LGPD violation for minors)** — model on the private `prescriptions` bucket, NOT public `profile-logos`; signed URLs only, store path not URL; capture guardian consent + erasure path; verify an unauthenticated `curl` fails.
+5. **Broken tenant isolation / paid gate (no table RLS)** — every new module filters by `profile_id` on read/write/**delete**; every action runs `getAuthenticatedUser` + `profile.status === "paid"`; no admin client in feature paths; add an ownership test per slice; strongly consider enabling table RLS as a backstop.
 
 ## Implications for Roadmap
 
-The hard dependency chain is: `IDOR fix + RLS → share_links table → public route + actions → timeline with share buttons`. Phases 2 and 3 can proceed in parallel once Phase 1 is verified.
+Based on combined research, the suggested phase structure follows the dependency chain (age engine is the keystone; PDF fix must precede new docs; vaccine card depends on the reference calendar) and front-loads no-migration, high-pain wins.
 
-### Phase 1: Security Foundation — IDOR Fix + RLS Hardening
+### Phase 1: Consult-experience foundation (PDF fix + age engine + timer)
+**Rationale:** All three are PROJECT.md priority-1 "dor de uso" fixes, carry no schema (or reuse `cases.started_at`), and de-risk the milestone early. The PDF fix MUST precede new document types (Phase 4) since they reuse the same kit builder. The age engine is the keystone for vaccines.
+**Delivers:** Fixed report spacing (kit release), `computePediatricAge` helper + age display (days / months+days / years), consultation timer.
+**Addresses:** PDF print-spacing, age display, consultation timer (FEATURES P1).
+**Avoids:** Pitfall 1 (PDFKit layout-model drift), Pitfall 2 (age math).
 
-**Rationale:** Live IDOR in delete modules and missing RLS are pre-conditions for everything. Any feature built on top of an IDOR is immediately exploitable.
+### Phase 2: Child photo (private storage + LGPD)
+**Rationale:** Self-contained (one `ADD COLUMN` + private bucket + upload module), high user value, and a privacy decision that is expensive to walk back — settle bucket privacy, signed-URL serving, and consent/deletion before writing the feature.
+**Delivers:** `patients.photo_storage_path`, private `patient-photos` bucket with owner RLS, signed-URL render, consent + erasure path.
+**Uses:** Supabase Storage private bucket + `createSignedUrl`; conditional `browser-image-compression`.
+**Implements:** Pattern 2 (private bucket per artifact) — extension to `patients`.
+**Avoids:** Pitfall 4 (public bucket LGPD violation), Pitfall 5 (scoping/paid gate).
 
-**Delivers:** All `public.*` tables protected by RLS; admin client removed from user-triggered delete paths; ownership-scoped delete modules verified on staging.
+### Phase 3: New clinical documents (encaminhamento -> pedido de exames -> relatorio medico) + blank prescription + orientation templates
+**Rationale:** Each document is an independent prescriptions-clone; build encaminhamento fully as the template, then exam-request and medical-report are mechanical copies. Blank prescription is near-free (empty payload, no schema); orientation templates is one small table. Depends on the Phase 1 PDF fix.
+**Delivers:** Three doc-type slices (table + RLS + wizard + PDF + download route each), receita em branco, `orientation_templates` slice.
+**Uses:** `@falaped/falaped-kit/pdf`, TipTap, react-hook-form, Zod.
+**Implements:** Pattern 1 (document-type slice) replicated per type.
+**Avoids:** Pitfall 1 (must inherit the fixed builder), Pitfall 5 (per-slice scoping + paid gate + ownership test).
 
-**Addresses:** Fix `delete-prescription.ts` and `delete-medical-certificate.ts` (add `.eq("profile_id", profileId)`); single atomic migration with `ENABLE ROW LEVEL SECURITY` + all policies for all 10+ data tables; `SECURITY DEFINER` helper `private.current_profile_id()`; `cases` table `user_phone`-subquery policy; `authenticated_users` table RLS.
+### Phase 4: Vaccine reference calendar (read-only)
+**Rationale:** No schema (static typed data), read-only screen, independent — can land anytime after Phase 1 but must precede the per-patient card (Phase 5). Data accuracy (not code) is the work; requires physician verification against current PNI/SBIm sources.
+**Delivers:** `VACCINE_CALENDAR` static data (SUS + particular + gestante) with source + effective date, `get-vaccine-schedule-for-age` pure fn, read-only reference UI showing vintage.
+**Implements:** Pattern 3 (static reference data).
+**Avoids:** Pitfall 3 (stale/unsafe calendar).
 
-**Avoids:** Pitfalls 1 (silent empty rows), 2 (admin client IDOR), 3 (wrong policy anchor), 4 (`authenticated_users` omission)
-
----
-
-### Phase 2: Patient Share-Links
-
-**Rationale:** Depends on Phase 1 verified. LGPD audit infrastructure (revocation + access log) ships with the happy path — not as a follow-up.
-
-**Delivers:** Complete share-link lifecycle — generate, copy, access, revoke. Patient opens URL without a Falaped account and downloads their document.
-
-**Addresses:** `share_links` migration (anon SELECT + authenticated owner-all policies); `NEXT_PUBLIC_APP_URL` env var; `modules/share-links/`; `actions/share-links/`; `isShareRoute` middleware guard; `app/share/[token]/page.tsx`; `app/api/share/[token]/download/route.ts`.
-
-**Avoids:** Pitfalls 5 (token entropy), 6 (CDN signed URL), 7 (LGPD audit log)
-
----
-
-### Phase 3: Patient Timeline
-
-**Rationale:** Requires Phase 1. Independent of Phase 2 — can be built in parallel. Share button on timeline rows requires Phase 2 token action to exist.
-
-**Delivers:** Unified chronological feed with month grouping, event-type filter pills, and inline share buttons.
-
-**Addresses:** `get-patient-timeline.ts` module; auth-gated action wrapper; refactor `patient-detail-timeline.tsx`; client-side filter pills.
-
----
-
-### Phase 4: Tests and CI Hardening
-
-**Rationale:** `@supabase/ssr: "latest"` is an active supply-chain risk. Local Yarn broken means developers skip tests. Should start immediately in parallel with Phase 1.
-
-**Delivers:** Reproducible CI; pinned Supabase deps; `--frozen-lockfile` enforced; ownership regression tests for IDOR fix; share-link unit tests.
-
-**Addresses:** Pin semver for `@supabase/ssr` and `@supabase/supabase-js`; `yarn install --frozen-lockfile` in CI; `corepack enable` documented; ownership tests for delete actions; token create/validate unit tests.
-
----
-
-### Phase 5: UI Polish — Branded Share Page and Doctor UX
-
-**Rationale:** Post-validation. Trigger is patient feedback ("link looks suspicious") or doctor request for expiry reminders.
-
-**Delivers:** Branded public download page; expiry countdown; one-click link regeneration.
-
----
+### Phase 5: Per-patient carteira de vacinacao (applied doses + pending/overdue/next-due)
+**Rationale:** Highest-logic, highest-value payoff; depends on both the age engine (Phase 1) and the reference calendar (Phase 4). Pending/late derived on read by merging applied rows against the calendar for the patient's current age.
+**Delivers:** `patient_vaccinations` table + slice, record-dose action, pending/overdue computation, next-due in-consult surfacing.
+**Implements:** Pattern 3 (owned mutable table); consumes the Phase 1 age helper.
+**Avoids:** Pitfall 2 (eligibility must use the tested age helper), Pitfall 3, Pitfall 5.
 
 ### Phase Ordering Rationale
-
-- Phase 1 before everything: IDOR is live and exploitable; RLS is required for the anon SELECT policy on `share_links` to work.
-- Phases 2 and 3 can overlap once Phase 1 is verified: they converge only at the "share button on timeline" UI step.
-- Phase 4 starts immediately in parallel with Phase 1: pinning deps and freezing lockfile is a one-hour task.
-- Phase 5 is explicitly post-validation.
+- **Dependencies:** Age engine (Phase 1) gates vaccine eligibility; PDF fix (Phase 1) gates new docs (Phase 3); reference calendar (Phase 4) gates the per-patient card (Phase 5).
+- **Risk front-loading:** Phases 1 and 4 carry no migration and ship independently, de-risking the milestone early while fixing active daily pain.
+- **Privacy isolation:** Phase 2 isolates the LGPD/private-bucket decision so a mistake doesn't propagate.
+- **Cross-cutting:** The scoping + paid-gate + ownership-test checklist (Pitfall 5) applies to every phase that adds a table or action (2, 3, 5); consider an early RLS-hardening step as a backstop.
 
 ### Research Flags
 
-Phases needing deeper research during planning:
-- **Phase 1 (RLS):** The `cases` table uses `user_phone` tenancy (not `profile_id`) — two-hop join policy is non-standard. Run `SELECT tablename, rowsecurity FROM pg_tables WHERE schemaname = 'public' AND rowsecurity = false` on live DB before writing migrations to confirm the complete current table list.
-- **Phase 2 (Share-links):** LGPD ANPD interpretive guidance postdates training cutoff — verify current breach notification window before launch.
+Phases likely needing deeper research during planning:
+- **Phase 1 (PDF fix):** Spans two repos (kit + app); requires reading/refactoring the kit's PDFKit layout model and a coordinated kit release. Use `--research-phase` to confirm the exact gap/estimation fix.
+- **Phase 4 (vaccine reference):** Data-accuracy task — the exact PNI/SBIm dose ages must be verified against current official sources WITH the physician at build time. Flag for content verification, not stack research.
+- **Phase 2 (child photo):** Confirm the Supabase plan (Pro? decides transform-on-the-fly vs client-side compression) and the consent/erasure requirements before building.
 
 Phases with standard patterns (skip research-phase):
-- **Phase 3 (Timeline):** Three parallel queries + TypeScript merge; all data modules already exist.
-- **Phase 4 (CI):** Frozen lockfile + semver pinning are well-documented.
-- **Phase 5 (UI polish):** `date-fns` countdown and branded server component are standard.
+- **Phase 3 (documents):** Well-established in-repo pattern — verbatim prescriptions-clone; no external research needed.
+- **Phase 5 (vaccination card):** Standard owned-table slice once the calendar and age helper exist; logic is in-app.
 
 ## Confidence Assessment
 
 | Area | Confidence | Notes |
 |------|------------|-------|
-| Stack | HIGH | Verified against Supabase Context7 docs and live codebase; zero new dependencies confirmed |
-| Features | HIGH / MEDIUM (LGPD) | Storage and codebase features confirmed via direct audit; LGPD obligations from well-established law text; ANPD guidance may have evolved |
-| Architecture | HIGH | Patterns derived directly from existing codebase files (`proxy.ts`, download routes, `phone_link_codes` migration) |
-| Pitfalls | HIGH | IDOR confirmed in live code; RLS/CDN behavior confirmed via official Supabase docs |
+| Stack | HIGH | Verified directly against installed `node_modules` (date-fns, supabase-js, the kit's compiled PDF source) and official Supabase/PDFKit docs. |
+| Features | HIGH | Vaccine calendars from official PNI/MS + SBIm 2025/2026 PDFs; document conventions from BR clinical norms. MEDIUM only on competitor specifics (no product teardown). |
+| Architecture | HIGH | Grounded in the existing codebase and shipped slices, not external research; every recommendation mirrors a production slice. |
+| Pitfalls | HIGH | PDFKit root cause read from actual kit source; LGPD/Supabase/age math verified against official sources and existing migrations. |
 
 **Overall confidence:** HIGH
 
 ### Gaps to Address
-
-- **LGPD ANPD guidance:** Verify current ANPD guidance on health data breach notification and processing records before Phase 2 launch (`gov.br/anpd`).
-- **`cases` table full RLS policy:** Verify the `user_phone` two-hop join policy against a staging authenticated session before production deploy.
-- **`pg_tables` audit on live DB:** Run the `rowsecurity = false` query on the live Supabase project before writing migrations — the table list from `CONCERNS.md` may be stale.
-- **Supabase exact pinned versions:** Confirm safe semver from current `yarn.lock` resolved versions before committing pinned ranges to `package.json`.
+- **Supabase plan check (Pro?):** Decides image transform-on-the-fly vs client-side compression for photos. Resolve before Phase 2.
+- **Exact PNI/SBIm dose ages:** Verify the calendar contents with the physician against current official PDFs during Phase 4 (data accuracy, not stack risk).
+- **Doctor preferences:** Age-unit switch points (28d vs 1mo neonate->lactente; 24mo vs 36mo->years); default carteira schedule (SUS vs SBIm vs both); whether pedido de exames needs a curated catalog or free-text first; whether lot/site fields are wanted in v1.
+- **Kit coupling / release cadence:** PDF fix and any new kit entrypoints require a coordinated `@falaped/falaped-kit` bump (>=0.2.7); the app can only mitigate spacing via input sanitization alone.
+- **RLS backstop decision:** Whether to enable table RLS on new (and ideally existing) tables this cycle as defense-in-depth against the no-RLS/IDOR class.
 
 ## Sources
 
 ### Primary (HIGH confidence)
-- `/supabase/supabase` (Context7) — `createSignedUrl`, RLS enable, policy syntax, `bypassrls`, CDN cache behavior, anon vs authenticated policies
-- Falaped codebase (direct read) — `lib/supabase/proxy.ts`, `lib/supabase/server-admin.ts`, download routes, `get-cases-by-patient-id.ts`, `phone_link_codes` migration, storage RLS migrations
-- `.planning/codebase/CONCERNS.md` — IDOR confirmed in `delete-prescription.ts:33` and `delete-medical-certificate.ts:33`
-- `.planning/codebase/TESTING.md` — corepack/Yarn failure documented; `node:test` runner confirmed
+- Installed packages inspected in `node_modules`: `date-fns@4.4.0`, `@supabase/supabase-js@2.108.2`, `@falaped/falaped-kit@0.2.7` (read compiled PDF rendering source) — see STACK.md / PITFALLS.md.
+- Existing codebase: `supabase/migrations/*` (prescriptions/storage/RLS/patients), `actions/prescriptions/*`, `modules/prescriptions/*`, `modules/cases/get-case-by-id.ts`, `.planning/codebase/{ARCHITECTURE,STACK,CONCERNS}.md`.
+- Calendario Nacional de Vacinacao — Ministerio da Saude (gov.br/saude); Instrucao Normativa 2025/2026.
+- SBIm Calendario de Vacinacao Crianca 2025/2026 (PDF read in full) and SBIm Gestante.
+- Supabase Storage docs (buckets fundamentals, access control, image transformations Pro-gating); PDFKit text/layout docs.
 
 ### Secondary (MEDIUM confidence)
-- LGPD Lei 13.709/2018 (Arts. 6, 11, 18, 37, 46, 48) — training knowledge; law text well-established
-- `.planning/PROJECT.md` — project constraints confirmed
+- React stopwatch drift / timestamp-diff community pattern (multiple corroborating posts).
+- BR pediatric EMR domain norms (no direct product teardown) for competitor analysis.
+- LGPD minors' data guidance (ANPD enunciado, LGPD Art. 14, MPCE guia).
 
-### Tertiary (LOW confidence — validate before Phase 2 launch)
-- ANPD interpretive guidance on health data breach notification — verify against current `gov.br/anpd` before launch
+### Tertiary (LOW confidence)
+- None load-bearing; the doctor-preference gaps above are explicitly flagged for validation, not inferred conclusions.
 
 ---
-*Research completed: 2026-06-04*
+*Research completed: 2026-06-28*
 *Ready for roadmap: yes*

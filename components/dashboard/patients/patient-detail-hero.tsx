@@ -1,11 +1,13 @@
 import type { ReactNode } from "react"
-import { CalendarIcon, PhoneIcon, UserRoundIcon } from "lucide-react"
+import { AlertTriangleIcon, CalendarIcon, PhoneIcon, UserRoundIcon } from "lucide-react"
 
-import { Avatar, AvatarFallback } from "@/components/ui/avatar"
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
 import { formatDate, formatBrazilianPhone } from "@/lib/formatters"
 import { getPatientInitials } from "@/lib/get-patient-initials"
-import { formatAgeFromBirthDate } from "@/modules/falaped-assistant/lib/formatters"
+import { computePediatricAge } from "@/lib/compute-pediatric-age"
+import { formatPediatricAge } from "@/lib/format-pediatric-age"
 import type { Patient } from "@/modules/patients/types"
 import { formatPatientSexForDisplay } from "@/modules/patients/patient-sex"
 import { isPatientChartIncomplete } from "@/components/dashboard/patients/patient-chart-incomplete"
@@ -14,13 +16,35 @@ import { cn } from "@/lib/utils"
 
 type PatientDetailHeroProps = {
   patient: Patient
+  /** Short-lived signed URL for the photo; null falls back to initials (Pitfall 1). */
+  photoUrl?: string | null
   /** Actions anchored top-right inside the hero (e.g. Voltar + menu). */
   toolbar?: ReactNode
+  /** Opens the edit form (D-09 "Completar cadastro" CTA target). */
+  onEditRequest?: () => void
   className?: string
 }
 
-export function PatientDetailHero({ patient, toolbar, className }: PatientDetailHeroProps) {
-  const ageText = formatAgeFromBirthDate(patient.birth_date)
+export function PatientDetailHero({
+  patient,
+  photoUrl = null,
+  toolbar,
+  onEditRequest,
+  className,
+}: PatientDetailHeroProps) {
+  const age = computePediatricAge(
+    patient.birth_date,
+    new Date(),
+    patient.gestational_age_weeks,
+  )
+  const ageText = formatPediatricAge(age)
+  const correctedText = age.corrected
+    ? formatPediatricAge({
+        status: "ok",
+        band: age.corrected.band,
+        parts: age.corrected.parts,
+      })
+    : ""
   const sexText = formatPatientSexForDisplay(patient.sex)
   const showIncomplete = isPatientChartIncomplete(patient)
   const initials = getPatientInitials(patient.name)
@@ -44,10 +68,10 @@ export function PatientDetailHero({ patient, toolbar, className }: PatientDetail
               "order-2 flex min-w-0 flex-1 flex-col gap-5 sm:order-1 sm:flex-row sm:items-start sm:gap-6",
             )}
           >
-            <Avatar
-              className="h-20 w-20 shrink-0 border border-border/80 bg-background shadow-xs sm:h-24 sm:w-24"
-              aria-hidden
-            >
+            <Avatar className="h-20 w-20 shrink-0 border border-border/80 bg-background shadow-xs sm:h-24 sm:w-24">
+              {photoUrl ? (
+                <AvatarImage src={photoUrl} alt={`Foto de ${patient.name}`} />
+              ) : null}
               <AvatarFallback className="bg-primary/10 text-xl font-semibold text-primary sm:text-2xl">
                 {initials}
               </AvatarFallback>
@@ -66,15 +90,51 @@ export function PatientDetailHero({ patient, toolbar, className }: PatientDetail
               </div>
 
               <div className="flex flex-wrap items-center gap-2">
-                {patient.birth_date ? (
-                  <Badge variant="secondary" className="max-w-full gap-1.5 font-normal">
-                    <CalendarIcon className="h-3.5 w-3.5 shrink-0 opacity-70" aria-hidden />
-                    <span className="wrap-break-word">
-                      {formatDate(patient.birth_date)}
-                      {ageText ? ` · ${ageText}` : ""}
+                {age.status === "ok" ? (
+                  <>
+                    <Badge variant="secondary" className="max-w-full gap-1.5 font-normal">
+                      <CalendarIcon className="h-3.5 w-3.5 shrink-0 opacity-70" aria-hidden />
+                      <span className="wrap-break-word">
+                        {formatDate(patient.birth_date!)}
+                        {ageText
+                          ? ` · ${correctedText ? "idade cronológica " : ""}${ageText}`
+                          : ""}
+                      </span>
+                    </Badge>
+                    {correctedText ? (
+                      <Badge variant="secondary" className="max-w-full font-normal">
+                        <span className="wrap-break-word">
+                          idade corrigida: {correctedText}
+                        </span>
+                      </Badge>
+                    ) : null}
+                  </>
+                ) : age.status === "missing_birth_date" ? (
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="text-sm text-muted-foreground">
+                      Idade indisponível — informe a data de nascimento para calcular a idade.
                     </span>
-                  </Badge>
-                ) : null}
+                    {onEditRequest ? (
+                      <Button type="button" size="sm" onClick={onEditRequest}>
+                        Completar cadastro
+                      </Button>
+                    ) : null}
+                  </div>
+                ) : (
+                  <div className="flex flex-wrap items-center gap-2">
+                    <Badge
+                      variant="outline"
+                      className="max-w-full gap-1.5 font-normal text-destructive"
+                    >
+                      <AlertTriangleIcon className="h-3.5 w-3.5 shrink-0" aria-hidden />
+                      <span className="wrap-break-word">
+                        {age.status === "future"
+                          ? "Data de nascimento no futuro — verifique o cadastro."
+                          : "Data de nascimento inválida — verifique o cadastro."}
+                      </span>
+                    </Badge>
+                  </div>
+                )}
                 {sexText ? (
                   <Badge variant="secondary" className="font-normal">
                     {sexText}

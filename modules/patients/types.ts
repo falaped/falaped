@@ -14,12 +14,16 @@ export type Patient = {
   sex: PatientSex | null
   legal_guardian: string | null
   blood_type: string | null
+  gestational_age_weeks: number | null
   weight: string | null
   height: string | null
   head_circumference: string | null
   allergies: string | null
   current_medications: string | null
   medical_history: string | null
+  photo_path: string | null
+  consent_given: boolean | null
+  consent_at: string | null
   created_at: string
   updated_at: string
 }

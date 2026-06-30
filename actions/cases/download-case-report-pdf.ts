@@ -50,7 +50,11 @@ export async function downloadCaseReportPdfAction(
 
     const sections = (report.sections ?? [])
       .sort((a, b) => a.order - b.order)
-      .map((s) => ({ title: s.name, content: s.content ?? "—" }))
+      .map((s) => ({
+        title: s.name,
+        content: (s.content ?? "").replace(/\n{3,}/g, "\n\n").trim(),
+      }))
+      .filter((s) => s.content.length > 0)
 
     const datapdf = {
       patientName,
@@ -62,7 +66,6 @@ export async function downloadCaseReportPdfAction(
       consultationLocation: consultationLocation !== "—" ? consultationLocation : undefined,
       logoFooter,
     }
-    console.log("datapdf", datapdf)
     const buffer = await buildReportPdf(datapdf)
 
     const pdfBase64 = buffer.toString("base64")

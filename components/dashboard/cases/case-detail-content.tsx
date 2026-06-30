@@ -3,6 +3,7 @@ import { notFound, redirect } from "next/navigation"
 import { createClient } from "@/lib/supabase/server"
 import { getAuthenticatedUser } from "@/modules/supabase/get-authenticated-user"
 import { getCaseById } from "@/modules/cases/get-case-by-id"
+import { getPatientPhotoSignedUrl } from "@/modules/patients/get-patient-photo-signed-url"
 import { getCaseReports } from "@/modules/cases/get-case-report"
 import { getReportTemplateById } from "@/modules/report-templates/get-report-template-by-id"
 import { getDefaultReportTemplate } from "@/modules/report-templates/get-default-report-template"
@@ -15,9 +16,11 @@ import { CaseDetailCommandStrip } from "@/components/dashboard/cases/case-detail
 import { CaseDetailHeader } from "@/components/dashboard/cases/case-detail-header"
 import { CaseDetailQuickActions } from "@/components/dashboard/cases/case-detail-quick-actions"
 import { CaseDetailDocuments } from "@/components/dashboard/cases/case-detail-documents"
+import { CasePatientBlock } from "@/components/dashboard/cases/case-patient-block"
 import { CaseDetailStateCard } from "@/components/dashboard/cases/case-detail-state-card"
 import { caseDetailMainStackClassName } from "@/components/dashboard/cases/case-detail-workspace"
 import { CaseReport } from "@/components/dashboard/cases/case-report"
+import { ConsultationTimerWidget } from "@/components/dashboard/cases/consultation-timer-widget"
 
 export async function CaseDetailContent({ id }: { id: string }) {
   const supabase = await createClient()
@@ -43,6 +46,13 @@ export async function CaseDetailContent({ id }: { id: string }) {
   if (!caseDetail) {
     notFound()
   }
+
+  // Signed URL singular resolvida server-side para o avatar do cabeçalho do caso
+  // (helper SINGULAR — não o de lote). Null cai para iniciais (Pitfall 1).
+  const casePhotoUrl = await getPatientPhotoSignedUrl(
+    supabase,
+    caseDetail.patient?.photo_path ?? null,
+  )
 
   const template =
     templateRaw != null
@@ -90,6 +100,7 @@ export async function CaseDetailContent({ id }: { id: string }) {
   return (
     <div className={caseDetailMainStackClassName}>
       <CaseDetailHeader detail={caseDetail} />
+      <CasePatientBlock patient={caseDetail.patient} photoUrl={casePhotoUrl} />
       <Separator />
       <CaseDetailCommandStrip
         caseId={id}
@@ -121,6 +132,13 @@ export async function CaseDetailContent({ id }: { id: string }) {
           prescriptions={casePrescriptions}
         />
       </div>
+      <ConsultationTimerWidget
+        caseId={id}
+        startedAt={caseDetail.started_at}
+        endedAt={caseDetail.ended_at}
+        consultationPausedMs={caseDetail.consultation_paused_ms}
+        consultationPausedAt={caseDetail.consultation_paused_at}
+      />
     </div>
   )
 }

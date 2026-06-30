@@ -73,6 +73,7 @@ export async function createDashboardCaseWithPatient(
       origin: "dashboard",
       source: "dashboard",
       patient_id: patientId,
+      started_at: new Date().toISOString(),
       pending_action: null,
       dashboard_chat_context_summary: null,
       context_summary: null,

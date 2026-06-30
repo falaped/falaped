@@ -53,6 +53,7 @@ export async function createPatientAction(
       sex: parsed.data.sex ?? null,
       legal_guardian: parsed.data.legal_guardian ?? null,
       blood_type: parsed.data.blood_type ?? null,
+      gestational_age_weeks: parsed.data.gestational_age_weeks ?? null,
       weight: parsed.data.weight ?? null,
       height: parsed.data.height ?? null,
       head_circumference: parsed.data.head_circumference ?? null,

@@ -2,79 +2,83 @@
 
 ## What This Is
 
-Plataforma web para médicos brasileiros gerenciarem o ciclo clínico do consultório: pacientes, casos de consulta (com gravação e transcrição de áudio), receitas, atestados e relatórios — com um assistente de IA que conduz o fluxo clínico e gera documentos. Construída em Next.js 16 + Supabase + Groq, com vínculo de telefone via WhatsApp (bot externo) e acesso gated por assinatura paga.
+Falaped é um app web para o dia a dia do pediatra: cadastro de pacientes (crianças), geração de documentos clínicos (receitas, atestados, laudos/relatórios de caso), templates reutilizáveis, condução de consultas e um assistente de IA (Groq) para apoio clínico e transcrição. Este ciclo foca em melhorar a experiência da consulta pediátrica, ampliar os tipos de documento e adicionar suporte a vacinação.
 
 ## Core Value
 
-O médico documenta a consulta falando — e sai com ficha, relatório, receita e atestado prontos, sem digitação manual.
-
-## Current Milestone: v1.1 Hardening & Experiência do Paciente
-
-**Goal:** Blindar o isolamento multi-tenant e a qualidade da base existente, e entregar as duas primeiras features voltadas ao paciente.
-
-**Target features:**
-- Segurança multi-tenant — corrigir IDOR nos deletes, habilitar RLS em todas as tabelas de dados, restringir o admin client, bulk delete em lote
-- Higiene de código — rotas `new`/`novo` unificadas, env centralizado em `lib/env.ts`, catches silenciosos com log, deps Supabase pinadas, limpeza de scaffolds mortos
-- Componentes gigantes refatorados — extrair hooks/subcomponentes dos arquivos >800 linhas
-- Testes & CI — testes de ownership nas actions de delete/generate + pipeline CI (typecheck/lint/test)
-- Compartilhamento com paciente — link seguro para baixar receita/atestado
-- Timeline do paciente — histórico consolidado (casos, receitas, atestados)
+A consulta pediátrica precisa fluir sem fricção — o médico abre o paciente, conduz a consulta e gera os documentos certos (impressos corretamente) em poucos cliques.
 
 ## Requirements
 
 ### Validated
 
-<!-- Inferred from existing codebase (v1.0 implícito) — see .planning/codebase/ -->
+<!-- Inferido do código existente (brownfield) — já em produção e em uso. -->
 
-- ✓ Auth por email/senha com confirmação OTP e gate de assinatura paga (`profile.status === "paid"`) — pré-GSD
-- ✓ CRUD de pacientes com ficha clínica — pré-GSD
-- ✓ Casos de consulta com gravação de áudio, transcrição (Groq Whisper) e assistente de IA — pré-GSD
-- ✓ Geração de receitas e atestados em PDF com templates — pré-GSD
-- ✓ Relatórios de caso gerados por LLM com templates editáveis — pré-GSD
-- ✓ Vínculo de telefone via código de 6 dígitos (bot WhatsApp externo) — pré-GSD
-- ✓ Discussões clínicas — pré-GSD
+- ✓ Cadastro e gestão de pacientes (crianças), com dados clínicos (ex: IMC) — existing
+- ✓ Geração de receitas com sistema de templates reutilizáveis — existing
+- ✓ Geração de atestados médicos (wizard) — existing
+- ✓ Laudos / relatórios de caso e report-templates — existing
+- ✓ Assistente de IA (Groq) e transcrição de áudio de consulta (Whisper) — existing
+- ✓ Geração de PDF dos documentos (via `@falaped/falaped-kit/pdf`) — existing
+- ✓ Autenticação + gate de assinatura (`profile.status === "paid"`) — existing
 
 ### Active
 
-<!-- Current scope (milestone v1.1). Building toward these. -->
+<!-- Escopo deste ciclo. Hipóteses até serem entregues e validadas. -->
 
-- [ ] Isolamento multi-tenant garantido no banco (RLS) e na aplicação (ownership em todos os deletes)
-- [ ] Higiene de código: rota única por recurso, env validado centralizado, erros logados, deps pinadas
-- [ ] Componentes >800 linhas decompostos em hooks/subcomponentes testáveis
-- [ ] Testes de ownership/erro nas server actions críticas + CI rodando typecheck/lint/test
-- [ ] Paciente pode receber link seguro para baixar receita/atestado
-- [ ] Médico vê timeline consolidada do paciente (casos, receitas, atestados)
+**Bloco 1 — Experiência da consulta (prioridade #1)**
+- [ ] Exibir idade da criança em dias e em meses + dias (precisão pediátrica)
+- [ ] Foto na identificação de cada criança (foto do médico com a criança), com upload e exibição no perfil
+- [ ] Cronômetro de consulta (iniciar/contar tempo a partir do começo do atendimento)
+- [ ] Corrigir espaçamento/quebras de linha na impressão de relatórios (hoje sobra espaço e às vezes gera página extra)
+
+**Bloco 2 — Vacinas**
+- [ ] Tabela de referência de vacinas por idade (calendário SUS e particular) para consulta
+- [ ] Referência de vacinação da gestante (Hepatite B, dTpa, VSR, Influenza, COVID)
+- [ ] Carteira de vacinação por paciente: registrar aplicadas, ver pendentes/atrasadas por idade
+
+**Bloco 3 — Novos documentos clínicos (mesmo padrão das receitas: wizard/formulário + templates salváveis + PDF)**
+- [ ] Encaminhamento médico
+- [ ] Pedido de exames
+- [ ] Relatório médico (tipo de documento novo, separado do laudo/relatório de caso existente)
+
+**Bloco 4 — Receitas e orientações**
+- [ ] Receituário em branco (corpo vazio para colar receitas prontas que o médico já mantém)
+- [ ] Biblioteca de templates só de orientações (ex: orientação 1ª consulta, 1 mês, 2 meses...)
 
 ### Out of Scope
 
-- Assinatura digital ICP-Brasil nos PDFs — relevante, mas requer integração certificadora; avaliar em milestone futuro
-- Agenda de consultas com lembretes — feature grande; depois do hardening
-- Busca global no dashboard — adiada; menor prioridade que segurança
-- Upload direto de áudio (presigned) — adiada nesta rodada; limite de 25mb ainda aceitável
-- Bot WhatsApp (repo externo) — fora deste repositório
+<!-- Limites explícitos com justificativa. -->
+
+- Extração/transcrição de exames a partir de foto via IA — adiado para v2; é o item mais complexo e o médico sinalizou como "se não for querer muito". Anexar foto de exame ao paciente pode entrar antes, mas a extração automática fica fora deste ciclo.
+- Reescrever os documentos já existentes (receitas, atestados, laudos) — só estender, não refazer.
 
 ## Context
 
-- Codebase brownfield mapeado em `.planning/codebase/` (2026-06-04): STACK, ARCHITECTURE, STRUCTURE, CONVENTIONS, TESTING, INTEGRATIONS, CONCERNS
-- **Achado crítico do mapeamento:** IDOR confirmado em `modules/prescriptions/delete-prescription.ts:33` e `modules/medical-certificates/delete-medical-certificate.ts:33` (delete por `id` sem filtro de dono) + ausência total de RLS nas tabelas de dados. Segurança vem antes de qualquer link externo para pacientes.
-- Arquitetura em camadas: `app/` → `actions/` (auth gate + Zod) → `modules/` (uma função por arquivo, client injetado) → Supabase/Groq
-- Testes só em funções puras (`modules/`, `lib/`, 31 specs, `node:test` via tsx); zero testes em actions/components; sem CI
-- Strings de usuário em PT-BR
+- **Brownfield maduro:** o app já está em produção e em uso clínico real. Intel do código preservada em `.planning/codebase/`.
+- **Padrão de documentos já estabelecido:** receitas, atestados e laudos seguem o fluxo `app/ → actions/ → modules/` com geração de PDF via `@falaped/falaped-kit/pdf`. Os novos documentos (encaminhamento, pedido de exames, relatório médico) devem reaproveitar esse padrão.
+- **Dor real de uso:** a impressão de relatórios está com espaçamento ruim (diferença de até uma página) — atrapalha a consulta hoje.
+- **IA disponível:** integração Groq (LLM + Whisper) já existe e pode apoiar geração de documentos no futuro.
+- **Storage:** Supabase Storage disponível para fotos de pacientes (atenção a privacidade — fotos de crianças).
+- **Rich text:** editor TipTap já presente, útil para corpo de documentos/orientações.
 
 ## Constraints
 
-- **Tech stack**: Next.js 16 / React 19 / Supabase / Groq / Tailwind 4 — manter; sem novas dependências de dados (ex.: react-query) sem decisão explícita
-- **Segurança**: Nenhum link externo para paciente pode ir ao ar antes do RLS + fix do IDOR — superfície de ataque atual é exploitable
-- **Compatibilidade**: Migrações Supabase aditivas; RLS não pode quebrar os fluxos existentes do app (clients SSR/browser/proxy)
-- **Idioma**: UI e mensagens em PT-BR
+- **Tech stack**: Next.js 16 (App Router, Server Actions), React 19, TypeScript, Tailwind 4, shadcn/ui — manter o padrão de três camadas `app/ → actions/ → modules/`.
+- **Backend**: Supabase (Postgres + Auth + Storage) — toda query escopada por `profile_id`; manter gate de assinatura nos novos actions.
+- **PDF**: geração via `@falaped/falaped-kit/pdf` (pdfkit como `serverExternalPackage`) — a correção de impressão atua aqui.
+- **Privacidade**: fotos de crianças são dado sensível — armazenar com cuidado (acesso escopado ao médico dono).
+- **Sem prazo**: melhoria contínua, sem data limite — priorizar por dor real de uso.
 
 ## Key Decisions
 
 | Decision | Rationale | Outcome |
 |----------|-----------|---------|
-| Tratar código existente como v1.0 implícito; GSD começa em v1.1 | App já funcional em produção-alvo; histórico pré-GSD inferido do mapa | — Pending |
-| Hardening de segurança antes das features de paciente | Links externos ampliam a superfície do IDOR atual | — Pending |
-| Padronizar rotas em um idioma único por recurso | Duplicação `new`/`novo` dobra manutenção | — Pending |
+| Priorizar "Experiência da consulta" primeiro | Resolve dor real do uso diário (impressão) e melhora o fluxo central | — Pending |
+| Vacinas em versão completa (referência + carteira por paciente) | Médico quer tanto consultar o calendário quanto rastrear o que cada paciente tomou | — Pending |
+| Novos documentos seguem o mesmo padrão das receitas | Reaproveita wizard + templates + geração de PDF já existentes | — Pending |
+| Relatório médico é um tipo NOVO, separado do laudo/relatório de caso | O médico confirmou que é um documento diferente do que já existe | — Pending |
+| Extração de exames por foto (IA) fica para v2 | Item mais complexo; manter foco e entregar o resto mais rápido | — Pending |
 
 ## Evolution
 
@@ -94,4 +98,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-06-04 after milestone v1.1 initialization*
+*Last updated: 2026-06-27 after initialization*

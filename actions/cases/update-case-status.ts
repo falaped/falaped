@@ -23,6 +23,9 @@ export async function updateCaseStatusAction(
     await updateCaseStatus(supabase, caseId, profile.id, status)
     revalidatePath("/dashboard/cases")
     revalidatePath(`/dashboard/cases/${caseId}`)
+    // Workspace route is cached (cacheComponents); without this, reopening a case
+    // and entering the workspace shows a stale/frozen timer from the prior session.
+    revalidatePath(`/dashboard/cases/new/${caseId}`)
     return { ok: true }
   } catch (e) {
     const message =

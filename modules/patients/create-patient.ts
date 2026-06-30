@@ -4,7 +4,7 @@ import { normalizePatientSexFromDb } from "@/modules/patients/patient-sex"
 import type { Patient } from "./types"
 
 const PATIENT_SELECT =
-  "id, profile_id, user_phone, name, birth_date, responsible, contact_phone, sex, legal_guardian, blood_type, weight, height, head_circumference, allergies, current_medications, medical_history, created_at, updated_at"
+  "id, profile_id, user_phone, name, birth_date, responsible, contact_phone, sex, legal_guardian, blood_type, gestational_age_weeks, weight, height, head_circumference, allergies, current_medications, medical_history, photo_path, consent_given, consent_at, created_at, updated_at"
 
 export type CreatePatientPayload = {
   name: string
@@ -14,6 +14,7 @@ export type CreatePatientPayload = {
   sex?: string | null
   legal_guardian?: string | null
   blood_type?: string | null
+  gestational_age_weeks?: number | null
   weight?: string | null
   height?: string | null
   head_circumference?: string | null
@@ -40,6 +41,7 @@ export async function createPatient(
     sex: normalizePatientSexFromDb(payload.sex ?? null),
     legal_guardian: payload.legal_guardian?.trim() || null,
     blood_type: payload.blood_type?.trim() || null,
+    gestational_age_weeks: payload.gestational_age_weeks ?? null,
     weight: payload.weight?.trim() || null,
     height: payload.height?.trim() || null,
     head_circumference: payload.head_circumference?.trim() || null,
