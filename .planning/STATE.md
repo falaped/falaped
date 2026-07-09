@@ -5,8 +5,8 @@ milestone_name: milestone
 current_phase: 02
 current_phase_name: foto-privada-do-paciente
 status: "Phase 02 shipped — PR #1"
-stopped_at: "Roadmap renumerado: inserida Phase 3 Curva de Crescimento; Documentos→4, Vacinas→5-6. Phase 3 pronta para /gsd-discuss-phase 3. Phase 2 ainda com 02-03 pendente."
-last_updated: "2026-07-09T12:16:03.144Z"
+stopped_at: Phase 3 (Curva de Crescimento) context gathered
+last_updated: "2026-07-09T12:29:08.803Z"
 last_activity: 2026-07-09
 last_activity_desc: "Shipped quick task 260701-ctf: fix idade gestacional double-parse — PR #2 (branch fix/gestational-age-double-parse)"
 progress:
@@ -111,6 +111,6 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-07-09T12:16:03.135Z
-Stopped at: Roadmap renumerado: inserida Phase 3 Curva de Crescimento; Documentos→4, Vacinas→5-6. Phase 3 pronta para /gsd-discuss-phase 3. Phase 2 ainda com 02-03 pendente.
-Resume file: .planning/ROADMAP.md
+Last session: 2026-07-09T12:29:08.787Z
+Stopped at: Phase 3 (Curva de Crescimento) context gathered
+Resume file: .planning/phases/03-curva-de-crescimento/03-CONTEXT.md
