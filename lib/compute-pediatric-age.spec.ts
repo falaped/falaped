@@ -225,3 +225,49 @@ test("preterm with corrected age still within cutoff has its own band/parts", ()
   assert.ok(r.corrected?.band)
   assert.ok(r.corrected?.parts)
 })
+
+// ── Growth-extended corrected-age cutoff (D-05 / D-07) ───────────────────────
+// The growth curve positions corrected age up to 36 months via an explicit
+// `correctedAgeCutoffMonths` option; the default (no options) stays capped at 24m.
+
+test("with { correctedAgeCutoffMonths: 36 }: corrected present at 30 months corrected", () => {
+  // Preterm 32 weeks → subtract (40-32)=8 weeks = 56 days.
+  // Pick a chronological age so corrected age is ~30 months.
+  // corrected birth = birth + 56 days; want corrected ≈ 30 months before `now`.
+  // birth 2022-11-06; corrected birth ≈ 2023-01-01; now 2025-07-01 → ~30 months corrected.
+  const r = computePediatricAge("2022-11-06", new Date(2025, 6, 1), 32, {
+    correctedAgeCutoffMonths: 36,
+  })
+  assert.equal(r.status, "ok")
+  assert.ok(r.corrected, "corrected should be present at 30m corrected with 36m cutoff")
+  assert.equal(r.corrected?.appliesUntilMonths, 36)
+})
+
+test("with { correctedAgeCutoffMonths: 36 }: corrected present at 35 months corrected", () => {
+  // corrected birth ≈ 2022-08-01; now 2025-07-01 → ~35 months corrected.
+  const r = computePediatricAge("2022-06-06", new Date(2025, 6, 1), 32, {
+    correctedAgeCutoffMonths: 36,
+  })
+  assert.ok(r.corrected, "corrected should be present at 35m corrected with 36m cutoff")
+  assert.equal(r.corrected?.appliesUntilMonths, 36)
+})
+
+test("with { correctedAgeCutoffMonths: 36 }: corrected absent at 37 months corrected", () => {
+  // corrected birth ≈ 2022-06-01; now 2025-07-01 → ~37 months corrected → past 36m cutoff.
+  const r = computePediatricAge("2022-04-06", new Date(2025, 6, 1), 32, {
+    correctedAgeCutoffMonths: 36,
+  })
+  assert.equal(r.corrected, undefined, "corrected should be dropped past 36m with 36m cutoff")
+})
+
+test("regression: no options → corrected absent at 25 months corrected (default 24m preserved)", () => {
+  // corrected birth ≈ 2023-06-01; now 2025-07-01 → ~25 months corrected → past default 24m.
+  const r = computePediatricAge("2023-04-06", new Date(2025, 6, 1), 32)
+  assert.equal(r.corrected, undefined, "default 24m cutoff must still drop corrected at 25m")
+})
+
+test("default cutoff reflected in appliesUntilMonths when no options passed", () => {
+  const r = computePediatricAge("2025-03-12", new Date(2025, 5, 12), 32)
+  assert.ok(r.corrected)
+  assert.equal(r.corrected?.appliesUntilMonths, 24)
+})
