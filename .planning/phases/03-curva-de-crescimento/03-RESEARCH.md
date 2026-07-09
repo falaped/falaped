@@ -375,16 +375,16 @@ export function lmsValueAtZ(z: number, { L, M, S }: Lms): number {
 
 **Physician-confirmation items (STATE.md blocker):** A1, A2, A3, A5 are all content/accuracy items the STATE.md Phase 3 blocker flags ("verify data/source with the physician at build time"). Planner should add a `checkpoint:human-verify` on the reference dataset before it feeds the clinical curve.
 
-## Open Questions
+## Open Questions (RESOLVED)
 
-1. **Intergrowth-21st data availability & license**
+1. **Intergrowth-21st data availability & license** — **RESOLVED (physician-ratified 2026-07-09): DELIVER in Phase 3.**
    - What we know: It is the accepted preterm/newborn reference; site is intergrowth21.com.
    - What's unclear: Whether LMS tables are downloadable in a machine-readable form and redistribution terms.
-   - Recommendation: Phase Intergrowth LAST (after the 4 WHO curves land); MVP can ship WHO-only curves with corrected-age points and add Intergrowth as a follow-up slice if data extraction is heavy.
+   - **Disposition:** The physician confirmed decisions D-01/D-04 (OMS + Intergrowth-21 for the preterm/newborn period) stand and chose to deliver Intergrowth-21st **within Phase 3**, not defer it. Intergrowth is NOT moved to `Fora desta fase`. The plan must ingest Intergrowth-21st reference data (newborn/very-preterm size-at-birth and/or postnatal preterm growth standards from intergrowth21.com) and render a preterm/newborn band that transitions to WHO. Because machine-readability and redistribution terms are still unconfirmed, the Intergrowth ingestion task MUST carry a `checkpoint:human-verify` (same as the WHO data blocker) so the physician validates the sourced data and license at build time. If the data proves genuinely unobtainable in a usable form, that surfaces at the checkpoint for a scope re-decision — it is not silently dropped by the plan.
 
-2. **Percentile display for out-of-range measurements**
+2. **Percentile display for out-of-range measurements** — **RESOLVED: clamp reference band to z ±3, label exact z.**
    - What we know: LMS gives z for any value; extreme z (>+3 / <−3) is common in NICU graduates.
-   - Recommendation: Clamp the drawn reference band to z ±3 but still label the child's exact z; show "> P97" / "< P3" text.
+   - **Disposition:** Clamp the drawn reference band to z ±3 but still label the child's exact z; show "> P97" / "< P3" text. Handled inline in plan 03-02.
 
 ## Environment Availability
 

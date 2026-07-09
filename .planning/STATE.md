@@ -5,8 +5,8 @@ milestone_name: milestone
 current_phase: 02
 current_phase_name: foto-privada-do-paciente
 status: "Phase 02 shipped — PR #1"
-stopped_at: Phase 3 (Curva de Crescimento) context gathered
-last_updated: "2026-07-09T12:29:08.803Z"
+stopped_at: Phase 3 UI-SPEC approved
+last_updated: "2026-07-09T12:57:14.530Z"
 last_activity: 2026-07-09
 last_activity_desc: "Shipped quick task 260701-ctf: fix idade gestacional double-parse — PR #2 (branch fix/gestational-age-double-parse)"
 progress:
@@ -111,6 +111,6 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-07-09T12:29:08.787Z
-Stopped at: Phase 3 (Curva de Crescimento) context gathered
-Resume file: .planning/phases/03-curva-de-crescimento/03-CONTEXT.md
+Last session: 2026-07-09T12:57:14.524Z
+Stopped at: Phase 3 UI-SPEC approved
+Resume file: .planning/phases/03-curva-de-crescimento/03-UI-SPEC.md
