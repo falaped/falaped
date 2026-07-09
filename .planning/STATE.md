@@ -85,7 +85,7 @@ Recent decisions affecting current work:
 
 [From .planning/todos/pending/ — ideas captured during sessions]
 
-None yet.
+- [Phase 3 / PR #3 code review — deferred 2026-07-09] 10 findings in `.planning/phases/03-curva-de-crescimento/03-CODE-REVIEW.md`. Priority fixes before/after merge: #1 cross-tenant `patient_id` not verified on create/update (IDOR), #2 corrected-age axis silently falls back to chronological past 36m (clinical mis-scoring), #3 partial edit wipes cleared fields to null (data loss), #4 P97/P3 boundary mislabel, #5 unhandled rejection in delete dialog. #6–#10 are defense-in-depth/cleanup.
 
 ### Blockers/Concerns
 
