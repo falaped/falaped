@@ -91,7 +91,7 @@ Plans:
   2. O pediatra vê gráficos de curva de crescimento por idade (peso/idade, estatura/idade, IMC/idade, perímetro cefálico/idade) com as medições do paciente plotadas sobre as curvas de referência OMS (percentis/z-score), usando a idade pediátrica da Phase 1; a referência exibe fonte e faixa etária coberta
   3. O pediatra atualiza o histórico — edita e remove medições — e os gráficos refletem a mudança; leitura/escrita/exclusão aplicam o gate de assinatura (`paid`) e escopam por `profile_id` (uma requisição de outro médico não acessa nem apaga a medição)
 
-**Plans**: 3 plans
+**Plans**: 4 plans
 **UI hint**: yes
 Plans:
 
@@ -103,6 +103,10 @@ Plans:
 
 - [ ] 03-02-PLAN.md — Slice curva OMS: math LMS + reference JSON WHO (human-verify) + recharts (human-verify) + growth-chart (tabs/toggles/corrected-age) + position readout (wave 2)
 - [ ] 03-03-PLAN.md — Slice editar/remover histórico: update/delete escopados (ownership specs/IDOR) + modo edit do form + AlertDialog de remoção (wave 2)
+
+**Wave 3** *(blocked on Wave 2 / 03-02)*
+
+- [ ] 03-04-PLAN.md — Slice curva do prematuro: LMS Intergrowth-21st JSON (human-verify fonte/licença) + reference-index estendido + regra de transição Intergrowth→OMS + banda de prematuro no growth-chart (D-01/D-04, OQ1) (wave 3)
 
 ### Phase 4: Documentos Clínicos Novos
 
