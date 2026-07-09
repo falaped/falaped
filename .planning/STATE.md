@@ -4,17 +4,17 @@ milestone: v1.0
 milestone_name: milestone
 current_phase: 03
 current_phase_name: curva-de-crescimento
-status: shipped
-stopped_at: Phase 3 shipped — PR #3 open (phase-03-curva-de-crescimento → main), awaiting merge
+status: merged
+stopped_at: Phase 3 MERGED to main (PR #3, squash 801fd02). 5 code-review findings open (see 03-CODE-REVIEW.md)
 last_updated: "2026-07-09T18:00:00.000Z"
 last_activity: 2026-07-09
 last_activity_desc: Phase 03 all 4 plans complete; migration applied live; verification passed-with-concerns
 progress:
   total_phases: 6
-  completed_phases: 2
+  completed_phases: 3
   total_plans: 12
   completed_plans: 12
-  percent: 33
+  percent: 50
 ---
 
 # Project State
