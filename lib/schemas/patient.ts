@@ -37,15 +37,21 @@ const optionalBrazilianBirthDate = z
   })
 
 /**
- * Optional gestational age at birth, in weeks (D-10). Accepts a string from the
- * form: empty -> undefined (no error, never required), otherwise coerced to an
- * integer and refined to the inclusive plausible range 20-42. Out of range yields
- * the PT-BR message used by the gestational-age field.
+ * Optional gestational age at birth, in weeks (D-10). Accepts a string (from the
+ * form) OR a number (from a second parse pass — the form resolver already coerces
+ * this field to a number, and actions safeParse again). Empty -> undefined (no
+ * error, never required), otherwise coerced to an integer and refined to the
+ * inclusive plausible range 20-42. Out of range yields the PT-BR message used by
+ * the gestational-age field. Output is always `number | undefined`.
  */
 const optionalGestationalAgeWeeks = z
-  .string()
-  .transform((v) => (v?.trim() === "" ? undefined : v?.trim()))
+  .union([z.string(), z.number()])
   .optional()
+  .transform((v) => {
+    if (v === undefined) return undefined
+    const s = typeof v === "number" ? String(v) : v
+    return s.trim() === "" ? undefined : s.trim()
+  })
   .refine(
     (v) => {
       if (v === undefined) return true
