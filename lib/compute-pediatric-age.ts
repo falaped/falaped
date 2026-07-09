@@ -58,6 +58,15 @@ export const PRETERM_THRESHOLD_WEEKS = 37
  */
 export const CORRECTED_AGE_CUTOFF_MONTHS = 24
 
+/**
+ * Growth-curve corrected-age cutoff (D-05 / D-07). The growth curve positions a
+ * preterm infant's corrected age up to 36 months; callers opt in via
+ * `computePediatricAge(..., { correctedAgeCutoffMonths: GROWTH_CORRECTED_AGE_CUTOFF_MONTHS })`.
+ * The default (no options) stays at `CORRECTED_AGE_CUTOFF_MONTHS` (24) so Phase 1
+ * callers are unaffected.
+ */
+export const GROWTH_CORRECTED_AGE_CUTOFF_MONTHS = 36
+
 const DAYS_BAND_MAX = 28 // 0–28 days → days band
 const WEEKS_BAND_MAX_DAYS = 84 // < 84 days (~12 weeks) → weeks band (D-11)
 const MONTHS_BAND_MAX_MONTHS = 24 // < 24 months → months+days band (D-07)
@@ -132,11 +141,16 @@ function bandFor(from: Date, to: Date): { band: AgeBand; parts: PediatricAgePart
  * @param gestationalAgeWeeks Gestational age at birth in weeks; `< 37` triggers
  *   corrected age (subtract `(40 - gestationalAgeWeeks)` weeks) up to ~24 months
  *   corrected. `null`/`undefined`/`>= 37` → full-term, no correction.
+ * @param options Optional overrides. `correctedAgeCutoffMonths` extends the
+ *   corrected-age window (default `CORRECTED_AGE_CUTOFF_MONTHS` = 24); the growth
+ *   curve passes `GROWTH_CORRECTED_AGE_CUTOFF_MONTHS` = 36 (D-05 / D-07). The
+ *   effective cutoff is echoed in `corrected.appliesUntilMonths`.
  */
 export function computePediatricAge(
   birthDateIso: string | null | undefined,
   now: Date = new Date(),
   gestationalAgeWeeks?: number | null,
+  options?: { correctedAgeCutoffMonths?: number },
 ): PediatricAge {
   if (!birthDateIso) return { status: "missing_birth_date" } // D-09
 
@@ -163,13 +177,15 @@ export function computePediatricAge(
     const correctedBirth = addDays(birth, prematurityWeeks * 7)
 
     if (!isAfter(correctedBirth, today)) {
+      const effectiveCutoffMonths =
+        options?.correctedAgeCutoffMonths ?? CORRECTED_AGE_CUTOFF_MONTHS
       const correctedMonths = differenceInMonths(today, correctedBirth)
-      if (correctedMonths <= CORRECTED_AGE_CUTOFF_MONTHS) {
+      if (correctedMonths <= effectiveCutoffMonths) {
         const corrected = bandFor(correctedBirth, today)
         result.corrected = {
           band: corrected.band,
           parts: corrected.parts,
-          appliesUntilMonths: CORRECTED_AGE_CUTOFF_MONTHS,
+          appliesUntilMonths: effectiveCutoffMonths,
         }
       }
     }
