@@ -6,14 +6,14 @@ current_phase: 03
 current_phase_name: curva-de-crescimento
 status: executing
 stopped_at: Phase 3 UI-SPEC approved
-last_updated: "2026-07-09T16:05:21.737Z"
+last_updated: "2026-07-09T17:17:19.975Z"
 last_activity: 2026-07-09
 last_activity_desc: Phase 03 execution started
 progress:
   total_phases: 6
   completed_phases: 2
   total_plans: 12
-  completed_plans: 9
+  completed_plans: 11
   percent: 33
 ---
 
@@ -29,7 +29,7 @@ See: .planning/PROJECT.md (updated 2026-06-27)
 ## Current Position
 
 Phase: 03 (curva-de-crescimento) — EXECUTING
-Plan: 2 of 4
+Plan: 3 of 4
 Status: Ready to execute
 Last activity: 2026-07-09 — Phase 03 execution started
 
@@ -59,6 +59,7 @@ Progress: [██████░░░░] 60%
 | Phase 02 P01 | 10min | 3 tasks | 10 files |
 | Phase 02 P02 | 20min | 6 tasks | 24 files |
 | Phase 03 P01 | 20min | 4 tasks | 16 files |
+| Phase 03 P03 | 6 | 2 tasks | 14 files |
 
 ## Accumulated Context
 
@@ -77,6 +78,8 @@ Recent decisions affecting current work:
 - [Phase ?]: [Phase 2] Armazenar o path do objeto (profile_id/patient_id.ext), nunca a URL; consentimento server-side via z.literal(true) + colunas consent_given/consent_at (D-02/D-04/D-05)
 - [Phase 2]: Compressão client-side via browser-image-compression@2.0.2 (Free plan sem transforms nativas — D-09); upload upsert = foto única substituível (D-08); input clássico sem capture (D-07)
 - [Phase 2]: Helper singular (TTL 60s) alimenta hero + cabeçalho do caso; helper de lote (createSignedUrls) alimenta a lista (TTL 300s, sem N+1); <AvatarImage> Radix em todas as superfícies, nunca next/image (D-10/D-11)
+- [Phase ?]: 03-03: toda mutação em patient_measurements escopa por id+profile_id+patient_id (nunca só id) — guarda IDOR (D-14 / CONCERNS Pitfall 5)
+- [Phase ?]: 03-03: measurement-form reusado em modo edit; history-table virou client component p/ Editar/Remover por linha
 
 ### Pending Todos
 
@@ -112,6 +115,6 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-07-09T16:05:21.732Z
+Last session: 2026-07-09T17:15:38.582Z
 Stopped at: Phase 3 UI-SPEC approved
 Resume file: .planning/phases/03-curva-de-crescimento/03-UI-SPEC.md
