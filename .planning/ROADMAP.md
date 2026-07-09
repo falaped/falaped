@@ -91,8 +91,18 @@ Plans:
   2. O pediatra vê gráficos de curva de crescimento por idade (peso/idade, estatura/idade, IMC/idade, perímetro cefálico/idade) com as medições do paciente plotadas sobre as curvas de referência OMS (percentis/z-score), usando a idade pediátrica da Phase 1; a referência exibe fonte e faixa etária coberta
   3. O pediatra atualiza o histórico — edita e remove medições — e os gráficos refletem a mudança; leitura/escrita/exclusão aplicam o gate de assinatura (`paid`) e escopam por `profile_id` (uma requisição de outro médico não acessa nem apaga a medição)
 
-**Plans**: TBD
+**Plans**: 3 plans
 **UI hint**: yes
+Plans:
+
+**Wave 1**
+
+- [ ] 03-01-PLAN.md — Slice registrar medição: motor de idade +36m + tabela patient_measurements (RLS + [BLOCKING] push) + módulos/action create+get + form/histórico no perfil (wave 1)
+
+**Wave 2** *(blocked on Wave 1)*
+
+- [ ] 03-02-PLAN.md — Slice curva OMS: math LMS + reference JSON WHO (human-verify) + recharts (human-verify) + growth-chart (tabs/toggles/corrected-age) + position readout (wave 2)
+- [ ] 03-03-PLAN.md — Slice editar/remover histórico: update/delete escopados (ownership specs/IDOR) + modo edit do form + AlertDialog de remoção (wave 2)
 
 ### Phase 4: Documentos Clínicos Novos
 
@@ -153,7 +163,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6
 |-------|----------------|--------|-----------|
 | 1. Experiência da Consulta | 5/5 | Complete   | 2026-06-28 |
 | 2. Foto Privada do Paciente | 2/3 | In Progress|  |
-| 3. Curva de Crescimento | 0/TBD | Not started | - |
+| 3. Curva de Crescimento | 0/3 | Not started | - |
 | 4. Documentos Clínicos Novos | 0/TBD | Not started | - |
 | 5. Calendário de Vacinas (Referência) | 0/TBD | Not started | - |
 | 6. Carteira de Vacinação por Paciente | 0/TBD | Not started | - |
