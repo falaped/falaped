@@ -1,8 +1,18 @@
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import type { GrowthIndicator } from "@/lib/growth-reference"
 import type { Patient } from "@/modules/patients/types"
 import type { Measurement } from "@/modules/patient-growth/types"
 
+import { GrowthChart } from "./growth-chart"
 import { MeasurementForm } from "./measurement-form"
 import { MeasurementHistoryTable } from "./measurement-history-table"
+
+const INDICATOR_TABS: { value: GrowthIndicator; label: string }[] = [
+  { value: "weight-for-age", label: "Peso/idade" },
+  { value: "height-for-age", label: "Estatura/idade" },
+  { value: "bmi-for-age", label: "IMC/idade" },
+  { value: "head-circumference-for-age", label: "PC/idade" },
+]
 
 export function GrowthSection({
   patient,
@@ -44,6 +54,25 @@ export function GrowthSection({
           </p>
         </div>
       )}
+
+      <Tabs defaultValue="weight-for-age" className="gap-4">
+        <TabsList>
+          {INDICATOR_TABS.map((tab) => (
+            <TabsTrigger key={tab.value} value={tab.value}>
+              {tab.label}
+            </TabsTrigger>
+          ))}
+        </TabsList>
+        {INDICATOR_TABS.map((tab) => (
+          <TabsContent key={tab.value} value={tab.value}>
+            <GrowthChart
+              indicator={tab.value}
+              patient={patient}
+              measurements={measurements}
+            />
+          </TabsContent>
+        ))}
+      </Tabs>
     </section>
   )
 }
