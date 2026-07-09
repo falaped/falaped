@@ -31,7 +31,7 @@ See: .planning/PROJECT.md (updated 2026-06-27)
 Phase: 02 (foto-privada-do-paciente) — EXECUTING (02-03 anomaly, see Blockers)
 Plan: 3 of 3
 Status: Phase 02 shipped — PR #1
-Last activity: 2026-07-09 -- Completed quick task 260701-ctf: fix idade gestacional double-parse
+Last activity: 2026-07-09 -- Shipped quick task 260701-ctf: fix idade gestacional double-parse — PR #2 (branch fix/gestational-age-double-parse)
 
 Progress: [██████░░░░] 60%
 
@@ -97,7 +97,7 @@ None yet.
 | # | Description | Date | Commit | Directory |
 |---|-------------|------|--------|-----------|
 | 260629-egq | Corrigir 3 pontos da foto do paciente (avatar persiste no refresh; foto na lista; upload em modal) | 2026-06-29 | 87468f8 | [260629-egq-corrigir-3-pontos-da-foto-do-paciente-1-](./quick/260629-egq-corrigir-3-pontos-da-foto-do-paciente-1-/) |
-| 260701-ctf | Corrigir erro "Invalid input: expected string, received number" no campo idade gestacional ao criar/editar paciente (double-parse) | 2026-07-09 | beb8ce7 | [260701-ctf-fix-gestational-age-double-parse](./quick/260701-ctf-fix-gestational-age-double-parse/) |
+| 260701-ctf | Corrigir erro "Invalid input: expected string, received number" no campo idade gestacional ao criar/editar paciente (double-parse) | 2026-07-09 | beb8ce7 (PR #2) | [260701-ctf-fix-gestational-age-double-parse](./quick/260701-ctf-fix-gestational-age-double-parse/) |
 
 ## Deferred Items
 
