@@ -12,15 +12,18 @@ import {
 import { zodResolver } from "@hookform/resolvers/zod"
 import { toast } from "sonner"
 
-import { createMeasurementAction } from "@/actions"
+import { createMeasurementAction, updateMeasurementAction } from "@/actions"
 import { getFriendlyToastMessage } from "@/lib/get-friendly-toast-message"
 import { maskBrazilianDateInput } from "@/lib/brazilian-date-form"
 import { computePediatricBmi } from "@/lib/parse-anthropometrics-for-bmi"
 import {
   createMeasurementSchema,
+  updateMeasurementSchema,
   type CreateMeasurementFormData,
   type CreateMeasurementFormInput,
+  type UpdateMeasurementFormData,
 } from "@/lib/schemas/patient-measurement"
+import type { Measurement } from "@/modules/patient-growth/types"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import {
@@ -50,23 +53,82 @@ function toNumberOrNull(value: unknown): number | null {
   return Number.isFinite(n) ? n : null
 }
 
+/** yyyy-mm-dd (date-only) → dd/mm/aaaa without timezone drift (parse parts). */
+function isoToBrazilianDate(iso: string): string {
+  const [y, m, d] = iso.split("-")
+  if (!y || !m || !d) return ""
+  return `${d}/${m}/${y}`
+}
+
+/** grams → kg display string (comma decimals), empty when null. */
+function gramsToKgInput(grams: number | null): string {
+  if (grams === null) return ""
+  return String(grams / 1000).replace(".", ",")
+}
+
+/** mm → cm display string (comma decimals), empty when null. */
+function mmToCmInput(mm: number | null): string {
+  if (mm === null) return ""
+  return String(mm / 10).replace(".", ",")
+}
+
+/** Builds the pre-populated form state for an existing measurement (edit mode). */
+function editDefaultsFromMeasurement(
+  patientId: string,
+  measurement: Measurement,
+): CreateMeasurementFormInput {
+  return {
+    patientId,
+    measured_on: isoToBrazilianDate(measurement.measured_on),
+    weight: gramsToKgInput(measurement.weight_grams),
+    length_height: mmToCmInput(measurement.length_height_mm),
+    head_circumference: mmToCmInput(measurement.head_circumference_mm),
+  }
+}
+
+type MeasurementFormProps = {
+  patientId: string
+  /** "create" (default) opens via its own CTA; "edit" pre-populates from `measurement`. */
+  mode?: "create" | "edit"
+  /** Existing measurement to edit — required when `mode === "edit"`. */
+  measurement?: Measurement
+  /** Controlled open state (used by the edit flow from the history table). */
+  open?: boolean
+  onOpenChange?: (open: boolean) => void
+  onSaved?: () => void
+}
+
 export function MeasurementForm({
   patientId,
+  mode = "create",
+  measurement,
+  open: controlledOpen,
+  onOpenChange,
   onSaved,
-}: {
-  patientId: string
-  onSaved?: () => void
-}) {
+}: MeasurementFormProps) {
   const router = useRouter()
-  const [open, setOpen] = useState(false)
+  const [uncontrolledOpen, setUncontrolledOpen] = useState(false)
+  const isEdit = mode === "edit" && measurement !== undefined
+
+  // Edit mode is controlled by the parent; create mode manages its own open state.
+  const isControlled = controlledOpen !== undefined
+  const open = isControlled ? controlledOpen : uncontrolledOpen
+  const setOpen = (next: boolean) => {
+    if (isControlled) onOpenChange?.(next)
+    else setUncontrolledOpen(next)
+  }
+
+  const initialValues: CreateMeasurementFormInput = isEdit
+    ? editDefaultsFromMeasurement(patientId, measurement)
+    : { ...DEFAULT_VALUES, patientId }
 
   const form = useForm<CreateMeasurementFormInput>({
     mode: "onSubmit",
     reValidateMode: "onBlur",
     resolver: zodResolver(
-      createMeasurementSchema,
+      isEdit ? updateMeasurementSchema : createMeasurementSchema,
     ) as Resolver<CreateMeasurementFormInput>,
-    defaultValues: { ...DEFAULT_VALUES, patientId },
+    defaultValues: initialValues,
   })
 
   const looseForm = form as unknown as LooseForm
@@ -83,7 +145,17 @@ export function MeasurementForm({
     if (bmi.ok) bmiLabel = bmi.bmi.toFixed(1).replace(".", ",")
   }
 
+  const resetForm = () => {
+    form.reset(
+      isEdit
+        ? editDefaultsFromMeasurement(patientId, measurement)
+        : { ...DEFAULT_VALUES, patientId },
+    )
+  }
+
   if (!open) {
+    // Edit mode never renders its own entry button — the parent controls opening.
+    if (isEdit) return null
     return (
       <Button type="button" onClick={() => setOpen(true)} className="min-h-9">
         Registrar medição
@@ -94,12 +166,15 @@ export function MeasurementForm({
   return (
     <form
       onSubmit={form.handleSubmit(async (data) => {
-        const result = await createMeasurementAction(
-          data as CreateMeasurementFormData,
-        )
+        const result = isEdit
+          ? await updateMeasurementAction({
+              ...(data as unknown as UpdateMeasurementFormData),
+              id: measurement.id,
+            })
+          : await createMeasurementAction(data as CreateMeasurementFormData)
         if (result.ok) {
-          toast.success("Medição registrada.")
-          form.reset({ ...DEFAULT_VALUES, patientId })
+          toast.success(isEdit ? "Medição atualizada." : "Medição registrada.")
+          resetForm()
           setOpen(false)
           router.refresh()
           onSaved?.()
@@ -225,7 +300,7 @@ export function MeasurementForm({
           className="min-h-9"
           disabled={isSubmitting}
           onClick={() => {
-            form.reset({ ...DEFAULT_VALUES, patientId })
+            resetForm()
             setOpen(false)
           }}
         >

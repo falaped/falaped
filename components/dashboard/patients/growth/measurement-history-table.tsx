@@ -1,3 +1,8 @@
+"use client"
+
+import { Fragment, useState } from "react"
+import { MoreVerticalIcon, PencilIcon, Trash2Icon } from "lucide-react"
+
 import {
   Table,
   TableBody,
@@ -6,8 +11,18 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
+import { Button } from "@/components/ui/button"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 import { computePediatricBmi } from "@/lib/parse-anthropometrics-for-bmi"
 import type { Measurement } from "@/modules/patient-growth/types"
+
+import { MeasurementForm } from "./measurement-form"
+import { RemoveMeasurementDialog } from "./remove-measurement-dialog"
 
 const EMPTY = "—"
 
@@ -39,10 +54,15 @@ function formatBmi(weightGrams: number | null, lengthMm: number | null): string 
 }
 
 export function MeasurementHistoryTable({
+  patientId,
   measurements,
 }: {
+  patientId: string
   measurements: Measurement[]
 }) {
+  const [editingId, setEditingId] = useState<string | null>(null)
+  const [removing, setRemoving] = useState<Measurement | null>(null)
+
   return (
     <div className="overflow-hidden rounded-xl border border-border bg-card">
       <Table>
@@ -63,31 +83,96 @@ export function MeasurementHistoryTable({
             <TableHead className="px-4 py-3 text-right text-xs font-medium uppercase tracking-wide text-muted-foreground">
               IMC
             </TableHead>
+            <TableHead className="px-4 py-3 text-right text-xs font-medium uppercase tracking-wide text-muted-foreground">
+              <span className="sr-only">Ações</span>
+            </TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
           {measurements.map((m) => (
-            <TableRow key={m.id} className="even:bg-muted/50">
-              <TableCell className="px-4 py-3 tabular-nums">
-                {formatMeasuredOn(m.measured_on)}
-              </TableCell>
-              <TableCell className="px-4 py-3 text-right tabular-nums">
-                {formatWeight(m.weight_grams)}
-              </TableCell>
-              <TableCell className="px-4 py-3 text-right tabular-nums">
-                {formatLengthMm(m.length_height_mm)}
-              </TableCell>
-              <TableCell className="px-4 py-3 text-right tabular-nums">
-                {formatLengthMm(m.head_circumference_mm)}
-              </TableCell>
-              <TableCell className="px-4 py-3 text-right tabular-nums">
-                {formatBmi(m.weight_grams, m.length_height_mm)}
-              </TableCell>
-            </TableRow>
+            <Fragment key={m.id}>
+              <TableRow className="even:bg-muted/50">
+                <TableCell className="px-4 py-3 tabular-nums">
+                  {formatMeasuredOn(m.measured_on)}
+                </TableCell>
+                <TableCell className="px-4 py-3 text-right tabular-nums">
+                  {formatWeight(m.weight_grams)}
+                </TableCell>
+                <TableCell className="px-4 py-3 text-right tabular-nums">
+                  {formatLengthMm(m.length_height_mm)}
+                </TableCell>
+                <TableCell className="px-4 py-3 text-right tabular-nums">
+                  {formatLengthMm(m.head_circumference_mm)}
+                </TableCell>
+                <TableCell className="px-4 py-3 text-right tabular-nums">
+                  {formatBmi(m.weight_grams, m.length_height_mm)}
+                </TableCell>
+                <TableCell className="px-4 py-3 text-right">
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        aria-label={`Ações da medição de ${formatMeasuredOn(m.measured_on)}`}
+                      >
+                        <MoreVerticalIcon className="h-4 w-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="w-40">
+                      <DropdownMenuItem
+                        onSelect={() =>
+                          setEditingId((current) =>
+                            current === m.id ? null : m.id,
+                          )
+                        }
+                      >
+                        <PencilIcon className="h-4 w-4 opacity-80" aria-hidden />
+                        Editar
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        variant="destructive"
+                        onSelect={() => setRemoving(m)}
+                      >
+                        <Trash2Icon className="h-4 w-4 opacity-80" aria-hidden />
+                        Remover
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </TableCell>
+              </TableRow>
+              {editingId === m.id ? (
+                <TableRow className="bg-muted/30">
+                  <TableCell colSpan={6} className="p-4">
+                    <MeasurementForm
+                      patientId={patientId}
+                      mode="edit"
+                      measurement={m}
+                      open
+                      onOpenChange={(next) => {
+                        if (!next) setEditingId(null)
+                      }}
+                      onSaved={() => setEditingId(null)}
+                    />
+                  </TableCell>
+                </TableRow>
+              ) : null}
+            </Fragment>
           ))}
         </TableBody>
       </Table>
-      {/* Per-row Editar/Remover actions arrive in 03-03 (edit/delete slice). */}
+
+      {removing ? (
+        <RemoveMeasurementDialog
+          patientId={patientId}
+          measurementId={removing.id}
+          measuredOn={removing.measured_on}
+          open={removing !== null}
+          onOpenChange={(next) => {
+            if (!next) setRemoving(null)
+          }}
+          onRemoved={() => setRemoving(null)}
+        />
+      ) : null}
     </div>
   )
 }

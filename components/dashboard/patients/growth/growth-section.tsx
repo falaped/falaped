@@ -41,7 +41,10 @@ export function GrowthSection({
       <MeasurementForm patientId={patient.id} />
 
       {hasMeasurements ? (
-        <MeasurementHistoryTable measurements={measurements} />
+        <MeasurementHistoryTable
+          patientId={patient.id}
+          measurements={measurements}
+        />
       ) : (
         <div className="rounded-xl border border-dashed border-border bg-muted/5 p-8 text-center">
           <p className="text-sm font-medium text-muted-foreground">
