@@ -46,6 +46,10 @@ A consulta pediátrica precisa fluir sem fricção — o médico abre o paciente
 - [ ] Receituário em branco (corpo vazio para colar receitas prontas que o médico já mantém)
 - [ ] Biblioteca de templates só de orientações (ex: orientação 1ª consulta, 1 mês, 2 meses...)
 
+**Bloco 5 — Curva de crescimento (Phase 3)**
+- [ ] Registrar medições antropométricas por paciente (peso, estatura/comprimento, perímetro cefálico; IMC derivado) com histórico editável
+- [ ] Gráficos de curva de crescimento por idade sobre curvas de referência OMS (percentis/z-score), usando o motor de idade pediátrica
+
 ### Out of Scope
 
 <!-- Limites explícitos com justificativa. -->
@@ -79,6 +83,7 @@ A consulta pediátrica precisa fluir sem fricção — o médico abre o paciente
 | Novos documentos seguem o mesmo padrão das receitas | Reaproveita wizard + templates + geração de PDF já existentes | — Pending |
 | Relatório médico é um tipo NOVO, separado do laudo/relatório de caso | O médico confirmou que é um documento diferente do que já existe | — Pending |
 | Extração de exames por foto (IA) fica para v2 | Item mais complexo; manter foco e entregar o resto mais rápido | — Pending |
+| Curva de crescimento inserida como Phase 3 (antes dos documentos) | Reprioriza acompanhamento de crescimento; consome o motor de idade da Phase 1 e não depende do PDF, então precede os documentos. Documentos → Phase 4, Vacinas → Phases 5–6 (renumeração inteira, 2026-07-09) | — Pending |
 
 ## Evolution
 
@@ -98,4 +103,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-06-27 after initialization*
+*Last updated: 2026-07-09 — inserida Phase 3 "Curva de Crescimento"; renumeração inteira (Documentos → Phase 4, Vacinas → Phases 5–6)*

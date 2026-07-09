@@ -5,16 +5,16 @@ milestone_name: milestone
 current_phase: 02
 current_phase_name: foto-privada-do-paciente
 status: "Phase 02 shipped — PR #1"
-stopped_at: "Fase 3 discuss em andamento — 4 áreas escolhidas; pendente: 1ª pergunta DOC-02 (fonte do catálogo de exames), usuário quer esclarecer antes de responder. Sem CONTEXT.md ainda."
-last_updated: "2026-06-30T11:57:26.305Z"
-last_activity: 2026-06-29
-last_activity_desc: "Shipped milestone v1.0 (Fases 01+02) — PR #1"
+stopped_at: "Roadmap renumerado: inserida Phase 3 Curva de Crescimento; Documentos→4, Vacinas→5-6. Phase 3 pronta para /gsd-discuss-phase 3. Phase 2 ainda com 02-03 pendente."
+last_updated: "2026-07-09T12:16:03.144Z"
+last_activity: 2026-07-09
+last_activity_desc: "Shipped quick task 260701-ctf: fix idade gestacional double-parse — PR #2 (branch fix/gestational-age-double-parse)"
 progress:
-  total_phases: 5
+  total_phases: 6
   completed_phases: 2
   total_plans: 8
   completed_plans: 8
-  percent: 40
+  percent: 33
 ---
 
 # Project State
@@ -66,9 +66,10 @@ Progress: [██████░░░░] 60%
 Decisions are logged in PROJECT.md Key Decisions table.
 Recent decisions affecting current work:
 
-- [Roadmap]: Motor de idade (`computePediatricAge`) é a keystone — fica na Phase 1 e é consumido também pela lógica de vacina (Phase 5)
-- [Roadmap]: Correção de PDF (CONS-04) precede os documentos novos (Phase 3), que herdam o builder `@falaped/falaped-kit/pdf`
-- [Roadmap]: Vacinas separadas em referência (dado estático, Phase 4) vs carteira por paciente (tabela owned, Phase 5)
+- [Roadmap 2026-07-09]: Inserida Phase 3 "Curva de Crescimento" (GROWTH-01..03); renumeração inteira: Documentos → Phase 4, Calendário de Vacinas → Phase 5, Carteira de Vacinação → Phase 6
+- [Roadmap]: Motor de idade (`computePediatricAge`) é a keystone — fica na Phase 1 e é consumido pela curva de crescimento (Phase 3) e pela lógica de vacina (Phase 6)
+- [Roadmap]: Correção de PDF (CONS-04) precede os documentos novos (Phase 4), que herdam o builder `@falaped/falaped-kit/pdf`
+- [Roadmap]: Vacinas separadas em referência (dado estático, Phase 5) vs carteira por paciente (tabela owned, Phase 6)
 - [Roadmap]: Foto da criança em bucket privado + URL assinada — NÃO reusar o bucket público de logos (LGPD)
 - [Phase ?]: Pediatric age band boundary at 24 months (a 1-year-old reads '12 meses'); months/days via differenceInMonths + intervalToDuration remainder; corrected age by shifting birth date forward and re-banding, capped at 24 months corrected.
 - [Phase ?]: [Phase 2] Foto da criança em bucket privado patient-photos (public=false) + 4 storage RLS owner-scoped via foldername[1] — aplicado ao DB live (D-01/D-03)
@@ -87,7 +88,8 @@ None yet.
 [Issues that affect future work]
 
 - [Phase 2] Confirmar plano Supabase (Pro?) antes de construir foto — decide transform-on-the-fly vs `browser-image-compression` no cliente; confirmar requisitos de consentimento/exclusão
-- [Phase 4] Acurácia dos dados PNI/SBIm deve ser verificada com o médico contra as fontes oficiais atuais no momento do build (tarefa de conteúdo, não de stack)
+- [Phase 5] Acurácia dos dados PNI/SBIm deve ser verificada com o médico contra as fontes oficiais atuais no momento do build (tarefa de conteúdo, não de stack)
+- [Phase 3] Acurácia das curvas de referência OMS (percentis/z-score) é tarefa de conteúdo — verificar dados/fonte oficiais no momento do build; decidir peso/idade, estatura/idade, IMC/idade, PC/idade e faixas etárias cobertas
 - [Phase 1] Correção de PDF cruza dois repos (kit + app) e pode exigir bump coordenado do `@falaped/falaped-kit` (>=0.2.7)
 - [Cross-cutting] App não tem RLS de tabela — todo slice novo precisa filtro `profile_id` em read/write/delete + gate `paid` + teste de ownership (Pitfall 5)
 - [Phase 2 — anomalia 02-03 RESOLVIDA 2026-06-29] O 02-03 (PHOTO-03) ficou commitado sem SUMMARY/verificação (mark-and-skip). Fechado via close-out manual: 02-03-SUMMARY.md reconstruído + VERIFICATION.md canônica gerada (status: passed, 11/11 must-haves). UAT 10/10 (02-UAT.md). Phase 02 agora 3/3 summaries, verificação passed, predicado de conclusão = true. ÚLTIMO gate antes do ship: SECURITY.md (security_enforcement=true) → rodar `/gsd-secure-phase 02`, depois `/gsd-ship 02`.
@@ -109,6 +111,6 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-06-30T11:57:26.300Z
-Stopped at: Fase 3 discuss em andamento — 4 áreas escolhidas; pendente: 1ª pergunta DOC-02 (fonte do catálogo de exames), usuário quer esclarecer antes de responder. Sem CONTEXT.md ainda.
+Last session: 2026-07-09T12:16:03.135Z
+Stopped at: Roadmap renumerado: inserida Phase 3 Curva de Crescimento; Documentos→4, Vacinas→5-6. Phase 3 pronta para /gsd-discuss-phase 3. Phase 2 ainda com 02-03 pendente.
 Resume file: .planning/ROADMAP.md

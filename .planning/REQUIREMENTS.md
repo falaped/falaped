@@ -20,6 +20,12 @@ Requisitos deste ciclo. Cada um mapeia para uma fase do roadmap. Tudo escopado p
 - [x] **PHOTO-02**: A foto é exibida no perfil/identificação do paciente
 - [x] **PHOTO-03**: As fotos ficam em armazenamento privado, acessíveis apenas ao médico dono (bucket privado, escopo por `profile_id`, URL assinada — não reutilizar o bucket público de logos)
 
+### Curva de Crescimento (GROWTH)
+
+- [ ] **GROWTH-01**: Pediatra registra medições antropométricas de cada criança (peso, comprimento/estatura, perímetro cefálico; IMC derivado de peso+estatura) com data, formando um histórico por paciente que pode ser editado e removido — escopado por `profile_id` + `patient_id`
+- [ ] **GROWTH-02**: Sistema exibe a curva de crescimento em gráficos por idade (peso/idade, estatura/idade, IMC/idade, perímetro cefálico/idade), sobrepondo as medições do paciente às curvas de referência OMS (percentis/z-score), com fonte e faixa etária coberta visíveis
+- [ ] **GROWTH-03**: As medições são posicionadas pela idade pediátrica (motor da Phase 1); leitura/escrita/exclusão aplicam o gate `paid` e escopam por `profile_id` (sem acesso entre médicos)
+
 ### Documentos Clínicos (DOC)
 
 - [ ] **DOC-01**: Médico gera um **encaminhamento** (especialidade/serviço de destino, motivo, resumo clínico/hipótese, urgência) com PDF, auto-preenchido com os dados do paciente
@@ -80,26 +86,29 @@ Cada requisito mapeia para exatamente uma fase do roadmap. Sem órfãos, sem dup
 | PHOTO-01 | Phase 2 | Complete |
 | PHOTO-02 | Phase 2 | Complete |
 | PHOTO-03 | Phase 2 | Complete |
-| DOC-01 | Phase 3 | Pending |
-| DOC-02 | Phase 3 | Pending |
-| DOC-03 | Phase 3 | Pending |
-| DOC-04 | Phase 3 | Pending |
-| DOC-05 | Phase 3 | Pending |
-| DOC-06 | Phase 3 | Pending |
-| VAC-01 | Phase 4 | Pending |
-| VAC-02 | Phase 4 | Pending |
-| VAC-03 | Phase 4 | Pending |
-| VAC-04 | Phase 4 | Pending |
-| VAC-05 | Phase 5 | Pending |
-| VAC-06 | Phase 5 | Pending |
-| VAC-07 | Phase 5 | Pending |
+| GROWTH-01 | Phase 3 | Pending |
+| GROWTH-02 | Phase 3 | Pending |
+| GROWTH-03 | Phase 3 | Pending |
+| DOC-01 | Phase 4 | Pending |
+| DOC-02 | Phase 4 | Pending |
+| DOC-03 | Phase 4 | Pending |
+| DOC-04 | Phase 4 | Pending |
+| DOC-05 | Phase 4 | Pending |
+| DOC-06 | Phase 4 | Pending |
+| VAC-01 | Phase 5 | Pending |
+| VAC-02 | Phase 5 | Pending |
+| VAC-03 | Phase 5 | Pending |
+| VAC-04 | Phase 5 | Pending |
+| VAC-05 | Phase 6 | Pending |
+| VAC-06 | Phase 6 | Pending |
+| VAC-07 | Phase 6 | Pending |
 
 **Coverage:**
 
-- v1 requirements: 20 total
-- Mapped to phases: 20 ✓
+- v1 requirements: 23 total
+- Mapped to phases: 23 ✓
 - Unmapped: 0 ✓
 
 ---
 *Requirements defined: 2026-06-28*
-*Last updated: 2026-06-28 after roadmap creation (traceability mapped)*
+*Last updated: 2026-07-09 — inserida Phase 3 "Curva de Crescimento" (GROWTH-01..03); DOC → Phase 4, VAC → Phases 5–6 (renumeração inteira)*
