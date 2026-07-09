@@ -30,6 +30,10 @@ export {
   type RemovePatientPhotoResult,
 } from "./patients"
 export {
+  createMeasurementAction,
+  type CreateMeasurementResult,
+} from "./patient-growth"
+export {
   deleteMyAccountAction,
   updateStatusAction,
   updateProfileAction,
