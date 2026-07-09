@@ -4,8 +4,8 @@ milestone: v1.0
 milestone_name: milestone
 current_phase: 03
 current_phase_name: curva-de-crescimento
-status: verifying
-stopped_at: Phase 3 — 4/4 plans executed + verified (PASSED-WITH-CONCERNS); manual checkpoints pending
+status: shipped
+stopped_at: Phase 3 shipped — PR #3 open (phase-03-curva-de-crescimento → main), awaiting merge
 last_updated: "2026-07-09T18:00:00.000Z"
 last_activity: 2026-07-09
 last_activity_desc: Phase 03 all 4 plans complete; migration applied live; verification passed-with-concerns
@@ -115,6 +115,7 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-07-09T17:15:38.582Z
-Stopped at: Phase 3 UI-SPEC approved
+Last session: 2026-07-09
+Stopped at: Phase 3 shipped — PR #3 (https://github.com/falaped/falaped/pull/3) open, awaiting merge to main
+Resume file: https://github.com/falaped/falaped/pull/3
 Resume file: .planning/phases/03-curva-de-crescimento/03-UI-SPEC.md
