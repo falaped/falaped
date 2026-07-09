@@ -26,3 +26,14 @@ export type CreateMeasurementPayload = {
   length_height_mm: number | null
   head_circumference_mm: number | null
 }
+
+/**
+ * Payload to update a measurement. Same base-unit shape as create; the module
+ * only writes the provided fields and always refreshes `updated_at`.
+ */
+export type UpdateMeasurementPayload = {
+  measured_on?: string
+  weight_grams?: number | null
+  length_height_mm?: number | null
+  head_circumference_mm?: number | null
+}

@@ -92,3 +92,43 @@ export type CreateMeasurementFormData = z.output<typeof createMeasurementSchema>
 
 /** Raw form state (measured_on as dd/mm/aaaa string; measures as strings). */
 export type CreateMeasurementFormInput = z.input<typeof createMeasurementSchema>
+
+/**
+ * Edit an existing measurement. Same shape as create plus the measurement `id`
+ * (uuid). Measures stay individually optional (partial edit) but the cross-field
+ * refine still enforces "at least one measure" on the final state, and the same
+ * ranges + future-date rejection apply.
+ */
+export const updateMeasurementSchema = z
+  .object({
+    id: z.string().uuid(),
+    patientId: z.string().uuid(),
+    measured_on: measuredOnField,
+    weight: optionalAnthropometric(0.3, 180, "Peso deve estar entre 0,3 e 180 kg."),
+    length_height: optionalAnthropometric(
+      20,
+      220,
+      "Estatura deve estar entre 20 e 220 cm.",
+    ),
+    head_circumference: optionalAnthropometric(
+      20,
+      70,
+      "Perímetro cefálico deve estar entre 20 e 70 cm.",
+    ),
+  })
+  .refine(
+    (data) =>
+      data.weight !== undefined ||
+      data.length_height !== undefined ||
+      data.head_circumference !== undefined,
+    {
+      message: "Informe pelo menos uma medida (peso, estatura ou PC).",
+      path: ["weight"],
+    },
+  )
+
+/** Values after Zod parse for the edit flow. */
+export type UpdateMeasurementFormData = z.output<typeof updateMeasurementSchema>
+
+/** Raw form state for the edit flow (measured_on dd/mm/aaaa; measures strings). */
+export type UpdateMeasurementFormInput = z.input<typeof updateMeasurementSchema>
