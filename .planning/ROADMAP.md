@@ -2,7 +2,7 @@
 
 ## Overview
 
-Este ciclo melhora a experiência da consulta pediátrica, amplia os tipos de documento clínico e adiciona suporte completo a vacinação — sem trocar a arquitetura. O caminho segue a cadeia de dependências da pesquisa: primeiro as correções de dor de uso e o motor de idade (a "keystone" que tudo de vacina consome, e a correção de PDF que todo documento novo herda); depois a foto privada da criança (decisão de privacidade isolada); então os documentos clínicos novos sobre o padrão de receitas; em seguida o calendário de vacinas como dado de referência; e por fim a carteira por paciente, que cruza idade × calendário × doses aplicadas. Cada fase entrega uma capacidade observável de ponta a ponta.
+Este ciclo melhora a experiência da consulta pediátrica, amplia os tipos de documento clínico, acompanha o crescimento da criança e adiciona suporte completo a vacinação — sem trocar a arquitetura. O caminho segue a cadeia de dependências da pesquisa: primeiro as correções de dor de uso e o motor de idade (a "keystone" que tudo de crescimento e vacina consome, e a correção de PDF que todo documento novo herda); depois a foto privada da criança (decisão de privacidade isolada); então a curva de crescimento por paciente (medições antropométricas plotadas por idade, primeiro consumidor do motor de idade); em seguida os documentos clínicos novos sobre o padrão de receitas; então o calendário de vacinas como dado de referência; e por fim a carteira por paciente, que cruza idade × calendário × doses aplicadas. Cada fase entrega uma capacidade observável de ponta a ponta.
 
 ## Phases
 
@@ -15,9 +15,10 @@ Decimal phases appear between their surrounding integers in numeric order.
 
 - [x] **Phase 1: Experiência da Consulta** - Idade pediátrica precisa, cronômetro de consulta e impressão de PDF sem páginas extras (completed 2026-06-28)
 - [ ] **Phase 2: Foto Privada do Paciente** - Foto da criança em armazenamento privado com URL assinada e consentimento (LGPD)
-- [ ] **Phase 3: Documentos Clínicos Novos** - Encaminhamento, pedido de exames, relatório médico, receituário em branco e biblioteca de orientações
-- [ ] **Phase 4: Calendário de Vacinas (Referência)** - Tabelas SUS/PNI, particular/SBIm e gestante como dado versionado, somente leitura
-- [ ] **Phase 5: Carteira de Vacinação por Paciente** - Registro de doses aplicadas com pendentes/atrasadas e próxima dose por idade
+- [ ] **Phase 3: Curva de Crescimento** - Medições antropométricas por paciente (peso, estatura, PC, IMC) plotadas em gráficos por idade sobre curvas de referência OMS, com histórico atualizável
+- [ ] **Phase 4: Documentos Clínicos Novos** - Encaminhamento, pedido de exames, relatório médico, receituário em branco e biblioteca de orientações
+- [ ] **Phase 5: Calendário de Vacinas (Referência)** - Tabelas SUS/PNI, particular/SBIm e gestante como dado versionado, somente leitura
+- [ ] **Phase 6: Carteira de Vacinação por Paciente** - Registro de doses aplicadas com pendentes/atrasadas e próxima dose por idade
 
 ## Phase Details
 
@@ -40,7 +41,7 @@ Plans:
 
 - [x] 01-01-PLAN.md — Schema foundation: gestational_age + cases pause columns + started_at default + db push (wave 1)
 - [x] 01-02-PLAN.md — Pediatric age engine (pure, tested) + PT-BR formatter (wave 1, TDD)
-- [x] 01-03-PLAN.md — CONS-04 PDF fix: Path B (in-repo) shipped — sanitization + console.log removal + repro script. **Path A (@falaped/falaped-kit release for the ~1.05-page boundary) deferred to Phase 5** (kit is a published external package; in-repo Path B covers 1-page and multi-page). (wave 1)
+- [x] 01-03-PLAN.md — CONS-04 PDF fix: Path B (in-repo) shipped — sanitization + console.log removal + repro script. **Path A (@falaped/falaped-kit release for the ~1.05-page boundary) deferred to Phase 6** (kit is a published external package; in-repo Path B covers 1-page and multi-page). (wave 1)
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
@@ -78,7 +79,36 @@ Plans:
 
 - [ ] 02-03-PLAN.md — Delete + consent-completeness + security verification (PHOTO-03 criterion 3): idempotent storage remove + delete-patient cleanup + remove-photo AlertDialog + curl-fails security check (wave 3)
 
-### Phase 3: Documentos Clínicos Novos
+### Phase 3: Curva de Crescimento
+
+**Goal**: O pediatra registra as medições antropométricas de cada criança ao longo do tempo (peso, comprimento/estatura, perímetro cefálico e IMC derivado) e visualiza a curva de crescimento em gráficos por idade — sobrepondo as medições do paciente às curvas de referência OMS (percentis/z-score) — mantendo um histórico atualizável. É o primeiro consumidor do motor de idade pediátrica da Phase 1, que posiciona cada medição pela idade correta.
+**Mode:** mvp
+**Depends on**: Phase 1 (o motor de idade pediátrica testado é a keystone para posicionar cada medição pela idade da criança)
+**Requirements**: GROWTH-01, GROWTH-02, GROWTH-03
+**Success Criteria** (what must be TRUE):
+
+  1. O pediatra registra uma medição (data + peso e/ou comprimento/estatura e/ou perímetro cefálico) para um paciente; o IMC é derivado quando peso e estatura existem; a medição persiste como histórico escopado por `profile_id` + `patient_id`
+  2. O pediatra vê gráficos de curva de crescimento por idade (peso/idade, estatura/idade, IMC/idade, perímetro cefálico/idade) com as medições do paciente plotadas sobre as curvas de referência OMS (percentis/z-score), usando a idade pediátrica da Phase 1; a referência exibe fonte e faixa etária coberta
+  3. O pediatra atualiza o histórico — edita e remove medições — e os gráficos refletem a mudança; leitura/escrita/exclusão aplicam o gate de assinatura (`paid`) e escopam por `profile_id` (uma requisição de outro médico não acessa nem apaga a medição)
+
+**Plans**: 3/4 plans executed
+**UI hint**: yes
+Plans:
+
+**Wave 1**
+
+- [x] 03-01-PLAN.md — Slice registrar medição: motor de idade +36m + tabela patient_measurements (RLS + [BLOCKING] push) + módulos/action create+get + form/histórico no perfil (wave 1)
+
+**Wave 2** *(blocked on Wave 1)*
+
+- [x] 03-02-PLAN.md — Slice curva OMS: math LMS + reference JSON WHO (human-verify) + recharts (human-verify) + growth-chart (tabs/toggles/corrected-age) + position readout (wave 2)
+- [x] 03-03-PLAN.md — Slice editar/remover histórico: update/delete escopados (ownership specs/IDOR) + modo edit do form + AlertDialog de remoção (wave 2)
+
+**Wave 3** *(blocked on Wave 2 / 03-02)*
+
+- [ ] 03-04-PLAN.md — Slice curva do prematuro: LMS Intergrowth-21st JSON (human-verify fonte/licença) + reference-index estendido + regra de transição Intergrowth→OMS + banda de prematuro no growth-chart (D-01/D-04, OQ1) (wave 3)
+
+### Phase 4: Documentos Clínicos Novos
 
 **Goal**: O médico gera três novos tipos de documento (encaminhamento, pedido de exames, relatório médico) mais receituário em branco e uma biblioteca de orientações — cada um reaproveitando o padrão das receitas (wizard + template salvável + PDF), auto-preenchido com os dados do paciente e herdando o builder de PDF já corrigido na Phase 1.
 **Mode:** mvp
@@ -95,7 +125,7 @@ Plans:
 **Plans**: TBD
 **UI hint**: yes
 
-### Phase 4: Calendário de Vacinas (Referência)
+### Phase 5: Calendário de Vacinas (Referência)
 
 **Goal**: O médico consulta, durante o atendimento, o calendário de vacinas por idade — SUS/PNI e particular/SBIm lado a lado, mais a referência da gestante — modelado como dado versionado com fonte e data de vigência, somente leitura, para responder "o que está previsto nesta idade?".
 **Mode:** mvp
@@ -110,11 +140,11 @@ Plans:
 **Plans**: TBD
 **UI hint**: yes
 
-### Phase 5: Carteira de Vacinação por Paciente
+### Phase 6: Carteira de Vacinação por Paciente
 
-**Goal**: O médico registra na carteira de cada paciente as doses aplicadas e o sistema mostra o que está pendente/atrasado por idade e destaca a próxima dose devida — cruzando o motor de idade (Phase 1) com o calendário-como-dado (Phase 4) e as doses aplicadas, transformando a carteira de papel em apoio à decisão.
+**Goal**: O médico registra na carteira de cada paciente as doses aplicadas e o sistema mostra o que está pendente/atrasado por idade e destaca a próxima dose devida — cruzando o motor de idade (Phase 1) com o calendário-como-dado (Phase 5) e as doses aplicadas, transformando a carteira de papel em apoio à decisão.
 **Mode:** mvp
-**Depends on**: Phase 1 (motor de idade testado) e Phase 4 (calendário de referência como dado; o diff pendente/atrasado precisa dos dois)
+**Depends on**: Phase 1 (motor de idade testado) e Phase 5 (calendário de referência como dado; o diff pendente/atrasado precisa dos dois)
 **Requirements**: VAC-05, VAC-06, VAC-07
 **Success Criteria** (what must be TRUE):
 
@@ -126,17 +156,18 @@ Plans:
 **Plans**: TBD
 **UI hint**: yes
 
-**Carried over from Phase 1 — CONS-04 Path A (kit release):** publish a new `@falaped/falaped-kit` version that removes the forced 200pt footer reserve (early `addPage()`) and fixes the `heightOfString` estimate≠render drift, then bump the pin in this app and re-verify `repro-1.05.pdf` collapses to 1 page. Phase 1 shipped the in-repo Path B (1-page + multi-page clean); this closes the ~1.05-page boundary. Note: Phase 3 documents reuse the same PDF builder and inherit Path B until this lands.
+**Carried over from Phase 1 — CONS-04 Path A (kit release):** publish a new `@falaped/falaped-kit` version that removes the forced 200pt footer reserve (early `addPage()`) and fixes the `heightOfString` estimate≠render drift, then bump the pin in this app and re-verify `repro-1.05.pdf` collapses to 1 page. Phase 1 shipped the in-repo Path B (1-page + multi-page clean); this closes the ~1.05-page boundary. Note: Phase 4 documents reuse the same PDF builder and inherit Path B until this lands.
 
 ## Progress
 
 **Execution Order:**
-Phases execute in numeric order: 1 → 2 → 3 → 4 → 5
+Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Experiência da Consulta | 5/5 | Complete   | 2026-06-28 |
 | 2. Foto Privada do Paciente | 2/3 | In Progress|  |
-| 3. Documentos Clínicos Novos | 0/TBD | Not started | - |
-| 4. Calendário de Vacinas (Referência) | 0/TBD | Not started | - |
-| 5. Carteira de Vacinação por Paciente | 0/TBD | Not started | - |
+| 3. Curva de Crescimento | 3/4 | In Progress|  |
+| 4. Documentos Clínicos Novos | 0/TBD | Not started | - |
+| 5. Calendário de Vacinas (Referência) | 0/TBD | Not started | - |
+| 6. Carteira de Vacinação por Paciente | 0/TBD | Not started | - |

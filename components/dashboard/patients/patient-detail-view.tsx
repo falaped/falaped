@@ -17,8 +17,10 @@ import { PatientDetailHero } from "@/components/dashboard/patients/patient-detai
 import { PatientDetailToolbar } from "@/components/dashboard/patients/patient-detail-toolbar"
 import { PatientClinicalOverview } from "@/components/dashboard/patients/patient-clinical-overview"
 import { PatientDetailTimeline } from "@/components/dashboard/patients/patient-detail-timeline"
+import { GrowthSection } from "@/components/dashboard/patients/growth/growth-section"
 import { deletePatientAction } from "@/actions"
 import type { Patient } from "@/modules/patients/types"
+import type { Measurement } from "@/modules/patient-growth/types"
 import type { CaseForPatient } from "@/modules/cases/get-cases-by-patient-id"
 import type { MedicalCertificateListItem } from "@/modules/medical-certificates/get-medical-certificates-by-profile-id"
 import type { PrescriptionListItem } from "@/modules/prescriptions/types"
@@ -29,6 +31,7 @@ export function PatientDetailView({
   certificates = [],
   prescriptions = [],
   photoUrl = null,
+  measurements = [],
 }: {
   patient: Patient
   cases?: CaseForPatient[]
@@ -36,6 +39,7 @@ export function PatientDetailView({
   prescriptions?: PrescriptionListItem[]
   /** Signed URL (short-lived) resolved server-side for the hero avatar; null falls back to initials. */
   photoUrl?: string | null
+  measurements?: Measurement[]
 }) {
   const router = useRouter()
   const pathname = usePathname()
@@ -123,6 +127,7 @@ export function PatientDetailView({
       ) : (
         <>
           <PatientClinicalOverview patient={patient} />
+          <GrowthSection patient={patient} measurements={measurements} />
           <PatientDetailTimeline
             cases={cases}
             certificates={certificates}

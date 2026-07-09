@@ -6,6 +6,7 @@ import { getPatientPhotoSignedUrl } from "@/modules/patients/get-patient-photo-s
 import { getCasesByPatientId } from "@/modules/cases/get-cases-by-patient-id"
 import { getMedicalCertificatesByPatientId } from "@/modules/medical-certificates/get-medical-certificates-by-patient-id"
 import { getPrescriptionsByPatientId } from "@/modules/prescriptions/get-prescriptions-by-patient-id"
+import { getMeasurementsByPatient } from "@/modules/patient-growth/get-measurements-by-patient"
 import { PatientDetailView } from "./patient-detail-view"
 
 export async function PatientDetailContent({ id }: { id: string }) {
@@ -17,12 +18,14 @@ export async function PatientDetailContent({ id }: { id: string }) {
   const patient = await getPatientById(supabase, id, profile.id)
   if (!patient) notFound()
 
-  const [cases, certificates, prescriptions, photoUrl] = await Promise.all([
-    getCasesByPatientId(supabase, profile.id, patient.id),
-    getMedicalCertificatesByPatientId(supabase, profile.id, patient.id),
-    getPrescriptionsByPatientId(supabase, profile.id, patient.id),
-    getPatientPhotoSignedUrl(supabase, patient.photo_path),
-  ])
+  const [cases, certificates, prescriptions, photoUrl, measurements] =
+    await Promise.all([
+      getCasesByPatientId(supabase, profile.id, patient.id),
+      getMedicalCertificatesByPatientId(supabase, profile.id, patient.id),
+      getPrescriptionsByPatientId(supabase, profile.id, patient.id),
+      getPatientPhotoSignedUrl(supabase, patient.photo_path),
+      getMeasurementsByPatient(supabase, profile.id, patient.id),
+    ])
 
   return (
     <PatientDetailView
@@ -32,6 +35,7 @@ export async function PatientDetailContent({ id }: { id: string }) {
       certificates={certificates}
       prescriptions={prescriptions}
       photoUrl={photoUrl}
+      measurements={measurements}
     />
   )
 }
