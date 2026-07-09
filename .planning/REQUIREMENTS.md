@@ -23,7 +23,7 @@ Requisitos deste ciclo. Cada um mapeia para uma fase do roadmap. Tudo escopado p
 ### Curva de Crescimento (GROWTH)
 
 - [x] **GROWTH-01**: Pediatra registra medições antropométricas de cada criança (peso, comprimento/estatura, perímetro cefálico; IMC derivado de peso+estatura) com data, formando um histórico por paciente que pode ser editado e removido — escopado por `profile_id` + `patient_id`
-- [ ] **GROWTH-02**: Sistema exibe a curva de crescimento em gráficos por idade (peso/idade, estatura/idade, IMC/idade, perímetro cefálico/idade), sobrepondo as medições do paciente às curvas de referência OMS (percentis/z-score), com fonte e faixa etária coberta visíveis
+- [x] **GROWTH-02**: Sistema exibe a curva de crescimento em gráficos por idade (peso/idade, estatura/idade, IMC/idade, perímetro cefálico/idade), sobrepondo as medições do paciente às curvas de referência OMS (percentis/z-score), com fonte e faixa etária coberta visíveis
 - [x] **GROWTH-03**: As medições são posicionadas pela idade pediátrica (motor da Phase 1); leitura/escrita/exclusão aplicam o gate `paid` e escopam por `profile_id` (sem acesso entre médicos)
 
 ### Documentos Clínicos (DOC)
@@ -87,7 +87,7 @@ Cada requisito mapeia para exatamente uma fase do roadmap. Sem órfãos, sem dup
 | PHOTO-02 | Phase 2 | Complete |
 | PHOTO-03 | Phase 2 | Complete |
 | GROWTH-01 | Phase 3 | Complete |
-| GROWTH-02 | Phase 3 | Pending |
+| GROWTH-02 | Phase 3 | Complete |
 | GROWTH-03 | Phase 3 | Complete |
 | DOC-01 | Phase 4 | Pending |
 | DOC-02 | Phase 4 | Pending |
