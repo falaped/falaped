@@ -23,6 +23,33 @@ describe("createPatientSchema gestational_age_weeks", () => {
     }
   })
 
+  it("accepts an already-numeric value on re-parse (double-parse regression)", () => {
+    const parsed = createPatientSchema.safeParse({
+      ...baseCreate,
+      gestational_age_weeks: 34,
+    })
+    assert.equal(parsed.success, true)
+    if (parsed.success) {
+      assert.equal(parsed.data.gestational_age_weeks, 34)
+    }
+  })
+
+  it("rejects an out-of-range string ('50') with the PT-BR message", () => {
+    const parsed = createPatientSchema.safeParse({
+      ...baseCreate,
+      gestational_age_weeks: "50",
+    })
+    assert.equal(parsed.success, false)
+    if (!parsed.success) {
+      assert.equal(
+        parsed.error.issues.some(
+          (i) => i.message === "Informe um valor entre 20 e 42 semanas.",
+        ),
+        true,
+      )
+    }
+  })
+
   it("treats empty string as undefined (optional, no error)", () => {
     const parsed = createPatientSchema.safeParse({
       ...baseCreate,
