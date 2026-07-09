@@ -21,8 +21,11 @@ import {
 } from "@/lib/growth-classification"
 import {
   getReferenceTable,
+  hasIntergrowthTable,
   type GrowthIndicator,
+  type GrowthReferenceTable,
 } from "@/lib/growth-reference"
+import { resolveReferenceStandard } from "@/lib/growth-reference/preterm-transition"
 import {
   lmsValueAtZ,
   lmsZScore,
@@ -143,13 +146,26 @@ export function GrowthChart({
   // Sex-specific curves (Pitfall 5): no sex → no reference table (guard below).
   const sex = patient.sex
   const table = sex == null ? null : getReferenceTable("WHO", indicator, sex)
-  const ageMin = table?.ageMin ?? 0
+
+  // For a preterm infant viewed on the corrected-age axis, draw INTERGROWTH-21st
+  // over the pre-term segment (corrected months < 0) and hand off to WHO from
+  // corrected term onward (D-04 / RESEARCH A1). Only when the indicator has an
+  // INTERGROWTH table (BMI stays WHO-only) and we are on the corrected axis.
+  const intergrowthTable =
+    sex != null &&
+    isPreterm &&
+    ageBasis === "corrected" &&
+    hasIntergrowthTable(indicator)
+      ? getReferenceTable("intergrowth", indicator, sex)
+      : null
+
+  // x-domain: extend to the INTERGROWTH pre-term floor when present, else WHO 0.
+  const ageMin = intergrowthTable?.ageMin ?? table?.ageMin ?? 0
   const ageMax = table?.ageMax ?? 0
 
-  // Reference band lines — evaluated from the SAME LMS dataset for both toggle modes.
-  const referenceLines = useMemo(() => {
-    if (table == null) return []
-    const zValues =
+  // z-score / percentile lines to draw, shared by both standards + both toggle modes.
+  const zLines = useMemo(
+    () =>
       bandMode === "percentil"
         ? PERCENTILE_Z_MAP.map((p) => ({
             key: `P${p.percentile}`,
@@ -160,15 +176,40 @@ export function GrowthChart({
             key: z === 0 ? "z0" : `z${z > 0 ? "+" : ""}${z}`,
             z,
             emphasized: z === 0,
-          }))
-    return zValues.map((line) => ({
-      ...line,
-      points: table.rows.map((row) => ({
-        ageMonths: row.ageMonths,
-        value: lmsValueAtZ(line.z, row),
-      })),
-    }))
-  }, [bandMode, table])
+          })),
+    [bandMode],
+  )
+
+  // Reference band lines — evaluated from the SAME LMS dataset for both toggle modes.
+  // Two contiguous segments on the corrected-age axis for preterm: INTERGROWTH rows
+  // with ageMonths < 0 (through corrected term for a seamless join) + WHO rows from
+  // corrected term (ageMonths >= 0). Non-preterm / WHO-only: a single WHO segment.
+  const referenceLines = useMemo(() => {
+    if (table == null) return []
+
+    const bandFor = (t: GrowthReferenceTable, key: string, rows: typeof t.rows) =>
+      zLines.map((line) => ({
+        key: `${key}-${line.key}`,
+        z: line.z,
+        emphasized: line.emphasized,
+        points: rows.map((row) => ({
+          ageMonths: row.ageMonths,
+          value: lmsValueAtZ(line.z, row),
+        })),
+      }))
+
+    if (intergrowthTable == null) {
+      return bandFor(table, "who", table.rows)
+    }
+    // INTERGROWTH segment: pre-term rows plus the corrected-term row (ageMonths 0)
+    // so it visually meets the WHO segment which starts there.
+    const igRows = intergrowthTable.rows.filter((r) => r.ageMonths <= 0)
+    const whoRows = table.rows.filter((r) => r.ageMonths >= 0)
+    return [
+      ...bandFor(intergrowthTable, "ig", igRows),
+      ...bandFor(table, "who", whoRows),
+    ]
+  }, [table, intergrowthTable, zLines])
 
   // Patient points positioned by pediatric age (corrected to 36m for preterm).
   const patientPoints = useMemo<PatientPoint[]>(() => {
@@ -203,7 +244,21 @@ export function GrowthChart({
           : chronoMonths
       if (activeMonths < ageMin || activeMonths > ageMax) continue
 
-      const lms = lmsAtAge(table.rows, activeMonths)
+      // On the corrected axis a pre-term point (corrected months < 0) is scored
+      // against INTERGROWTH-21st, then WHO from corrected term onward (D-04 / A1).
+      const standard =
+        ageBasis === "corrected"
+          ? resolveReferenceStandard({
+              gestationalAgeWeeks: patient.gestational_age_weeks,
+              correctedAgeMonths: activeMonths,
+            })
+          : "WHO"
+      const scoringRows =
+        standard === "intergrowth" && intergrowthTable != null
+          ? intergrowthTable.rows
+          : table.rows
+
+      const lms = lmsAtAge(scoringRows, activeMonths)
       if (lms == null) continue
       const z = lmsZScore(value, lms)
       points.push({
@@ -218,7 +273,17 @@ export function GrowthChart({
       })
     }
     return points.sort((a, b) => a.ageMonths - b.ageMonths)
-  }, [measurements, meta, patient, ageBasis, table, ageMin, ageMax, indicator])
+  }, [
+    measurements,
+    meta,
+    patient,
+    ageBasis,
+    table,
+    intergrowthTable,
+    ageMin,
+    ageMax,
+    indicator,
+  ])
 
   // All hooks are called above; now it is safe to branch on the null-sex prompt state.
   if (table == null) {
@@ -310,8 +375,19 @@ export function GrowthChart({
           </p>
         ) : null}
 
-        <p className="mt-3 text-xs text-muted-foreground">
-          Fonte: OMS (WHO) · faixa {ageMin}–{ageMax} meses
+        {intergrowthTable != null ? (
+          <p className="mt-3 text-xs text-muted-foreground">
+            Fonte: Intergrowth-21st · RN/prematuro (segmento pré-termo)
+          </p>
+        ) : null}
+        <p
+          className={cn(
+            "text-xs text-muted-foreground",
+            intergrowthTable != null ? "mt-1" : "mt-3",
+          )}
+        >
+          Fonte: OMS (WHO) · faixa {table.ageMin}–{table.ageMax} meses
+          {intergrowthTable != null ? " (a partir do termo corrigido)" : ""}
         </p>
         {isPreterm ? (
           <p className="mt-1 text-xs text-muted-foreground">
