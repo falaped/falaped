@@ -60,7 +60,7 @@ Uses the dashboard's existing hierarchy (pediatric-dashboard-design skill + `pat
 | Role | Size | Weight | Line Height |
 |------|------|--------|-------------|
 | Body | 14px (`text-sm`) | 400 (`font-normal`) | 1.5 (`leading-normal`) — descriptions, table cells, helper text, `text-muted-foreground` |
-| Label | 12px (`text-xs`) | 500 (`font-medium`) | 1.4 — uppercase tile labels (`uppercase tracking-wide`), chart legends, axis captions, source/vintage caption |
+| Label | 12px (`text-xs`) | 400 (`font-normal`) | 1.4 — uppercase tile labels (`uppercase tracking-wide text-muted-foreground`), chart legends, axis captions, source/vintage caption — stays distinct via size + letter-spacing, no extra weight |
 | Heading | 18px (`text-lg`) | 600 (`font-semibold`) | 1.2 (`tracking-tight`) — the growth section `<h2>` ("Curva de crescimento"), matching the clinical-overview `<h2>` |
 | Display | 30px (`text-3xl`) | 600 (`font-semibold`) | 1.1 (`tracking-tight tabular-nums`) — large numeric readouts (percentile/z-score value tile), matching the existing MetricTile value size |
 
@@ -134,7 +134,7 @@ Prescriptive contracts for the phase-specific screens. Executor implements again
 - Entry surface may be an inline card or a modal/sheet — either is acceptable; the CTA that opens it is `Registrar medição`.
 
 ### C3 — History list (GROWTH-01 / D-14)
-- Table-in-card pattern (pediatric-dashboard-design Data display): header `text-sm font-medium text-muted-foreground`, cells `px-4 py-3`, numeric columns `tabular-nums`, optional `even:bg-muted/50`.
+- Table-in-card pattern (pediatric-dashboard-design Data display): header `text-sm text-muted-foreground` (distinct via `text-muted-foreground` + `text-xs uppercase tracking-wide` label styling, not a heavier weight), cells `px-4 py-3`, numeric columns `tabular-nums`, optional `even:bg-muted/50`.
 - Columns: Data (formatted PT-BR), Peso, Estatura, PC, IMC (derived, `—` when N/A), and per-row actions `Editar` / `Remover`.
 - Empty rows render `—`, never blank.
 - `Remover` triggers the destructive AlertDialog (C6-style) — mirror Phase 2's remove-photo AlertDialog pattern.
