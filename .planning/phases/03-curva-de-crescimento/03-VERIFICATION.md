@@ -1,7 +1,8 @@
 ---
 phase: 03-curva-de-crescimento
 verified: 2026-07-09T00:00:00Z
-status: human_needed
+status: passed
+human_verification_resolved: "2026-07-09 — usuário aprovou os 3 checkpoints manuais (\"tudo aprovado\"). Migration live reconfirmada via Supabase MCP nesta sessão (tabela patient_measurements: 9 colunas, RLS, 4 policies profile_id-only, índice composto, CHECK); CRUD + isolamento entre médicos e UAT geral da curva aprovados pelo usuário."
 score: 3/3 requirements verified (15/15 must-have truths)
 behavior_unverified: 0
 overrides_applied: 0
