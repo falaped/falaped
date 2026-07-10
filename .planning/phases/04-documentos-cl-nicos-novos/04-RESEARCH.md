@@ -410,24 +410,23 @@ await supabase.from("referrals").delete()
 | A5 | `buildMedicalCertificatePdf` `body` accepts arbitrary composed PT-BR text and renders acceptably for referral/exam/guidance content | Patterns 2–3 | Medium — signature verified (title+body+optional daysOff/cid); layout suits certificate-like bodies. Verify visually per doc in UAT. |
 | A6 | Exact new table/route/domain slug names (`referrals`, `exam_requests`, `medical_reports`, `guidance_templates`) | Structure | Low — planner confirms names; pattern is what matters. |
 
-## Open Questions
+## Open Questions (RESOLVED)
 
 1. **Exam catalog data ownership: shared reference table vs per-doctor?**
    - What we know: D-01 says seed + search + free-text; D-02 says default panels + doctor-created panels.
-   - What's unclear: Whether the base catalog is a global reference (read-only, shared) or seeded per-profile. Doctor-created panels are clearly per-profile (`profile_id`).
-   - Recommendation: Base catalog as a shared reference table (no `profile_id`, read-only to all authenticated) OR seeded per-profile; doctor panels always `profile_id`-scoped. Planner to decide with the human-verify content step; default to per-profile if unsure (matches the "editable seed" language of D-04 and keeps one RLS model).
+   - RESOLVED: Per-profile editable seed; doctor panels always `profile_id`-scoped (one RLS model, matches D-04 "editable seed" language). Reflected in plan 04-03.
 
 2. **Guidance library: table per milestone row, or one doc type with a `milestone` field?**
    - What we know: D-06 = own printable doc with auto-fill; D-04/D-05 = seeded editable texts by milestone, doctor can add milestones.
-   - Recommendation: One `guidance_templates` table (`profile_id`, `milestone` label, `body`/rich-text, `order`), seeded editable; printing composes a doc via `buildMedicalCertificatePdf`. Milestone is a field, not a table.
+   - RESOLVED: One `guidance_templates` table (`profile_id`, `milestone` label, `body`/rich-text, `order`), seeded editable; printing composes a doc via `buildMedicalCertificatePdf`. Milestone is a FIELD, not a table. Reflected in plan 04-04.
 
 3. **DOC-03 AI-assist (Groq) in the medical-report body?**
    - What we know: Claude's discretion; not a requirement; Groq + `report-templates/generate-with-ai-content` exist.
-   - Recommendation: Leave OUT of the MVP slice. If added, it's an additive optional action mirroring `generate-report-template-sections`, not core to any success criterion.
+   - RESOLVED: OUT of the MVP slice — no plan includes it. If added later, an additive optional action mirroring `generate-report-template-sections`.
 
 4. **Tests for new delete/generate actions?**
    - What we know: TESTING doc — only pure functions in `modules/`/`lib/` are tested (`node:test` + `tsx`); actions/components untested; `nyquist_validation` is OFF in config.
-   - Recommendation: No test gate is required by config. Optionally add pure-function `*.spec.ts` for any body-composition helper (e.g. `format-*-lines.ts` analog) since those are the testable seams; ownership enforcement is best verified in UAT + code review given the no-mock testing style.
+   - RESOLVED: No test gate required by config. Ownership `*.spec.ts` added per delete module anyway (IDOR seam); action/component behavior verified in UAT + code review. Reflected across plans 04-01..04-04.
 
 ## Environment Availability
 
