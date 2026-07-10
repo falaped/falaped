@@ -1,10 +1,12 @@
 ---
 phase: 4
 slug: documentos-cl-nicos-novos
-status: draft
+status: approved
 shadcn_initialized: true
 preset: radix-nova (neutral base, cssVariables, lucide)
 created: 2026-07-10
+reviewed_at: 2026-07-10
+checker_verdict: APPROVED (6/6 PASS; 2 non-blocking FLAGs — typography 500-weight + spacing 6px/20px, both shipped-parity exceptions)
 ---
 
 # Phase 4 — UI Design Contract
