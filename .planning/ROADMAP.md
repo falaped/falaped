@@ -122,7 +122,7 @@ Plans:
   4. O médico gera um receituário em branco (layout de receita, corpo vazio) e seleciona/imprime orientações de uma biblioteca por marco (1ª consulta, 1 mês, 2 meses...)
   5. Cada novo documento aplica o gate de assinatura (`paid`) e escopa toda leitura/escrita/exclusão por `profile_id` — uma requisição de outro médico não acessa nem apaga o documento
 
-**Plans**: 1/5 plans executed
+**Plans**: 2/5 plans executed
 **UI hint**: yes
 Plans:
 
@@ -132,7 +132,7 @@ Plans:
 
 **Wave 2** *(sequenciada — compartilha app-sidebar/actions/index/constants)*
 
-- [ ] 04-02-PLAN.md — Slice Relatório médico (DOC-03) + template (DOC-04): título + corpo rich-text único (RichTextEditor) → htmlToPlainTextForPdf → buildMedicalCertificatePdf, domínio novo separado do laudo (wave 2)
+- [x] 04-02-PLAN.md — Slice Relatório médico (DOC-03) + template (DOC-04): título + corpo rich-text único (RichTextEditor) → htmlToPlainTextForPdf → buildMedicalCertificatePdf, domínio novo separado do laudo (wave 2)
 
 **Wave 3** *(sequenciada)*
 
@@ -189,6 +189,6 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6
 | 1. Experiência da Consulta | 5/5 | Complete   | 2026-06-28 |
 | 2. Foto Privada do Paciente | 2/3 | In Progress|  |
 | 3. Curva de Crescimento | 3/4 | In Progress|  |
-| 4. Documentos Clínicos Novos | 1/5 | In Progress|  |
+| 4. Documentos Clínicos Novos | 2/5 | In Progress|  |
 | 5. Calendário de Vacinas (Referência) | 0/TBD | Not started | - |
 | 6. Carteira de Vacinação por Paciente | 0/TBD | Not started | - |
