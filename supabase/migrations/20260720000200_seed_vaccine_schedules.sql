@@ -30,7 +30,7 @@ where not exists (
 --    Inserido GLOBALMENTE (join no schedule por source/version), UMA VEZ, sem coluna de dono.
 insert into public.vaccine_schedule_items
   (schedule_id, vaccine, dose, age_months, age_months_max, week_min, week_max, age_label, sort_order, notes)
-select s.id, v.vaccine, v.dose, v.age_months, v.age_months_max, null, null, v.age_label, v.sort_order, v.notes
+select s.id, v.vaccine, v.dose, v.age_months, v.age_months_max::integer, null, null, v.age_label, v.sort_order, v.notes
 from (values
   -- Ao nascer
   ('BCG',                          'Dose única',   0,  null, 'Ao nascer',  0,  null),
