@@ -5,8 +5,8 @@ milestone_name: milestone
 current_phase: 03
 current_phase_name: curva-de-crescimento
 status: merged
-stopped_at: Phase 5 context gathered
-last_updated: "2026-07-19T18:43:27.574Z"
+stopped_at: Phase 5 UI-SPEC approved
+last_updated: "2026-07-19T19:00:48.174Z"
 last_activity: 2026-07-09
 last_activity_desc: Phase 03 all plans complete; migration live; verification done
 progress:
@@ -125,7 +125,7 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-07-19T18:43:27.564Z
-Stopped at: Phase 5 context gathered
-Resume file: .planning/phases/05-calend-rio-de-vacinas-refer-ncia/05-CONTEXT.md
+Last session: 2026-07-19T19:00:48.162Z
+Stopped at: Phase 5 UI-SPEC approved
+Resume file: .planning/phases/05-calend-rio-de-vacinas-refer-ncia/05-UI-SPEC.md
 Resume file: .planning/phases/03-curva-de-crescimento/03-UI-SPEC.md
