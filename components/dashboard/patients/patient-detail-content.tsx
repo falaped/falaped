@@ -8,6 +8,7 @@ import { getMedicalCertificatesByPatientId } from "@/modules/medical-certificate
 import { getPrescriptionsByPatientId } from "@/modules/prescriptions/get-prescriptions-by-patient-id"
 import { getMeasurementsByPatient } from "@/modules/patient-growth/get-measurements-by-patient"
 import { getVaccineScheduleWithItems } from "@/modules/vaccines/get-vaccine-schedule-with-items"
+import { getTakenDoseIdsByPatient } from "@/modules/patient-vaccine-doses/get-taken-dose-ids-by-patient"
 import type { VaccineScheduleWithItems } from "@/modules/vaccines/types"
 import { PatientDetailView } from "./patient-detail-view"
 
@@ -24,15 +25,23 @@ export async function PatientDetailContent({ id }: { id: string }) {
   // Degrade gracefully (WR-01): a read error MUST NOT crash the ficha, so the
   // vaccine reads are isolated in a try/catch that resolves to null. The card
   // renders nothing / an empty state when the data is unavailable.
-  const [cases, certificates, prescriptions, photoUrl, measurements, vaccines] =
-    await Promise.all([
-      getCasesByPatientId(supabase, profile.id, patient.id),
-      getMedicalCertificatesByPatientId(supabase, profile.id, patient.id),
-      getPrescriptionsByPatientId(supabase, profile.id, patient.id),
-      getPatientPhotoSignedUrl(supabase, patient.photo_path),
-      getMeasurementsByPatient(supabase, profile.id, patient.id),
-      getVaccineSchedulesSafely(supabase),
-    ])
+  const [
+    cases,
+    certificates,
+    prescriptions,
+    photoUrl,
+    measurements,
+    vaccines,
+    takenVaccineItemIds,
+  ] = await Promise.all([
+    getCasesByPatientId(supabase, profile.id, patient.id),
+    getMedicalCertificatesByPatientId(supabase, profile.id, patient.id),
+    getPrescriptionsByPatientId(supabase, profile.id, patient.id),
+    getPatientPhotoSignedUrl(supabase, patient.photo_path),
+    getMeasurementsByPatient(supabase, profile.id, patient.id),
+    getVaccineSchedulesSafely(supabase),
+    getTakenVaccineDoseIdsSafely(supabase, profile.id, patient.id),
+  ])
 
   return (
     <PatientDetailView
@@ -45,8 +54,27 @@ export async function PatientDetailContent({ id }: { id: string }) {
       measurements={measurements}
       vaccineSus={vaccines.sus}
       vaccineSbim={vaccines.sbim}
+      takenVaccineItemIds={takenVaccineItemIds}
     />
   )
+}
+
+/**
+ * Reads the patient's applied-dose marks for the vaccine calendar carousel,
+ * degrading to an empty list on any read error so a dose-read fault never
+ * crashes the ficha (WR-01). Scoped by profile_id + patient_id in the module.
+ */
+async function getTakenVaccineDoseIdsSafely(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  profileId: string,
+  patientId: string,
+): Promise<string[]> {
+  try {
+    const ids = await getTakenDoseIdsByPatient(supabase, profileId, patientId)
+    return [...ids]
+  } catch {
+    return []
+  }
 }
 
 /**
