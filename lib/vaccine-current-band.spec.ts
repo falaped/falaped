@@ -12,6 +12,21 @@ const ok = (totalDays: number): PediatricAge => ({
   totalDays,
 })
 
+/** Preterm-style age: chronological `totalDays` plus a corrected age (CR-01). */
+const okCorrected = (
+  chronologicalDays: number,
+  correctedDays: number,
+): PediatricAge => ({
+  status: "ok",
+  totalDays: chronologicalDays,
+  corrected: {
+    band: "weeks",
+    parts: {},
+    appliesUntilMonths: 24,
+    totalDays: correctedDays,
+  },
+})
+
 // ── computeCurrentMonths: only "ok" yields a number (D-02) ────────────────────
 
 test("missing_birth_date → null", () => {
@@ -46,6 +61,19 @@ test("ok with 366 days → 12", () => {
 
 test("ok with undefined totalDays → 0 (defensive)", () => {
   assert.equal(computeCurrentMonths({ status: "ok" }), 0)
+})
+
+// ── CR-01: corrected age drives the highlight for preterm infants ─────────────
+
+test("preterm: corrected age wins over chronological (CR-01)", () => {
+  // Chronological ~12 months (365 days → 11), corrected ~1 month (35 days → 1).
+  // The highlight must follow the corrected (physiologic) age, not chronological.
+  assert.equal(computeCurrentMonths(okCorrected(365, 35)), 1)
+})
+
+test("term / no gestational age: falls back to chronological (CR-01)", () => {
+  // No `corrected` field → chronological months.
+  assert.equal(computeCurrentMonths(ok(365)), 11)
 })
 
 // ── isBandCurrent: [age_months, age_months_max ?? age_months] window ──────────

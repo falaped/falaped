@@ -36,6 +36,9 @@ export type PediatricAge = {
     band: AgeBand
     parts: PediatricAgeParts
     appliesUntilMonths: number
+    /** Corrected age in whole days (chronological days minus the prematurity
+     * offset). Drives the current-age highlight for preterm infants (CR-01). */
+    totalDays: number
   }
 }
 
@@ -186,6 +189,7 @@ export function computePediatricAge(
           band: corrected.band,
           parts: corrected.parts,
           appliesUntilMonths: effectiveCutoffMonths,
+          totalDays: differenceInDays(today, correctedBirth),
         }
       }
     }
