@@ -73,3 +73,17 @@ export {
   type CreatePrescriptionTemplateResult,
   type DeletePrescriptionTemplateResult,
 } from "./prescription-templates"
+export {
+  generateReferralAction,
+  type GenerateReferralResult,
+  deleteReferralAction,
+  deleteReferralsBulkAction,
+  type DeleteReferralResult,
+  type DeleteReferralsBulkResult,
+} from "./referrals"
+export {
+  createReferralTemplateAction,
+  deleteReferralTemplateAction,
+  type CreateReferralTemplateResult,
+  type DeleteReferralTemplateResult,
+} from "./referral-templates"

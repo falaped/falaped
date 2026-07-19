@@ -1,6 +1,6 @@
 /**
  * Generates a referral (encaminhamento) PDF buffer using @falaped/falaped-kit.
- * Single free body via buildMedicalCertificatePdf — NEVER pdfkit, NEVER buildReportPdf (D-16).
+ * Single free body via the kit's certificate builder — no direct PDF engine, no multi-section builder (D-16).
  */
 import { buildMedicalCertificatePdf } from "@falaped/falaped-kit/pdf"
 import { getReferralBodySegments } from "./get-referral-body-segments"
