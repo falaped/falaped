@@ -17,7 +17,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [ ] **Phase 2: Foto Privada do Paciente** - Foto da criança em armazenamento privado com URL assinada e consentimento (LGPD)
 - [ ] **Phase 3: Curva de Crescimento** - Medições antropométricas por paciente (peso, estatura, PC, IMC) plotadas em gráficos por idade sobre curvas de referência OMS, com histórico atualizável
 - [x] **Phase 4: Documentos Clínicos Novos** - Encaminhamento, pedido de exames, relatório médico, receituário em branco e biblioteca de orientações (completed 2026-07-19)
-- [ ] **Phase 5: Calendário de Vacinas (Referência)** - Tabelas SUS/PNI, particular/SBIm e gestante como dado versionado, somente leitura
+- [x] **Phase 5: Calendário de Vacinas (Referência)** - Tabelas SUS/PNI, particular/SBIm e gestante como dado versionado, somente leitura (completed 2026-07-19)
 - [ ] **Phase 6: Carteira de Vacinação por Paciente** - Registro de doses aplicadas com pendentes/atrasadas e próxima dose por idade
 
 ## Phase Details
@@ -158,7 +158,7 @@ Plans:
   2. O médico vê o calendário particular (SBIm) por idade ao lado do SUS, e consulta a referência de vacinação da gestante (Hepatite B, dTpa a partir de 20 sem, Influenza, COVID-19, VSR/Abrysvo a partir de 28 sem)
   3. Cada calendário (SUS, particular, gestante) é um dataset separado e claramente rotulado, com fonte e data de vigência visíveis na UI (vintage + aviso de "confirmar contra o calendário oficial atual")
 
-**Plans**: 3/4 plans executed
+**Plans**: 4/4 plans complete
 **UI hint**: yes
 Plans:
 
@@ -176,7 +176,7 @@ Plans:
 
 **Wave 4** *(sequenciada)*
 
-- [ ] 05-04-PLAN.md — Slice entrada por paciente: rota `?patientId` + link na ficha + destaque da faixa etária atual (motor de idade, position-only) nas duas colunas (D-02/D-03/D-11) (wave 4)
+- [x] 05-04-PLAN.md — Slice entrada por paciente: rota `?patientId` + link na ficha + destaque da faixa etária atual (motor de idade, position-only) nas duas colunas (D-02/D-03/D-11) (wave 4)
 
 ### Phase 6: Carteira de Vacinação por Paciente
 
@@ -207,5 +207,5 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6
 | 2. Foto Privada do Paciente | 2/3 | In Progress|  |
 | 3. Curva de Crescimento | 3/4 | In Progress|  |
 | 4. Documentos Clínicos Novos | 5/5 | Complete   | 2026-07-19 |
-| 5. Calendário de Vacinas (Referência) | 3/4 | In Progress|  |
+| 5. Calendário de Vacinas (Referência) | 4/4 | Complete   | 2026-07-19 |
 | 6. Carteira de Vacinação por Paciente | 0/TBD | Not started | - |
