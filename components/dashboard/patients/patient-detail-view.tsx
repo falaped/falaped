@@ -16,7 +16,7 @@ import { PatientForm } from "@/components/dashboard/patients/patient-form"
 import { PatientDetailHero } from "@/components/dashboard/patients/patient-detail-hero"
 import { PatientDetailToolbar } from "@/components/dashboard/patients/patient-detail-toolbar"
 import { PatientClinicalOverview } from "@/components/dashboard/patients/patient-clinical-overview"
-import { PatientVaccineAgeCard } from "@/components/dashboard/patients/patient-vaccine-age-card"
+import { PatientVaccineCalendarSection } from "@/components/dashboard/patients/patient-vaccine-calendar-section"
 import { PatientDetailTimeline } from "@/components/dashboard/patients/patient-detail-timeline"
 import { GrowthSection } from "@/components/dashboard/patients/growth/growth-section"
 import { deletePatientAction } from "@/actions"
@@ -36,6 +36,7 @@ export function PatientDetailView({
   measurements = [],
   vaccineSus = null,
   vaccineSbim = null,
+  takenVaccineItemIds = [],
 }: {
   patient: Patient
   cases?: CaseForPatient[]
@@ -44,9 +45,11 @@ export function PatientDetailView({
   /** Signed URL (short-lived) resolved server-side for the hero avatar; null falls back to initials. */
   photoUrl?: string | null
   measurements?: Measurement[]
-  /** Global reference calendars (D-07) for the in-profile current-age card; null degrades gracefully. */
+  /** Global reference calendars (D-07) for the vaccine calendar carousel; null degrades gracefully. */
   vaccineSus?: VaccineScheduleWithItems | null
   vaccineSbim?: VaccineScheduleWithItems | null
+  /** Reference item ids already marked TAKEN for this patient (VAC-05). */
+  takenVaccineItemIds?: string[]
 }) {
   const router = useRouter()
   const pathname = usePathname()
@@ -134,12 +137,13 @@ export function PatientDetailView({
       ) : (
         <>
           <PatientClinicalOverview patient={patient} />
-          <PatientVaccineAgeCard
+          <PatientVaccineCalendarSection
             patientId={patient.id}
             birthDate={patient.birth_date}
             gestationalAgeWeeks={patient.gestational_age_weeks}
             sus={vaccineSus}
             sbim={vaccineSbim}
+            takenItemIds={takenVaccineItemIds}
           />
           <GrowthSection patient={patient} measurements={measurements} />
           <PatientDetailTimeline
