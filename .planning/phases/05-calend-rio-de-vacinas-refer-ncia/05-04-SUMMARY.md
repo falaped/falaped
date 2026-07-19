@@ -14,7 +14,10 @@ provides:
   - "In-profile current-age vaccine card (PatientVaccineAgeCard): current-band vaccines in SUS+SBIm, highlighted, with provenance + a discreet 'Ver calendário completo' link to /dashboard/vaccines?patientId (revised D-03 entry point — replaces the removed toolbar nav link)"
   - "Position-only current-age-band highlight (D-02/D-11): matching age band emphasized (border-l-2 border-primary + bg-primary/10 + 'Idade atual' badge) identically in SUS and SBIm columns"
   - "lib/vaccine-current-band.ts — pure, tested helpers (computeCurrentMonths, isBandCurrent) projecting a PediatricAge onto the schedule month axis"
-affects: ["phase 06 (vaccination record — dose diff / pendência builds on this position-only anchor)"]
+  - "Calendário vacinal carousel section (PatientVaccineCalendarSection): one slide per ordered age band across SUS+SBIm, initial slide = current band, prev/next + N/M indicator, checkbox per row persisting applied doses per patient (VAC-05, pulled forward from Phase 6, position-only)"
+  - "patient_vaccine_doses owned table (profile_id + patient_id, owner-scoped RLS mirroring patient_measurements) + modules (get taken ids / mark idempotent upsert / unmark delete) + togglePatientVaccineDoseAction — the applied-dose persistence layer Phase 6 dose-diff builds on"
+  - "lib/vaccine-band-carousel.ts — pure computeOrderedBands (shared with the calendar) + resolveCurrentBandIndex (carousel initial slide)"
+affects: ["phase 06 (vaccination record — dose diff / pendência builds on this position-only anchor + the applied-dose marks persisted here via VAC-05)"]
 
 tech-stack:
   added: []
@@ -30,6 +33,21 @@ key-files:
     - lib/vaccine-current-band.spec.ts
     - lib/vaccine-current-band-items.ts
     - lib/vaccine-current-band-items.spec.ts
+    - lib/vaccine-band-carousel.ts
+    - lib/vaccine-band-carousel.spec.ts
+    - lib/schemas/patient-vaccine-dose.ts
+    - supabase/migrations/20260720000500_patient_vaccine_doses.sql
+    - modules/patient-vaccine-doses/types.ts
+    - modules/patient-vaccine-doses/get-taken-dose-ids-by-patient.ts
+    - modules/patient-vaccine-doses/get-taken-dose-ids-by-patient.spec.ts
+    - modules/patient-vaccine-doses/mark-dose-taken.ts
+    - modules/patient-vaccine-doses/mark-dose-taken.spec.ts
+    - modules/patient-vaccine-doses/unmark-dose-taken.ts
+    - modules/patient-vaccine-doses/unmark-dose-taken.spec.ts
+    - actions/patient-vaccine-doses/index.ts
+    - actions/patient-vaccine-doses/toggle-patient-vaccine-dose.ts
+    - components/dashboard/patients/patient-vaccine-calendar-section.tsx
+  removed:
     - components/dashboard/patients/patient-vaccine-age-card.tsx
   modified:
     - app/dashboard/vaccines/page.tsx
@@ -38,6 +56,7 @@ key-files:
     - components/dashboard/patients/patient-detail-toolbar.tsx
     - components/dashboard/patients/patient-detail-view.tsx
     - components/dashboard/patients/patient-detail-content.tsx
+    - actions/index.ts
 
 key-decisions:
   - "The patient read stays owner-scoped via getPatientById(supabase, patientId, profile.id) — the patient row IS owned (profile_id), unlike the GLOBAL schedule reads (D-07). A foreign id returns null and renders standalone (no highlight, no leak — T-05-05)."
@@ -51,7 +70,7 @@ patterns-established:
   - "Owner-scoped optional-patient RSC entry point layered over global reference reads (patient row scoped, reference data global — the D-07 divergence does not touch the owned row)"
   - "Pure highlight-predicate helper (computeCurrentMonths / isBandCurrent) reusable by Phase 6 as the age anchor for dose-diff"
 
-requirements-completed: [VAC-01, VAC-02]
+requirements-completed: [VAC-01, VAC-02, VAC-05]
 
 metrics:
   duration: "~15 min"
@@ -100,7 +119,52 @@ These need a running app + a real patient to confirm visually (not machine-verif
 
 No new security surface beyond the plan's `<threat_model>`. T-05-05 (IDOR) mitigated via the owner-scoped patient read; T-05-01 (paid gate) retained; no packages installed (T-05-SC N/A).
 
+## Evolution — Calendário vacinal carousel + applied-dose marking (VAC-05, pulled forward)
+
+Per **explicit physician request**, the in-profile single-band card (`PatientVaccineAgeCard`) was replaced by a full **"Calendário vacinal" section** built as a **carousel**, and applied-dose marking (**VAC-05**, originally Phase 6) was **pulled forward** — kept **position-only** for the reference display (the checkbox stores applied doses but drives NO pending/late/next-due diff; that remains Phase 6).
+
+### What changed
+
+- **New owned table `public.patient_vaccine_doses`** (migration `20260720000500_patient_vaccine_doses.sql`, committed but **NOT applied** — the orchestrator applies it to production). Mirrors the `patient_measurements` ownership idiom exactly: `profile_id` + `patient_id` columns, `on delete cascade`, RLS enabled + SELECT/INSERT/UPDATE/DELETE owner-scoped policies all in the same file (D-14). Boolean grain: a row's presence = the physician marked that specific `schedule_item_id` as taken. `unique (profile_id, patient_id, schedule_item_id)` + index on `(profile_id, patient_id)`; `taken_at` / `created_at` default `now()`. No date/lote/local (Phase 6). `schedule_item_id` FKs `vaccine_schedule_items(id) on delete cascade`.
+- **Modules `modules/patient-vaccine-doses/`** — one exported fn per file, client injected, JSDoc, every query scoped by `profile_id` + `patient_id` (IDOR guard, unit-tested with a mock client asserting the `.eq()` filters):
+  - `getTakenDoseIdsByPatient` → `Set<string>` of taken reference-item ids (SELECT scoped by profile_id + patient_id).
+  - `markDoseTaken` → **idempotent** `upsert` on the unique mark constraint (`ignoreDuplicates`).
+  - `unmarkDoseTaken` → DELETE scoped by all three of profile_id + patient_id + schedule_item_id (never item alone).
+- **Action `togglePatientVaccineDoseAction`** — auth + **paid gate**, zod-validates `{patientId, scheduleItemId, taken:boolean}` (UUIDs), **verifies patient ownership** via `getPatientById(supabase, patientId, profile.id)` before mutating, dispatches mark/unmark, `revalidatePath('/dashboard/patients/{patientId}')`. Discriminated-union return.
+- **UI `PatientVaccineCalendarSection`** (replaces `PatientVaccineAgeCard`, which was **removed** along with its mount) — a **carousel**: one slide per ordered age band (the union of `age_label`s across BOTH datasets via the shared `computeOrderedBands`), prev/next controls + an `N/M` position indicator, keyboard/aria basics (`aria-label`ed nav, `aria-live` band heading). The **initial slide is the child's current band** (`resolveCurrentBandIndex`), resolved with the SAME engine as the calendar/card — `computeCurrentMonths(computePediatricAge(...))` → `resolveCurrentBandLabel` — so **corrected age (CR-01)** for preterm applies identically and positioning agrees. Each slide shows the band's SUS and SBIm vaccines together (reusing `ScheduleProvenance` + the accent/`Idade atual` highlight idiom), **each row with a checkbox** reflecting taken state. Toggling uses **optimistic UI** (local `Set`, `useTransition`) and **reverts + PT-BR sonner toast** on failure. Grain is per displayed row — SUS and SBIm items are independent. Server-side fetch of the taken ids added to `patient-detail-content.tsx` inside an isolated try/catch (graceful degradation, WR-01); passed down through `patient-detail-view.tsx`.
+- **Refactor:** `computeOrderedBands` was lifted out of `vaccine-calendar-view.tsx` into the shared, tested `lib/vaccine-band-carousel.ts` so the calendar column order and the carousel slide order share one source of truth.
+
+### How the carousel resolves the current band + reuses corrected age
+
+`resolveCurrentBandIndex(orderedBands, currentBandLabel)` returns the index of the child's current band label within the ordered union (fallback `0`). `currentBandLabel` comes from `resolveCurrentBandLabel([sus, sbim], computeCurrentMonths(computePediatricAge(birthDate, new Date(), gestationalAgeWeeks)))` — the exact chain the full calendar and the former card use. `computeCurrentMonths` reads `age.corrected?.totalDays ?? age.totalDays` (CR-01), so a preterm infant opens on its **physiologic** band, not the chronological one; term / missing GA falls back to chronological. Standalone / no-DOB → `null` → the carousel opens on the first band.
+
+### Commits (evolution)
+
+- `dc12430` — `feat(05-04)`: `patient_vaccine_doses` owned table + owner-scoped RLS (migration, not applied).
+- `129221c` — `feat(05-04)`: applied-dose modules + `togglePatientVaccineDoseAction` + carousel helpers (TDD RED→GREEN for `lib/vaccine-band-carousel.ts`; calendar refactored to shared `computeOrderedBands`).
+- `6382748` — `feat(05-04)`: `PatientVaccineCalendarSection` carousel + wiring; old `PatientVaccineAgeCard` removed.
+
+### Verification (evolution)
+
+- `yarn typecheck` — passes. `yarn test` — **514/514** pass (new: 6 in `lib/vaccine-band-carousel.spec.ts` + 6+4+5 across the three module specs asserting profile_id + patient_id scoping / idempotency / triple-scope delete).
+- `yarn eslint` on all new/changed files — clean. (Pre-existing `ds-bundle/` lint errors are out of scope and untouched.)
+- Unit tests mock the Supabase client, so they pass **without** the table existing in the live DB.
+
+### Requirement delivered (evolution)
+
+- **VAC-05** — "marcar doses aplicadas" — pulled forward from Phase 6 at physician request, **position-only** (records applied doses; no pending/late/next-due diff — that stays Phase 6).
+
+### Human-Judgment Deferrals (evolution)
+
+- Confirm on a running app: the carousel opens on the child's current age band, prev/next walks all ages, checkboxes persist per patient across reload, and a preterm patient opens on the corrected band.
+- Confirm ownership isolation with two doctors: marks made by one never appear for the other.
+
+### Not applied (orchestrator action required)
+
+The migration `supabase/migrations/20260720000500_patient_vaccine_doses.sql` is **committed but NOT applied**. Apply order: it is a single self-contained file (table + RLS together, per D-14) that runs **after** `20260720000400_seed_vaccine_schedules_gestante.sql` — its `schedule_item_id` FK requires `vaccine_schedule_items` (created by `20260720000000_vaccine_schedules.sql`) to exist. Full SQL is returned to the orchestrator below.
+
 ## Self-Check: PASSED
 
-- Files: all 6 present (2 created, 4 modified).
-- Commits: `3e07aa3`, `edb120e`, `9bf35c0` all present in git log.
+- Files (original): all 6 present (2 created, 4 modified).
+- Files (evolution): migration, 4 module files + 3 specs, action + barrel, schema, carousel lib + spec, new section component all present; `patient-vaccine-age-card.tsx` removed.
+- Commits: `3e07aa3`, `edb120e`, `9bf35c0` (original) and `dc12430`, `129221c`, `6382748` (evolution) all present in git log.

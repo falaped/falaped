@@ -30,16 +30,21 @@ result: [pending]
 expected: Cada coluna/lista mostra a legenda "Fonte: {version} · vigência …" e o aviso fixo de referência.
 result: [pending]
 
-### 4. Entrada por paciente — card na ficha + standalone sem destaque
+### 4. Calendário vacinal na ficha — carrossel por idade + marcar doses tomadas (VAC-05)
 expected: |
-  Na ficha do paciente, o card "Vacinas para a idade atual" mostra, sem sair da ficha, as vacinas
-  previstas para a faixa de idade ATUAL da criança em AMBOS os datasets (SUS/PNI e particular/SBIm),
-  destacadas (mesmo idioma de destaque do calendário) e com a proveniência de cada dataset. O link
-  discreto "Ver calendário completo" abre /dashboard/vaccines?patientId=… (contexto do paciente
-  preservado). Sem data de nascimento ou sem dado de referência → o card não aparece; faixa atual
-  sem vacinas previstas → estado vazio amigável ("Nenhuma vacina prevista para a faixa de idade atual");
-  erro de leitura do Supabase não derruba a ficha. O standalone (sem patientId, ou id de outro médico)
-  abre o calendário sem destaque de idade e não vaza paciente de outro médico.
+  Na ficha do paciente, a seção "Calendário vacinal" é um CARROSSEL: um slide por faixa de idade
+  (união ordenada dos age_labels de AMBOS os datasets, SUS/PNI + particular/SBIm), com controles
+  anterior/próxima e um indicador de posição ("N/M"). O slide INICIAL é a faixa de idade ATUAL da
+  criança (badge "Idade atual"), resolvida com o MESMO motor do calendário (idade corrigida por
+  prematuridade — CR-01 — quando há gestational_age_weeks de prematuro; fallback cronológico caso
+  contrário). Cada slide mostra as vacinas SUS e SBIm daquela faixa juntas, cada linha com um CHECKBOX
+  que reflete se o paciente já TOMOU aquele item de referência específico. O grão é por linha exibida:
+  marcar a Pentavalente do SUS aos 2m NÃO marca a do SBIm (itens independentes). Marcar/desmarcar
+  persiste por paciente (toggle + recarregar a página mantém o estado); a UI é otimista e reverte com
+  toast PT-BR em caso de falha. Isolamento por dono: as marcas de um médico não aparecem para outro
+  (escopo profile_id + patient_id, verify de posse no action). Somente posição (sem diff de pendência
+  — isso é Phase 6). Sem dado de referência → a seção não aparece; erro de leitura das doses não
+  derruba a ficha (degradação graciosa). Navegar prev/next percorre todas as idades.
 result: [pending]
 
 ### 5. Destaque da faixa de idade atual — prematuridade aplicada (CR-01 resolvido)
