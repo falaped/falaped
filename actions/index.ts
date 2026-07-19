@@ -87,3 +87,17 @@ export {
   type CreateReferralTemplateResult,
   type DeleteReferralTemplateResult,
 } from "./referral-templates"
+export {
+  generateMedicalReportAction,
+  type GenerateMedicalReportResult,
+  deleteMedicalReportAction,
+  deleteMedicalReportsBulkAction,
+  type DeleteMedicalReportResult,
+  type DeleteMedicalReportsBulkResult,
+} from "./medical-reports"
+export {
+  createMedicalReportTemplateAction,
+  deleteMedicalReportTemplateAction,
+  type CreateMedicalReportTemplateResult,
+  type DeleteMedicalReportTemplateResult,
+} from "./medical-report-templates"
