@@ -79,6 +79,8 @@ type PrescriptionWizardProps = {
   initialPatientId?: string | null
   /** When set, associates the generated prescription with this case (`?caseId=`). */
   initialCaseId?: string | null
+  /** When true, opens the wizard in "blank prescription" mode: no medications required, empty body, CTA "Gerar receituário". */
+  blankMode?: boolean
 }
 
 function applySnapshotToMedications(
@@ -104,6 +106,7 @@ export function PrescriptionWizard({
   initialTemplate,
   initialPatientId = null,
   initialCaseId = null,
+  blankMode = false,
 }: PrescriptionWizardProps) {
   const router = useRouter()
   const pathname = usePathname()
@@ -314,7 +317,7 @@ export function PrescriptionWizard({
 
   function handleGenerate() {
     const payload = buildPayload()
-    if (payload.medications.length === 0) {
+    if (!blankMode && payload.medications.length === 0) {
       toast.error("Adicione pelo menos um medicamento com nome e posologia.")
       return
     }
@@ -336,7 +339,11 @@ export function PrescriptionWizard({
           a.download = result.filename
           a.click()
           URL.revokeObjectURL(url)
-          toast.success("Receita gerada. Download iniciado.")
+          toast.success(
+            blankMode
+              ? "Receituário gerado. Download iniciado."
+              : "Receita gerada. Download iniciado.",
+          )
           router.push("/dashboard/prescriptions")
           router.refresh()
         } else {
@@ -349,6 +356,9 @@ export function PrescriptionWizard({
   const hasPatient =
     (dataSource === "patient" && selectedPatient) ||
     ((dataSource === "manual" || dataSource === "template") && manualConfirmed)
+  // In blank mode the doctor can proceed to generate without associating a patient
+  // (a blank prescription has an empty body); the min-1-medication guard is also skipped.
+  const canProceed = hasPatient || blankMode
 
   if (step === 1) {
     return (
@@ -452,7 +462,7 @@ export function PrescriptionWizard({
           </Card>
 
           {/* Passo 2 - Adicionar medicamentos */}
-          {hasPatient ? (
+          {canProceed ? (
             <Card>
               <CardHeader className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                 <div>
@@ -575,7 +585,7 @@ export function PrescriptionWizard({
           ) : null}
 
           {/* Passo 3 - Instruções e informações adicionais */}
-          {hasPatient ? (
+          {canProceed ? (
             <Card>
               <CardHeader>
                 <CardTitle className="text-base">Passo 3 — Instruções e informações adicionais</CardTitle>
@@ -617,7 +627,7 @@ export function PrescriptionWizard({
         </div>
 
         <div className="mt-6 flex flex-wrap items-center gap-2">
-          {hasPatient ? (
+          {canProceed ? (
             <>
               <Dialog open={saveAsTemplateOpen} onOpenChange={setSaveAsTemplateOpen}>
                 <DialogTrigger asChild>
@@ -829,7 +839,11 @@ export function PrescriptionWizard({
               Voltar
             </Button>
             <Button onClick={handleGenerate} disabled={generating}>
-              {generating ? "Gerando…" : "Confirmar e gerar"}
+              {generating
+                ? "Gerando…"
+                : blankMode
+                  ? "Gerar receituário"
+                  : "Confirmar e gerar"}
             </Button>
           </div>
         </CardContent>

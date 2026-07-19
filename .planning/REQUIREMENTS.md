@@ -28,12 +28,12 @@ Requisitos deste ciclo. Cada um mapeia para uma fase do roadmap. Tudo escopado p
 
 ### Documentos Clínicos (DOC)
 
-- [ ] **DOC-01**: Médico gera um **encaminhamento** (especialidade/serviço de destino, motivo, resumo clínico/hipótese, urgência) com PDF, auto-preenchido com os dados do paciente
+- [x] **DOC-01**: Médico gera um **encaminhamento** (especialidade/serviço de destino, motivo, resumo clínico/hipótese, urgência) com PDF, auto-preenchido com os dados do paciente
 - [ ] **DOC-02**: Médico gera um **pedido de exames** selecionando itens de um catálogo pesquisável e de painéis reutilizáveis (ex: "rotina lactente"), com hipótese/indicação e observações, gerando PDF
-- [ ] **DOC-03**: Médico gera um **relatório médico** de corpo livre (rich text) com cabeçalho/rodapé e PDF — tipo de documento novo, separado do laudo/relatório de caso existente
-- [ ] **DOC-04**: Médico pode salvar e reutilizar templates de encaminhamento, pedido de exames e relatório médico (mesmo padrão das receitas)
-- [ ] **DOC-05**: Médico gera um **receituário em branco** (corpo vazio no layout de receita) para colar receitas prontas que já mantém
-- [ ] **DOC-06**: Médico mantém uma biblioteca de **templates de orientações** por marco (1ª consulta, 1 mês, 2 meses...), podendo selecionar e imprimir
+- [x] **DOC-03**: Médico gera um **relatório médico** de corpo livre (rich text) com cabeçalho/rodapé e PDF — tipo de documento novo, separado do laudo/relatório de caso existente
+- [x] **DOC-04**: Médico pode salvar e reutilizar templates de encaminhamento, pedido de exames e relatório médico (mesmo padrão das receitas)
+- [x] **DOC-05**: Médico gera um **receituário em branco** (corpo vazio no layout de receita) para colar receitas prontas que já mantém
+- [x] **DOC-06**: Médico mantém uma biblioteca de **templates de orientações** por marco (1ª consulta, 1 mês, 2 meses...), podendo selecionar e imprimir
 
 ### Vacinas (VAC)
 
@@ -89,12 +89,12 @@ Cada requisito mapeia para exatamente uma fase do roadmap. Sem órfãos, sem dup
 | GROWTH-01 | Phase 3 | Complete |
 | GROWTH-02 | Phase 3 | Complete |
 | GROWTH-03 | Phase 3 | Complete |
-| DOC-01 | Phase 4 | Pending |
+| DOC-01 | Phase 4 | Complete |
 | DOC-02 | Phase 4 | Pending |
-| DOC-03 | Phase 4 | Pending |
-| DOC-04 | Phase 4 | Pending |
-| DOC-05 | Phase 4 | Pending |
-| DOC-06 | Phase 4 | Pending |
+| DOC-03 | Phase 4 | Complete |
+| DOC-04 | Phase 4 | Complete |
+| DOC-05 | Phase 4 | Complete |
+| DOC-06 | Phase 4 | Complete |
 | VAC-01 | Phase 5 | Pending |
 | VAC-02 | Phase 5 | Pending |
 | VAC-03 | Phase 5 | Pending |

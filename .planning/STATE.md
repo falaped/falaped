@@ -5,16 +5,16 @@ milestone_name: milestone
 current_phase: 03
 current_phase_name: curva-de-crescimento
 status: merged
-stopped_at: Phase 3 MERGED to main (PR #3, squash 801fd02). 5 code-review findings open (see 03-CODE-REVIEW.md)
-last_updated: "2026-07-09T18:00:00.000Z"
+stopped_at: 04-04 code complete
+last_updated: "2026-07-19T17:45:56.601Z"
 last_activity: 2026-07-09
-last_activity_desc: Phase 03 all 4 plans complete; migration applied live; verification passed-with-concerns
+last_activity_desc: Phase 03 all plans complete; migration live; verification done
 progress:
   total_phases: 6
-  completed_phases: 3
-  total_plans: 12
-  completed_plans: 12
-  percent: 50
+  completed_phases: 4
+  total_plans: 17
+  completed_plans: 17
+  percent: 67
 ---
 
 # Project State
@@ -60,6 +60,10 @@ Progress: [██████████] 100% (plans executed)
 | Phase 02 P02 | 20min | 6 tasks | 24 files |
 | Phase 03 P01 | 20min | 4 tasks | 16 files |
 | Phase 03 P03 | 6 | 2 tasks | 14 files |
+| Phase 04 P01 | 35min | 3 tasks | 39 files |
+| Phase 04 P02 | ~30min | 3 tasks | 40 files |
+| Phase 04 P04 | 40min | 3 tasks | 34 files |
+| Phase 04 P05 | 15min | 3 tasks | 5 files |
 
 ## Accumulated Context
 
@@ -80,6 +84,11 @@ Recent decisions affecting current work:
 - [Phase 2]: Helper singular (TTL 60s) alimenta hero + cabeçalho do caso; helper de lote (createSignedUrls) alimenta a lista (TTL 300s, sem N+1); <AvatarImage> Radix em todas as superfícies, nunca next/image (D-10/D-11)
 - [Phase ?]: 03-03: toda mutação em patient_measurements escopa por id+profile_id+patient_id (nunca só id) — guarda IDOR (D-14 / CONCERNS Pitfall 5)
 - [Phase ?]: 03-03: measurement-form reusado em modo edit; history-table virou client component p/ Editar/Remover por linha
+- [Phase ?]: 04-01: Novo documento clínico = clonar prescriptions (módulos/action/rota/card/table) + medical-certificates (PDF título+corpo via buildMedicalCertificatePdf) + prescription-templates (snapshot)
+- [Phase ?]: 04-01: urgency guardada no payload jsonb (Discretion-A); badge semântico derivado no table; update-pdf-path e template delete endurecidos com .eq(profile_id)
+- [Phase 04]: Corpo do relatório via RichTextEditor de baixo nível (corpo único), TipTap HTML → htmlToPlainTextForPdf → buildMedicalCertificatePdf; domínio medical_reports novo e separado do laudo (D-10, Pitfall 4)
+- [Phase ?]: 04-04: milestone é um CAMPO em guidance_templates (uma tabela), não tabela por marco (RESEARCH OQ2)
+- [Phase ?]: 04-04: update/delete-guidance-template escopados por profile_id (D-15), mais fortes que o analog prescription-templates
 
 ### Pending Todos
 
@@ -97,6 +106,7 @@ Recent decisions affecting current work:
 - [Phase 1] Correção de PDF cruza dois repos (kit + app) e pode exigir bump coordenado do `@falaped/falaped-kit` (>=0.2.7)
 - [Cross-cutting] App não tem RLS de tabela — todo slice novo precisa filtro `profile_id` em read/write/delete + gate `paid` + teste de ownership (Pitfall 5)
 - [Phase 2 — anomalia 02-03 RESOLVIDA 2026-06-29] O 02-03 (PHOTO-03) ficou commitado sem SUMMARY/verificação (mark-and-skip). Fechado via close-out manual: 02-03-SUMMARY.md reconstruído + VERIFICATION.md canônica gerada (status: passed, 11/11 must-haves). UAT 10/10 (02-UAT.md). Phase 02 agora 3/3 summaries, verificação passed, predicado de conclusão = true. ÚLTIMO gate antes do ship: SECURITY.md (security_enforcement=true) → rodar `/gsd-secure-phase 02`, depois `/gsd-ship 02`.
+- 04-01 Task 4 (BLOCKING): aplicar as 4 migrations de referrals ao DB live acstugafrgrqzvtuznxv via Supabase MCP (ordem: referrals, rls_referrals, storage_referrals, create_referral_templates)
 
 ### Quick Tasks Completed
 
@@ -115,7 +125,7 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-07-09
-Stopped at: Phase 3 shipped — PR #3 (https://github.com/falaped/falaped/pull/3) open, awaiting merge to main
-Resume file: https://github.com/falaped/falaped/pull/3
+Last session: 2026-07-19T17:45:47.886Z
+Stopped at: 04-04 code complete
+Resume file: None
 Resume file: .planning/phases/03-curva-de-crescimento/03-UI-SPEC.md

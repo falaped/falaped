@@ -43,6 +43,8 @@ export async function generatePrescriptionAction(params: {
   const supabase = await createClient()
   const { profile } = await getAuthenticatedUser(supabase)
   if (!profile?.id) return { ok: false, error: "Sessão não encontrada." }
+  if (profile.status !== "paid")
+    return { ok: false, error: "Perfil não ativo. Conclua a configuração da conta em Perfil." }
 
   const parsed = generatePrescriptionSchema.safeParse({
     payload: params.payload,

@@ -73,3 +73,63 @@ export {
   type CreatePrescriptionTemplateResult,
   type DeletePrescriptionTemplateResult,
 } from "./prescription-templates"
+export {
+  generateReferralAction,
+  type GenerateReferralResult,
+  deleteReferralAction,
+  deleteReferralsBulkAction,
+  type DeleteReferralResult,
+  type DeleteReferralsBulkResult,
+} from "./referrals"
+export {
+  createReferralTemplateAction,
+  deleteReferralTemplateAction,
+  type CreateReferralTemplateResult,
+  type DeleteReferralTemplateResult,
+} from "./referral-templates"
+export {
+  generateMedicalReportAction,
+  type GenerateMedicalReportResult,
+  deleteMedicalReportAction,
+  deleteMedicalReportsBulkAction,
+  type DeleteMedicalReportResult,
+  type DeleteMedicalReportsBulkResult,
+} from "./medical-reports"
+export {
+  createMedicalReportTemplateAction,
+  deleteMedicalReportTemplateAction,
+  type CreateMedicalReportTemplateResult,
+  type DeleteMedicalReportTemplateResult,
+} from "./medical-report-templates"
+export {
+  generateExamRequestAction,
+  type GenerateExamRequestResult,
+  deleteExamRequestAction,
+  deleteExamRequestsBulkAction,
+  type DeleteExamRequestResult,
+  type DeleteExamRequestsBulkResult,
+} from "./exam-requests"
+export {
+  createExamPanelAction,
+  deleteExamPanelAction,
+  type CreateExamPanelResult,
+  type DeleteExamPanelResult,
+} from "./exam-panels"
+export {
+  createExamRequestTemplateAction,
+  deleteExamRequestTemplateAction,
+  type CreateExamRequestTemplateResult,
+  type DeleteExamRequestTemplateResult,
+} from "./exam-request-templates"
+export {
+  generateGuidanceAction,
+  type GenerateGuidanceResult,
+  createGuidanceTemplateAction,
+  type CreateGuidanceTemplateResult,
+  updateGuidanceTemplateAction,
+  type UpdateGuidanceTemplateResult,
+  deleteGuidanceTemplateAction,
+  type DeleteGuidanceTemplateResult,
+  deleteGuidanceDocumentAction,
+  type DeleteGuidanceDocumentResult,
+} from "./guidance"
