@@ -1,6 +1,8 @@
 "use client"
 
 import { cn } from "@/lib/utils"
+import { computePediatricAge } from "@/lib/compute-pediatric-age"
+import { computeCurrentMonths, isBandCurrent } from "@/lib/vaccine-current-band"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import type { VaccineScheduleWithItems } from "@/modules/vaccines/types"
 import { GestanteList } from "./gestante-list"
@@ -45,6 +47,18 @@ export function VaccineCalendarView({
 }) {
   const orderedBands = computeOrderedBands([sus, sbim])
 
+  // Current-age highlight (D-02/D-11). Patient mode only: reuse the tested age
+  // engine (never re-parse the date — Pitfall 5), project onto the month axis,
+  // then resolve WHICH age band label is current across both datasets so the
+  // SAME band is emphasized in the SUS and SBIm columns. Position-only — no
+  // diff/pending logic (that is Phase 6). Standalone (no birthDate) → null.
+  const currentMonths = birthDate
+    ? computeCurrentMonths(
+        computePediatricAge(birthDate, new Date(), gestationalAgeWeeks),
+      )
+    : null
+  const currentBandLabel = resolveCurrentBandLabel([sus, sbim], currentMonths)
+
   return (
     <Tabs defaultValue="crianca" className={cn("flex flex-col gap-6", className)}>
       <TabsList className="lg:w-full">
@@ -69,6 +83,7 @@ export function VaccineCalendarView({
               title="SUS/PNI"
               schedule={sus}
               orderedBands={orderedBands}
+              currentBandLabel={currentBandLabel}
             />
           ) : null}
           {sbim ? (
@@ -76,6 +91,7 @@ export function VaccineCalendarView({
               title="Particular (SBIm)"
               schedule={sbim}
               orderedBands={orderedBands}
+              currentBandLabel={currentBandLabel}
             />
           ) : null}
         </div>
@@ -117,4 +133,28 @@ function computeOrderedBands(
   return [...minSort.entries()]
     .sort((a, b) => a[1] - b[1])
     .map(([label]) => label)
+}
+
+/**
+ * Resolves which `age_label` band is the child's current band (D-02), scanning
+ * items across both datasets. The first band whose `[age_months, age_months_max
+ * ?? age_months]` window contains `currentMonths` wins; its `age_label` is
+ * emphasized identically in both columns. Returns null in standalone mode
+ * (currentMonths null) or when no band contains the age (e.g. older child past
+ * the last scheduled band). Position-only (D-11).
+ */
+function resolveCurrentBandLabel(
+  schedules: Array<VaccineScheduleWithItems | null>,
+  currentMonths: number | null,
+): string | null {
+  if (currentMonths === null) return null
+  for (const schedule of schedules) {
+    if (!schedule) continue
+    for (const item of schedule.vaccine_schedule_items) {
+      if (isBandCurrent(currentMonths, item.age_months, item.age_months_max)) {
+        return item.age_label
+      }
+    }
+  }
+  return null
 }

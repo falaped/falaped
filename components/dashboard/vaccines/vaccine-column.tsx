@@ -1,4 +1,5 @@
 import { cn } from "@/lib/utils"
+import { Badge } from "@/components/ui/badge"
 import {
   Card,
   CardContent,
@@ -27,11 +28,16 @@ export function VaccineColumn({
   title,
   schedule,
   orderedBands,
+  currentBandLabel,
   className,
 }: {
   title: string
   schedule: VaccineScheduleWithItems
   orderedBands: string[]
+  /** The `age_label` of the child's current band (patient mode, D-02), or null.
+   * When set, the matching band gets the accent highlight + "Idade atual" badge
+   * in BOTH columns. Position-only — no diff/pending (D-11). */
+  currentBandLabel?: string | null
   className?: string
 }) {
   const itemsByBand = groupByAgeBand(schedule.vaccine_schedule_items)
@@ -45,15 +51,31 @@ export function VaccineColumn({
         <div className="flex flex-col gap-6">
           {orderedBands.map((label) => {
             const items = itemsByBand.get(label) ?? []
+            const isCurrent = currentBandLabel != null && label === currentBandLabel
             return (
               <section
                 key={label}
                 aria-label={label}
-                className="flex flex-col gap-2"
+                aria-current={isCurrent ? "true" : undefined}
+                className={cn(
+                  "flex flex-col gap-2",
+                  // Current-age emphasis (C4): accent left border + subtle bg.
+                  // The ONLY place bg-primary/10 appears in the columns.
+                  isCurrent &&
+                    "-ml-3 rounded-r-sm border-l-2 border-primary bg-primary/10 pl-3 pr-2 py-2",
+                )}
               >
-                <h3 className="text-xs font-normal uppercase tracking-wide text-muted-foreground">
-                  {label}
-                </h3>
+                <div className="flex items-center justify-between gap-2">
+                  <h3 className="text-xs font-normal uppercase tracking-wide text-muted-foreground">
+                    {label}
+                  </h3>
+                  {/* Color + text (Accessibility): never color alone. */}
+                  {isCurrent ? (
+                    <Badge className="shrink-0 text-[10px] uppercase tracking-wide">
+                      Idade atual
+                    </Badge>
+                  ) : null}
+                </div>
                 {items.length > 0 ? (
                   <ul className="flex flex-col gap-2">
                     {items.map((item) => (
