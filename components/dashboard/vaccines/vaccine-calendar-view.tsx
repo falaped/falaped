@@ -4,6 +4,7 @@ import { cn } from "@/lib/utils"
 import { computePediatricAge } from "@/lib/compute-pediatric-age"
 import { computeCurrentMonths } from "@/lib/vaccine-current-band"
 import { resolveCurrentBandLabel } from "@/lib/vaccine-current-band-items"
+import { computeOrderedBands } from "@/lib/vaccine-band-carousel"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import type { VaccineScheduleWithItems } from "@/modules/vaccines/types"
 import { GestanteList } from "./gestante-list"
@@ -110,28 +111,4 @@ export function VaccineCalendarView({
       </TabsContent>
     </Tabs>
   )
-}
-
-/**
- * Computes the ordered union of distinct age bands across the given datasets.
- * A band is keyed by `age_label`; its order is the smallest `sort_order` seen
- * for that label in any dataset, so bands read across both columns in a single
- * ascending-by-age rhythm even when a dataset omits some bands.
- */
-function computeOrderedBands(
-  schedules: Array<VaccineScheduleWithItems | null>,
-): string[] {
-  const minSort = new Map<string, number>()
-  for (const schedule of schedules) {
-    if (!schedule) continue
-    for (const item of schedule.vaccine_schedule_items) {
-      const current = minSort.get(item.age_label)
-      if (current === undefined || item.sort_order < current) {
-        minSort.set(item.age_label, item.sort_order)
-      }
-    }
-  }
-  return [...minSort.entries()]
-    .sort((a, b) => a[1] - b[1])
-    .map(([label]) => label)
 }
