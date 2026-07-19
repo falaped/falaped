@@ -101,3 +101,23 @@ export {
   type CreateMedicalReportTemplateResult,
   type DeleteMedicalReportTemplateResult,
 } from "./medical-report-templates"
+export {
+  generateExamRequestAction,
+  type GenerateExamRequestResult,
+  deleteExamRequestAction,
+  deleteExamRequestsBulkAction,
+  type DeleteExamRequestResult,
+  type DeleteExamRequestsBulkResult,
+} from "./exam-requests"
+export {
+  createExamPanelAction,
+  deleteExamPanelAction,
+  type CreateExamPanelResult,
+  type DeleteExamPanelResult,
+} from "./exam-panels"
+export {
+  createExamRequestTemplateAction,
+  deleteExamRequestTemplateAction,
+  type CreateExamRequestTemplateResult,
+  type DeleteExamRequestTemplateResult,
+} from "./exam-request-templates"

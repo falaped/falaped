@@ -71,6 +71,7 @@ const navMain = [
       { title: "Receitas", url: "/dashboard/prescriptions" },
       { title: "Encaminhamentos", url: "/dashboard/referrals" },
       { title: "Relatórios médicos", url: "/dashboard/medical-reports" },
+      { title: "Pedidos de exames", url: "/dashboard/exam-requests" },
     ],
   },
 ]
