@@ -5,15 +5,15 @@ milestone_name: milestone
 current_phase: 03
 current_phase_name: curva-de-crescimento
 status: merged
-stopped_at: Completed 04-02-PLAN.md (Task 4 migration-apply pending orchestrator)
-last_updated: "2026-07-19T16:49:19.639Z"
+stopped_at: 04-04 code complete
+last_updated: "2026-07-19T17:38:22.280Z"
 last_activity: 2026-07-09
 last_activity_desc: Phase 03 all plans complete; migration live; verification done
 progress:
   total_phases: 6
   completed_phases: 3
   total_plans: 17
-  completed_plans: 14
+  completed_plans: 16
   percent: 50
 ---
 
@@ -62,6 +62,7 @@ Progress: [██████████] 100% (plans executed)
 | Phase 03 P03 | 6 | 2 tasks | 14 files |
 | Phase 04 P01 | 35min | 3 tasks | 39 files |
 | Phase 04 P02 | ~30min | 3 tasks | 40 files |
+| Phase 04 P04 | 40min | 3 tasks | 34 files |
 
 ## Accumulated Context
 
@@ -85,6 +86,8 @@ Recent decisions affecting current work:
 - [Phase ?]: 04-01: Novo documento clínico = clonar prescriptions (módulos/action/rota/card/table) + medical-certificates (PDF título+corpo via buildMedicalCertificatePdf) + prescription-templates (snapshot)
 - [Phase ?]: 04-01: urgency guardada no payload jsonb (Discretion-A); badge semântico derivado no table; update-pdf-path e template delete endurecidos com .eq(profile_id)
 - [Phase 04]: Corpo do relatório via RichTextEditor de baixo nível (corpo único), TipTap HTML → htmlToPlainTextForPdf → buildMedicalCertificatePdf; domínio medical_reports novo e separado do laudo (D-10, Pitfall 4)
+- [Phase ?]: 04-04: milestone é um CAMPO em guidance_templates (uma tabela), não tabela por marco (RESEARCH OQ2)
+- [Phase ?]: 04-04: update/delete-guidance-template escopados por profile_id (D-15), mais fortes que o analog prescription-templates
 
 ### Pending Todos
 
@@ -121,7 +124,7 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-07-19T16:49:19.522Z
-Stopped at: Completed 04-02-PLAN.md (Task 4 migration-apply pending orchestrator)
+Last session: 2026-07-19T17:38:22.275Z
+Stopped at: 04-04 code complete
 Resume file: None
 Resume file: .planning/phases/03-curva-de-crescimento/03-UI-SPEC.md
