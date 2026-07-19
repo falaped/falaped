@@ -11,14 +11,20 @@ const AVG_DAYS_PER_MONTH = 30.4375
  * Returns the child's whole-month age when the age is well-formed (`status ===
  * "ok"`), or `null` for every non-ok status (missing / invalid / future) so the
  * caller renders no highlight. Pure: no I/O, no date math (the engine already
- * did it) — just projects `totalDays` onto months.
+ * did it) — just projects onto months.
+ *
+ * For preterm infants the engine emits a `corrected` age (CR-01 / D-10); while
+ * it is present the highlight follows the CORRECTED days so the current band
+ * matches the child's physiologic age. When there is no correction (term
+ * infants, or no gestational age) it falls back to chronological `totalDays`.
  *
  * @param age Result of `computePediatricAge`.
  * @returns Whole months (floored), or `null` when no highlight should show.
  */
 export function computeCurrentMonths(age: PediatricAge): number | null {
   if (age.status !== "ok") return null
-  return Math.floor((age.totalDays ?? 0) / AVG_DAYS_PER_MONTH)
+  const days = age.corrected?.totalDays ?? age.totalDays ?? 0
+  return Math.floor(days / AVG_DAYS_PER_MONTH)
 }
 
 /**
