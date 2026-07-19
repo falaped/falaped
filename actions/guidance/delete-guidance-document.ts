@@ -1,0 +1,41 @@
+"use server"
+
+import { revalidatePath } from "next/cache"
+import { createClient } from "@/lib/supabase/server"
+import { getAuthenticatedUser } from "@/modules/supabase/get-authenticated-user"
+import { deleteGuidanceDocument } from "@/modules/guidance/delete-guidance-document"
+
+export type DeleteGuidanceDocumentResult =
+  | { ok: true }
+  | { ok: false; error: string }
+
+export async function deleteGuidanceDocumentAction(
+  guidanceDocumentId: string,
+  pdfStoragePath: string | null,
+): Promise<DeleteGuidanceDocumentResult> {
+  const supabase = await createClient()
+  const { profile } = await getAuthenticatedUser(supabase)
+  if (!profile?.id) return { ok: false, error: "Sessão não encontrada." }
+  if (profile.status !== "paid")
+    return {
+      ok: false,
+      error: "Perfil não ativo. Conclua a configuração da conta em Perfil.",
+    }
+
+  if (!guidanceDocumentId || typeof guidanceDocumentId !== "string")
+    return { ok: false, error: "ID da orientação inválido." }
+
+  try {
+    await deleteGuidanceDocument(
+      supabase,
+      guidanceDocumentId,
+      profile.id,
+      pdfStoragePath,
+    )
+    revalidatePath("/dashboard/guidance")
+    return { ok: true }
+  } catch (e) {
+    console.error("[GUIDANCE] delete document failed", e)
+    return { ok: false, error: "Erro ao excluir orientação. Tente novamente." }
+  }
+}
