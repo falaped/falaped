@@ -6,14 +6,14 @@ current_phase: 05
 current_phase_name: calend-rio-de-vacinas-refer-ncia
 status: executing
 stopped_at: Phase 5 UI-SPEC approved
-last_updated: "2026-07-19T20:23:12.084Z"
+last_updated: "2026-07-19T20:34:45.381Z"
 last_activity: 2026-07-19
 last_activity_desc: Phase 05 execution started
 progress:
   total_phases: 6
   completed_phases: 4
   total_plans: 21
-  completed_plans: 19
+  completed_plans: 20
   percent: 67
 ---
 
@@ -29,7 +29,7 @@ See: .planning/PROJECT.md (updated 2026-06-27)
 ## Current Position
 
 Phase: 05 (calend-rio-de-vacinas-refer-ncia) — EXECUTING
-Plan: 3 of 4
+Plan: 4 of 4
 Status: Ready to execute
 Last activity: 2026-07-19 — Phase 05 execution started
 
@@ -66,6 +66,7 @@ Progress: [██████████] 100% (plans executed)
 | Phase 04 P05 | 15min | 3 tasks | 5 files |
 | Phase 05 P01 | 80min | 3 tasks | 11 files |
 | Phase 05 P05-02 | ~40min | 2 tasks | 4 files |
+| Phase 05 P05-03 | 30 | 2 tasks | 4 files |
 
 ## Accumulated Context
 
@@ -94,6 +95,7 @@ Recent decisions affecting current work:
 - [Phase ?]: 05-01: Global-read RLS divergence (D-07) — vaccine reference tables have no profile_id and only SELECT-only using(true) policies; writes are seed-only
 - [Phase ?]: 05-01: Vaccine seed values physician-approved at checkpoint; migrations applied to live DB by orchestrator
 - [Phase ?]: 05-02: SBIm child seed (34 items) physician-approved and applied to live DB; SUS × SBIm rendered as two aligned columns with per-dataset provenance (no color divergence)
+- [Phase ?]: 05-03: Gestante seed (5 items) physician-approved and applied to live DB on gestational_weeks axis (week_min/week_max + age_label); Tabs shell (Crianca | Gestante), gestante listed by vaccine with text window
 
 ### Pending Todos
 
@@ -130,7 +132,7 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-07-19T20:22:57.035Z
+Last session: 2026-07-19T20:34:36.178Z
 Stopped at: Phase 5 UI-SPEC approved
 Resume file: .planning/phases/05-calend-rio-de-vacinas-refer-ncia/05-UI-SPEC.md
 Resume file: .planning/phases/03-curva-de-crescimento/03-UI-SPEC.md

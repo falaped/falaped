@@ -39,7 +39,7 @@ Requisitos deste ciclo. Cada um mapeia para uma fase do roadmap. Tudo escopado p
 
 - [x] **VAC-01**: Médico consulta uma tabela de referência do calendário **SUS/PNI** por idade
 - [x] **VAC-02**: Médico consulta o calendário **particular (SBIm)** por idade, exibido lado a lado com o SUS
-- [ ] **VAC-03**: Médico consulta a referência de **vacinação da gestante** (Hepatite B, dTpa a partir de 20 sem, Influenza, COVID-19, VSR/Abrysvo a partir de 28 sem)
+- [x] **VAC-03**: Médico consulta a referência de **vacinação da gestante** (Hepatite B, dTpa a partir de 20 sem, Influenza, COVID-19, VSR/Abrysvo a partir de 28 sem)
 - [x] **VAC-04**: Os calendários são modelados como dado versionado (`vacina, dose, idade recomendada, fonte SUS|SBIm, ano/versão`) com fonte e data de vigência
 - [ ] **VAC-05**: Médico registra na **carteira de vacinação** de cada paciente as doses aplicadas (vacina, dose, data, lote, local de aplicação)
 - [ ] **VAC-06**: O sistema calcula e mostra as vacinas **pendentes/atrasadas** por idade (diff entre calendário e doses aplicadas)
@@ -97,7 +97,7 @@ Cada requisito mapeia para exatamente uma fase do roadmap. Sem órfãos, sem dup
 | DOC-06 | Phase 4 | Complete |
 | VAC-01 | Phase 5 | Complete |
 | VAC-02 | Phase 5 | Complete |
-| VAC-03 | Phase 5 | Pending |
+| VAC-03 | Phase 5 | Complete |
 | VAC-04 | Phase 5 | Complete |
 | VAC-05 | Phase 6 | Pending |
 | VAC-06 | Phase 6 | Pending |
