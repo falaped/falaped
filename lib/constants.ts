@@ -16,6 +16,9 @@ export const MEDICAL_REPORTS_BUCKET = "medical-reports"
 /** Supabase Storage bucket for exam request PDFs (pedidos de exames). Path: {profile_id}/{exam_request_id}.pdf */
 export const EXAM_REQUESTS_BUCKET = "exam-requests"
 
+/** Supabase Storage bucket privado for guidance document PDFs (orientações). Path: {profile_id}/{guidance_document_id}.pdf */
+export const GUIDANCE_BUCKET = "guidance"
+
 /**
  * Supabase Storage bucket privado para fotos de pacientes (crianças). Path:
  * {profile_id}/{patient_id}.ext. Bucket privado (public=false): acesso somente
