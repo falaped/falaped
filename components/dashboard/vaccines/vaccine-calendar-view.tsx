@@ -1,52 +1,90 @@
 "use client"
 
 import { cn } from "@/lib/utils"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import type { VaccineScheduleWithItems } from "@/modules/vaccines/types"
+import { GestanteList } from "./gestante-list"
 import { VaccineColumn } from "./vaccine-column"
 
 /**
  * Reference vaccine calendar view.
  *
- * Slice 05-02: renders SUS/PNI and Particular (SBIm) as two parallel columns
- * inside the "Criança" area (C3). Both columns read across at the same
- * age-band rhythm: the view computes the ordered UNION of age bands across
- * both datasets and passes it to each column, so where one dataset lacks a
- * band the column shows an explicit empty marker (`—`) rather than silently
- * misaligning (C3). Each column keeps its own provenance caption (C6/D-09).
+ * Slice 05-03: introduces the top-level Tabs shell (C2/D-04) — "Criança
+ * (SUS × SBIm)" (default) and "Gestante". The active tab uses the accent
+ * (primary) indicator per UI-SPEC §Color (accent reserved for orientation).
  *
- * The prop surface stays forward-compatible: plan 03 adds `gestante`, plan 04
- * adds an optional `birthDate` for the current-age highlight.
+ * Criança tab: renders SUS/PNI and Particular (SBIm) as two parallel columns
+ * (C3, from slice 05-02). Both columns read across at the same age-band rhythm
+ * via the ordered UNION of age bands, so where one dataset lacks a band the
+ * column shows an explicit empty marker (`—`) rather than silently misaligning.
+ *
+ * Gestante tab: a single list by vaccine with the gestational-week window in
+ * text (C5/D-05) — a different axis than the child calendar. Each dataset keeps
+ * its own provenance caption (C6/D-09).
+ *
+ * The prop surface stays forward-compatible: plan 04 adds an optional
+ * `birthDate` for the current-age highlight.
  */
 export function VaccineCalendarView({
   sus,
   sbim,
+  gestante,
   className,
 }: {
   sus: VaccineScheduleWithItems | null
   sbim: VaccineScheduleWithItems | null
+  gestante: VaccineScheduleWithItems | null
   className?: string
 }) {
   const orderedBands = computeOrderedBands([sus, sbim])
 
   return (
-    <div className={cn("flex flex-col gap-6", className)}>
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-        {sus ? (
-          <VaccineColumn
-            title="SUS/PNI"
-            schedule={sus}
-            orderedBands={orderedBands}
-          />
-        ) : null}
-        {sbim ? (
-          <VaccineColumn
-            title="Particular (SBIm)"
-            schedule={sbim}
-            orderedBands={orderedBands}
-          />
-        ) : null}
-      </div>
-    </div>
+    <Tabs defaultValue="crianca" className={cn("flex flex-col gap-6", className)}>
+      <TabsList className="lg:w-full">
+        <TabsTrigger
+          value="crianca"
+          className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
+        >
+          Criança (SUS × SBIm)
+        </TabsTrigger>
+        <TabsTrigger
+          value="gestante"
+          className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
+        >
+          Gestante
+        </TabsTrigger>
+      </TabsList>
+
+      <TabsContent value="crianca">
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+          {sus ? (
+            <VaccineColumn
+              title="SUS/PNI"
+              schedule={sus}
+              orderedBands={orderedBands}
+            />
+          ) : null}
+          {sbim ? (
+            <VaccineColumn
+              title="Particular (SBIm)"
+              schedule={sbim}
+              orderedBands={orderedBands}
+            />
+          ) : null}
+        </div>
+      </TabsContent>
+
+      <TabsContent value="gestante">
+        {gestante ? (
+          <GestanteList schedule={gestante} />
+        ) : (
+          <p className="text-sm text-muted-foreground">
+            Calendário da gestante indisponível. Atualize a página ou tente
+            novamente mais tarde.
+          </p>
+        )}
+      </TabsContent>
+    </Tabs>
   )
 }
 
