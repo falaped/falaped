@@ -1,7 +1,8 @@
 ---
 phase: 04-documentos-cl-nicos-novos
 verified: 2026-07-19T00:00:00Z
-status: human_needed
+status: passed
+human_verification_resolved: "2026-07-19 — usuário aprovou o UAT (\"tudo aprovado, ship\"). Migrations das waves 1-4 aplicadas + verificadas live via Supabase MCP nesta sessão; segurança 24/24 (threats_open: 0). UAT dos 5 fluxos de documento (PDF sem página em branco, catálogo/painéis, edição de orientação/marco, template save/reuse, não-regressão da receita normal) aprovado pelo usuário."
 score: 5/5 must-haves verified (code-level)
 behavior_unverified: 0
 overrides_applied: 0
