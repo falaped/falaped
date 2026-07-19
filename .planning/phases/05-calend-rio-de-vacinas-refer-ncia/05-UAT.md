@@ -30,8 +30,16 @@ result: [pending]
 expected: Cada coluna/lista mostra a legenda "Fonte: {version} · vigência …" e o aviso fixo de referência.
 result: [pending]
 
-### 4. Entrada por paciente + standalone sem destaque
-expected: A partir da ficha do paciente, o link "Calendário de vacinas" abre /dashboard/vaccines?patientId=…; o standalone (sem patientId, ou id de outro médico) abre sem destaque de idade. Um patientId estranho não vaza paciente de outro médico.
+### 4. Entrada por paciente — card na ficha + standalone sem destaque
+expected: |
+  Na ficha do paciente, o card "Vacinas para a idade atual" mostra, sem sair da ficha, as vacinas
+  previstas para a faixa de idade ATUAL da criança em AMBOS os datasets (SUS/PNI e particular/SBIm),
+  destacadas (mesmo idioma de destaque do calendário) e com a proveniência de cada dataset. O link
+  discreto "Ver calendário completo" abre /dashboard/vaccines?patientId=… (contexto do paciente
+  preservado). Sem data de nascimento ou sem dado de referência → o card não aparece; faixa atual
+  sem vacinas previstas → estado vazio amigável ("Nenhuma vacina prevista para a faixa de idade atual");
+  erro de leitura do Supabase não derruba a ficha. O standalone (sem patientId, ou id de outro médico)
+  abre o calendário sem destaque de idade e não vaza paciente de outro médico.
 result: [pending]
 
 ### 5. Destaque da faixa de idade atual — prematuridade aplicada (CR-01 resolvido)
