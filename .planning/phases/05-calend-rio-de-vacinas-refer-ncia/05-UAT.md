@@ -34,13 +34,13 @@ result: [pending]
 expected: A partir da ficha do paciente, o link "Calendário de vacinas" abre /dashboard/vaccines?patientId=…; o standalone (sem patientId, ou id de outro médico) abre sem destaque de idade. Um patientId estranho não vaza paciente de outro médico.
 result: [pending]
 
-### 5. Destaque da faixa de idade atual — decisão clínica sobre prematuridade (CR-01)
+### 5. Destaque da faixa de idade atual — prematuridade aplicada (CR-01 resolvido)
 expected: |
   Com um paciente, a faixa de idade atual é destacada em ambas as colunas (badge "Idade atual").
-  DECISÃO CLÍNICA (CR-01): a correção por prematuridade NÃO está aplicada — o destaque usa a idade
-  cronológica mesmo quando gestational_age_weeks está presente. Decidir: (a) aceitar o fallback
-  cronológico para um destaque só de posicionamento; (b) corrigir o CR-01 para usar a idade corrigida;
-  ou (c) remover a prop gestationalAgeWeeks (dead-effect) para não deixar meia-fiação.
+  CR-01 RESOLVIDO (fix 8f4a4d7): o destaque agora usa a idade CORRIGIDA por prematuridade quando há
+  gestational_age_weeks de prematuro (< 37 sem); recém-nascidos a termo ou sem idade gestacional caem
+  no fallback cronológico. Continua só de posicionamento (sem lógica de doses — isso é Phase 6).
+  Verificar visualmente: um paciente prematuro é destacado na faixa fisiológica (corrigida), não na cronológica.
 result: [pending]
 
 ## Summary
