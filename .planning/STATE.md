@@ -5,16 +5,16 @@ milestone_name: milestone
 current_phase: 05
 current_phase_name: calend-rio-de-vacinas-refer-ncia
 status: verifying
-stopped_at: Phase 5 UI-SPEC approved
+stopped_at: Phase 5 all 4 plans executed; verification human_needed; pending UAT + security
 last_updated: "2026-07-19T20:42:22.919Z"
 last_activity: 2026-07-19
-last_activity_desc: Phase 05 execution started
+last_activity_desc: Phase 05 executed (4/4 plans); verifier returned human_needed (8/9, 0 blockers); UAT persisted
 progress:
   total_phases: 6
-  completed_phases: 5
+  completed_phases: 4
   total_plans: 21
   completed_plans: 21
-  percent: 83
+  percent: 67
 ---
 
 # Project State
