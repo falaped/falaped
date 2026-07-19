@@ -11,7 +11,7 @@ requires:
     provides: "lib/compute-pediatric-age.ts — tested pediatric age engine (banded age, corrected age, local-midnight parsing)"
 provides:
   - "Patient entry point (D-03): /dashboard/vaccines accepts an optional ?patientId, reads the owned patient (profile_id-scoped IDOR guard) and passes birthDate + gestationalAgeWeeks to the view"
-  - "patient-detail-toolbar link to /dashboard/vaccines?patientId (Syringe icon, PT-BR 'Calendário de vacinas')"
+  - "In-profile current-age vaccine card (PatientVaccineAgeCard): current-band vaccines in SUS+SBIm, highlighted, with provenance + a discreet 'Ver calendário completo' link to /dashboard/vaccines?patientId (revised D-03 entry point — replaces the removed toolbar nav link)"
   - "Position-only current-age-band highlight (D-02/D-11): matching age band emphasized (border-l-2 border-primary + bg-primary/10 + 'Idade atual' badge) identically in SUS and SBIm columns"
   - "lib/vaccine-current-band.ts — pure, tested helpers (computeCurrentMonths, isBandCurrent) projecting a PediatricAge onto the schedule month axis"
 affects: ["phase 06 (vaccination record — dose diff / pendência builds on this position-only anchor)"]
@@ -28,11 +28,16 @@ key-files:
   created:
     - lib/vaccine-current-band.ts
     - lib/vaccine-current-band.spec.ts
+    - lib/vaccine-current-band-items.ts
+    - lib/vaccine-current-band-items.spec.ts
+    - components/dashboard/patients/patient-vaccine-age-card.tsx
   modified:
     - app/dashboard/vaccines/page.tsx
     - components/dashboard/vaccines/vaccine-calendar-view.tsx
     - components/dashboard/vaccines/vaccine-column.tsx
     - components/dashboard/patients/patient-detail-toolbar.tsx
+    - components/dashboard/patients/patient-detail-view.tsx
+    - components/dashboard/patients/patient-detail-content.tsx
 
 key-decisions:
   - "The patient read stays owner-scoped via getPatientById(supabase, patientId, profile.id) — the patient row IS owned (profile_id), unlike the GLOBAL schedule reads (D-07). A foreign id returns null and renders standalone (no highlight, no leak — T-05-05)."
@@ -64,7 +69,9 @@ Wired the patient-profile entry point and a position-only current-age-band highl
 
 ## What Was Built
 
-- **Task 1 — Patient-aware route + entry link (D-03):** `app/dashboard/vaccines/page.tsx` now accepts an optional `?patientId` searchParam. When present it reads the patient via the owner-scoped `getPatientById(supabase, patientId, profile.id)` (IDOR guard T-05-05 — a foreign/guessed id resolves to `null` and the calendar renders standalone with no highlight). The paid gate is retained. `patient-detail-toolbar.tsx` gains a `Calendário de vacinas` link (Syringe icon) to `/dashboard/vaccines?patientId=…`, mirroring the existing `select-patient` link pattern. Commit `3e07aa3`.
+- **Task 1 — Patient-aware route + entry point (D-03):** `app/dashboard/vaccines/page.tsx` accepts an optional `?patientId` searchParam. When present it reads the patient via the owner-scoped `getPatientById(supabase, patientId, profile.id)` (IDOR guard T-05-05 — a foreign/guessed id resolves to `null` and the calendar renders standalone with no highlight). The paid gate is retained. Commit `3e07aa3`.
+
+  > **Revised entry point (physician feedback, commits `fc60c98`/`fdbd153`/`2e2a7b0`):** the original toolbar nav button was disliked (it made the doctor leave the ficha). The D-03 entry point is now an **in-profile current-age vaccine card** (`PatientVaccineAgeCard`) mounted in `patient-detail-view.tsx` after the clinical overview: it shows, directly in the ficha, the vaccines scheduled for the child's CURRENT age band in BOTH datasets (SUS/PNI + Particular/SBIm), highlighted with the calendar's accent idiom (`border-l-2 border-primary` + `bg-primary/10`) and each panel's own provenance caption. Current-band resolution reuses the SAME engine + extracted helper as the calendar (`computeCurrentMonths` + `resolveCurrentBandLabel` in `lib/vaccine-current-band-items.ts`), so card and calendar agree; corrected age is used for preterm (CR-01) with chronological fallback. A **discreet** secondary `Ver calendário completo` link preserves patient context (`/dashboard/vaccines?patientId=…`). SUS+SBIm are read server-side in `patient-detail-content.tsx` inside an isolated try/catch that degrades to `null`, so a vaccine read error never crashes the ficha (pre-empts WR-01). The prominent `Calendário de vacinas` toolbar nav button was **removed**; the standalone `/dashboard/vaccines` route + its `?patientId` highlight are left intact (that is the "ver completo" target). Friendly PT-BR empty state ("Nenhuma vacina prevista para a faixa de idade atual"); no-DOB / no-data render nothing.
 - **Task 2 — Current-age-band highlight, position-only (D-02/D-11):** New pure helper `lib/vaccine-current-band.ts` (`computeCurrentMonths`, `isBandCurrent`) built TDD (RED `edb120e` → GREEN `9bf35c0`, 18 unit tests). `VaccineCalendarView` reuses `computePediatricAge(birthDate, new Date(), gestationalAgeWeeks)` (no raw date parsing — Pitfall 5), projects onto the month axis, and resolves a single current `age_label` passed to BOTH columns. `VaccineColumn` emphasizes the matching band with `border-l-2 border-primary` + `bg-primary/10` + an `Idade atual` badge (`aria-current="true"`). The whole calendar stays visible; standalone mode shows no highlight.
 
 ## Verification
@@ -79,14 +86,14 @@ Wired the patient-profile entry point and a position-only current-age-band highl
 
 ## Requirements Delivered
 
-- **VAC-01 / VAC-02** (already Complete from plan 05-02) — the consultation experience is now anchored to the child's age mid-consultation via the two-entry-point requirement (standalone sidebar + por-paciente toolbar) and the age-band highlight (D-02/D-03/D-11).
+- **VAC-01 / VAC-02** (already Complete from plan 05-02) — the consultation experience is now anchored to the child's age mid-consultation via the two entry points (standalone sidebar + the in-profile current-age vaccine card) and the age-band highlight (D-02/D-03/D-11).
 
 ## Human-Judgment Deferrals
 
 These need a running app + a real patient to confirm visually (not machine-verifiable here):
 
 - **Visual highlight on the running app:** open `/dashboard/vaccines?patientId={id}` for a child and confirm the correct band shows the accent border + `bg-primary/10` + `Idade atual` badge in BOTH columns, and that the whole calendar stays visible (no filtering).
-- **Patient-entry navigation:** from a patient ficha, the toolbar `Calendário de vacinas` link opens the calendar with that child's age highlighted.
+- **In-profile vaccine card:** from a patient ficha, confirm the `Vacinas para a idade atual` card shows the current age band's vaccines highlighted in BOTH datasets (SUS/PNI + SBIm) with provenance, and that the discreet `Ver calendário completo` link opens the full calendar with that child's age highlighted.
 - **Standalone shows no highlight:** open `/dashboard/vaccines` (no patientId) and confirm no band is emphasized.
 
 ## Threat Surface
