@@ -6,14 +6,14 @@ current_phase: 03
 current_phase_name: curva-de-crescimento
 status: merged
 stopped_at: Phase 4 context gathered
-last_updated: "2026-07-10T04:16:53.484Z"
+last_updated: "2026-07-19T16:31:44.254Z"
 last_activity: 2026-07-09
 last_activity_desc: Phase 03 all plans complete; migration live; verification done
 progress:
   total_phases: 6
   completed_phases: 3
-  total_plans: 12
-  completed_plans: 12
+  total_plans: 17
+  completed_plans: 13
   percent: 50
 ---
 
@@ -60,6 +60,7 @@ Progress: [██████████] 100% (plans executed)
 | Phase 02 P02 | 20min | 6 tasks | 24 files |
 | Phase 03 P01 | 20min | 4 tasks | 16 files |
 | Phase 03 P03 | 6 | 2 tasks | 14 files |
+| Phase 04 P01 | 35min | 3 tasks | 39 files |
 
 ## Accumulated Context
 
@@ -80,6 +81,8 @@ Recent decisions affecting current work:
 - [Phase 2]: Helper singular (TTL 60s) alimenta hero + cabeçalho do caso; helper de lote (createSignedUrls) alimenta a lista (TTL 300s, sem N+1); <AvatarImage> Radix em todas as superfícies, nunca next/image (D-10/D-11)
 - [Phase ?]: 03-03: toda mutação em patient_measurements escopa por id+profile_id+patient_id (nunca só id) — guarda IDOR (D-14 / CONCERNS Pitfall 5)
 - [Phase ?]: 03-03: measurement-form reusado em modo edit; history-table virou client component p/ Editar/Remover por linha
+- [Phase ?]: 04-01: Novo documento clínico = clonar prescriptions (módulos/action/rota/card/table) + medical-certificates (PDF título+corpo via buildMedicalCertificatePdf) + prescription-templates (snapshot)
+- [Phase ?]: 04-01: urgency guardada no payload jsonb (Discretion-A); badge semântico derivado no table; update-pdf-path e template delete endurecidos com .eq(profile_id)
 
 ### Pending Todos
 
@@ -97,6 +100,7 @@ Recent decisions affecting current work:
 - [Phase 1] Correção de PDF cruza dois repos (kit + app) e pode exigir bump coordenado do `@falaped/falaped-kit` (>=0.2.7)
 - [Cross-cutting] App não tem RLS de tabela — todo slice novo precisa filtro `profile_id` em read/write/delete + gate `paid` + teste de ownership (Pitfall 5)
 - [Phase 2 — anomalia 02-03 RESOLVIDA 2026-06-29] O 02-03 (PHOTO-03) ficou commitado sem SUMMARY/verificação (mark-and-skip). Fechado via close-out manual: 02-03-SUMMARY.md reconstruído + VERIFICATION.md canônica gerada (status: passed, 11/11 must-haves). UAT 10/10 (02-UAT.md). Phase 02 agora 3/3 summaries, verificação passed, predicado de conclusão = true. ÚLTIMO gate antes do ship: SECURITY.md (security_enforcement=true) → rodar `/gsd-secure-phase 02`, depois `/gsd-ship 02`.
+- 04-01 Task 4 (BLOCKING): aplicar as 4 migrations de referrals ao DB live acstugafrgrqzvtuznxv via Supabase MCP (ordem: referrals, rls_referrals, storage_referrals, create_referral_templates)
 
 ### Quick Tasks Completed
 
@@ -115,7 +119,7 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-07-10T04:16:53.471Z
+Last session: 2026-07-19T16:31:04.456Z
 Stopped at: Phase 4 context gathered
 Resume file: .planning/phases/04-documentos-cl-nicos-novos/04-CONTEXT.md
 Resume file: .planning/phases/03-curva-de-crescimento/03-UI-SPEC.md
