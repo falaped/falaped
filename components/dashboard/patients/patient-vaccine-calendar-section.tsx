@@ -230,7 +230,7 @@ export function PatientVaccineCalendarSection({
       <CardContent className="flex flex-col gap-4">
         {/* Age timeline: one step per band, clickable, with progress dots. */}
         <div
-          className="-mx-1 flex gap-1 overflow-x-auto px-1 pb-2 pt-1"
+          className="-mx-1 flex justify-between gap-1 overflow-x-auto px-1 pb-2 pt-1"
           role="tablist"
           aria-label="Faixas de idade"
         >
