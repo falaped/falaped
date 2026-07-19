@@ -2,13 +2,13 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-current_phase: 04
-current_phase_name: documentos-cl-nicos-novos
+current_phase: 03
+current_phase_name: curva-de-crescimento
 status: merged
-stopped_at: Phase 4 MERGED to main (PR #4, squash d22a415); 24/24 security, 460 tests
-last_updated: "2026-07-19T18:30:00.000Z"
-last_activity: 2026-07-19
-last_activity_desc: Phase 04 (documentos clínicos novos) all 5 slices shipped + merged; migrations live; security 24/24
+stopped_at: Phase 5 context gathered
+last_updated: "2026-07-19T18:43:27.574Z"
+last_activity: 2026-07-09
+last_activity_desc: Phase 03 all plans complete; migration live; verification done
 progress:
   total_phases: 6
   completed_phases: 4
@@ -125,7 +125,7 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-07-19T17:45:47.886Z
-Stopped at: 04-04 code complete
-Resume file: None
+Last session: 2026-07-19T18:43:27.564Z
+Stopped at: Phase 5 context gathered
+Resume file: .planning/phases/05-calend-rio-de-vacinas-refer-ncia/05-CONTEXT.md
 Resume file: .planning/phases/03-curva-de-crescimento/03-UI-SPEC.md
