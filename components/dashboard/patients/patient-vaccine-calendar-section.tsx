@@ -1,7 +1,13 @@
 "use client"
 
-import { useMemo, useState, useTransition } from "react"
-import { ChevronLeftIcon, ChevronRightIcon, SyringeIcon } from "lucide-react"
+import { useMemo, useRef, useState, useTransition } from "react"
+import {
+  ArrowUpRightIcon,
+  CheckIcon,
+  ChevronLeftIcon,
+  ChevronRightIcon,
+  SyringeIcon,
+} from "lucide-react"
 import { toast } from "sonner"
 
 import { computePediatricAge } from "@/lib/compute-pediatric-age"
@@ -11,11 +17,15 @@ import {
   computeOrderedBands,
   resolveCurrentBandIndex,
 } from "@/lib/vaccine-band-carousel"
+import {
+  computeBandStatus,
+  countTaken,
+  type BandStatus,
+} from "@/lib/vaccine-band-status"
 import { getFriendlyToastMessage } from "@/lib/get-friendly-toast-message"
 import { cn } from "@/lib/utils"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Checkbox } from "@/components/ui/checkbox"
 import {
   Card,
   CardContent,
@@ -33,27 +43,34 @@ import type {
 /**
  * "Calendário vacinal" section in the patient ficha (VAC-05, pulled forward).
  *
- * A CAROUSEL over the reference calendar: one slide per age band (the ordered
- * UNION of `age_label`s across BOTH datasets, SUS/PNI + Particular/SBIm). The
- * INITIAL slide is the child's CURRENT age band ("Vacinas para a idade atual");
- * the physician navigates prev/next between ages. Each slide shows that band's
- * SUS and SBIm vaccines together, each row with a checkbox reflecting whether
- * the patient has already TAKEN that specific reference item.
+ * An AGE TIMELINE over the reference calendar: one step per age band (the
+ * ordered UNION of `age_label`s across BOTH datasets, SUS/PNI + Particular/
+ * SBIm). Each step carries a progress dot (done / partial / empty) derived from
+ * the taken Set across both datasets, and clicking it jumps to that band. The
+ * INITIAL band is the child's CURRENT age band; prev/next arrows flank the slide
+ * header as secondary controls. Each band shows its SUS and SBIm vaccines in two
+ * columns, each row a clickable toggle reflecting whether the patient has
+ * already TAKEN that specific reference item.
  *
  * The current band is resolved with the SAME engine + helpers the calendar uses
  * (`computeCurrentMonths` → `resolveCurrentBandLabel`), so positioning agrees.
  * Preterm infants use the CORRECTED age (CR-01) via `corrected.totalDays`; term
  * / missing GA falls back to chronological.
  *
- * GRAIN (physician decision): the checkbox is PER DISPLAYED ROW — SUS and SBIm
+ * GRAIN (physician decision): the toggle is PER DISPLAYED ROW — SUS and SBIm
  * items are independent, keyed to the reference item id. Toggling calls
  * `togglePatientVaccineDoseAction` with optimistic UI (revert + PT-BR toast on
- * failure). Position-only (D-11): the checkbox records applied doses but drives
+ * failure). Position-only (D-11): the toggle records applied doses but drives
  * NO pending/late diff (Phase 6).
  *
  * Graceful degradation: both datasets null (upstream read error) → renders
- * nothing rather than crashing the ficha (WR-01). No DOB → carousel still works
+ * nothing rather than crashing the ficha (WR-01). No DOB → timeline still works
  * but opens on the first band (no current-age resolution).
+ *
+ * PRESENTATION redesign (physician review): the bare prev/next + "3/9" indicator
+ * was replaced by a scrollable age timeline with progress dots; columns became
+ * bordered cards with per-column tallies; rows became full-width toggle targets
+ * with a clear success-colored taken state. Logic/data layer unchanged.
  */
 export function PatientVaccineCalendarSection({
   patientId,
@@ -94,11 +111,27 @@ export function PatientVaccineCalendarSection({
     [orderedBands, currentBandLabel],
   )
 
+  // Reference item ids per band (union across both datasets), used for the
+  // timeline progress dots and the per-band / overall tallies. Pure derivation.
+  const bandItemIds = useMemo(
+    () =>
+      orderedBands.map((label) => [
+        ...itemsForBand(sus, label).map((item) => item.id),
+        ...itemsForBand(sbim, label).map((item) => item.id),
+      ]),
+    [orderedBands, sus, sbim],
+  )
+  const allItemIds = useMemo(
+    () => bandItemIds.flat(),
+    [bandItemIds],
+  )
+
   const [index, setIndex] = useState(initialIndex)
   // Local optimistic taken state (Set of reference item ids).
   const [taken, setTaken] = useState<Set<string>>(() => new Set(takenItemIds))
   const [pendingIds, setPendingIds] = useState<Set<string>>(() => new Set())
   const [, startTransition] = useTransition()
+  const stepRefs = useRef<Array<HTMLButtonElement | null>>([])
 
   if (orderedBands.length === 0) return null
 
@@ -112,11 +145,24 @@ export function PatientVaccineCalendarSection({
   const sbimItems = itemsForBand(sbim, activeLabel)
   const hasAnyItems = susItems.length > 0 || sbimItems.length > 0
 
+  const activeItemIds = bandItemIds[activeIndex] ?? []
+  const bandTakenCount = countTaken(activeItemIds, taken)
+  const overallTaken = countTaken(allItemIds, taken)
+  const overallTotal = allItemIds.length
+
   function goPrev() {
     setIndex((i) => Math.max(0, i - 1))
   }
   function goNext() {
     setIndex((i) => Math.min(orderedBands.length - 1, i + 1))
+  }
+  function goTo(target: number) {
+    setIndex(target)
+    stepRefs.current[target]?.scrollIntoView({
+      inline: "center",
+      block: "nearest",
+      behavior: "smooth",
+    })
   }
 
   function handleToggle(itemId: string, nextTaken: boolean) {
@@ -156,7 +202,7 @@ export function PatientVaccineCalendarSection({
   return (
     <Card className={cn("flex flex-col", className)}>
       <CardHeader>
-        <div className="flex items-start justify-between gap-3">
+        <div className="flex items-start justify-between gap-4">
           <div className="min-w-0">
             <CardTitle className="flex items-center gap-2 text-lg tracking-tight">
               <SyringeIcon
@@ -170,20 +216,66 @@ export function PatientVaccineCalendarSection({
               SUS/PNI e particular (SBIm). Somente posição por idade.
             </CardDescription>
           </div>
+          <div className="shrink-0 text-right">
+            <div className="text-lg font-semibold tabular-nums tracking-tight leading-none">
+              {overallTaken}/{overallTotal}
+            </div>
+            <div className="mt-1 text-[11px] uppercase tracking-wide text-muted-foreground">
+              Tomadas
+            </div>
+          </div>
         </div>
       </CardHeader>
 
       <CardContent className="flex flex-col gap-4">
-        {/* Carousel controls: prev/next + position indicator. */}
+        {/* Age timeline: one step per band, clickable, with progress dots. */}
         <div
-          className="flex items-center justify-between gap-3"
-          role="group"
-          aria-label="Navegação por faixa de idade"
+          className="-mx-1 flex gap-1 overflow-x-auto px-1 pb-2 pt-1"
+          role="tablist"
+          aria-label="Faixas de idade"
         >
+          {orderedBands.map((label, i) => {
+            const status = computeBandStatus(bandItemIds[i] ?? [], taken)
+            const isActive = i === activeIndex
+            return (
+              <button
+                key={label}
+                ref={(el) => {
+                  stepRefs.current[i] = el
+                }}
+                type="button"
+                role="tab"
+                aria-selected={isActive}
+                aria-label={`Faixa ${label}`}
+                onClick={() => goTo(i)}
+                className={cn(
+                  "group flex shrink-0 flex-col items-center gap-1.5 rounded-md px-1 py-1",
+                  "text-muted-foreground transition-colors hover:text-foreground",
+                  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+                  isActive && "text-primary",
+                )}
+              >
+                <TimelineDot status={status} isActive={isActive} />
+                <span
+                  className={cn(
+                    "whitespace-nowrap rounded-full px-2 py-0.5 text-xs transition-colors",
+                    isActive && "bg-primary/10 font-semibold text-primary",
+                  )}
+                >
+                  {label}
+                </span>
+              </button>
+            )
+          })}
+        </div>
+
+        {/* Slide header: large age + Idade atual badge + prev/next + tally. */}
+        <div className="flex items-center gap-2">
           <Button
             type="button"
             variant="outline"
-            size="sm"
+            size="icon"
+            className="h-8 w-8 shrink-0"
             onClick={goPrev}
             disabled={activeIndex === 0}
             aria-label="Faixa anterior"
@@ -191,21 +283,20 @@ export function PatientVaccineCalendarSection({
             <ChevronLeftIcon className="h-4 w-4" aria-hidden />
           </Button>
 
-          <div className="flex min-w-0 flex-col items-center gap-1 text-center">
-            <div className="flex items-center gap-2">
-              <h3
-                aria-live="polite"
-                className="truncate text-sm font-medium tracking-tight"
-              >
-                {activeLabel}
-              </h3>
-              {isCurrentBand ? (
-                <Badge className="shrink-0 text-[10px] uppercase tracking-wide">
-                  Idade atual
-                </Badge>
-              ) : null}
-            </div>
-            <span className="text-xs text-muted-foreground">
+          <div className="flex min-w-0 flex-1 flex-wrap items-baseline gap-x-3 gap-y-1">
+            <h3
+              aria-live="polite"
+              className="text-xl font-semibold tracking-tight"
+            >
+              {activeLabel}
+            </h3>
+            {isCurrentBand ? (
+              <Badge className="text-[10px] uppercase tracking-wide">
+                Idade atual
+              </Badge>
+            ) : null}
+            <span className="ml-auto whitespace-nowrap text-xs tabular-nums text-muted-foreground">
+              {bandTakenCount}/{activeItemIds.length} tomadas · faixa{" "}
               {activeIndex + 1}/{orderedBands.length}
             </span>
           </div>
@@ -213,7 +304,8 @@ export function PatientVaccineCalendarSection({
           <Button
             type="button"
             variant="outline"
-            size="sm"
+            size="icon"
+            className="h-8 w-8 shrink-0"
             onClick={goNext}
             disabled={activeIndex === orderedBands.length - 1}
             aria-label="Próxima faixa"
@@ -224,9 +316,9 @@ export function PatientVaccineCalendarSection({
 
         {/* Active slide: SUS + SBIm columns for this band. */}
         {hasAnyItems ? (
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+          <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
             <DatasetColumn
-              title="SUS/PNI"
+              title="SUS / PNI"
               schedule={sus}
               items={susItems}
               isCurrentBand={isCurrentBand}
@@ -245,20 +337,62 @@ export function PatientVaccineCalendarSection({
             />
           </div>
         ) : (
-          <p className="text-sm text-muted-foreground">
+          <div className="rounded-lg border border-dashed border-border p-6 text-center text-sm text-muted-foreground">
             Nenhuma vacina prevista para esta faixa de idade.
-          </p>
+          </div>
         )}
+
+        {/* Footer: discreet link to the full reference calendar. */}
+        <div className="flex justify-end pt-1">
+          <a
+            href={`/dashboard/vaccines?patientId=${patientId}`}
+            className="inline-flex items-center gap-1 text-xs text-muted-foreground underline-offset-4 transition-colors hover:text-primary hover:underline"
+          >
+            Ver calendário completo
+            <ArrowUpRightIcon className="h-3.5 w-3.5" aria-hidden />
+          </a>
+        </div>
       </CardContent>
     </Card>
   )
 }
 
 /**
- * One dataset's items for the active band, each row a checkbox reflecting the
- * patient's TAKEN state. The current band gets the SAME accent idiom the
- * calendar uses (accent left border + subtle bg). Keeps its own provenance
- * caption (D-09).
+ * Age-timeline progress dot. `done` (all taken) → filled success color;
+ * `partial` → half-filled success outline; `empty` / `none` → hollow. The active
+ * step gets a primary ring so navigation reads distinctly from progress.
+ */
+function TimelineDot({
+  status,
+  isActive,
+}: {
+  status: BandStatus
+  isActive: boolean
+}) {
+  return (
+    <span
+      aria-hidden
+      className={cn(
+        "h-2.5 w-2.5 rounded-full border transition-colors",
+        status === "done" &&
+          "border-emerald-600 bg-emerald-600 dark:border-emerald-500 dark:bg-emerald-500",
+        status === "partial" &&
+          "border-emerald-600 bg-gradient-to-r from-emerald-600 from-50% to-transparent to-50% dark:border-emerald-500 dark:from-emerald-500",
+        (status === "empty" || status === "none") &&
+          "border-border bg-card",
+        isActive &&
+          "border-primary ring-2 ring-primary/20",
+      )}
+    />
+  )
+}
+
+/**
+ * One dataset's items for the active band as a bordered card. The header shows
+ * the dataset name + a per-column tally (taken count in the success color); the
+ * current band gets the accent treatment (accent border + subtle bg). Rows are
+ * full-width toggle targets; taken rows read with a success-colored check and
+ * muted label. Provenance (D-09) stays at the column footer.
  */
 function DatasetColumn({
   title,
@@ -277,61 +411,109 @@ function DatasetColumn({
   pendingIds: Set<string>
   onToggle: (itemId: string, nextTaken: boolean) => void
 }) {
+  const columnItemIds = items.map((item) => item.id)
+  const columnTaken = countTaken(columnItemIds, taken)
+
   return (
-    <section aria-label={title} className="flex flex-col gap-2">
-      <h4 className="text-xs font-normal uppercase tracking-wide text-muted-foreground">
-        {title}
-      </h4>
+    <section
+      aria-label={title}
+      aria-current={isCurrentBand ? "true" : undefined}
+      className={cn(
+        "flex flex-col rounded-lg border border-border bg-card p-3",
+        isCurrentBand && "border-primary bg-primary/10",
+      )}
+    >
+      <div className="mb-2 flex items-center justify-between gap-2">
+        <h4 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+          {title}
+        </h4>
+        {items.length > 0 ? (
+          <span className="text-[11px] tabular-nums text-muted-foreground">
+            <span className="font-semibold text-emerald-600 dark:text-emerald-500">
+              {columnTaken}
+            </span>
+            /{items.length} tomadas
+          </span>
+        ) : null}
+      </div>
+
       {items.length > 0 ? (
-        <ul
-          aria-current={isCurrentBand ? "true" : undefined}
-          className={cn(
-            "flex flex-col gap-2",
-            isCurrentBand &&
-              "-ml-3 rounded-r-sm border-l-2 border-primary bg-primary/10 py-2 pl-3 pr-2",
-          )}
-        >
+        <ul className="flex flex-col gap-0.5" role="group" aria-label={title}>
           {items.map((item) => {
             const isTaken = taken.has(item.id)
             const isPending = pendingIds.has(item.id)
-            const checkboxId = `vac-dose-${item.id}`
             return (
-              <li key={item.id} className="flex items-start gap-2 text-sm">
-                <Checkbox
-                  id={checkboxId}
-                  checked={isTaken}
-                  disabled={isPending}
-                  onCheckedChange={(value) =>
-                    onToggle(item.id, value === true)
-                  }
-                  className="mt-0.5"
+              <li key={item.id}>
+                <button
+                  type="button"
+                  role="checkbox"
+                  aria-checked={isTaken}
                   aria-label={`Marcar ${item.vaccine} como tomada`}
-                />
-                <label htmlFor={checkboxId} className="min-w-0 cursor-pointer">
-                  <span className="font-medium">{item.vaccine}</span>
-                  {item.dose ? (
-                    <span className="text-muted-foreground"> — {item.dose}</span>
-                  ) : null}
-                  {item.notes ? (
-                    <span className="mt-1 block text-xs text-muted-foreground">
-                      {item.notes}
+                  disabled={isPending}
+                  onClick={() => onToggle(item.id, !isTaken)}
+                  className={cn(
+                    "flex w-full items-start gap-2.5 rounded-md p-2 text-left",
+                    "transition-colors hover:bg-foreground/5",
+                    "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+                    "disabled:cursor-not-allowed disabled:opacity-60",
+                  )}
+                >
+                  <span
+                    aria-hidden
+                    className={cn(
+                      "mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-sm border transition-colors",
+                      isTaken
+                        ? "border-emerald-600 bg-emerald-600 text-white dark:border-emerald-500 dark:bg-emerald-500"
+                        : "border-primary bg-card",
+                    )}
+                  >
+                    <CheckIcon
+                      className={cn(
+                        "h-3 w-3 transition-opacity",
+                        isTaken ? "opacity-100" : "opacity-0",
+                      )}
+                    />
+                  </span>
+                  <span className="min-w-0 text-sm">
+                    <span
+                      className={cn(
+                        "font-medium",
+                        isTaken && "text-muted-foreground",
+                      )}
+                    >
+                      {item.vaccine}
                     </span>
-                  ) : null}
-                </label>
+                    {item.dose ? (
+                      <span className="text-muted-foreground">
+                        {" "}
+                        — {item.dose}
+                      </span>
+                    ) : null}
+                    {item.notes ? (
+                      <span className="mt-1 block text-xs text-muted-foreground">
+                        {item.notes}
+                      </span>
+                    ) : null}
+                  </span>
+                </button>
               </li>
             )
           })}
         </ul>
       ) : (
         <p
-          className="text-sm text-muted-foreground"
+          className="px-2 py-1 text-sm text-muted-foreground"
           aria-label="Sem vacina prevista nesta faixa"
         >
-          —
+          — sem vacina prevista
         </p>
       )}
+
       {schedule ? (
-        <ScheduleProvenance schedule={schedule} className="mt-1" />
+        <ScheduleProvenance
+          schedule={schedule}
+          className="mt-3 border-t border-border pt-2"
+        />
       ) : null}
     </section>
   )
