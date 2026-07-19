@@ -10,6 +10,9 @@ export const PRESCRIPTIONS_BUCKET = "prescriptions"
 /** Supabase Storage bucket for referral PDFs (encaminhamentos). Path: {profile_id}/{referral_id}.pdf */
 export const REFERRALS_BUCKET = "referrals"
 
+/** Supabase Storage bucket for medical report PDFs (relatórios médicos). Path: {profile_id}/{medical_report_id}.pdf */
+export const MEDICAL_REPORTS_BUCKET = "medical-reports"
+
 /**
  * Supabase Storage bucket privado para fotos de pacientes (crianças). Path:
  * {profile_id}/{patient_id}.ext. Bucket privado (public=false): acesso somente
