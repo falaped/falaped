@@ -29,11 +29,18 @@ export function VaccineCalendarView({
   sus,
   sbim,
   gestante,
+  birthDate,
+  gestationalAgeWeeks,
   className,
 }: {
   sus: VaccineScheduleWithItems | null
   sbim: VaccineScheduleWithItems | null
   gestante: VaccineScheduleWithItems | null
+  /** Patient mode (D-02/D-03): the child's DOB drives the current-age highlight.
+   * Absent/null (standalone) → no highlight. */
+  birthDate?: string | null
+  /** Corrected-age input for preterm infants (mirrors the hero convention). */
+  gestationalAgeWeeks?: number | null
   className?: string
 }) {
   const orderedBands = computeOrderedBands([sus, sbim])
