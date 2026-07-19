@@ -2,7 +2,8 @@
 
 import { cn } from "@/lib/utils"
 import { computePediatricAge } from "@/lib/compute-pediatric-age"
-import { computeCurrentMonths, isBandCurrent } from "@/lib/vaccine-current-band"
+import { computeCurrentMonths } from "@/lib/vaccine-current-band"
+import { resolveCurrentBandLabel } from "@/lib/vaccine-current-band-items"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import type { VaccineScheduleWithItems } from "@/modules/vaccines/types"
 import { GestanteList } from "./gestante-list"
@@ -133,28 +134,4 @@ function computeOrderedBands(
   return [...minSort.entries()]
     .sort((a, b) => a[1] - b[1])
     .map(([label]) => label)
-}
-
-/**
- * Resolves which `age_label` band is the child's current band (D-02), scanning
- * items across both datasets. The first band whose `[age_months, age_months_max
- * ?? age_months]` window contains `currentMonths` wins; its `age_label` is
- * emphasized identically in both columns. Returns null in standalone mode
- * (currentMonths null) or when no band contains the age (e.g. older child past
- * the last scheduled band). Position-only (D-11).
- */
-function resolveCurrentBandLabel(
-  schedules: Array<VaccineScheduleWithItems | null>,
-  currentMonths: number | null,
-): string | null {
-  if (currentMonths === null) return null
-  for (const schedule of schedules) {
-    if (!schedule) continue
-    for (const item of schedule.vaccine_schedule_items) {
-      if (isBandCurrent(currentMonths, item.age_months, item.age_months_max)) {
-        return item.age_label
-      }
-    }
-  }
-  return null
 }
