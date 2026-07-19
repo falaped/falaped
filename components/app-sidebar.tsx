@@ -70,6 +70,7 @@ const navMain = [
       { title: "Atestados", url: "/dashboard/medical-certificates" },
       { title: "Receitas", url: "/dashboard/prescriptions" },
       { title: "Encaminhamentos", url: "/dashboard/referrals" },
+      { title: "Vacinas", url: "/dashboard/vaccines" },
       { title: "Relatórios médicos", url: "/dashboard/medical-reports" },
       { title: "Pedidos de exames", url: "/dashboard/exam-requests" },
       { title: "Orientações", url: "/dashboard/guidance" },
