@@ -163,6 +163,10 @@ Per **explicit physician request**, the in-profile single-band card (`PatientVac
 
 The migration `supabase/migrations/20260720000500_patient_vaccine_doses.sql` is **committed but NOT applied**. Apply order: it is a single self-contained file (table + RLS together, per D-14) that runs **after** `20260720000400_seed_vaccine_schedules_gestante.sql` — its `schedule_item_id` FK requires `vaccine_schedule_items` (created by `20260720000000_vaccine_schedules.sql`) to exist. Full SQL is returned to the orchestrator below.
 
+## UI redesign (physician review, presentation-only)
+
+- The `PatientVaccineCalendarSection` UI was redesigned after physician review — bare prev/next + "3/9" indicator replaced by a scrollable **age timeline** (clickable steps with done/partial/empty progress dots), a larger slide header (age + "Idade atual" badge + per-band tally), dataset columns rebuilt as bordered cards with per-column tallies + provenance footer + current-band accent, full-row clickable toggles with a clearer success-colored (emerald) taken state, an overall "Tomadas X/Y" header summary, and the "Ver calendário completo" footer link. Added `lib/vaccine-band-status.ts` (pure `computeBandStatus`/`countTaken`, unit-tested). All behavior/logic/data-layer unchanged. Commits `604262a` (helper + spec), `f6e9b82` (redesign).
+
 ## Self-Check: PASSED
 
 - Files (original): all 6 present (2 created, 4 modified).
