@@ -26,6 +26,8 @@ findings:
   warning: 4
   info: 3
   total: 8
+resolved:
+  - CR-01
 status: issues_found
 ---
 
@@ -47,6 +49,16 @@ The one blocker is a correctness bug: the corrected-age input for preterm infant
 ## Critical Issues
 
 ### CR-01: Corrected age is threaded through but never applied to the highlight (preterm infants highlight the wrong band)
+
+**Status:** ✅ RESOLVED (fix commit `8f4a4d7`, RED test `222408c`)
+**Resolution:** Physician decision was to FIX (keep corrected-age support, position-only).
+`compute-pediatric-age.ts` now exposes `corrected.totalDays` (the corrected days
+the engine already computes), and `computeCurrentMonths` prefers
+`age.corrected?.totalDays ?? age.totalDays`. A preterm infant now highlights the
+corrected band; term infants / no gestational age fall back to chronological.
+The `gestationalAgeWeeks` plumbing (page → VaccineCalendarView) is now live-effect.
+Covered by `lib/vaccine-current-band.spec.ts` (preterm-wins + term-fallback cases).
+Remains position-only — no dose-diff/pending logic (D-11, Phase 6).
 
 **File:** `lib/vaccine-current-band.ts:19-22`, `components/dashboard/vaccines/vaccine-calendar-view.tsx:55-59`
 **Issue:**
