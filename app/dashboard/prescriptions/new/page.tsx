@@ -15,6 +15,7 @@ type PageProps = {
     templateId?: string
     patientId?: string
     caseId?: string
+    mode?: string
   }>
 }
 
@@ -38,6 +39,7 @@ export default async function NewPrescriptionPage({ searchParams }: PageProps) {
     resolved.caseId && typeof resolved.caseId === "string"
       ? resolved.caseId
       : null
+  const blankMode = resolved.mode === "blank"
   const initialTemplate =
     templateId && typeof templateId === "string"
       ? await getPrescriptionTemplateByIdForProfile(
@@ -59,11 +61,13 @@ export default async function NewPrescriptionPage({ searchParams }: PageProps) {
             </Button>
             <Pill className="h-5 w-5 text-muted-foreground" />
             <h1 className="text-2xl font-semibold tracking-tight">
-              Nova receita
+              {blankMode ? "Receituário em branco" : "Nova receita"}
             </h1>
           </div>
           <p className="mt-1 text-sm text-muted-foreground">
-            Associe a um paciente ou preencha manualmente. Adicione os medicamentos e gere o PDF.
+            {blankMode
+              ? "Gere um receituário em branco no mesmo layout da receita, sem exigir medicamentos."
+              : "Associe a um paciente ou preencha manualmente. Adicione os medicamentos e gere o PDF."}
           </p>
         </div>
       </div>
@@ -77,6 +81,7 @@ export default async function NewPrescriptionPage({ searchParams }: PageProps) {
         initialTemplate={initialTemplate}
         initialPatientId={patientId}
         initialCaseId={caseId}
+        blankMode={blankMode}
       />
     </div>
   )
