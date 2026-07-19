@@ -16,7 +16,10 @@ export default async function VaccinesPage() {
   // tier — the paid check is a separate app-layer rule that MUST stay here.
   if (profile.status !== "paid") redirect("/dashboard/link-whatsapp")
 
-  const sus = await getVaccineScheduleWithItems(supabase, "SUS")
+  const [sus, sbim] = await Promise.all([
+    getVaccineScheduleWithItems(supabase, "SUS"),
+    getVaccineScheduleWithItems(supabase, "SBIm"),
+  ])
 
   return (
     <div className="flex flex-col gap-6">
@@ -37,8 +40,8 @@ export default async function VaccinesPage() {
 
       <Separator />
 
-      {sus ? (
-        <VaccineCalendarView sus={sus} />
+      {sus || sbim ? (
+        <VaccineCalendarView sus={sus} sbim={sbim} />
       ) : (
         <Card className="border-dashed">
           <CardContent className="flex flex-col items-center justify-center py-14 text-center">
