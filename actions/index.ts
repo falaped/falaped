@@ -38,6 +38,10 @@ export {
   type DeleteMeasurementResult,
 } from "./patient-growth"
 export {
+  togglePatientVaccineDoseAction,
+  type TogglePatientVaccineDoseResult,
+} from "./patient-vaccine-doses"
+export {
   deleteMyAccountAction,
   updateStatusAction,
   updateProfileAction,
