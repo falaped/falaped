@@ -2,18 +2,18 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-current_phase: 03
-current_phase_name: curva-de-crescimento
-status: merged
+current_phase: 05
+current_phase_name: calend-rio-de-vacinas-refer-ncia
+status: executing
 stopped_at: Phase 5 UI-SPEC approved
-last_updated: "2026-07-19T19:00:48.174Z"
-last_activity: 2026-07-09
-last_activity_desc: Phase 03 all plans complete; migration live; verification done
+last_updated: "2026-07-19T20:04:56.122Z"
+last_activity: 2026-07-19
+last_activity_desc: Phase 05 execution started
 progress:
   total_phases: 6
   completed_phases: 4
-  total_plans: 17
-  completed_plans: 17
+  total_plans: 21
+  completed_plans: 18
   percent: 67
 ---
 
@@ -24,14 +24,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-06-27)
 
 **Core value:** A consulta pediátrica flui sem fricção — abrir o paciente, conduzir a consulta e gerar os documentos certos (impressos corretamente) em poucos cliques.
-**Current focus:** Phase 03 — curva-de-crescimento
+**Current focus:** Phase 05 — calend-rio-de-vacinas-refer-ncia
 
 ## Current Position
 
-Phase: 03 (curva-de-crescimento) — VERIFYING
-Plan: 4 of 4 (all executed)
-Status: Code verified (PASSED-WITH-CONCERNS); 2 manual checkpoints + UAT pending before ship
-Last activity: 2026-07-09 — Phase 03 all plans complete; migration live; verification done
+Phase: 05 (calend-rio-de-vacinas-refer-ncia) — EXECUTING
+Plan: 2 of 4
+Status: Ready to execute
+Last activity: 2026-07-19 — Phase 05 execution started
 
 Progress: [██████████] 100% (plans executed)
 
@@ -64,6 +64,7 @@ Progress: [██████████] 100% (plans executed)
 | Phase 04 P02 | ~30min | 3 tasks | 40 files |
 | Phase 04 P04 | 40min | 3 tasks | 34 files |
 | Phase 04 P05 | 15min | 3 tasks | 5 files |
+| Phase 05 P01 | 80min | 3 tasks | 11 files |
 
 ## Accumulated Context
 
@@ -89,6 +90,8 @@ Recent decisions affecting current work:
 - [Phase 04]: Corpo do relatório via RichTextEditor de baixo nível (corpo único), TipTap HTML → htmlToPlainTextForPdf → buildMedicalCertificatePdf; domínio medical_reports novo e separado do laudo (D-10, Pitfall 4)
 - [Phase ?]: 04-04: milestone é um CAMPO em guidance_templates (uma tabela), não tabela por marco (RESEARCH OQ2)
 - [Phase ?]: 04-04: update/delete-guidance-template escopados por profile_id (D-15), mais fortes que o analog prescription-templates
+- [Phase ?]: 05-01: Global-read RLS divergence (D-07) — vaccine reference tables have no profile_id and only SELECT-only using(true) policies; writes are seed-only
+- [Phase ?]: 05-01: Vaccine seed values physician-approved at checkpoint; migrations applied to live DB by orchestrator
 
 ### Pending Todos
 
@@ -125,7 +128,7 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-07-19T19:00:48.162Z
+Last session: 2026-07-19T20:04:24.542Z
 Stopped at: Phase 5 UI-SPEC approved
 Resume file: .planning/phases/05-calend-rio-de-vacinas-refer-ncia/05-UI-SPEC.md
 Resume file: .planning/phases/03-curva-de-crescimento/03-UI-SPEC.md
