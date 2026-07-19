@@ -158,7 +158,7 @@ Plans:
   2. O médico vê o calendário particular (SBIm) por idade ao lado do SUS, e consulta a referência de vacinação da gestante (Hepatite B, dTpa a partir de 20 sem, Influenza, COVID-19, VSR/Abrysvo a partir de 28 sem)
   3. Cada calendário (SUS, particular, gestante) é um dataset separado e claramente rotulado, com fonte e data de vigência visíveis na UI (vintage + aviso de "confirmar contra o calendário oficial atual")
 
-**Plans**: 1/4 plans executed
+**Plans**: 2/4 plans executed
 **UI hint**: yes
 Plans:
 
@@ -168,7 +168,7 @@ Plans:
 
 **Wave 2** *(sequenciada — compartilha view/column/page)*
 
-- [ ] 05-02-PLAN.md — Slice SBIm lado a lado: SBIm seed (human-verify) + duas colunas alinhadas por faixa etária + proveniência por dataset (VAC-02/VAC-04) (wave 2)
+- [x] 05-02-PLAN.md — Slice SBIm lado a lado: SBIm seed (human-verify) + duas colunas alinhadas por faixa etária + proveniência por dataset (VAC-02/VAC-04) (wave 2)
 
 **Wave 3** *(sequenciada)*
 
@@ -207,5 +207,5 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6
 | 2. Foto Privada do Paciente | 2/3 | In Progress|  |
 | 3. Curva de Crescimento | 3/4 | In Progress|  |
 | 4. Documentos Clínicos Novos | 5/5 | Complete   | 2026-07-19 |
-| 5. Calendário de Vacinas (Referência) | 1/4 | In Progress|  |
+| 5. Calendário de Vacinas (Referência) | 2/4 | In Progress|  |
 | 6. Carteira de Vacinação por Paciente | 0/TBD | Not started | - |

@@ -140,6 +140,11 @@ None - no external service configuration required. (The SBIm seed was applied to
 - The view prop surface remains forward-compatible (SUS + SBIm now; `gestante`/`birthDate` reserved for later plans).
 - One human-judgment item remains open (D3): the end-to-end two-column visual render on the running app is best confirmed during phase UAT.
 
+## Self-Check: PASSED
+- 05-02-SUMMARY.md present on disk; the one new file + 3 modified files verified present.
+- Both task commits (ac8d348, 517aad5) present in git history.
+- `yarn typecheck` clean; `yarn test` 465/465 pass. Grep gates green: cross_join=0, profile=0, `where not exists` present, SBIm read + `md:grid-cols-2` present.
+
 ---
 *Phase: 05-calend-rio-de-vacinas-refer-ncia*
 *Completed: 2026-07-19*
