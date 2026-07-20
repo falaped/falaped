@@ -1,6 +1,7 @@
 "use client"
 
-import { useMemo, useRef, useState, useTransition } from "react"
+import { useEffect, useMemo, useRef, useState, useTransition } from "react"
+import { useRouter } from "next/navigation"
 import {
   ArrowUpRightIcon,
   CheckIcon,
@@ -127,11 +128,35 @@ export function PatientVaccineCalendarSection({
   )
 
   const [index, setIndex] = useState(initialIndex)
+  // WR-01: `useState(initialIndex)` only reads its argument on first render, so a
+  // birth_date / gestational_age edit (which re-renders via `router.refresh()`
+  // WITHOUT remounting — `key={patient.id}` is unchanged) would leave the slide
+  // frozen on the band computed from the OLD DOB while the "Idade atual" badge
+  // moves. Re-sync the slide to the resolved current band whenever it changes.
+  // Keyed on `currentBandLabel` (not every `initialIndex` recompute) so deliberate
+  // user navigation within the same current-band context is preserved.
+  useEffect(() => {
+    setIndex(initialIndex)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentBandLabel])
   // Local optimistic taken state (Set of reference item ids).
   const [taken, setTaken] = useState<Set<string>>(() => new Set(takenItemIds))
+  // WR-03: reconcile the optimistic Set with server truth whenever the
+  // authoritative `takenItemIds` prop changes (e.g. after `router.refresh()`
+  // on a failed toggle, or a patient/ficha reload). `useState` only seeds on
+  // first render, so without this the refreshed doses would be ignored.
+  const takenKey = useMemo(
+    () => [...takenItemIds].sort().join(","),
+    [takenItemIds],
+  )
+  useEffect(() => {
+    setTaken(new Set(takenItemIds))
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [takenKey])
   const [pendingIds, setPendingIds] = useState<Set<string>>(() => new Set())
   const [, startTransition] = useTransition()
   const stepRefs = useRef<Array<HTMLButtonElement | null>>([])
+  const router = useRouter()
 
   if (orderedBands.length === 0) return null
 
@@ -187,7 +212,11 @@ export function PatientVaccineCalendarSection({
         return next
       })
       if (!result.ok) {
-        // Revert on failure.
+        // Optimistic revert (WR-03): re-apply the assumed prior state for an
+        // immediate correction, then `router.refresh()` to reconcile the taken
+        // Set with server truth. The blind local revert alone can diverge from
+        // the DB if the action failed AFTER the row was actually written (e.g.
+        // a lost response), so the refresh re-reads the authoritative doses.
         setTaken((prev) => {
           const next = new Set(prev)
           if (nextTaken) next.delete(itemId)
@@ -195,6 +224,7 @@ export function PatientVaccineCalendarSection({
           return next
         })
         toast.error(getFriendlyToastMessage(result.error))
+        router.refresh()
       }
     })
   }
