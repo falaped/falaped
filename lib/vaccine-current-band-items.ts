@@ -1,55 +1,46 @@
-import { isBandCurrent } from "@/lib/vaccine-current-band"
+import { bandForItemMonths, resolveBandForMonths } from "@/lib/vaccine-bands"
 import type {
   VaccineScheduleItem,
   VaccineScheduleWithItems,
 } from "@/modules/vaccines/types"
 
 /**
- * Resolves which `age_label` band is the child's CURRENT band (D-02), scanning
- * items across the given datasets. The first band whose `[age_months,
- * age_months_max ?? age_months]` window contains `currentMonths` wins; its
- * `age_label` identifies the band emphasized identically in every dataset.
+ * Resolves the child's CURRENT canonical band label from their whole-month age
+ * (D-02). Data-independent: it applies the "faixa anterior" rule over the fixed
+ * canonical bands (`lib/vaccine-bands.ts`) and no longer scans seed windows, so
+ * the resolved band never drifts with the dataset.
  *
- * Returns null in standalone mode (`currentMonths` null) or when no band
- * contains the age (e.g. an older child past the last scheduled band, or a
- * child between milestones). Position-only (D-11) — never diff/pending logic
- * (that is Phase 6).
+ * The `schedules` argument is kept for signature compatibility (callers pass
+ * `[sus, sbim]`) but is ignored — resolution depends only on `currentMonths`.
+ * Returns null in standalone mode (`currentMonths` null). Position-only (D-11).
  *
  * Pure: no I/O. Shared by the full calendar view and the in-profile card so the
  * two surfaces resolve the SAME band from the SAME age.
  *
- * @param schedules Datasets to scan (nulls skipped).
- * @param currentMonths The child's whole-month age, or null.
+ * @param _schedules Unused (kept for signature compatibility).
+ * @param currentMonths The child's chronological whole-month age, or null.
  */
 export function resolveCurrentBandLabel(
-  schedules: Array<VaccineScheduleWithItems | null>,
+  _schedules: Array<VaccineScheduleWithItems | null>,
   currentMonths: number | null,
 ): string | null {
-  if (currentMonths === null) return null
-  for (const schedule of schedules) {
-    if (!schedule) continue
-    for (const item of schedule.vaccine_schedule_items) {
-      if (isBandCurrent(currentMonths, item.age_months, item.age_months_max)) {
-        return item.age_label
-      }
-    }
-  }
-  return null
+  return resolveBandForMonths(currentMonths)?.label ?? null
 }
 
 /**
- * Filters ONE dataset's items to the current band `age_label`, preserving the
- * source order (items arrive pre-sorted by `sort_order`).
+ * Filters ONE dataset's items to a canonical band, grouping each item by the
+ * band its `age_months` maps to (`bandForItemMonths`), NOT by `age_label`
+ * equality — so grouping is data-independent. Preserves the source order (items
+ * arrive pre-sorted by `sort_order`).
  *
- * Returns an empty array when there is no current band (`bandLabel` null), the
- * schedule is absent (`null`), or the dataset simply has no item in that band —
- * callers render a friendly empty state rather than an empty box. Position-only
- * (D-11).
+ * Returns an empty array when `bandLabel` is null, the schedule is absent
+ * (`null`), or the dataset has no item in that band. Items with a null
+ * `age_months` fall into no band (excluded). Position-only (D-11).
  *
  * Pure: no I/O.
  *
  * @param schedule The dataset to filter, or null.
- * @param bandLabel The current band's `age_label`, or null.
+ * @param bandLabel The current canonical band label, or null.
  */
 export function itemsForCurrentBand(
   schedule: VaccineScheduleWithItems | null,
@@ -57,6 +48,6 @@ export function itemsForCurrentBand(
 ): VaccineScheduleItem[] {
   if (!schedule || bandLabel === null) return []
   return schedule.vaccine_schedule_items.filter(
-    (item) => item.age_label === bandLabel,
+    (item) => bandForItemMonths(item.age_months)?.label === bandLabel,
   )
 }
