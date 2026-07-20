@@ -1,18 +1,38 @@
 ---
 phase: 05-calend-rio-de-vacinas-refer-ncia
-reviewed: 2026-07-19T00:00:00Z
+reviewed: 2026-07-20T00:00:00Z
 depth: standard
-files_reviewed: 18
+files_reviewed: 38
 files_reviewed_list:
+  - actions/index.ts
+  - actions/patient-vaccine-doses/index.ts
+  - actions/patient-vaccine-doses/toggle-patient-vaccine-dose.ts
   - app/dashboard/vaccines/page.tsx
   - components/app-sidebar.tsx
-  - components/dashboard/patients/patient-detail-toolbar.tsx
+  - components/dashboard/patients/patient-detail-content.tsx
+  - components/dashboard/patients/patient-detail-view.tsx
+  - components/dashboard/patients/patient-vaccine-calendar-section.tsx
   - components/dashboard/vaccines/gestante-list.tsx
   - components/dashboard/vaccines/schedule-provenance.tsx
   - components/dashboard/vaccines/vaccine-calendar-view.tsx
   - components/dashboard/vaccines/vaccine-column.tsx
+  - lib/compute-pediatric-age.ts
+  - lib/schemas/patient-vaccine-dose.ts
+  - lib/vaccine-band-carousel.spec.ts
+  - lib/vaccine-band-carousel.ts
+  - lib/vaccine-band-status.spec.ts
+  - lib/vaccine-band-status.ts
+  - lib/vaccine-current-band-items.spec.ts
+  - lib/vaccine-current-band-items.ts
   - lib/vaccine-current-band.spec.ts
   - lib/vaccine-current-band.ts
+  - modules/patient-vaccine-doses/get-taken-dose-ids-by-patient.spec.ts
+  - modules/patient-vaccine-doses/get-taken-dose-ids-by-patient.ts
+  - modules/patient-vaccine-doses/mark-dose-taken.spec.ts
+  - modules/patient-vaccine-doses/mark-dose-taken.ts
+  - modules/patient-vaccine-doses/types.ts
+  - modules/patient-vaccine-doses/unmark-dose-taken.spec.ts
+  - modules/patient-vaccine-doses/unmark-dose-taken.ts
   - modules/vaccines/get-vaccine-schedule-with-items.spec.ts
   - modules/vaccines/get-vaccine-schedule-with-items.ts
   - modules/vaccines/types.ts
@@ -21,133 +41,103 @@ files_reviewed_list:
   - supabase/migrations/20260720000200_seed_vaccine_schedules.sql
   - supabase/migrations/20260720000300_seed_vaccine_schedules_sbim.sql
   - supabase/migrations/20260720000400_seed_vaccine_schedules_gestante.sql
+  - supabase/migrations/20260720000500_patient_vaccine_doses.sql
 findings:
-  critical: 1
+  critical: 0
   warning: 4
-  info: 3
+  info: 4
   total: 8
-resolved:
-  - CR-01
 status: issues_found
 ---
 
 # Phase 5: Code Review Report
 
-**Reviewed:** 2026-07-19
+**Reviewed:** 2026-07-20T00:00:00Z
 **Depth:** standard
-**Files Reviewed:** 18
+**Files Reviewed:** 38
 **Status:** issues_found
 
 ## Summary
 
-Reviewed the vaccine reference calendar phase: a read-only global dataset (schedules + items), the patient-aware route, the age-band highlight engine, and the calendar UI.
+Reviewed the Phase 5 vaccine reference calendar: the global read-only reference tables (SUS/SBIm/gestante) with their global-read RLS and seeds, the owned `patient_vaccine_doses` table with owner-scoped RLS, the toggle action + its three modules, the pediatric-age engine and the pure band-resolution helpers, and the calendar / patient-ficha UI.
 
-The security posture is sound. The deliberate D-07 divergence (global reference data, no `profile_id`, global-read RLS `using (true)`, no write policies) is applied consistently and is NOT flagged. The owned `patients` read at the entry point is correctly scoped via `getPatientById(supabase, id, profile.id)` (IDOR guard T-05-05 holds — a foreign id resolves to `null`). Auth + paid gate is present. No SQL injection surface (parameterized seeds/queries), no client-reachable write path to the reference tables.
+Overall the security posture is sound. The action follows the project contract exactly (auth → paid gate → Zod `safeParse` → `getPatientById` ownership verify → owner-scoped mutation → result union). The global-read reference tables are correctly documented and are NOT flagged (per review scope). The three dose modules apply the profile_id + patient_id scoping the IDOR defense requires, and the delete uses all three `.eq` filters. All 520 tests pass.
 
-The one blocker is a correctness bug: the corrected-age input for preterm infants is threaded all the way through the call chain but silently ignored by the highlight, so a preterm child's "Idade atual" band is computed from chronological age. The rest are robustness/quality issues around error fallback, band-overlap resolution, and a missing DB uniqueness guard behind `.maybeSingle()`.
+**CR-01 verification (was previously flagged as dead-effect, reported fixed):** VERIFIED WORKING. `compute-pediatric-age.ts:192` populates `corrected.totalDays` with `differenceInDays(today, correctedBirth)`, and `computeCurrentMonths` (`vaccine-current-band.ts:26`) consumes it via `age.corrected?.totalDays ?? age.totalDays`. The spec `vaccine-current-band.spec.ts:68` proves the corrected age wins over chronological (365 chronological days → month 11, but corrected 35 days → month 1). The fix is real and covered.
 
-## Critical Issues
-
-### CR-01: Corrected age is threaded through but never applied to the highlight (preterm infants highlight the wrong band)
-
-**Status:** ✅ RESOLVED (fix commit `8f4a4d7`, RED test `222408c`)
-**Resolution:** Physician decision was to FIX (keep corrected-age support, position-only).
-`compute-pediatric-age.ts` now exposes `corrected.totalDays` (the corrected days
-the engine already computes), and `computeCurrentMonths` prefers
-`age.corrected?.totalDays ?? age.totalDays`. A preterm infant now highlights the
-corrected band; term infants / no gestational age fall back to chronological.
-The `gestationalAgeWeeks` plumbing (page → VaccineCalendarView) is now live-effect.
-Covered by `lib/vaccine-current-band.spec.ts` (preterm-wins + term-fallback cases).
-Remains position-only — no dose-diff/pending logic (D-11, Phase 6).
-
-**File:** `lib/vaccine-current-band.ts:19-22`, `components/dashboard/vaccines/vaccine-calendar-view.tsx:55-59`
-**Issue:**
-The route reads `gestational_age_weeks` and passes it to `VaccineCalendarView`, which forwards it to `computePediatricAge(birthDate, new Date(), gestationalAgeWeeks)`. The intent (see the prop JSDoc "Corrected-age input for preterm infants") is that the highlight respects the corrected age. But `computeCurrentMonths` derives months from `age.totalDays`:
-
-```ts
-return Math.floor((age.totalDays ?? 0) / AVG_DAYS_PER_MONTH)
-```
-
-`computePediatricAge` only ever sets `totalDays` to the **chronological** value (`differenceInDays(today, birth)`, compute-pediatric-age.ts:163-166). The prematurity correction is stored on a *separate* field, `result.corrected` (compute-pediatric-age.ts:184-189), which `computeCurrentMonths` never reads. Net effect: passing `gestationalAgeWeeks` has zero impact on the highlight — a 40-week-chronological / ~32-week-corrected preterm infant is highlighted on the 40-week (chronological) band instead of the corrected band.
-
-This is a real behavioral defect: the feature advertises corrected-age support (the prop exists specifically for it) and delivers chronological age. The whole `gestationalAgeWeeks` plumbing (page.tsx:66 → view:35,57) is dead-effect today.
-
-**Fix:** Either (a) derive `totalDays` from the corrected band when present, or (b) make the projection explicit. Cleanest is to compute corrected total days in `computeCurrentMonths` and prefer it when the child is still inside the corrected-age window:
-
-```ts
-export function computeCurrentMonths(age: PediatricAge): number | null {
-  if (age.status !== "ok") return null
-  // Prefer corrected age for preterm infants while still within the
-  // corrected-age window (D-10) so the highlight matches the child's
-  // physiologic age. Fall back to chronological when no correction applies.
-  const days = age.corrected?.totalDays ?? age.totalDays ?? 0
-  return Math.floor(days / AVG_DAYS_PER_MONTH)
-}
-```
-Note `age.corrected` currently exposes `band`/`parts`/`appliesUntilMonths` but not `totalDays` — either add `totalDays` to the `corrected` shape in `compute-pediatric-age.ts`, or recompute months from `corrected.parts`. If corrected age is explicitly OUT of scope for this phase (position-only, Phase 6 owns the rest), then **remove the `gestationalAgeWeeks` prop and the `page.tsx` plumbing** so the code does not claim a capability it does not have. Do not ship the current half-wired state.
+No BLOCKER-level defects found. The findings below are correctness/robustness (WARNING) and quality (INFO) items.
 
 ## Warnings
 
-### WR-01: A Supabase read error surfaces as an unhandled page crash instead of the designed empty state
+### WR-01: Timeline current-band index does not update when birth_date is edited in place
 
-**File:** `app/dashboard/vaccines/page.tsx:35-39,60-81`, `modules/vaccines/get-vaccine-schedule-with-items.ts:30-34`
-**Issue:**
-The module returns `null` for unseeded data but `throw`s a `[VACCINES]` error on any Supabase failure. The page only guards the `null` case (`sus || sbim || gestante` → "Calendário indisponível"). Because the three reads run in `Promise.all`, a single transient DB error rejects the whole promise and the render throws. There is no `error.tsx` boundary under `app/dashboard/`, so the user gets a generic crash rather than the intended graceful fallback that this exact card was designed to provide.
-**Fix:** Add an `app/dashboard/vaccines/error.tsx` boundary, or wrap the reads so a fetch failure degrades to `null` (same path as unseeded). Example:
-
-```ts
-const settle = async (p: Promise<VaccineScheduleWithItems | null>) =>
-  p.catch(() => null)
-const [sus, sbim, gestante] = await Promise.all([
-  settle(getVaccineScheduleWithItems(supabase, "SUS")),
-  settle(getVaccineScheduleWithItems(supabase, "SBIm")),
-  settle(getVaccineScheduleWithItems(supabase, "gestante")),
-])
+**File:** `components/dashboard/patients/patient-vaccine-calendar-section.tsx:109,129`
+**Issue:** `initialIndex` is recomputed with `useMemo` from `orderedBands` + `currentBandLabel`, but the active slide is stored as `const [index, setIndex] = useState(initialIndex)`. React `useState` only reads its argument on the FIRST render — later changes to `initialIndex` are ignored. `PatientVaccineCalendarSection` is NOT remounted when a patient's `birth_date` / `gestational_age_weeks` is edited: `patient-detail-view.tsx` keeps the same `patient.id`, and the edit flow calls `router.refresh()` (`patient-detail-view.tsx:66`), which re-renders with new props but does not change the `key={patient.id}` set in `patient-detail-content.tsx:48`. Result: after correcting a DOB in the edit form, the timeline still opens on the band computed from the OLD birth date until a full navigation/remount. The "Idade atual" badge (driven by `currentBandLabel`, which IS reactive) will correctly move, so the badge and the auto-opened slide can disagree.
+**Fix:** Sync the index to the resolved current band when it changes:
+```tsx
+useEffect(() => {
+  setIndex(initialIndex)
+}, [initialIndex])
 ```
+If preserving deliberate user navigation matters, key the reset on `currentBandLabel` changing rather than on every `initialIndex` recompute.
 
-### WR-02: `.maybeSingle()` will throw if two rows ever share a `source` — no DB uniqueness guard
+### WR-02: patient_vaccine_doses RLS INSERT/UPDATE `with check` does not verify patient_id ownership
 
-**File:** `modules/vaccines/get-vaccine-schedule-with-items.ts:23-28`, `supabase/migrations/20260720000000_vaccine_schedules.sql:9-17`
-**Issue:**
-The read filters only `.eq("source", source)` and calls `.maybeSingle()`, which errors ("multiple rows returned") if more than one row matches. The seed is idempotent on `source + version`, but nothing at the schema level prevents a second `version` of the same `source` (e.g. a future "PNI 2026" alongside "PNI 2025"). The moment a second version lands, every read for that source throws — and per WR-01 that crashes the page. The invariant "one row per source" is assumed by the query but not enforced by the table.
-**Fix:** Either add a partial/unique constraint if one-active-per-source is the true invariant, or make the read version-aware and deterministic (e.g. `.order("effective_date", { ascending: false }).limit(1).maybeSingle()`), or select the current version explicitly. Given the schema comment implies multiple versions are expected over time, prefer selecting the latest effective version rather than relying on there being exactly one row.
+**File:** `supabase/migrations/20260720000500_patient_vaccine_doses.sql:47-66`
+**Issue:** The INSERT and UPDATE policies only enforce `profile_id in (select id from profiles where auth_user_id = auth.uid())`. They do NOT verify that `patient_id` belongs to a patient owned by that profile. At the DB layer alone, an authenticated doctor could insert a dose row stamped with their own `profile_id` but a `patient_id` belonging to another doctor's patient (the `schedule_item_id` FK is global reference data, so it is not a constraint here). The row would be readable/writable only by the inserting doctor, so this is not a cross-tenant data leak, but it lets a doctor create dose rows referencing a foreign patient id, weakening the ownership invariant. The application action (`toggle-patient-vaccine-dose.ts:53`) DOES verify patient ownership via `getPatientById`, so the exploit is not reachable through the app — but RLS is the last line of defense and currently trusts the app. Note: this mirrors the existing `patient_measurements` policies exactly (`20260709000000_patient_measurements.sql:58-77`), so it is a repo-wide pattern, not a new regression introduced here.
+**Fix:** Tighten the `with check` (and UPDATE `using`) to also assert patient ownership:
+```sql
+with check (
+  profile_id in (select id from public.profiles where auth_user_id = auth.uid())
+  and patient_id in (
+    select p.id from public.patients p
+    join public.profiles pr on pr.id = p.profile_id
+    where pr.auth_user_id = auth.uid()
+  )
+)
+```
+If parity with `patient_measurements` is intentionally preferred over tightening, document the accepted risk explicitly; otherwise fix both tables.
 
-### WR-03: Overlapping bands make the "same band in both columns" invariant break for wide windows
+### WR-03: Optimistic toggle reverts to assumed state on failure without reconciling server truth
 
-**File:** `components/dashboard/vaccines/vaccine-calendar-view.tsx:146-160`, `supabase/migrations/20260720000300_seed_vaccine_schedules_sbim.sql:51`
-**Issue:**
-`resolveCurrentBandLabel` returns the *first* item (in `sort_order`) whose window contains `currentMonths`, then highlights that single `age_label` in both columns. The SBIm dataset has a wide window — Influenza `age_months=6, age_months_max=72` ("6 meses a 5 anos", sort_order 54) — that overlaps every discrete band from 6 to 60 months. For a 12-month-old, when SUS is present it matches the SUS `12 meses` item first (SUS is scanned first) so it works; but the resolution depends entirely on scan order across datasets, not on which band is *most specific*. If SUS were absent/unseeded, the same child would highlight "6 meses a 5 anos" instead of "12 meses", and SUS-only children older than the last SUS band highlight nothing while SBIm highlights the wide influenza band — so the two columns emphasize different (or no) bands, contradicting the documented "SAME band emphasized in both columns" contract.
-**Fix:** Prefer the most-specific (narrowest window) matching band rather than the first by sort order, and resolve the band label once from the union rather than per-dataset scan order. For example, collect all matching items across datasets and pick the one with the smallest `(age_months_max ?? age_months) - age_months` span (ties broken by `sort_order`). At minimum, document that wide windows are intentionally lower-priority and add a test covering the SBIm-only / no-SUS-match case.
+**File:** `components/dashboard/patients/patient-vaccine-calendar-section.tsx:168-200`
+**Issue:** `handleToggle` guards concurrent clicks on the same row via `disabled={isPending}` (lines 448/453), preventing a second click while the first is in flight — good. However, the revert-on-failure logic (lines 191-196) blindly re-adds/removes based on the `nextTaken` captured at click time, reverting to the assumed prior state rather than re-reading server truth. In the common single-toggle case this is correct, but if the action fails while the DB actually applied the change (e.g. lost response), the local `taken` Set diverges from the DB until the next ficha load. Robustness edge, not data loss — the DB is authoritative on reload.
+**Fix:** On failure prefer `router.refresh()` / refetch to reconcile the taken Set with server truth instead of a blind local revert, or document that the local revert is best-effort and the ficha reload is authoritative.
 
-### WR-04: `computeOrderedBands` collapses distinct age windows that share an `age_label`, and cross-dataset `sort_order` collisions are order-dependent
+### WR-04: `parseEffectiveDate` accepts impossible calendar dates (silent JS Date normalization)
 
-**File:** `components/dashboard/vaccines/vaccine-calendar-view.tsx:120-136`
-**Issue:**
-Bands are keyed purely by `age_label` string. Two datasets can legitimately use the same label for different windows (e.g. one dataset's "12 meses" is a single point, another's "12–15 meses" differs), and the union keeps only the smallest `sort_order` seen. Because SUS and SBIm use *different* `sort_order` numbering (SUS `12 meses`=70..72; SBIm `12–15 meses`=60..62, `12 meses`=63), the merged ordering is driven by whichever dataset happens to assign the lower number, not by actual age. This produces a correct-looking but fragile ordering that silently reorders if seed `sort_order` values are ever edited independently per dataset. Today the values line up by luck of authoring, not by construction.
-**Fix:** Order the union by a robust age key (`age_months ?? derived-from-label`) with `sort_order` only as a tiebreaker, or document that the two datasets MUST keep a globally consistent `sort_order` numbering scheme and add a test asserting the merged order is ascending by `age_months`.
+**File:** `components/dashboard/vaccines/schedule-provenance.tsx:40-45`
+**Issue:** Unlike `localMidnightFromIso` in `compute-pediatric-age.ts:83` (which explicitly rejects rollovers like `2025-02-30`), `parseEffectiveDate` only regex-matches the shape then constructs `new Date(year, month-1, day)` without verifying the components round-trip. A malformed `effective_date` such as `2025-13-40` would silently normalize to a wrong month/year and render a misleading "vigência". The input is DB-seeded and currently trustworthy, so exploitation is not realistic, but the two date parsers in this phase diverge in strictness for no reason.
+**Fix:** Reuse the round-trip guard the age engine uses, or extract a shared `localMidnightFromIso` helper and call it here so both parsers reject impossible dates identically.
 
 ## Info
 
-### IN-01: `parseEffectiveDate` accepts the fallback silently on malformed dates
+### IN-01: `isBandCurrent` null-`age_months_max` single-point fallback is safe only because gestante items are never fed to it
 
-**File:** `components/dashboard/vaccines/schedule-provenance.tsx:22-25,39-45`
-**Issue:** When `effective_date` fails the `YYYY-MM-DD` regex, `vigencia` falls back to the raw string. Since the column is a NOT NULL `date`, this path is effectively unreachable from the DB, but the fallback renders an unformatted ISO string to the user if it ever fires. Minor.
-**Fix:** Acceptable as a defensive fallback; consider rendering an em dash or "vigência não informada" instead of the raw ISO string for consistency with the PT-BR UI.
+**File:** `lib/vaccine-current-band.ts:52`
+**Issue:** `isBandCurrent` treats a null `age_months_max` as a single point (`upper = ageMonths`). Gestante items (`gestational_weeks` axis) always have null `age_months`, so `isBandCurrent` returns `false` for them — but `resolveCurrentBandLabel` is only ever fed `[sus, sbim]` (child axis), so gestante never reaches it. No bug today; noting the coupling so a future caller does not pass gestante items into the age-band resolver expecting a match.
+**Fix:** No change required. Optionally add a comment/assertion that `resolveCurrentBandLabel` must only receive `child_age`-axis schedules.
 
-### IN-02: `age_months_max`/`week_max` casts rely on per-file `::integer`, easy to forget on future seed additions
+### IN-02: Clamp comment implies the stale-index case is handled when WR-01 shows it is not
 
-**File:** `supabase/migrations/20260720000200_seed_vaccine_schedules.sql:33`, `...0300...:25`, `...0400...:29`
-**Issue:** Each seed re-derives the `age_months_max::integer` / `week_min::integer` cast to work around Postgres inferring `text` from all-null `VALUES` columns (documented lesson from 05-01). This is correct but repeated, so a new seed author who omits the cast reintroduces the `42804` failure. Not a bug in current code.
-**Fix:** Consider a short comment template or a helper note in the phase patterns doc so future seeds inherit the cast. No code change required here.
+**File:** `components/dashboard/patients/patient-vaccine-calendar-section.tsx:138-139`
+**Issue:** The defensive clamp `Math.min(Math.max(index, 0), orderedBands.length - 1)` is correct and prevents an out-of-range crash, but its comment "in case the band list changed between renders" implies the changed-input scenario is handled — WR-01 shows the `index` re-initialization is NOT handled. Aligning the comment avoids implying full coverage.
+**Fix:** Reword the comment, or implement WR-01's effect so clamp and reset are consistent.
 
-### IN-03: `resolveCurrentBandLabel` and `computeOrderedBands` are untested at the module boundary
+### IN-03: `markDoseTaken` idempotent upsert always reports success even when nothing changed
 
-**File:** `components/dashboard/vaccines/vaccine-calendar-view.tsx:120-160`
-**Issue:** The two pure helpers that own the cross-dataset alignment and current-band resolution (the logic behind WR-03/WR-04) live inline in a client component and have no unit tests, while the simpler `isBandCurrent`/`computeCurrentMonths` primitives are well covered. The riskier composition logic is the untested part.
-**Fix:** Extract `resolveCurrentBandLabel` and `computeOrderedBands` into `lib/` (or a testable module) and add cases for overlapping windows, SBIm-only children, and same-label/different-window collisions.
+**File:** `modules/patient-vaccine-doses/mark-dose-taken.ts:24-39`
+**Issue:** The upsert with `ignoreDuplicates: true` on the unique `(profile_id, patient_id, schedule_item_id)` constraint is correct and idempotent. Because it never surfaces "already taken," the action always returns `{ ok: true, taken: true }` even when the row already existed. This is the intended boolean-grain behavior; noting it so a future "already recorded" affordance knows the module intentionally hides that distinction.
+**Fix:** No change required.
+
+### IN-04: Age timeline mixes `justify-between` with `overflow-x-auto`
+
+**File:** `components/dashboard/patients/patient-vaccine-calendar-section.tsx:232-233`
+**Issue:** `flex justify-between ... overflow-x-auto` mixes distribute-to-edges layout with horizontal scrolling. When summed step width exceeds the container, scrolling works, but on medium widths the steps can bunch with uneven gaps. Visual/UX nuance, not correctness; pure styling is outside this review's scope.
+**Fix:** No change required for correctness. For polish, prefer `justify-start gap-*` for the scrollable track so spacing stays uniform.
 
 ---
 
-_Reviewed: 2026-07-19_
+_Reviewed: 2026-07-20T00:00:00Z_
 _Reviewer: Claude (gsd-code-reviewer)_
 _Depth: standard_
