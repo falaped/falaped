@@ -1,4 +1,4 @@
-import { format } from "date-fns"
+import { format, isValid } from "date-fns"
 import { ptBR } from "date-fns/locale"
 
 import { cn } from "@/lib/utils"
@@ -36,10 +36,28 @@ export function ScheduleProvenance({
   )
 }
 
-/** Parses a `YYYY-MM-DD` date at local midnight (never `new Date("YYYY-MM-DD")`, Pitfall 5). */
+/**
+ * Parses a `YYYY-MM-DD` date at local midnight (never `new Date("YYYY-MM-DD")`,
+ * Pitfall 5). Mirrors `localMidnightFromIso` in `compute-pediatric-age.ts`:
+ * rejects impossible calendar dates (WR-04) so a malformed `effective_date`
+ * such as `2025-13-40` returns null instead of silently normalizing to a
+ * misleading month/year.
+ */
 function parseEffectiveDate(value: string): Date | null {
   const match = /^(\d{4})-(\d{2})-(\d{2})/.exec(value)
   if (!match) return null
-  const [, year, month, day] = match
-  return new Date(Number(year), Number(month) - 1, Number(day))
+  const year = Number(match[1])
+  const month = Number(match[2])
+  const day = Number(match[3])
+  const parsed = new Date(year, month - 1, day)
+  if (!isValid(parsed)) return null
+  // Reject rollovers like 2025-13-40 / 2025-02-30 (JS Date silently normalizes them).
+  if (
+    parsed.getFullYear() !== year ||
+    parsed.getMonth() !== month - 1 ||
+    parsed.getDate() !== day
+  ) {
+    return null
+  }
+  return parsed
 }
