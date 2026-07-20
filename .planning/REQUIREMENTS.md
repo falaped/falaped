@@ -41,9 +41,6 @@ Requisitos deste ciclo. Cada um mapeia para uma fase do roadmap. Tudo escopado p
 - [x] **VAC-02**: Médico consulta o calendário **particular (SBIm)** por idade, exibido lado a lado com o SUS
 - [x] **VAC-03**: Médico consulta a referência de **vacinação da gestante** (Hepatite B, dTpa a partir de 20 sem, Influenza, COVID-19, VSR/Abrysvo a partir de 28 sem)
 - [x] **VAC-04**: Os calendários são modelados como dado versionado (`vacina, dose, idade recomendada, fonte SUS|SBIm, ano/versão`) com fonte e data de vigência
-- [ ] **VAC-05**: Médico registra na **carteira de vacinação** de cada paciente as doses aplicadas (vacina, dose, data, lote, local de aplicação)
-- [ ] **VAC-06**: O sistema calcula e mostra as vacinas **pendentes/atrasadas** por idade (diff entre calendário e doses aplicadas)
-- [ ] **VAC-07**: Durante a consulta, a **próxima dose** devida é destacada conforme a idade atual da criança
 
 ## v2 Requirements
 
@@ -99,16 +96,13 @@ Cada requisito mapeia para exatamente uma fase do roadmap. Sem órfãos, sem dup
 | VAC-02 | Phase 5 | Complete |
 | VAC-03 | Phase 5 | Complete |
 | VAC-04 | Phase 5 | Complete |
-| VAC-05 | Phase 6 | Pending |
-| VAC-06 | Phase 6 | Pending |
-| VAC-07 | Phase 6 | Pending |
 
 **Coverage:**
 
-- v1 requirements: 23 total
-- Mapped to phases: 23 ✓
+- v1 requirements: 20 total
+- Mapped to phases: 20 ✓
 - Unmapped: 0 ✓
 
 ---
 *Requirements defined: 2026-06-28*
-*Last updated: 2026-07-09 — inserida Phase 3 "Curva de Crescimento" (GROWTH-01..03); DOC → Phase 4, VAC → Phases 5–6 (renumeração inteira)*
+*Last updated: 2026-07-20 — removida Phase 6 "Carteira de Vacinação por Paciente"; VAC-05/06/07 retirados de escopo (carteira por paciente descartada)*

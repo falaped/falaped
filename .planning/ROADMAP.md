@@ -18,7 +18,6 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [ ] **Phase 3: Curva de Crescimento** - Medições antropométricas por paciente (peso, estatura, PC, IMC) plotadas em gráficos por idade sobre curvas de referência OMS, com histórico atualizável
 - [x] **Phase 4: Documentos Clínicos Novos** - Encaminhamento, pedido de exames, relatório médico, receituário em branco e biblioteca de orientações (completed 2026-07-19)
 - [x] **Phase 5: Calendário de Vacinas (Referência)** - Tabelas SUS/PNI, particular/SBIm e gestante como dado versionado, somente leitura (executed 2026-07-19; pending UAT + security) (completed 2026-07-20)
-- [ ] **Phase 6: Carteira de Vacinação por Paciente** - Registro de doses aplicadas com pendentes/atrasadas e próxima dose por idade
 
 ## Phase Details
 
@@ -41,7 +40,7 @@ Plans:
 
 - [x] 01-01-PLAN.md — Schema foundation: gestational_age + cases pause columns + started_at default + db push (wave 1)
 - [x] 01-02-PLAN.md — Pediatric age engine (pure, tested) + PT-BR formatter (wave 1, TDD)
-- [x] 01-03-PLAN.md — CONS-04 PDF fix: Path B (in-repo) shipped — sanitization + console.log removal + repro script. **Path A (@falaped/falaped-kit release for the ~1.05-page boundary) deferred to Phase 6** (kit is a published external package; in-repo Path B covers 1-page and multi-page). (wave 1)
+- [x] 01-03-PLAN.md — CONS-04 PDF fix: Path B (in-repo) shipped — sanitization + console.log removal + repro script. **Path A (@falaped/falaped-kit release for the ~1.05-page boundary) dropped** (in-repo Path B covers 1-page and multi-page; the ~1.05-page boundary fix was not pursued — was parked in the now-removed Phase 6). (wave 1)
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
@@ -178,28 +177,10 @@ Plans:
 
 - [x] 05-04-PLAN.md — Slice entrada por paciente: rota `?patientId` + link na ficha + destaque da faixa etária atual (motor de idade, position-only) nas duas colunas (D-02/D-03/D-11) (wave 4)
 
-### Phase 6: Carteira de Vacinação por Paciente
-
-**Goal**: O médico registra na carteira de cada paciente as doses aplicadas e o sistema mostra o que está pendente/atrasado por idade e destaca a próxima dose devida — cruzando o motor de idade (Phase 1) com o calendário-como-dado (Phase 5) e as doses aplicadas, transformando a carteira de papel em apoio à decisão.
-**Mode:** mvp
-**Depends on**: Phase 1 (motor de idade testado) e Phase 5 (calendário de referência como dado; o diff pendente/atrasado precisa dos dois)
-**Requirements**: VAC-05, VAC-06, VAC-07
-**Success Criteria** (what must be TRUE):
-
-  1. O médico registra na carteira de um paciente uma dose aplicada (vacina, dose, data, lote e local opcionais), e ela persiste escopada por `profile_id` + `patient_id`
-  2. O sistema mostra, por idade atual da criança, quais vacinas estão pendentes/atrasadas (diff entre o calendário e as doses aplicadas), usando o helper de idade testado da Phase 1
-  3. Durante a consulta, a próxima dose devida é destacada conforme a idade atual da criança
-  4. O registro e a leitura da carteira aplicam o gate de assinatura (`paid`) e escopam por `profile_id` em leitura/escrita/exclusão — sem acesso entre tenants
-
-**Plans**: TBD
-**UI hint**: yes
-
-**Carried over from Phase 1 — CONS-04 Path A (kit release):** publish a new `@falaped/falaped-kit` version that removes the forced 200pt footer reserve (early `addPage()`) and fixes the `heightOfString` estimate≠render drift, then bump the pin in this app and re-verify `repro-1.05.pdf` collapses to 1 page. Phase 1 shipped the in-repo Path B (1-page + multi-page clean); this closes the ~1.05-page boundary. Note: Phase 4 documents reuse the same PDF builder and inherit Path B until this lands.
-
 ## Progress
 
 **Execution Order:**
-Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6
+Phases execute in numeric order: 1 → 2 → 3 → 4 → 5
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
@@ -208,4 +189,3 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6
 | 3. Curva de Crescimento | 3/4 | In Progress|  |
 | 4. Documentos Clínicos Novos | 5/5 | Complete   | 2026-07-19 |
 | 5. Calendário de Vacinas (Referência) | 4/4 | Complete    | 2026-07-20 |
-| 6. Carteira de Vacinação por Paciente | 0/TBD | Not started | - |
