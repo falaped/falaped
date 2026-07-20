@@ -1,54 +1,23 @@
 import type { PediatricAge } from "@/lib/compute-pediatric-age"
 
-/** Average days per month used to project a banded age onto the schedule's
- * month axis (D-02). Position-only — this drives highlight placement, never any
- * diff/pending computation (that is Phase 6, D-11). */
-const AVG_DAYS_PER_MONTH = 30.4375
-
 /**
  * Projects a `PediatricAge` onto the vaccine schedule's month axis.
  *
- * Returns the child's whole-month age when the age is well-formed (`status ===
- * "ok"`), or `null` for every non-ok status (missing / invalid / future) so the
- * caller renders no highlight. Pure: no I/O, no date math (the engine already
- * did it) — just projects onto months.
+ * Returns the child's CHRONOLOGICAL whole-month age when the age is well-formed
+ * (`status === "ok"`), or `null` for every non-ok status (missing / invalid /
+ * future) so the caller renders no highlight. Pure: no I/O, no date math (the
+ * engine already did it) — just reads `age.totalMonths`.
  *
- * For preterm infants the engine emits a `corrected` age (CR-01 / D-10); while
- * it is present the highlight follows the CORRECTED days so the current band
- * matches the child's physiologic age. When there is no correction (term
- * infants, or no gestational age) it falls back to chronological `totalDays`.
+ * Vaccine positioning is chronological only: the engine's `totalMonths`
+ * (`differenceInMonths(today, birth)`) is calendar-correct across ALL bands,
+ * including the days/weeks bands where `parts.months` is absent (a real
+ * 2-month-old yields 2, not 0). The preterm `corrected` age is deliberately
+ * ignored here — corrected age no longer drives vaccine band placement.
  *
  * @param age Result of `computePediatricAge`.
- * @returns Whole months (floored), or `null` when no highlight should show.
+ * @returns Chronological whole months, or `null` when no highlight should show.
  */
 export function computeCurrentMonths(age: PediatricAge): number | null {
   if (age.status !== "ok") return null
-  const days = age.corrected?.totalDays ?? age.totalDays ?? 0
-  return Math.floor(days / AVG_DAYS_PER_MONTH)
-}
-
-/**
- * Decides whether a schedule band is the child's CURRENT band (D-02).
- *
- * A band is current when `currentMonths` falls inside the inclusive window
- * `[ageMonths, ageMonthsMax ?? ageMonths]`. When `age_months_max` is null the
- * band is a single point (`ageMonths`). Returns `false` whenever `currentMonths`
- * is null (standalone / invalid age) or the band is unpositioned (`ageMonths`
- * null), so those bands never highlight.
- *
- * Position-only: this predicate expresses "onde estamos", never "já tomou /
- * está pendente" (D-11 — that is Phase 6).
- *
- * @param currentMonths The child's whole-month age, or null.
- * @param ageMonths The band's lower bound in months (`age_months`), or null.
- * @param ageMonthsMax The band's upper bound in months (`age_months_max`), or null.
- */
-export function isBandCurrent(
-  currentMonths: number | null,
-  ageMonths: number | null,
-  ageMonthsMax: number | null,
-): boolean {
-  if (currentMonths === null || ageMonths === null) return false
-  const upper = ageMonthsMax ?? ageMonths
-  return currentMonths >= ageMonths && currentMonths <= upper
+  return age.totalMonths ?? null
 }
