@@ -1,32 +1,20 @@
+import { CANONICAL_VACCINE_BANDS } from "@/lib/vaccine-bands"
 import type { VaccineScheduleWithItems } from "@/modules/vaccines/types"
 
 /**
- * Computes the ordered UNION of distinct age bands across the given datasets.
- * A band is keyed by `age_label`; its order is the smallest `sort_order` seen
- * for that label in any dataset, so bands read in a single ascending-by-age
- * rhythm even when a dataset omits some bands.
+ * Returns the 11 canonical band labels in fixed, ascending-by-age order
+ * (`lib/vaccine-bands.ts`), regardless of the datasets passed. Data-independent:
+ * the timeline reads the SAME order everywhere and bands without seed vaccines
+ * still appear (empty state).
  *
- * This is the SAME band-ordering logic the full calendar column layout uses,
- * lifted here so the carousel's slide order agrees with the calendar. Pure.
+ * The `schedules` argument is kept for signature compatibility but is ignored.
  *
- * @param schedules Datasets to scan (nulls skipped).
+ * @param _schedules Unused (kept for signature compatibility).
  */
 export function computeOrderedBands(
-  schedules: Array<VaccineScheduleWithItems | null>,
+  _schedules: Array<VaccineScheduleWithItems | null>,
 ): string[] {
-  const minSort = new Map<string, number>()
-  for (const schedule of schedules) {
-    if (!schedule) continue
-    for (const item of schedule.vaccine_schedule_items) {
-      const current = minSort.get(item.age_label)
-      if (current === undefined || item.sort_order < current) {
-        minSort.set(item.age_label, item.sort_order)
-      }
-    }
-  }
-  return [...minSort.entries()]
-    .sort((a, b) => a[1] - b[1])
-    .map(([label]) => label)
+  return CANONICAL_VACCINE_BANDS.map((band) => band.label)
 }
 
 /**
