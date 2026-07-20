@@ -12,6 +12,7 @@ import {
 import { toast } from "sonner"
 
 import { computePediatricAge } from "@/lib/compute-pediatric-age"
+import { bandForItemMonths } from "@/lib/vaccine-bands"
 import { computeCurrentMonths } from "@/lib/vaccine-current-band"
 import { resolveCurrentBandLabel } from "@/lib/vaccine-current-band-items"
 import {
@@ -550,9 +551,11 @@ function DatasetColumn({
 }
 
 /**
- * Filters ONE dataset's items to the given band `age_label`, preserving source
- * order (items arrive pre-sorted by `sort_order`). Empty when the dataset is
- * absent or has no item in that band. Pure.
+ * Filters ONE dataset's items to the given canonical band, grouping each item by
+ * the band its `age_months` maps to (`bandForItemMonths`), NOT by `age_label` —
+ * so grouping is data-independent and aligns with the canonical `orderedBands`.
+ * Preserves source order (items arrive pre-sorted by `sort_order`). Empty when
+ * the dataset is absent or has no item in that band. Pure.
  */
 function itemsForBand(
   schedule: VaccineScheduleWithItems | null,
@@ -560,6 +563,6 @@ function itemsForBand(
 ): VaccineScheduleItem[] {
   if (!schedule) return []
   return schedule.vaccine_schedule_items.filter(
-    (item) => item.age_label === bandLabel,
+    (item) => bandForItemMonths(item.age_months)?.label === bandLabel,
   )
 }

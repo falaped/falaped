@@ -7,6 +7,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"
+import { bandForItemMonths } from "@/lib/vaccine-bands"
 import type { VaccineScheduleWithItems } from "@/modules/vaccines/types"
 import { ScheduleProvenance } from "./schedule-provenance"
 
@@ -115,7 +116,13 @@ export function VaccineColumn({
   )
 }
 
-/** Groups items by distinct `age_label` (input is pre-sorted by `sort_order`). */
+/**
+ * Groups items into canonical bands by each item's `age_months`
+ * (`bandForItemMonths`), NOT by `age_label` text — so grouping is
+ * data-independent and aligns with `orderedBands` (the canonical 11). Items
+ * whose `age_months` maps to no band are skipped. Input is pre-sorted by
+ * `sort_order`.
+ */
 function groupByAgeBand(
   items: VaccineScheduleWithItems["vaccine_schedule_items"],
 ): Map<string, VaccineScheduleWithItems["vaccine_schedule_items"]> {
@@ -124,11 +131,13 @@ function groupByAgeBand(
     VaccineScheduleWithItems["vaccine_schedule_items"]
   >()
   for (const item of items) {
-    const existing = byLabel.get(item.age_label)
+    const label = bandForItemMonths(item.age_months)?.label
+    if (!label) continue
+    const existing = byLabel.get(label)
     if (existing) {
       existing.push(item)
     } else {
-      byLabel.set(item.age_label, [item])
+      byLabel.set(label, [item])
     }
   }
   return byLabel
