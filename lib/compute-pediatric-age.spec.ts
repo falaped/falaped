@@ -50,6 +50,54 @@ test("born today → days band, 0 days", () => {
   assert.deepEqual(r.parts, { days: 0 })
 })
 
+// ── Chronological totalMonths (calendar-correct across ALL bands) ─────────────
+
+test("totalMonths: newborn (10 days) → 0", () => {
+  // birth 2026-06-18, now 2026-06-28 → 10 days (days band; parts has no months).
+  const r = computePediatricAge("2026-06-18", new Date(2026, 5, 28))
+  assert.equal(r.status, "ok")
+  assert.equal(r.totalMonths, 0)
+})
+
+test("totalMonths: ~2 months (61-day-old, weeks band) → 2 (NOT 0)", () => {
+  // A real 2-month-old sits in the weeks band (0–83 days) where parts has NO
+  // months, yet the chronological calendar age is 2 whole months.
+  // birth 2026-04-28, now 2026-06-28 → exactly 2 calendar months (61 days).
+  const r = computePediatricAge("2026-04-28", new Date(2026, 5, 28))
+  assert.equal(r.status, "ok")
+  assert.equal(r.band, "weeks")
+  assert.equal(r.totalMonths, 2)
+})
+
+test("totalMonths: exactly 6 calendar months → 6", () => {
+  // birth 2025-12-28, now 2026-06-28 → 6 calendar months.
+  const r = computePediatricAge("2025-12-28", new Date(2026, 5, 28))
+  assert.equal(r.status, "ok")
+  assert.equal(r.totalMonths, 6)
+})
+
+test("totalMonths: 26 months → 26", () => {
+  // birth 2023-04-28, now 2025-06-28 → 26 calendar months.
+  const r = computePediatricAge("2023-04-28", new Date(2025, 5, 28))
+  assert.equal(r.status, "ok")
+  assert.equal(r.totalMonths, 26)
+})
+
+test("totalMonths: non-ok statuses omit it (undefined)", () => {
+  assert.equal(
+    computePediatricAge(null, new Date(2026, 5, 28)).totalMonths,
+    undefined,
+  )
+  assert.equal(
+    computePediatricAge("abc", new Date(2026, 5, 28)).totalMonths,
+    undefined,
+  )
+  assert.equal(
+    computePediatricAge("2026-07-01", new Date(2026, 5, 28)).totalMonths,
+    undefined,
+  )
+})
+
 test("newborn 1 day → days band, 1 day", () => {
   const r = computePediatricAge("2026-06-27", new Date(2026, 5, 28))
   assert.equal(r.status, "ok")
