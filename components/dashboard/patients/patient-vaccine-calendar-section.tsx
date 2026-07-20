@@ -525,7 +525,11 @@ function VaccineToggleList({
     )
   }
   return (
-    <ul className="flex flex-col gap-0.5" role="group" aria-label={label}>
+    <ul
+      className="flex flex-col divide-y divide-border/50"
+      role="group"
+      aria-label={label}
+    >
       {items.map((item) => {
         const isTaken = taken.has(item.id)
         const isPending = pendingIds.has(item.id)
@@ -539,46 +543,56 @@ function VaccineToggleList({
               disabled={isPending}
               onClick={() => onToggle(item.id, !isTaken)}
               className={cn(
-                "flex w-full items-start gap-2.5 rounded-md p-2 text-left",
-                "transition-colors hover:bg-foreground/5",
+                "flex w-full items-start gap-3 rounded-lg px-2.5 py-2.5 text-left",
+                "transition-colors hover:bg-muted/70",
                 "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
                 "disabled:cursor-not-allowed disabled:opacity-60",
+                isTaken && "bg-emerald-600/[0.05] dark:bg-emerald-500/[0.06]",
               )}
             >
               <span
                 aria-hidden
                 className={cn(
-                  "mt-0.5 flex h-[18px] w-[18px] shrink-0 items-center justify-center rounded-md border-[1.5px] transition-colors active:scale-90",
+                  "mt-px flex h-[19px] w-[19px] shrink-0 items-center justify-center rounded-[7px] border-[1.5px] transition-all active:scale-90",
                   isTaken
-                    ? "border-emerald-600 bg-emerald-600 text-white dark:border-emerald-500 dark:bg-emerald-500"
-                    : "border-primary bg-card",
+                    ? "border-emerald-600 bg-emerald-600 text-white shadow-sm shadow-emerald-600/30 dark:border-emerald-500 dark:bg-emerald-500"
+                    : "border-primary/70 bg-card group-hover:border-primary",
                 )}
               >
                 <CheckIcon
                   className={cn(
-                    "h-3 w-3 transition-all",
+                    "h-3 w-3 transition-all duration-150",
                     isTaken ? "scale-100 opacity-100" : "scale-50 opacity-0",
                   )}
                 />
               </span>
-              <span className="min-w-0 text-sm">
+              <span className="min-w-0 flex-1">
                 <span
                   className={cn(
-                    "font-medium",
+                    "text-sm font-medium leading-snug",
                     isTaken && "text-muted-foreground",
                   )}
                 >
                   {item.vaccine}
                 </span>
-                {item.dose ? (
-                  <span className="text-muted-foreground"> — {item.dose}</span>
-                ) : null}
                 {item.notes ? (
-                  <span className="mt-1 block text-xs text-muted-foreground">
+                  <span className="mt-0.5 block text-xs leading-snug text-muted-foreground">
                     {item.notes}
                   </span>
                 ) : null}
               </span>
+              {item.dose ? (
+                <span
+                  className={cn(
+                    "mt-px shrink-0 whitespace-nowrap rounded-md px-2 py-0.5 text-[11px] font-medium",
+                    isTaken
+                      ? "bg-emerald-600/10 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-400"
+                      : "bg-muted text-muted-foreground",
+                  )}
+                >
+                  {item.dose}
+                </span>
+              ) : null}
             </button>
           </li>
         )
