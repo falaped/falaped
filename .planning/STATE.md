@@ -3,12 +3,11 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 current_phase: 5
-current_phase_name: Calendário de Vacinas (Referência)
-status: complete
+current_phase_name: Referência
+status: "Phase 5 shipped — PR #5"
 stopped_at: Phase 5 complete; Phase 6 removed from roadmap
-last_updated: "2026-07-20T16:01:37.628Z"
+last_updated: "2026-07-20T17:58:14.204Z"
 last_activity: 2026-07-20
-last_activity_desc: Phase 6 removed (carteira por paciente out of scope; VAC-05/06/07 dropped)
 progress:
   total_phases: 5
   completed_phases: 5
@@ -30,8 +29,8 @@ See: .planning/PROJECT.md (updated 2026-06-27)
 
 Phase: 5 — Calendário de Vacinas (Referência)
 Plan: 4/4 complete
-Status: Phase 5 complete + verified. Phase 6 removed from roadmap (carteira por paciente out of scope).
-Last activity: 2026-07-20 — Phase 6 removed; VAC-05/06/07 dropped
+Status: Phase 5 shipped — PR #5
+Last activity: 2026-07-20
 
 Progress: [██████████] 100% (plans executed)
 
