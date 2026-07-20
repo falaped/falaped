@@ -120,6 +120,7 @@ Recent decisions affecting current work:
 |---|-------------|------|--------|-----------|
 | 260629-egq | Corrigir 3 pontos da foto do paciente (avatar persiste no refresh; foto na lista; upload em modal) | 2026-06-29 | 87468f8 | [260629-egq-corrigir-3-pontos-da-foto-do-paciente-1-](./quick/260629-egq-corrigir-3-pontos-da-foto-do-paciente-1-/) |
 | 260701-ctf | Corrigir erro "Invalid input: expected string, received number" no campo idade gestacional ao criar/editar paciente (double-parse) | 2026-07-09 | beb8ce7 (PR #2) | [260701-ctf-fix-gestational-age-double-parse](./quick/260701-ctf-fix-gestational-age-double-parse/) |
+| 260720-qsj | Redesenho das faixas etárias do calendário vacinal (faixas canônicas fixas + regra "faixa anterior") e correção da idade em meses (calendário, não dias/30.4375; cronológica para posição de vacina) | 2026-07-20 | 405282e | [260720-qsj-redesenhar-o-posicionamento-por-idade-do](./quick/260720-qsj-redesenhar-o-posicionamento-por-idade-do/) |
 
 ## Deferred Items
 
