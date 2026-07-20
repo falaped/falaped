@@ -2,19 +2,19 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-current_phase: 05
-current_phase_name: calend-rio-de-vacinas-refer-ncia
+current_phase: 6
+current_phase_name: Carteira de Vacinação por Paciente
 status: verifying
-stopped_at: Phase 5 all 4 plans executed; verification human_needed; pending UAT + security
-last_updated: "2026-07-19T20:42:22.919Z"
-last_activity: 2026-07-19
-last_activity_desc: Phase 05 executed (4/4 plans); verifier returned human_needed (8/9, 0 blockers); UAT persisted
+stopped_at: Phase 5 UI-SPEC approved
+last_updated: "2026-07-20T16:01:37.628Z"
+last_activity: 2026-07-20
+last_activity_desc: Phase 05 complete, transitioned to Phase 6
 progress:
   total_phases: 6
-  completed_phases: 4
+  completed_phases: 5
   total_plans: 21
   completed_plans: 21
-  percent: 67
+  percent: 83
 ---
 
 # Project State
@@ -28,10 +28,10 @@ See: .planning/PROJECT.md (updated 2026-06-27)
 
 ## Current Position
 
-Phase: 05 (calend-rio-de-vacinas-refer-ncia) — EXECUTING
-Plan: 4 of 4
+Phase: 6 — Carteira de Vacinação por Paciente
+Plan: Not started
 Status: Phase complete — ready for verification
-Last activity: 2026-07-19 — Phase 05 execution started
+Last activity: 2026-07-20 — Phase 05 complete, transitioned to Phase 6
 
 Progress: [██████████] 100% (plans executed)
 
@@ -39,7 +39,7 @@ Progress: [██████████] 100% (plans executed)
 
 **Velocity:**
 
-- Total plans completed: 0
+- Total plans completed: 4
 - Average duration: — min
 - Total execution time: 0 hours
 
@@ -47,7 +47,7 @@ Progress: [██████████] 100% (plans executed)
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
-| - | - | - | - |
+| 05 | 4 | - | - |
 
 **Recent Trend:**
 

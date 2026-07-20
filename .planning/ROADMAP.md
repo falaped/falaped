@@ -17,7 +17,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [ ] **Phase 2: Foto Privada do Paciente** - Foto da criança em armazenamento privado com URL assinada e consentimento (LGPD)
 - [ ] **Phase 3: Curva de Crescimento** - Medições antropométricas por paciente (peso, estatura, PC, IMC) plotadas em gráficos por idade sobre curvas de referência OMS, com histórico atualizável
 - [x] **Phase 4: Documentos Clínicos Novos** - Encaminhamento, pedido de exames, relatório médico, receituário em branco e biblioteca de orientações (completed 2026-07-19)
-- [ ] **Phase 5: Calendário de Vacinas (Referência)** - Tabelas SUS/PNI, particular/SBIm e gestante como dado versionado, somente leitura (executed 2026-07-19; pending UAT + security)
+- [x] **Phase 5: Calendário de Vacinas (Referência)** - Tabelas SUS/PNI, particular/SBIm e gestante como dado versionado, somente leitura (executed 2026-07-19; pending UAT + security) (completed 2026-07-20)
 - [ ] **Phase 6: Carteira de Vacinação por Paciente** - Registro de doses aplicadas com pendentes/atrasadas e próxima dose por idade
 
 ## Phase Details
@@ -207,5 +207,5 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6
 | 2. Foto Privada do Paciente | 2/3 | In Progress|  |
 | 3. Curva de Crescimento | 3/4 | In Progress|  |
 | 4. Documentos Clínicos Novos | 5/5 | Complete   | 2026-07-19 |
-| 5. Calendário de Vacinas (Referência) | 4/4 | Verifying  | -          |
+| 5. Calendário de Vacinas (Referência) | 4/4 | Complete    | 2026-07-20 |
 | 6. Carteira de Vacinação por Paciente | 0/TBD | Not started | - |
