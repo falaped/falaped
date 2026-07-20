@@ -1,34 +1,28 @@
 ---
-status: testing
+status: complete
 phase: 05-calend-rio-de-vacinas-refer-ncia
 source: [05-VERIFICATION.md, 05-REVIEW.md]
 started: "2026-07-19T00:00:00Z"
-updated: "2026-07-19T00:00:00Z"
+updated: "2026-07-20T00:00:00Z"
 ---
 
 ## Current Test
 
-number: 1
-name: Criança — render de duas colunas (SUS × SBIm) e alinhamento por faixa etária
-expected: |
-  Em /dashboard/vaccines (aba Criança), as colunas SUS e SBIm aparecem lado a lado,
-  alinhadas pela mesma faixa etária (ao nascer, 2, 3, 4, 5, 6, 9, 12, 15 meses, ...),
-  com o marcador vazio (—) onde um dataset não tem item que o outro tem.
-awaiting: user response
+[testing complete]
 
 ## Tests
 
 ### 1. Criança — duas colunas SUS × SBIm alinhadas
 expected: Colunas SUS e SBIm lado a lado, alinhadas por faixa etária, com marcador vazio (—) onde falta item em um dataset.
-result: [pending]
+result: pass
 
 ### 2. Gestante — aba e janelas por semana gestacional
 expected: A aba Gestante lista por vacina (Hepatite B, dTpa a partir de 20 semanas, Influenza, COVID-19, VSR/Abrysvo 28–36 semanas) com a janela em texto.
-result: [pending]
+result: pass
 
 ### 3. Proveniência por dataset na tela
 expected: Cada coluna/lista mostra a legenda "Fonte: {version} · vigência …" e o aviso fixo de referência.
-result: [pending]
+result: pass
 
 ### 4. Calendário vacinal na ficha — carrossel por idade + marcar doses tomadas (VAC-05)
 expected: |
@@ -45,7 +39,7 @@ expected: |
   (escopo profile_id + patient_id, verify de posse no action). Somente posição (sem diff de pendência
   — isso é Phase 6). Sem dado de referência → a seção não aparece; erro de leitura das doses não
   derruba a ficha (degradação graciosa). Navegar prev/next percorre todas as idades.
-result: [pending]
+result: pass
 
 ### 5. Destaque da faixa de idade atual — prematuridade aplicada (CR-01 resolvido)
 expected: |
@@ -54,14 +48,14 @@ expected: |
   gestational_age_weeks de prematuro (< 37 sem); recém-nascidos a termo ou sem idade gestacional caem
   no fallback cronológico. Continua só de posicionamento (sem lógica de doses — isso é Phase 6).
   Verificar visualmente: um paciente prematuro é destacado na faixa fisiológica (corrigida), não na cronológica.
-result: [pending]
+result: pass
 
 ## Summary
 
 total: 5
-passed: 0
+passed: 5
 issues: 0
-pending: 5
+pending: 0
 skipped: 0
 blocked: 0
 
