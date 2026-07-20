@@ -647,7 +647,7 @@ function DatasetColumn({
       {schedule ? (
         <ScheduleProvenance
           schedule={schedule}
-          className="mt-3 border-t border-border pt-2"
+          className="mt-auto border-t border-border pt-3"
         />
       ) : null}
     </section>
