@@ -44,6 +44,14 @@ import type {
 } from "@/modules/vaccines/types"
 
 /**
+ * Deep brand-blue for accent TEXT on light tints. The theme `--primary` (oklch
+ * 0.76) is intentionally light for fills/badges, but reads washed-out as text on
+ * white; this is the readable deep variant used by the approved design for the
+ * icon chip, the active band label and current-band titles.
+ */
+const ACCENT_TEXT = "text-[oklch(0.52_0.12_255.41)]"
+
+/**
  * "Calendário vacinal" section in the patient ficha (VAC-05, pulled forward).
  *
  * Two views over the SAME data (a tab switches between them):
@@ -239,7 +247,10 @@ export function PatientVaccineCalendarSection({
           <div className="flex min-w-0 items-center gap-2.5">
             <span
               aria-hidden
-              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-primary/25 bg-primary/10 text-primary"
+              className={cn(
+                "flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-primary/25 bg-primary/10",
+                ACCENT_TEXT,
+              )}
             >
               <SyringeIcon className="h-4 w-4" />
             </span>
@@ -273,9 +284,13 @@ export function PatientVaccineCalendarSection({
 
       <CardContent className="flex flex-col gap-4">
         <Tabs defaultValue="idade" className="gap-4">
-          <TabsList className="w-max">
-            <TabsTrigger value="idade">Por idade</TabsTrigger>
-            <TabsTrigger value="geral">Visão geral</TabsTrigger>
+          <TabsList className="w-fit lg:w-fit">
+            <TabsTrigger value="idade" className="flex-none px-3">
+              Por idade
+            </TabsTrigger>
+            <TabsTrigger value="geral" className="flex-none px-3">
+              Visão geral
+            </TabsTrigger>
           </TabsList>
 
           {/* ---------- View: Por idade ---------- */}
@@ -292,7 +307,7 @@ export function PatientVaccineCalendarSection({
                 className="pointer-events-none absolute inset-y-0 right-0 z-10 w-6 bg-gradient-to-l from-card to-transparent"
               />
               <div
-                className="flex gap-0.5 overflow-x-auto px-1 pb-2 pt-1"
+                className="flex gap-0 overflow-x-auto px-1 pb-2 pt-1"
                 role="tablist"
                 aria-label="Faixas de idade"
               >
@@ -312,19 +327,19 @@ export function PatientVaccineCalendarSection({
                       aria-label={`Faixa ${label}`}
                       onClick={() => goTo(i)}
                       className={cn(
-                        "group relative flex min-w-14 shrink-0 flex-col items-center gap-2 rounded-md px-1 pb-1 pt-1.5",
+                        "group relative flex flex-[1_0_auto] flex-col items-center gap-2 rounded-md px-1 pb-1 pt-1.5",
                         "text-muted-foreground transition-colors hover:text-foreground",
                         "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
-                        "before:absolute before:left-0 before:right-0 before:top-[13px] before:-z-10 before:h-0.5 before:bg-border before:content-['']",
+                        "before:absolute before:left-0 before:right-0 before:top-[13px] before:border-t before:border-dashed before:border-border before:content-['']",
                         "first:before:left-1/2 last:before:right-1/2",
-                        isActive && "text-primary",
+                        isActive && ACCENT_TEXT,
                       )}
                     >
                       <TimelineDot status={status} isActive={isActive} />
                       <span
                         className={cn(
-                          "whitespace-nowrap rounded-full px-2 py-0.5 text-xs transition-colors",
-                          isActive && "bg-primary/10 font-semibold text-primary",
+                          "relative whitespace-nowrap rounded-full px-2 py-0.5 text-xs transition-colors",
+                          isActive && cn("bg-primary/10 font-semibold", ACCENT_TEXT),
                         )}
                       >
                         {label}
@@ -388,7 +403,7 @@ export function PatientVaccineCalendarSection({
 
             {/* Active slide: SUS + SBIm columns for this band. */}
             {hasAnyItems ? (
-              <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+              <div className="grid grid-cols-1 items-stretch gap-3 md:grid-cols-2">
                 <DatasetColumn
                   title="SUS / PNI"
                   schedule={sus}
@@ -467,7 +482,7 @@ function TimelineDot({
     <span
       aria-hidden
       className={cn(
-        "relative h-3 w-3 rounded-full border transition-all",
+        "relative z-10 h-3 w-3 rounded-full border bg-card transition-all",
         status === "done" &&
           "border-emerald-600 bg-emerald-600 dark:border-emerald-500 dark:bg-emerald-500",
         status === "partial" &&
@@ -603,7 +618,7 @@ function DatasetColumn({
       aria-label={title}
       aria-current={isCurrentBand ? "true" : undefined}
       className={cn(
-        "flex flex-col rounded-xl border border-border bg-card p-3 transition-[box-shadow,border-color]",
+        "flex h-full flex-col rounded-xl border border-border bg-card p-3 transition-[box-shadow,border-color]",
         isCurrentBand && "border-primary/60 bg-primary/[0.06] ring-[3px] ring-primary/10",
       )}
     >
@@ -697,7 +712,7 @@ function GeneralBand({
         <h4
           className={cn(
             "text-sm font-semibold tracking-tight",
-            isCurrentBand && "text-primary",
+            isCurrentBand && ACCENT_TEXT,
           )}
         >
           {label}
