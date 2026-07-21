@@ -29,14 +29,22 @@ Decimal phases appear between their surrounding integers in numeric order.
 **Depends on**: Nothing (first phase of milestone; continues from archived v1.0 Phase 5)
 **Requirements**: AGENDA-01, AGENDA-02, AGENDA-03, AGENDA-04
 **Success Criteria** (what must be TRUE):
+
   1. O médico define uma disponibilidade recorrente por dia da semana e faixa de horário (ex: seg e qua 14h–18h) que se repete automaticamente semana após semana sem recriar rows por slot.
   2. O médico define a duração padrão do slot (ex: 30 min) e vê os horários livres gerados dentro das faixas — as regras ficam armazenadas e os slots são expandidos na leitura por uma função pura testável.
   3. O médico bloqueia uma exceção pontual por data (folga/feriado) e os horários daquele dia somem da grade recorrente.
   4. O médico alterna entre dia, semana e mês e vê os horários livres corretos nas viradas de dia/semana/mês (intervalos meio-abertos, semana começando na segunda) e no fuso fixo da clínica (America/Sao_Paulo), sem slot duplicado nem sumido em transição.
+
 **Plans**: 3 plans
+**Wave 1**
+
 - [ ] 06-01-PLAN.md — Tabelas availability_rules + availability_exceptions (RLS + policies), módulos CRUD escopados, schema Zod; aplicar migração (AGENDA-01, AGENDA-03)
 - [ ] 06-02-PLAN.md — @date-fns/tz + função pura expandAvailability (regras→slots, fuso, viradas) + suite .spec (AGENDA-02, AGENDA-04)
+
+**Wave 2** *(blocked on Wave 1 completion)*
+
 - [ ] 06-03-PLAN.md — Actions (gate auth+paid+Zod) + rota RSC /dashboard/agenda + editor de grade, views dia/semana/mês, dialog de folga, sidebar (AGENDA-01..04)
+
 **UI hint**: yes
 
 ### Phase 7: Consultas & Ciclo de Status
@@ -45,10 +53,12 @@ Decimal phases appear between their surrounding integers in numeric order.
 **Depends on**: Phase 6
 **Requirements**: APPT-01, APPT-02, APPT-03, APPT-04
 **Success Criteria** (what must be TRUE):
+
   1. O médico cria e edita uma consulta em um horário livre, ligada a um paciente já cadastrado (reusa o domínio patients existente).
   2. Cada consulta percorre o ciclo solicitada (pedido a confirmar) → confirmada → realizada / falta / cancelada, com "falta" distinta de "cancelada" e visível como tal na agenda.
   3. O médico confirma ou recusa um "pedido a confirmar" a partir da agenda / lista de solicitações, e a agenda distingue visualmente pendente de confirmada.
   4. Um horário com consulta **pendente ou confirmada** rejeita uma segunda consulta no banco (exclusion constraint btree_gist escopada por profile_id sobre status em pending+confirmed — "pendente segura o horário"); a violação vira um result union amigável ("horário já ocupado"), nunca um erro cru 23P01.
+
 **Plans**: TBD
 **UI hint**: yes
 
@@ -58,10 +68,12 @@ Decimal phases appear between their surrounding integers in numeric order.
 **Depends on**: Phase 7
 **Requirements**: SEAT-01, SEAT-05
 **Success Criteria** (what must be TRUE):
+
   1. O médico convida a assistente por e-mail; ela cria conta e faz login sobre o Supabase Auth (sessão autenticada normal), e um membership (dono ↔ membro, role 'assistant_agenda', status ativo/revogado) registra o vínculo; o médico revoga/reativa o acesso a qualquer momento.
   2. O escopo do assento é enforced em DUAS camadas: RLS nas tabelas (a assistente logada só alcança agenda + paciente do médico convidante via membership ativo) E verificação de membership nas actions; reads clínicos diretos (PostgREST) do assento são NEGADOS por RLS — só o dono alcança prontuário, documentos, crescimento, vacinas e ganhos.
   3. Um teste cross-tenant explícito prova que um membership do médico X não lê nem escreve dados do médico Y; um teste cross-scope explícito prova que o assento não alcança nenhuma tabela clínica de nenhum médico (só agenda + campos mínimos de paciente).
   4. Revogar o membership corta o acesso da assistente imediatamente na próxima requisição (nenhuma sessão remanescente contorna o status revogado).
+
 **Plans**: TBD
 **Security review**: REQUIRED (escopo delegado sobre dado de menores/LGPD; o risco central é vazamento de escopo do membership — rodar `/gsd-secure-phase` ou um plano com foco em segurança; testes cross-tenant E cross-scope são o gate de verificação)
 **Research note**: o desenho de membership + RLS no Supabase precisa de pesquisa no plan-phase — em especial o **column-scoping** dos dados do paciente (RLS é row-level, então expor só campos mínimos exige uma **action mediada no servidor** que faz o SELECT allow-listado, não um read direto da tabela pelo assento) e como as políticas RLS por membership coexistem com as políticas `profile_id`-do-dono já existentes (RLS agora é a norma em toda tabela pós-2026-06-04).
@@ -72,9 +84,11 @@ Decimal phases appear between their surrounding integers in numeric order.
 **Depends on**: Phase 8
 **Requirements**: SEAT-02, SEAT-03, SEAT-04
 **Success Criteria** (what must be TRUE):
+
   1. Logada com sua própria conta, a assistente vê apenas a agenda (horários livres + consultas) do médico que a convidou — nenhuma outra tela, rota ou dado do app.
   2. A assistente busca um paciente já cadastrado do médico (via ação mediada no servidor que retorna só campos mínimos, com comprimento mínimo e resultado limitado) ou cria um cadastro mínimo novo ao agendar, com dedupe por nome/responsável.
   3. A assistente marca uma consulta em um horário livre; ela entra como "pedido a confirmar" e **segura o horário** (via a exclusion constraint da Phase 7) até o médico confirmar ou recusar, com estados visuais distintos de pendente vs confirmado.
+
 **Plans**: TBD
 **UI hint**: yes
 
@@ -84,10 +98,12 @@ Decimal phases appear between their surrounding integers in numeric order.
 **Depends on**: Phase 7
 **Requirements**: EARN-01, EARN-02, EARN-03, EARN-04, EARN-05
 **Success Criteria** (what must be TRUE):
+
   1. O médico registra o valor recebido por uma consulta (em R$, guardado em centavos inteiros, nunca float), ligado ao agendamento.
   2. O médico registra lançamentos financeiros avulsos, não ligados a uma consulta (appointment_id nullable).
   3. O médico vê um painel com totais por dia, semana e mês, agregados em SQL (date_trunc/sum) com buckets pela data local da clínica (AT TIME ZONE 'America/Sao_Paulo'), e o valor médio por consulta = total ÷ número de TODOS os lançamentos do período (avulsos incluídos no denominador), com arredondamento único que reconcilia ao centavo.
   4. O médico anula/estorna um lançamento sem apagá-lo (voided_at, não delete); totais e média filtram anulados (voided_at IS NULL) e a leitura/escrita/anulação é escopada por profile_id + gate `paid`, com teste de ownership.
+
 **Plans**: TBD
 **UI hint**: yes
 

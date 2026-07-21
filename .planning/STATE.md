@@ -4,8 +4,8 @@ milestone: v1.1
 milestone_name: Agenda & Ganhos
 current_phase_name: roadmap criado, planejamento não iniciado
 status: roadmap_ready
-stopped_at: Phase 6 context gathered
-last_updated: "2026-07-21T02:11:10.286Z"
+stopped_at: Phase 6 UI-SPEC approved
+last_updated: "2026-07-21T02:35:20.077Z"
 last_activity: 2026-07-20
 last_activity_desc: "Roadmap v1.1 criado; acesso da assistente definido como assento leve por membership (login real), substituindo a proposta de link/token; fases continuam a partir do v1.0 arquivado (última fase: 5), começando na Phase 6"
 progress:
@@ -118,7 +118,7 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-07-21T02:11:10.276Z
-Stopped at: Phase 6 context gathered
-Resume file: .planning/phases/06-disponibilidade-calend-rio-do-m-dico/06-CONTEXT.md
+Last session: 2026-07-21T02:35:20.062Z
+Stopped at: Phase 6 UI-SPEC approved
+Resume file: .planning/phases/06-disponibilidade-calend-rio-do-m-dico/06-UI-SPEC.md
 Next: `/gsd-plan-phase 6`
