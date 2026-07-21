@@ -5,8 +5,8 @@ milestone_name: Agenda & Ganhos
 current_phase: 06
 current_phase_name: disponibilidade-calend-rio-do-m-dico
 status: verifying
-stopped_at: Completed 06-03-PLAN.md
-last_updated: "2026-07-21T12:22:25.450Z"
+stopped_at: Phase 6 context gathered (v2 redesign)
+last_updated: "2026-07-21T15:46:25.837Z"
 last_activity: 2026-07-21
 last_activity_desc: "06-01 completo: tabelas availability + RLS + módulos CRUD, migração aplicada à DB viva"
 progress:
@@ -123,7 +123,7 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-07-21T12:22:17.053Z
-Stopped at: Completed 06-03-PLAN.md
-Resume file: None
+Last session: 2026-07-21T15:46:25.823Z
+Stopped at: Phase 6 context gathered (v2 redesign)
+Resume file: .planning/phases/06-disponibilidade-calend-rio-do-m-dico/06-CONTEXT.md
 Next: executar 06-02-PLAN.md (expandAvailability puro + suite .spec)
