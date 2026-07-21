@@ -42,6 +42,15 @@ export {
   type TogglePatientVaccineDoseResult,
 } from "./patient-vaccine-doses"
 export {
+  saveAvailabilityRulesAction,
+  type SaveAvailabilityRulesResult,
+  createAvailabilityExceptionAction,
+  type CreateAvailabilityExceptionResult,
+  deleteAvailabilityExceptionAction,
+  type DeleteAvailabilityExceptionInput,
+  type DeleteAvailabilityExceptionResult,
+} from "./availability"
+export {
   deleteMyAccountAction,
   updateStatusAction,
   updateProfileAction,
