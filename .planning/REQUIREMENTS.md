@@ -3,7 +3,7 @@
 **Defined:** 2026-07-20
 **Core Value:** A consulta pediátrica flui sem fricção — abrir o paciente, conduzir a consulta e gerar os documentos certos (impressos corretamente) em poucos cliques.
 
-> Os requisitos entregues no ciclo **v1.0** (CONS, PHOTO, GROWTH, DOC, VAC) estão registrados em `PROJECT.md ▸ Requirements ▸ Validated` e arquivados em `.planning/archive/milestone-v1.0/`. Este arquivo cobre apenas o escopo do **v1.1**. Tudo escopado por `profile_id` e atrás do gate de assinatura (`paid`) — **exceto** o endpoint do link com token, que autentica pelo próprio token (decisão de PROJECT.md).
+> Os requisitos entregues no ciclo **v1.0** (CONS, PHOTO, GROWTH, DOC, VAC) estão registrados em `PROJECT.md ▸ Requirements ▸ Validated` e arquivados em `.planning/archive/milestone-v1.0/`. Este arquivo cobre apenas o escopo do **v1.1**. Tudo escopado por `profile_id` e atrás do gate de assinatura (`paid`). O acesso da assistente é um **assento leve**: ela cria conta e loga (sessão autenticada normal do Supabase Auth), e um **membership** ativo ao médico convidante escopa o que ela alcança — só agenda + busca/criação mínima de paciente daquele médico, nunca prontuário nem o resto do app. Não há endpoint session-less nem link com token neste ciclo (proposta anterior superada — ver PROJECT.md Key Decisions).
 
 ## Milestone v1.1 Requirements
 
@@ -23,13 +23,13 @@ Cada requisito mapeia para exatamente uma fase do roadmap.
 - [ ] **APPT-03**: O médico confirma ou recusa um "pedido a confirmar" a partir da agenda / lista de solicitações
 - [ ] **APPT-04**: Um horário com consulta **pendente ou confirmada** não pode receber outra consulta (sem double-booking), garantido no banco (exclusion constraint), escopado por `profile_id`
 
-### Link Delegado da Assistente (LINK)
+### Acesso Delegado — Assento da Assistente (SEAT)
 
-- [ ] **LINK-01**: O médico gera um link privado com token para a assistente e pode revogar/rotacionar esse link a qualquer momento
-- [ ] **LINK-02**: A assistente abre o link sem login e vê apenas a agenda (horários livres) do médico — nunca o prontuário nem o resto do app
-- [ ] **LINK-03**: Pelo link, a assistente busca um paciente já cadastrado do médico ou cria um cadastro novo mínimo ao agendar (com dedupe por nome/responsável)
-- [ ] **LINK-04**: Pelo link, a assistente marca uma consulta em um horário livre; ela entra como "pedido a confirmar" e **segura o horário** até o médico confirmar ou recusar
-- [ ] **LINK-05**: O acesso pelo token é escopado a um único médico — `profile_id` derivado **apenas** do token verificado (token com hash-at-rest ≥256-bit, revogação/expiração, cliente service-role), sem herdar o gate `paid`, sem alcançar dados de outro médico (testado cross-tenant)
+- [ ] **SEAT-01**: O médico convida a assistente (por e-mail); ela cria conta e faz login; o médico pode revogar/reativar o acesso a qualquer momento (membership com status ativo/revogado)
+- [ ] **SEAT-02**: Logada, a assistente vê apenas a agenda (horários livres + consultas) do médico que a convidou — nenhuma outra tela, rota ou dado do app
+- [ ] **SEAT-03**: A assistente busca um paciente já cadastrado do médico ou cria um cadastro mínimo (dedupe por nome/responsável), via ação mediada no servidor que só expõe/retorna campos mínimos
+- [ ] **SEAT-04**: A assistente marca uma consulta em um horário livre; entra como "pedido a confirmar" e segura o horário até o médico confirmar/recusar
+- [ ] **SEAT-05**: O acesso da assistente é escopado por membership ativo ao médico convidante — alcança só agenda + busca/criação mínima de paciente daquele médico; nunca prontuário, documentos, crescimento, vacinas, ganhos, nem dados de outro médico; enforced por RLS + verificação de membership nas actions (testado cross-tenant E cross-scope). Reads clínicos diretos (PostgREST) do assento devem ser negados por RLS — só o dono alcança as tabelas clínicas
 
 ### Ganhos (EARN)
 
@@ -55,7 +55,9 @@ Excluído explicitamente para evitar scope creep. Vários são anti-features sin
 |---------|--------|
 | Notificações de agendamento (WhatsApp/e-mail/SMS) | Decisão do médico: "só vejo no painel". Infra de mensageria + consentimento LGPD fica para depois |
 | Pagamento/cobrança online | O app apenas registra o valor recebido; não processa nem cobra pagamentos |
-| Link 100% público self-service (família marcando direto) | Expor a base de crianças num link aberto violaria a LGPD; o link é da assistente (pessoa confiável), com token/escopo controlado |
+| Link 100% público self-service (família marcando direto) | Expor a base de crianças num link aberto violaria a LGPD; o acesso é da assistente (pessoa confiável, com conta própria e escopo controlado) |
+| Link/token session-less para a assistente | Superado — o acesso agora é assento autenticado por membership (identidade real, mais segura/auditável que um segredo compartilhável). Ver PROJECT.md Key Decisions |
+| Modelo de organização completo (refatorar `profile_id` → `org_id` em todo o app, papéis) | Path C adiado; o v1.1 usa assento leve escopado à agenda sem migrar a posse das demais tabelas. Pode virar milestone próprio depois |
 | Quebra do painel por particular/convênio/cortesia | O médico escolheu totais + média simples neste ciclo; classificação por forma de pagamento fica para v2 |
 | Sincronização com Google Calendar / iCal | Integração externa pesada; milestone futuro |
 | Lista de espera / overbooking | Fora do fluxo de "pedido a confirmar" deste ciclo |
@@ -66,31 +68,31 @@ Cada requisito mapeia para exatamente uma fase do roadmap. Preenchido na criaç�
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| AGENDA-01 | — | Pending |
-| AGENDA-02 | — | Pending |
-| AGENDA-03 | — | Pending |
-| AGENDA-04 | — | Pending |
-| APPT-01 | — | Pending |
-| APPT-02 | — | Pending |
-| APPT-03 | — | Pending |
-| APPT-04 | — | Pending |
-| LINK-01 | — | Pending |
-| LINK-02 | — | Pending |
-| LINK-03 | — | Pending |
-| LINK-04 | — | Pending |
-| LINK-05 | — | Pending |
-| EARN-01 | — | Pending |
-| EARN-02 | — | Pending |
-| EARN-03 | — | Pending |
-| EARN-04 | — | Pending |
-| EARN-05 | — | Pending |
+| AGENDA-01 | Phase 6 | Pending |
+| AGENDA-02 | Phase 6 | Pending |
+| AGENDA-03 | Phase 6 | Pending |
+| AGENDA-04 | Phase 6 | Pending |
+| APPT-01 | Phase 7 | Pending |
+| APPT-02 | Phase 7 | Pending |
+| APPT-03 | Phase 7 | Pending |
+| APPT-04 | Phase 7 | Pending |
+| SEAT-01 | Phase 8 | Pending |
+| SEAT-05 | Phase 8 | Pending |
+| SEAT-02 | Phase 9 | Pending |
+| SEAT-03 | Phase 9 | Pending |
+| SEAT-04 | Phase 9 | Pending |
+| EARN-01 | Phase 10 | Pending |
+| EARN-02 | Phase 10 | Pending |
+| EARN-03 | Phase 10 | Pending |
+| EARN-04 | Phase 10 | Pending |
+| EARN-05 | Phase 10 | Pending |
 
 **Coverage:**
 
 - v1.1 requirements: 18 total
-- Mapped to phases: 0 (roadmap ainda não criado)
-- Unmapped: 18 ⚠️ (será resolvido no roadmap)
+- Mapped to phases: 18 ✓
+- Unmapped: 0
 
 ---
 *Requirements defined: 2026-07-20 (milestone v1.1 "Agenda & Ganhos")*
-*Last updated: 2026-07-20 — definição inicial dos requisitos do v1.1*
+*Last updated: 2026-07-20 — LINK-* substituído por SEAT-* (assento leve por membership, login real; token superado); traceability 18/18 mapeados, 0 órfãos*

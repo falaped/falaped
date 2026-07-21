@@ -2,11 +2,11 @@
 gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: Agenda & Ganhos
-status: planning
-last_updated: "2026-07-21T01:17:40.705Z"
-last_activity: 2026-07-21
+status: roadmap_ready
+last_updated: "2026-07-20T00:00:00.000Z"
+last_activity: 2026-07-20
 progress:
-  total_phases: 0
+  total_phases: 5
   completed_phases: 0
   total_plans: 0
   completed_plans: 0
@@ -17,23 +17,33 @@ progress:
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-06-27)
+See: .planning/PROJECT.md (updated 2026-07-20)
 
 **Core value:** A consulta pediátrica flui sem fricção — abrir o paciente, conduzir a consulta e gerar os documentos certos (impressos corretamente) em poucos cliques.
-**Current focus:** Phase 05 — calend-rio-de-vacinas-refer-ncia
+**Current focus:** Milestone v1.1 "Agenda & Ganhos" — roadmap criado (5 fases, 6–10); próximo passo `/gsd-plan-phase 6`
 
 ## Current Position
 
-Phase: Not started (defining requirements)
+Phase: Not started (roadmap criado, planejamento não iniciado)
 Plan: —
-Status: Defining requirements
-Last activity: 2026-07-21 — Milestone v1.1 started
+Status: Roadmap ready (18/18 requisitos mapeados, 0 órfãos)
+Last activity: 2026-07-20 — Roadmap v1.1 criado; acesso da assistente definido como assento leve por membership (login real), substituindo a proposta de link/token; fases continuam a partir do v1.0 arquivado (última fase: 5), começando na Phase 6
+
+## Roadmap (milestone v1.1)
+
+| Phase | Nome | Requisitos | Nota |
+|-------|------|------------|------|
+| 6 | Disponibilidade & Calendário do Médico | AGENDA-01..04 | primeira; zero nova superfície de ataque; regras+exceções, expand-slots puro |
+| 7 | Consultas & Ciclo de Status | APPT-01..04 | exclusion constraint btree_gist (pendente+confirmada segura o horário) |
+| 8 | Assentos & Convite — Fundação de Acesso Delegado | SEAT-01, SEAT-05 | **FUNDAÇÃO DE SEGURANÇA** — membership + convite/aceite sobre Supabase Auth + enforcement de escopo (RLS + verificação nas actions); construir/testar cross-tenant E cross-scope em isolamento, UI mínima; flag de security review |
+| 9 | UI de Agendamento da Assistente | SEAT-02, SEAT-03, SEAT-04 | UI sobre a SESSÃO AUTENTICADA do assento (não link) — provada na Phase 8 |
+| 10 | Livro-caixa de Ganhos & Painel | EARN-01..05 | ortogonal; depende só da FK de consulta (Phase 7) |
 
 ## Performance Metrics
 
 **Velocity:**
 
-- Total plans completed: 4
+- Total plans completed: 4 (milestone v1.0, arquivado)
 - Average duration: — min
 - Total execution time: 0 hours
 
@@ -41,7 +51,7 @@ Last activity: 2026-07-21 — Milestone v1.1 started
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
-| 05 | 4 | - | - |
+| (v1.1 ainda não iniciado) | 0 | - | - |
 
 **Recent Trend:**
 
@@ -49,65 +59,40 @@ Last activity: 2026-07-21 — Milestone v1.1 started
 - Trend: —
 
 *Updated after each plan completion*
-| Phase 01 P02 | 10min | 1 tasks | 4 files |
-| Phase 02 P01 | 10min | 3 tasks | 10 files |
-| Phase 02 P02 | 20min | 6 tasks | 24 files |
-| Phase 03 P01 | 20min | 4 tasks | 16 files |
-| Phase 03 P03 | 6 | 2 tasks | 14 files |
-| Phase 04 P01 | 35min | 3 tasks | 39 files |
-| Phase 04 P02 | ~30min | 3 tasks | 40 files |
-| Phase 04 P04 | 40min | 3 tasks | 34 files |
-| Phase 04 P05 | 15min | 3 tasks | 5 files |
-| Phase 05 P01 | 80min | 3 tasks | 11 files |
-| Phase 05 P05-02 | ~40min | 2 tasks | 4 files |
-| Phase 05 P05-03 | 30 | 2 tasks | 4 files |
 
 ## Accumulated Context
 
 ### Decisions
 
 Decisions are logged in PROJECT.md Key Decisions table.
-Recent decisions affecting current work:
+Recent decisions affecting current work (milestone v1.1):
 
-- [Roadmap 2026-07-09]: Inserida Phase 3 "Curva de Crescimento" (GROWTH-01..03); renumeração inteira: Documentos → Phase 4, Calendário de Vacinas → Phase 5, Carteira de Vacinação → Phase 6
-- [Roadmap]: Motor de idade (`computePediatricAge`) é a keystone — fica na Phase 1 e é consumido pela curva de crescimento (Phase 3) e pela lógica de vacina (Phase 6)
-- [Roadmap]: Correção de PDF (CONS-04) precede os documentos novos (Phase 4), que herdam o builder `@falaped/falaped-kit/pdf`
-- [Roadmap]: Vacinas separadas em referência (dado estático, Phase 5) vs carteira por paciente (tabela owned, Phase 6)
-- [Roadmap]: Foto da criança em bucket privado + URL assinada — NÃO reusar o bucket público de logos (LGPD)
-- [Phase ?]: Pediatric age band boundary at 24 months (a 1-year-old reads '12 meses'); months/days via differenceInMonths + intervalToDuration remainder; corrected age by shifting birth date forward and re-banding, capped at 24 months corrected.
-- [Phase ?]: [Phase 2] Foto da criança em bucket privado patient-photos (public=false) + 4 storage RLS owner-scoped via foldername[1] — aplicado ao DB live (D-01/D-03)
-- [Phase ?]: [Phase 2] Armazenar o path do objeto (profile_id/patient_id.ext), nunca a URL; consentimento server-side via z.literal(true) + colunas consent_given/consent_at (D-02/D-04/D-05)
-- [Phase 2]: Compressão client-side via browser-image-compression@2.0.2 (Free plan sem transforms nativas — D-09); upload upsert = foto única substituível (D-08); input clássico sem capture (D-07)
-- [Phase 2]: Helper singular (TTL 60s) alimenta hero + cabeçalho do caso; helper de lote (createSignedUrls) alimenta a lista (TTL 300s, sem N+1); <AvatarImage> Radix em todas as superfícies, nunca next/image (D-10/D-11)
-- [Phase ?]: 03-03: toda mutação em patient_measurements escopa por id+profile_id+patient_id (nunca só id) — guarda IDOR (D-14 / CONCERNS Pitfall 5)
-- [Phase ?]: 03-03: measurement-form reusado em modo edit; history-table virou client component p/ Editar/Remover por linha
-- [Phase ?]: 04-01: Novo documento clínico = clonar prescriptions (módulos/action/rota/card/table) + medical-certificates (PDF título+corpo via buildMedicalCertificatePdf) + prescription-templates (snapshot)
-- [Phase ?]: 04-01: urgency guardada no payload jsonb (Discretion-A); badge semântico derivado no table; update-pdf-path e template delete endurecidos com .eq(profile_id)
-- [Phase 04]: Corpo do relatório via RichTextEditor de baixo nível (corpo único), TipTap HTML → htmlToPlainTextForPdf → buildMedicalCertificatePdf; domínio medical_reports novo e separado do laudo (D-10, Pitfall 4)
-- [Phase ?]: 04-04: milestone é um CAMPO em guidance_templates (uma tabela), não tabela por marco (RESEARCH OQ2)
-- [Phase ?]: 04-04: update/delete-guidance-template escopados por profile_id (D-15), mais fortes que o analog prescription-templates
-- [Phase ?]: 05-01: Global-read RLS divergence (D-07) — vaccine reference tables have no profile_id and only SELECT-only using(true) policies; writes are seed-only
-- [Phase ?]: 05-01: Vaccine seed values physician-approved at checkpoint; migrations applied to live DB by orchestrator
-- [Phase ?]: 05-02: SBIm child seed (34 items) physician-approved and applied to live DB; SUS × SBIm rendered as two aligned columns with per-dataset provenance (no color divergence)
-- [Phase ?]: 05-03: Gestante seed (5 items) physician-approved and applied to live DB on gestational_weeks axis (week_min/week_max + age_label); Tabs shell (Crianca | Gestante), gestante listed by vaccine with text window
+- [Roadmap v1.1 2026-07-20]: Fases continuam a partir do v1.0 (última fase 5); milestone v1.1 começa na Phase 6, sem reset para 1
+- [Roadmap v1.1]: Ordem dirigida por dependência — Disponibilidade (6) → Consultas+exclusion constraint (7) → Assentos/fundação de acesso delegado testada em isolamento (8) → UI da assistente sobre a sessão autenticada provada (9) → Ganhos (10, ortogonal, depende só da FK da 7)
+- [Decisão travada v1.1 — SEGURANÇA]: Acesso da assistente = **assento leve por membership** (login real + RLS/escopo), NÃO link/token session-less. Identidade nominal é mais segura/auditável sobre base de menores (LGPD); evita a 1ª superfície não autenticada do app. Proposta de token superada. Path C (org completa, refatorar profile_id→org_id) descartado para este ciclo
+- [Roadmap v1.1]: Phase 8 (assentos) construída e testada cross-tenant E cross-scope com UI mínima antes da Phase 9; o risco central agora é vazamento de ESCOPO do membership (não link vazável) — flag de security review obrigatório
+- [Decisão travada v1.1]: Pendente SEGURA o horário — exclusion constraint cobre status em pending+confirmed (Phase 7)
+- [Decisão travada v1.1]: Média de ganhos = total ÷ TODOS os lançamentos do período (avulsos incluídos no denominador), arredondamento único (Phase 10)
+- [Decisão travada v1.1]: Painel-only, SEM notificações neste ciclo
+- [Decisão travada v1.1]: Fuso fixo único da clínica (America/Sao_Paulo) para expansão de slots (Phase 6) e buckets de ganhos (Phase 10)
+
+<!-- Decisões do v1.0 arquivadas com o milestone. -->
 
 ### Pending Todos
 
 [From .planning/todos/pending/ — ideas captured during sessions]
 
-- [Phase 3 / PR #3 code review — deferred 2026-07-09] 10 findings in `.planning/phases/03-curva-de-crescimento/03-CODE-REVIEW.md`. Priority fixes before/after merge: #1 cross-tenant `patient_id` not verified on create/update (IDOR), #2 corrected-age axis silently falls back to chronological past 36m (clinical mis-scoring), #3 partial edit wipes cleared fields to null (data loss), #4 P97/P3 boundary mislabel, #5 unhandled rejection in delete dialog. #6–#10 are defense-in-depth/cleanup.
+- [Cross-cutting v1.1] RLS é AGORA a norma (toda migration pós-2026-06-04) — as tabelas novas (availability_rules, availability_exceptions, appointments, financial_entries, memberships) devem habilitar RLS + políticas na mesma migration, MAIS filtro `.eq(profile_id)` em código (defense-in-depth)
+- [Phase 8] O desenho de membership + RLS precisa de pesquisa no plan-phase: como as políticas RLS por membership coexistem com as políticas `profile_id`-do-dono já existentes; **column-scoping** do paciente (RLS é row-level → expor só campos mínimos exige action mediada que faz SELECT allow-listado, não read direto pelo assento)
+- [Phase 8] Open questions a resolver no discuss: fluxo de convite/aceite (e-mail → conta → membership); comportamento do assento quando a assinatura do médico dono expira (paid) — decidir se o acesso delegado depende do dono estar paid
 
 ### Blockers/Concerns
 
 [Issues that affect future work]
 
-- [Phase 2] Confirmar plano Supabase (Pro?) antes de construir foto — decide transform-on-the-fly vs `browser-image-compression` no cliente; confirmar requisitos de consentimento/exclusão
-- [Phase 5] Acurácia dos dados PNI/SBIm deve ser verificada com o médico contra as fontes oficiais atuais no momento do build (tarefa de conteúdo, não de stack)
-- [Phase 3] Acurácia das curvas de referência OMS (percentis/z-score) é tarefa de conteúdo — verificar dados/fonte oficiais no momento do build; decidir peso/idade, estatura/idade, IMC/idade, PC/idade e faixas etárias cobertas
-- [Phase 1] Correção de PDF cruza dois repos (kit + app) e pode exigir bump coordenado do `@falaped/falaped-kit` (>=0.2.7)
-- [Cross-cutting] App não tem RLS de tabela — todo slice novo precisa filtro `profile_id` em read/write/delete + gate `paid` + teste de ownership (Pitfall 5)
-- [Phase 2 — anomalia 02-03 RESOLVIDA 2026-06-29] O 02-03 (PHOTO-03) ficou commitado sem SUMMARY/verificação (mark-and-skip). Fechado via close-out manual: 02-03-SUMMARY.md reconstruído + VERIFICATION.md canônica gerada (status: passed, 11/11 must-haves). UAT 10/10 (02-UAT.md). Phase 02 agora 3/3 summaries, verificação passed, predicado de conclusão = true. ÚLTIMO gate antes do ship: SECURITY.md (security_enforcement=true) → rodar `/gsd-secure-phase 02`, depois `/gsd-ship 02`.
-- 04-01 Task 4 (BLOCKING): aplicar as 4 migrations de referrals ao DB live acstugafrgrqzvtuznxv via Supabase MCP (ordem: referrals, rls_referrals, storage_referrals, create_referral_templates)
+- [Cross-cutting] Todo slice novo precisa filtro `profile_id` em read/write/delete + gate `paid` + teste de ownership (Pitfall 17); o assento usa sessão autenticada normal (não pula auth), mas seu escopo é enforced por membership ativo + RLS, nunca só por convenção de código
+- [Phase 8] Risco central = vazamento de ESCOPO do membership: uma política RLS frouxa ou uma action sem verificação de membership expõe prontuário/outro médico. Verificar com testes cross-tenant (médico X ≠ médico Y) E cross-scope (assento não alcança tabela clínica alguma) antes de expor a UI (Phase 9). Reads clínicos diretos (PostgREST) do assento devem ser negados por RLS
+- [Phase 7] `btree_gist` exclusion constraint precisa da extensão criada na migration; violação (23P01) deve virar result union amigável, nunca erro cru
 
 ### Quick Tasks Completed
 
@@ -123,11 +108,14 @@ Items acknowledged and carried forward from previous milestone close:
 
 | Category | Item | Status | Deferred At |
 |----------|------|--------|-------------|
-| *(none)* | | | |
+| Foto | Exclusão de foto + verificação de segurança (`02-03`, PHOTO-03) | Deferred | v1.0 close |
+| Crescimento | Curva de crescimento do prematuro Intergrowth-21st (`03-04`) | Deferred | v1.0 close |
+| Vacinas | Carteira de vacinação por paciente (registrar aplicadas, pendentes/atrasadas por idade) | Deferred | v1.0 close |
+| Acesso delegado | Modelo de organização completo (profile_id → org_id em todo o app, papéis) — path C | Deferred | v1.1 roadmap |
 
 ## Session Continuity
 
-Last session: 2026-07-19T20:42:22.914Z
-Stopped at: Phase 5 UI-SPEC approved
-Resume file: .planning/phases/05-calend-rio-de-vacinas-refer-ncia/05-UI-SPEC.md
-Resume file: .planning/phases/03-curva-de-crescimento/03-UI-SPEC.md
+Last session: 2026-07-20 — roadmap v1.1 criado (assento leve por membership)
+Stopped at: Roadmap v1.1 criado (5 fases, 6–10; 18/18 requisitos mapeados; LINK-* → SEAT-*)
+Resume file: .planning/ROADMAP.md
+Next: `/gsd-plan-phase 6`

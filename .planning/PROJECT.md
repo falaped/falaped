@@ -2,7 +2,7 @@
 
 ## What This Is
 
-Falaped é um app web para o dia a dia do pediatra: cadastro de pacientes (crianças), geração de documentos clínicos (receitas, atestados, laudos/relatórios de caso), templates reutilizáveis, condução de consultas e um assistente de IA (Groq) para apoio clínico e transcrição. Neste ciclo (v1.1) o foco é dar ao pediatra uma agenda de consultas própria — disponibilidade recorrente, agendamento delegado a uma assistente por link privado, e acompanhamento de quanto ele ganha por consulta.
+Falaped é um app web para o dia a dia do pediatra: cadastro de pacientes (crianças), geração de documentos clínicos (receitas, atestados, laudos/relatórios de caso), templates reutilizáveis, condução de consultas e um assistente de IA (Groq) para apoio clínico e transcrição. Neste ciclo (v1.1) o foco é dar ao pediatra uma agenda de consultas própria — disponibilidade recorrente, agendamento delegado a uma assistente por convite (ela entra com login próprio, escopo restrito à agenda), e acompanhamento de quanto ele ganha por consulta.
 
 ## Core Value
 
@@ -14,7 +14,7 @@ A consulta pediátrica precisa fluir sem fricção — o médico abre o paciente
 
 **Target features:**
 - Disponibilidade recorrente (grade semanal) com visualização em dia / semana / mês.
-- Link privado (token) da assistente: acesso só à agenda + busca/criação de paciente + marcação — nunca prontuário ou resto do app.
+- Assento da assistente por convite: ela cria conta e loga; o convite dá acesso só à agenda + busca/criação de paciente do médico — nunca prontuário ou resto do app; o médico revoga quando quiser.
 - Agendamentos entram como "pedido a confirmar"; o médico/assistente confirma antes de firmar o horário.
 - Painel de ganhos: lançamentos financeiros (ligados a uma consulta ou avulsos) com totais por dia/semana/mês + valor médio por consulta.
 
@@ -49,10 +49,10 @@ A consulta pediátrica precisa fluir sem fricção — o médico abre o paciente
 - [ ] Definir disponibilidade recorrente (grade semanal, ex: seg/qua 14h–18h) que se repete
 - [ ] Visualizar a agenda em dia / semana / mês
 
-**Bloco 2 — Agendamento delegado (link privado da assistente)**
-- [ ] Link privado com token dá à assistente acesso escopado só à agenda + busca/criação de paciente + marcação (nunca prontuário ou resto do app)
-- [ ] A assistente busca um paciente cadastrado ou cria um cadastro novo ao agendar
-- [ ] Agendamentos entram como "pedido a confirmar"; médico/assistente confirma antes de firmar o horário
+**Bloco 2 — Acesso delegado (assento da assistente)**
+- [ ] O médico convida a assistente; ela cria conta e loga, com acesso escopado só à agenda + busca/criação de paciente do médico (nunca prontuário ou resto do app); o médico revoga quando quiser
+- [ ] A assistente busca um paciente cadastrado ou cria um cadastro mínimo ao agendar
+- [ ] Agendamentos entram como "pedido a confirmar"; o médico confirma antes de firmar o horário
 
 **Bloco 3 — Acompanhamento de ganhos**
 - [ ] Registrar lançamentos financeiros por consulta (ligados a um agendamento ou avulsos)
@@ -74,7 +74,8 @@ A consulta pediátrica precisa fluir sem fricção — o médico abre o paciente
 - Reescrever os documentos já existentes (receitas, atestados, laudos) — só estender, não refazer.
 - Notificações (WhatsApp/e-mail) de novo agendamento — v1.1 fica só com o painel; o aviso ativo fica para depois (decisão do médico: "só vejo no painel").
 - Pagamento/cobrança online — o app apenas registra o valor recebido, não processa nem cobra pagamentos.
-- Auto-agendamento pela própria família (link 100% público, self-service) — o link é para a assistente (pessoa confiável), com token/escopo controlado; expor a base de pacientes num link aberto violaria a LGPD.
+- Auto-agendamento pela própria família (link 100% público, self-service) — o acesso é da assistente (pessoa confiável, com conta própria e escopo controlado); expor a base de pacientes num link aberto violaria a LGPD.
+- Modelo de organização completo com papéis (refatorar `profile_id` → `org_id` em todo o app) — path C adiado; o v1.1 usa assento leve escopado à agenda, sem tocar a posse das demais tabelas. Pode virar um milestone próprio depois.
 
 ## Context
 
@@ -103,8 +104,8 @@ A consulta pediátrica precisa fluir sem fricção — o médico abre o paciente
 | Relatório médico é um tipo NOVO, separado do laudo/relatório de caso | O médico confirmou que é um documento diferente do que já existe | — Pending |
 | Extração de exames por foto (IA) fica para v2 | Item mais complexo; manter foco e entregar o resto mais rápido | — Pending |
 | Curva de crescimento inserida como Phase 3 (antes dos documentos) | Reprioriza acompanhamento de crescimento; consome o motor de idade da Phase 1 e não depende do PDF, então precede os documentos. Documentos → Phase 4, Vacinas → Phases 5–6 (renumeração inteira, 2026-07-09) | — Pending |
-| [v1.1] Link do assistente é privado (token), não público self-service | Assistente é pessoa confiável; um link 100% aberto exporia a base de crianças (LGPD). Token secreto, escopo restrito à agenda + busca de paciente | — Pending |
-| [v1.1] Endpoint do link NÃO usa a sessão paga normal | É a primeira superfície externa do app — precisa de auth própria por token (segredo, expiração, revogação), sem herdar o gate `paid` da sessão do médico | — Pending |
+| [v1.1] Acesso da assistente por assento leve (login real + membership), NÃO por link/token | Identidade nominal é mais segura e auditável que um segredo compartilhável sobre base de menores (LGPD); evita criar a 1ª superfície session-less do app. Substitui a proposta anterior de link com token (superada 2026-07-20) | — Pending |
+| [v1.1] Assento escopado só à agenda + busca de paciente, sem refatorar ownership do app | Dá o acesso delegado sem migrar `profile_id` → `org_id` em todas as tabelas; membership + escopo nas tabelas de agenda/paciente, prontuário/documentos permanecem só do dono (path C — org completa — descartado para este ciclo) | — Pending |
 | [v1.1] Agendamentos entram como "pedido a confirmar" | Dá controle ao médico antes de firmar o horário; evita reserva indevida | — Pending |
 | [v1.1] Ganhos como lançamento financeiro separado (ligado ou não à consulta) | Flexível; não força cada consulta a ter valor nem cada valor a ter consulta | — Pending |
 | [v1.1] Sem notificações neste ciclo (só painel) | Reduz escopo/infra; o painel resolve o essencial de "fiquei sabendo do agendamento" | — Pending |
@@ -128,4 +129,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-07-20 — início do milestone v1.1 (Agenda & Ganhos); v1.0 movido para Validated, itens não entregues marcados como Deferred*
+*Last updated: 2026-07-20 — início do milestone v1.1 (Agenda & Ganhos); acesso da assistente definido como assento leve (login + membership escopado à agenda), substituindo a proposta de link com token; v1.0 movido para Validated, itens não entregues marcados como Deferred*

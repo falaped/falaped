@@ -1,191 +1,119 @@
-# Roadmap: Falaped
+# Roadmap: Falaped — Milestone v1.1 "Agenda & Ganhos"
 
 ## Overview
 
-Este ciclo melhora a experiência da consulta pediátrica, amplia os tipos de documento clínico, acompanha o crescimento da criança e adiciona suporte completo a vacinação — sem trocar a arquitetura. O caminho segue a cadeia de dependências da pesquisa: primeiro as correções de dor de uso e o motor de idade (a "keystone" que tudo de crescimento e vacina consome, e a correção de PDF que todo documento novo herda); depois a foto privada da criança (decisão de privacidade isolada); então a curva de crescimento por paciente (medições antropométricas plotadas por idade, primeiro consumidor do motor de idade); em seguida os documentos clínicos novos sobre o padrão de receitas; então o calendário de vacinas como dado de referência; e por fim a carteira por paciente, que cruza idade × calendário × doses aplicadas. Cada fase entrega uma capacidade observável de ponta a ponta.
+Este milestone dá ao pediatra solo uma agenda de consultas de primeira classe: disponibilidade recorrente com visualizações dia/semana/mês, agendamento com ciclo "pedido a confirmar → confirmado → realizada/falta/cancelada", um **assento delegado** que deixa uma assistente de confiança — com conta e login próprios — marcar em nome do médico sem nunca tocar o prontuário, e um livro-caixa leve de ganhos com totais por período e valor médio por consulta. O acesso da assistente é um **assento leve por membership** (identidade real autenticada, escopo restrito à agenda), não um link/token session-less — decisão de segurança que evita criar a primeira superfície não autenticada do app sobre dado de menores (LGPD) e prefere acesso nominal, auditável e revogável por pessoa. A ordem segue a cadeia de dependências: primeiro o modelo de disponibilidade + calendário do médico (zero nova superfície de ataque; tudo depende dele), depois as consultas do médico + ciclo de status (com a exclusion constraint no banco que garante não-double-booking), então a fundação de acesso delegado — membership + convite + enforcement de escopo, construída e testada cross-tenant/cross-scope em isolamento, com UI mínima — e só então a UI de agendamento da assistente sobre a fundação já provada, e por fim o livro-caixa de ganhos + painel (ortogonal, depende só da FK de consulta). A fase de assentos é a única marcada para revisão de segurança mais profunda; tudo o mais segue padrões já presentes no código.
+
+**Numeração:** Este é o milestone v1.1. As fases continuam a partir da última fase do v1.0 (Phase 5, arquivada em `.planning/archive/milestone-v1.0/`). Portanto este milestone começa na **Phase 6**.
 
 ## Phases
 
 **Phase Numbering:**
 
-- Integer phases (1, 2, 3): Planned milestone work
-- Decimal phases (2.1, 2.2): Urgent insertions (marked with INSERTED)
+- Integer phases (6, 7, 8): Planned milestone work
+- Decimal phases (6.1, 6.2): Urgent insertions (marked with INSERTED)
 
 Decimal phases appear between their surrounding integers in numeric order.
 
-- [x] **Phase 1: Experiência da Consulta** - Idade pediátrica precisa, cronômetro de consulta e impressão de PDF sem páginas extras (completed 2026-06-28)
-- [ ] **Phase 2: Foto Privada do Paciente** - Foto da criança em armazenamento privado com URL assinada e consentimento (LGPD)
-- [ ] **Phase 3: Curva de Crescimento** - Medições antropométricas por paciente (peso, estatura, PC, IMC) plotadas em gráficos por idade sobre curvas de referência OMS, com histórico atualizável
-- [x] **Phase 4: Documentos Clínicos Novos** - Encaminhamento, pedido de exames, relatório médico, receituário em branco e biblioteca de orientações (completed 2026-07-19)
-- [x] **Phase 5: Calendário de Vacinas (Referência)** - Tabelas SUS/PNI, particular/SBIm e gestante como dado versionado, somente leitura (executed 2026-07-19; pending UAT + security) (completed 2026-07-20)
+- [ ] **Phase 6: Disponibilidade & Calendário do Médico** - Disponibilidade recorrente (grade semanal + duração de slot + exceções) expandida em slots na leitura, visualizada em dia/semana/mês no fuso da clínica
+- [ ] **Phase 7: Consultas & Ciclo de Status** - Consultas criadas pelo médico, ligadas a um paciente, com ciclo solicitada→confirmada→realizada/falta/cancelada e garantia de não-double-booking no banco (exclusion constraint sobre pendente+confirmada)
+- [ ] **Phase 8: Assentos & Convite — Fundação de Acesso Delegado (FUNDAÇÃO DE SEGURANÇA)** - Identidade real: tabela de membership (dono ↔ membro, role 'assistant_agenda', status ativo/revogado), fluxo de convite/aceite sobre Supabase Auth, e enforcement de escopo (RLS + verificação de membership) — a assistente logada só alcança agenda + busca/criação mínima de paciente do médico convidante, nunca módulos clínicos nem outro médico; construída e testada cross-tenant/cross-scope em isolamento, com UI mínima
+- [ ] **Phase 9: UI de Agendamento da Assistente** - Sobre a sessão autenticada do assento: a assistente loga, vê só a agenda, busca/cria paciente mínimo (dedupe) e marca uma consulta que entra como "pedido a confirmar" e segura o horário
+- [ ] **Phase 10: Livro-caixa de Ganhos & Painel** - Lançamentos financeiros em centavos inteiros (ligados a consulta ou avulsos), agregação em SQL por dia/semana/mês na data local da clínica, valor médio por consulta e anulação sem apagar
 
 ## Phase Details
 
-### Phase 1: Experiência da Consulta
+### Phase 6: Disponibilidade & Calendário do Médico
 
-**Goal**: O médico vê a idade da criança com precisão pediátrica, cronometra o atendimento e imprime/gera PDFs sem espaçamento excessivo nem página em branco extra — resolvendo a dor de uso diária (prioridade #1 do PROJECT.md) e estabelecendo o motor de idade que toda lógica de vacina vai consumir.
-**Mode:** mvp
-**Depends on**: Nothing (first phase)
-**Requirements**: CONS-01, CONS-02, CONS-03, CONS-04
+**Goal**: O médico configura sua disponibilidade recorrente uma vez e vê sua agenda corretamente em dia, semana e mês — a base de calendário sobre a qual tudo o mais é construído, sem nenhuma nova superfície externa de ataque.
+**Depends on**: Nothing (first phase of milestone; continues from archived v1.0 Phase 5)
+**Requirements**: AGENDA-01, AGENDA-02, AGENDA-03, AGENDA-04
 **Success Criteria** (what must be TRUE):
-
-  1. Ao abrir um paciente, o médico vê a idade exibida pela faixa etária correta — dias para recém-nascido (0–28d), meses + dias para lactente (~1–24m) e anos + meses (≥24m) — derivada da data de nascimento e correta nos casos de borda (fim de mês, ano bissexto, virada de ano, perto da meia-noite local)
-  2. O médico inicia um cronômetro de consulta e vê o tempo decorrido contando ao vivo durante o atendimento
-  3. O tempo decorrido continua correto após recarregar a página ou navegar e voltar (calculado a partir de um timestamp de início persistido, não de um contador que zera)
-  4. O médico gera/imprime um relatório existente e o PDF não tem página em branco extra nem faixa de espaço sobrando no rodapé — verificado em conteúdo de 1 página, no limite (~1,05 página) e em múltiplas páginas
-
-**Plans**: 5 plans
-Plans:
-**Wave 1**
-
-- [x] 01-01-PLAN.md — Schema foundation: gestational_age + cases pause columns + started_at default + db push (wave 1)
-- [x] 01-02-PLAN.md — Pediatric age engine (pure, tested) + PT-BR formatter (wave 1, TDD)
-- [x] 01-03-PLAN.md — CONS-04 PDF fix: Path B (in-repo) shipped — sanitization + console.log removal + repro script. **Path A (@falaped/falaped-kit release for the ~1.05-page boundary) dropped** (in-repo Path B covers 1-page and multi-page; the ~1.05-page boundary fix was not pursued — was parked in the now-removed Phase 6). (wave 1)
-
-**Wave 2** *(blocked on Wave 1 completion)*
-
-- [x] 01-04-PLAN.md — Age display slice: gestational field + hero/case-header badge + assistant adapter (wave 2)
-
-**Wave 3** *(blocked on Wave 2 completion)*
-
-- [x] 01-05-PLAN.md — Consultation timer slice: elapsed helper + pause/resume + draggable widget (wave 3)
-
-### Phase 2: Foto Privada do Paciente
-
-**Goal**: O médico anexa uma foto na identificação de cada criança e a vê no perfil, com a foto guardada em armazenamento privado acessível só ao médico dono — fechando a decisão de privacidade/LGPD (bucket privado, URL assinada, consentimento, exclusão) antes que qualquer atalho de "copiar o bucket público de logos" se espalhe.
-**Mode:** mvp
-**Depends on**: Phase 1
-**Requirements**: PHOTO-01, PHOTO-02, PHOTO-03
-**Success Criteria** (what must be TRUE):
-
-  1. O médico envia uma foto na identificação da criança e ela aparece no perfil/identificação do paciente
-  2. A foto é servida por URL assinada de curta duração; uma requisição não autenticada (`curl`) ao objeto falha (bucket `public=false`, escopo por `profile_id`, caminho — não URL pública — guardado no banco)
-  3. Apagar a foto remove tanto o objeto do storage quanto a referência no banco, e o fluxo captura/registra o consentimento do responsável (postura LGPD para dado de menor)
-
-**Plans**: 3 plans
+  1. O médico define uma disponibilidade recorrente por dia da semana e faixa de horário (ex: seg e qua 14h–18h) que se repete automaticamente semana após semana sem recriar rows por slot.
+  2. O médico define a duração padrão do slot (ex: 30 min) e vê os horários livres gerados dentro das faixas — as regras ficam armazenadas e os slots são expandidos na leitura por uma função pura testável.
+  3. O médico bloqueia uma exceção pontual por data (folga/feriado) e os horários daquele dia somem da grade recorrente.
+  4. O médico alterna entre dia, semana e mês e vê os horários livres corretos nas viradas de dia/semana/mês (intervalos meio-abertos, semana começando na segunda) e no fuso fixo da clínica (America/Sao_Paulo), sem slot duplicado nem sumido em transição.
+**Plans**: TBD
 **UI hint**: yes
-Plans:
 
-**Wave 1**
+### Phase 7: Consultas & Ciclo de Status
 
-- [x] 02-01-PLAN.md — Foundation: photo/consent columns + private patient-photos bucket & storage RLS + Patient type/selects + upload schema + [BLOCKING] schema push (wave 1)
-
-**Wave 2** *(blocked on Wave 1)*
-
-- [x] 02-02-PLAN.md — Upload + display slice (PHOTO-01/02): client compression + photo modules + gated upload action + form photo field & consent checkbox + AvatarImage on hero/list/case header (wave 2)
-
-**Wave 3** *(blocked on Wave 2)*
-
-- [ ] 02-03-PLAN.md — Delete + consent-completeness + security verification (PHOTO-03 criterion 3): idempotent storage remove + delete-patient cleanup + remove-photo AlertDialog + curl-fails security check (wave 3)
-
-### Phase 3: Curva de Crescimento
-
-**Goal**: O pediatra registra as medições antropométricas de cada criança ao longo do tempo (peso, comprimento/estatura, perímetro cefálico e IMC derivado) e visualiza a curva de crescimento em gráficos por idade — sobrepondo as medições do paciente às curvas de referência OMS (percentis/z-score) — mantendo um histórico atualizável. É o primeiro consumidor do motor de idade pediátrica da Phase 1, que posiciona cada medição pela idade correta.
-**Mode:** mvp
-**Depends on**: Phase 1 (o motor de idade pediátrica testado é a keystone para posicionar cada medição pela idade da criança)
-**Requirements**: GROWTH-01, GROWTH-02, GROWTH-03
+**Goal**: O médico cria consultas em horários livres, conduz cada uma pelo ciclo de status completo, e o banco garante que dois pacientes nunca ocupem o mesmo horário — estabelecendo o alvo de FK e a exclusion constraint na qual a fase de assentos vai escrever.
+**Depends on**: Phase 6
+**Requirements**: APPT-01, APPT-02, APPT-03, APPT-04
 **Success Criteria** (what must be TRUE):
-
-  1. O pediatra registra uma medição (data + peso e/ou comprimento/estatura e/ou perímetro cefálico) para um paciente; o IMC é derivado quando peso e estatura existem; a medição persiste como histórico escopado por `profile_id` + `patient_id`
-  2. O pediatra vê gráficos de curva de crescimento por idade (peso/idade, estatura/idade, IMC/idade, perímetro cefálico/idade) com as medições do paciente plotadas sobre as curvas de referência OMS (percentis/z-score), usando a idade pediátrica da Phase 1; a referência exibe fonte e faixa etária coberta
-  3. O pediatra atualiza o histórico — edita e remove medições — e os gráficos refletem a mudança; leitura/escrita/exclusão aplicam o gate de assinatura (`paid`) e escopam por `profile_id` (uma requisição de outro médico não acessa nem apaga a medição)
-
-**Plans**: 3/4 plans executed
+  1. O médico cria e edita uma consulta em um horário livre, ligada a um paciente já cadastrado (reusa o domínio patients existente).
+  2. Cada consulta percorre o ciclo solicitada (pedido a confirmar) → confirmada → realizada / falta / cancelada, com "falta" distinta de "cancelada" e visível como tal na agenda.
+  3. O médico confirma ou recusa um "pedido a confirmar" a partir da agenda / lista de solicitações, e a agenda distingue visualmente pendente de confirmada.
+  4. Um horário com consulta **pendente ou confirmada** rejeita uma segunda consulta no banco (exclusion constraint btree_gist escopada por profile_id sobre status em pending+confirmed — "pendente segura o horário"); a violação vira um result union amigável ("horário já ocupado"), nunca um erro cru 23P01.
+**Plans**: TBD
 **UI hint**: yes
-Plans:
 
-**Wave 1**
+### Phase 8: Assentos & Convite — Fundação de Acesso Delegado (FUNDAÇÃO DE SEGURANÇA — construir e testar em isolamento, UI mínima)
 
-- [x] 03-01-PLAN.md — Slice registrar medição: motor de idade +36m + tabela patient_measurements (RLS + [BLOCKING] push) + módulos/action create+get + form/histórico no perfil (wave 1)
-
-**Wave 2** *(blocked on Wave 1)*
-
-- [x] 03-02-PLAN.md — Slice curva OMS: math LMS + reference JSON WHO (human-verify) + recharts (human-verify) + growth-chart (tabs/toggles/corrected-age) + position readout (wave 2)
-- [x] 03-03-PLAN.md — Slice editar/remover histórico: update/delete escopados (ownership specs/IDOR) + modo edit do form + AlertDialog de remoção (wave 2)
-
-**Wave 3** *(blocked on Wave 2 / 03-02)*
-
-- [ ] 03-04-PLAN.md — Slice curva do prematuro: LMS Intergrowth-21st JSON (human-verify fonte/licença) + reference-index estendido + regra de transição Intergrowth→OMS + banda de prematuro no growth-chart (D-01/D-04, OQ1) (wave 3)
-
-### Phase 4: Documentos Clínicos Novos
-
-**Goal**: O médico gera três novos tipos de documento (encaminhamento, pedido de exames, relatório médico) mais receituário em branco e uma biblioteca de orientações — cada um reaproveitando o padrão das receitas (wizard + template salvável + PDF), auto-preenchido com os dados do paciente e herdando o builder de PDF já corrigido na Phase 1.
-**Mode:** mvp
-**Depends on**: Phase 1 (correção de PDF deve preceder os novos documentos, que reusam o mesmo `@falaped/falaped-kit/pdf`)
-**Requirements**: DOC-01, DOC-02, DOC-03, DOC-04, DOC-05, DOC-06
+**Goal**: A fundação de acesso delegado existe com IDENTIDADE REAL — a assistente tem conta e login próprios, e um membership ativo ao médico convidante a escopa estritamente à agenda + busca/criação mínima de paciente daquele médico. Construída e testada cross-tenant E cross-scope em isolamento, antes de qualquer UI de agendamento: um membership do médico X jamais alcança dados do médico Y, e a assistente jamais alcança prontuário/documentos/crescimento/vacinas/ganhos de nenhum médico. Este é o risco central do milestone — agora o risco é vazamento de escopo do membership, não link vazável.
+**Depends on**: Phase 7
+**Requirements**: SEAT-01, SEAT-05
 **Success Criteria** (what must be TRUE):
+  1. O médico convida a assistente por e-mail; ela cria conta e faz login sobre o Supabase Auth (sessão autenticada normal), e um membership (dono ↔ membro, role 'assistant_agenda', status ativo/revogado) registra o vínculo; o médico revoga/reativa o acesso a qualquer momento.
+  2. O escopo do assento é enforced em DUAS camadas: RLS nas tabelas (a assistente logada só alcança agenda + paciente do médico convidante via membership ativo) E verificação de membership nas actions; reads clínicos diretos (PostgREST) do assento são NEGADOS por RLS — só o dono alcança prontuário, documentos, crescimento, vacinas e ganhos.
+  3. Um teste cross-tenant explícito prova que um membership do médico X não lê nem escreve dados do médico Y; um teste cross-scope explícito prova que o assento não alcança nenhuma tabela clínica de nenhum médico (só agenda + campos mínimos de paciente).
+  4. Revogar o membership corta o acesso da assistente imediatamente na próxima requisição (nenhuma sessão remanescente contorna o status revogado).
+**Plans**: TBD
+**Security review**: REQUIRED (escopo delegado sobre dado de menores/LGPD; o risco central é vazamento de escopo do membership — rodar `/gsd-secure-phase` ou um plano com foco em segurança; testes cross-tenant E cross-scope são o gate de verificação)
+**Research note**: o desenho de membership + RLS no Supabase precisa de pesquisa no plan-phase — em especial o **column-scoping** dos dados do paciente (RLS é row-level, então expor só campos mínimos exige uma **action mediada no servidor** que faz o SELECT allow-listado, não um read direto da tabela pelo assento) e como as políticas RLS por membership coexistem com as políticas `profile_id`-do-dono já existentes (RLS agora é a norma em toda tabela pós-2026-06-04).
 
-  1. O médico gera um encaminhamento (especialidade/serviço, motivo, resumo clínico/hipótese, urgência) e um relatório médico de corpo livre (rich text), ambos com PDF auto-preenchido com nome/DOB/idade do paciente, sem página em branco extra
-  2. O médico monta um pedido de exames selecionando itens e gera o PDF com hipótese/indicação e observações
-  3. O médico salva e reutiliza templates de encaminhamento, pedido de exames e relatório médico (mesmo padrão das receitas)
-  4. O médico gera um receituário em branco (layout de receita, corpo vazio) e seleciona/imprime orientações de uma biblioteca por marco (1ª consulta, 1 mês, 2 meses...)
-  5. Cada novo documento aplica o gate de assinatura (`paid`) e escopa toda leitura/escrita/exclusão por `profile_id` — uma requisição de outro médico não acessa nem apaga o documento
+### Phase 9: UI de Agendamento da Assistente
 
-**Plans**: 5/5 plans complete
-**UI hint**: yes
-Plans:
-
-**Wave 1**
-
-- [x] 04-01-PLAN.md — Slice Encaminhamento (DOC-01) + template salvável (DOC-04): migration/RLS/storage + módulos + action (gate paid/IDOR) + rota + wizard (Combobox+urgência) + sidebar (wave 1)
-
-**Wave 2** *(sequenciada — compartilha app-sidebar/actions/index/constants)*
-
-- [x] 04-02-PLAN.md — Slice Relatório médico (DOC-03) + template (DOC-04): título + corpo rich-text único (RichTextEditor) → htmlToPlainTextForPdf → buildMedicalCertificatePdf, domínio novo separado do laudo (wave 2)
-
-**Wave 3** *(sequenciada)*
-
-- [x] 04-03-PLAN.md — Slice Pedido de exames (DOC-02) + template (DOC-04): catálogo pesquisável + texto livre + painéis default/próprios editáveis (D-03) + seed clínico human-verify (wave 3)
-
-**Wave 4** *(sequenciada)*
-
-- [x] 04-04-PLAN.md — Slice Orientações (DOC-06): biblioteca por marco de puericultura (seed editável, human-verify) + documento imprimível com auto-fill do paciente (wave 4)
-
-**Wave 5** *(sequenciada)*
-
-- [x] 04-05-PLAN.md — Slice Receituário em branco (DOC-05): modo `?mode=blank` do wizard de receita existente (pula guard de min-1-medicamento) + sidebar (wave 5)
-
-### Phase 5: Calendário de Vacinas (Referência)
-
-**Goal**: O médico consulta, durante o atendimento, o calendário de vacinas por idade — SUS/PNI e particular/SBIm lado a lado, mais a referência da gestante — modelado como dado versionado com fonte e data de vigência, somente leitura, para responder "o que está previsto nesta idade?".
-**Mode:** mvp
-**Depends on**: Phase 1 (motor de idade é a keystone para apresentar o calendário por idade da criança)
-**Requirements**: VAC-01, VAC-02, VAC-03, VAC-04
+**Goal**: A assistente de confiança usa seu assento — loga, abre a agenda do médico que a convidou, encontra ou cria um paciente e marca uma consulta que entra como pedido e segura o horário — tudo sobre a sessão autenticada e a fundação de escopo já provada da Phase 8, sem jamais ver o prontuário ou o resto do app.
+**Depends on**: Phase 8
+**Requirements**: SEAT-02, SEAT-03, SEAT-04
 **Success Criteria** (what must be TRUE):
-
-  1. O médico consulta a tabela de referência do calendário SUS/PNI por idade
-  2. O médico vê o calendário particular (SBIm) por idade ao lado do SUS, e consulta a referência de vacinação da gestante (Hepatite B, dTpa a partir de 20 sem, Influenza, COVID-19, VSR/Abrysvo a partir de 28 sem)
-  3. Cada calendário (SUS, particular, gestante) é um dataset separado e claramente rotulado, com fonte e data de vigência visíveis na UI (vintage + aviso de "confirmar contra o calendário oficial atual")
-
-**Plans**: 4/4 plans complete
+  1. Logada com sua própria conta, a assistente vê apenas a agenda (horários livres + consultas) do médico que a convidou — nenhuma outra tela, rota ou dado do app.
+  2. A assistente busca um paciente já cadastrado do médico (via ação mediada no servidor que retorna só campos mínimos, com comprimento mínimo e resultado limitado) ou cria um cadastro mínimo novo ao agendar, com dedupe por nome/responsável.
+  3. A assistente marca uma consulta em um horário livre; ela entra como "pedido a confirmar" e **segura o horário** (via a exclusion constraint da Phase 7) até o médico confirmar ou recusar, com estados visuais distintos de pendente vs confirmado.
+**Plans**: TBD
 **UI hint**: yes
-Plans:
 
-**Wave 1**
+### Phase 10: Livro-caixa de Ganhos & Painel
 
-- [x] 05-01-PLAN.md — Slice foundation: vaccine_schedules + vaccine_schedule_items (global-read RLS, D-07) + [BLOCKING] db push + SUS clinical seed (human-verify) + read module + /dashboard/vaccines route rendering SUS end-to-end (VAC-01/VAC-04) (wave 1)
-
-**Wave 2** *(sequenciada — compartilha view/column/page)*
-
-- [x] 05-02-PLAN.md — Slice SBIm lado a lado: SBIm seed (human-verify) + duas colunas alinhadas por faixa etária + proveniência por dataset (VAC-02/VAC-04) (wave 2)
-
-**Wave 3** *(sequenciada)*
-
-- [x] 05-03-PLAN.md — Slice Gestante: seed no eixo de semanas gestacionais (human-verify) + abas Criança|Gestante + lista por vacina com janela em texto (VAC-03/VAC-04) (wave 3)
-
-**Wave 4** *(sequenciada)*
-
-- [x] 05-04-PLAN.md — Slice entrada por paciente: rota `?patientId` + link na ficha + destaque da faixa etária atual (motor de idade, position-only) nas duas colunas (D-02/D-03/D-11) (wave 4)
+**Goal**: O médico acompanha quanto ganha por consulta — registra valores (ligados a uma consulta ou avulsos), vê totais por dia/semana/mês e o valor médio por consulta, com números auditáveis que reconciliam ao centavo. Ortogonal às demais fases; depende só da FK de consulta da Phase 7.
+**Depends on**: Phase 7
+**Requirements**: EARN-01, EARN-02, EARN-03, EARN-04, EARN-05
+**Success Criteria** (what must be TRUE):
+  1. O médico registra o valor recebido por uma consulta (em R$, guardado em centavos inteiros, nunca float), ligado ao agendamento.
+  2. O médico registra lançamentos financeiros avulsos, não ligados a uma consulta (appointment_id nullable).
+  3. O médico vê um painel com totais por dia, semana e mês, agregados em SQL (date_trunc/sum) com buckets pela data local da clínica (AT TIME ZONE 'America/Sao_Paulo'), e o valor médio por consulta = total ÷ número de TODOS os lançamentos do período (avulsos incluídos no denominador), com arredondamento único que reconcilia ao centavo.
+  4. O médico anula/estorna um lançamento sem apagá-lo (voided_at, não delete); totais e média filtram anulados (voided_at IS NULL) e a leitura/escrita/anulação é escopada por profile_id + gate `paid`, com teste de ownership.
+**Plans**: TBD
+**UI hint**: yes
 
 ## Progress
 
-**Execution Order:**
-Phases execute in numeric order: 1 → 2 → 3 → 4 → 5
-
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Experiência da Consulta | 5/5 | Complete   | 2026-06-28 |
-| 2. Foto Privada do Paciente | 2/3 | In Progress|  |
-| 3. Curva de Crescimento | 3/4 | In Progress|  |
-| 4. Documentos Clínicos Novos | 5/5 | Complete   | 2026-07-19 |
-| 5. Calendário de Vacinas (Referência) | 4/4 | Complete    | 2026-07-20 |
+| 6. Disponibilidade & Calendário do Médico | 0/? | Not started | - |
+| 7. Consultas & Ciclo de Status | 0/? | Not started | - |
+| 8. Assentos & Convite — Fundação de Acesso Delegado | 0/? | Not started | - |
+| 9. UI de Agendamento da Assistente | 0/? | Not started | - |
+| 10. Livro-caixa de Ganhos & Painel | 0/? | Not started | - |
+
+## Coverage
+
+- v1.1 requirements: 18 total
+- Mapped to phases: 18 ✓
+- Unmapped: 0
+
+Every v1.1 requirement maps to exactly one phase. No orphans, no duplicates.
+
+| Phase | Requirements |
+|-------|--------------|
+| 6 | AGENDA-01, AGENDA-02, AGENDA-03, AGENDA-04 |
+| 7 | APPT-01, APPT-02, APPT-03, APPT-04 |
+| 8 | SEAT-01, SEAT-05 |
+| 9 | SEAT-02, SEAT-03, SEAT-04 |
+| 10 | EARN-01, EARN-02, EARN-03, EARN-04, EARN-05 |
+
+---
+*Roadmap created: 2026-07-20 (milestone v1.1 "Agenda & Ganhos") — phases continue from archived v1.0 (last phase: 5)*
+*Updated: 2026-07-20 — acesso da assistente = assento leve por membership (login real + RLS/escopo), substituindo a proposta de link/token session-less. Phase 8 reescrita para "Assentos & Convite"; Phase 9 agora sobre sessão autenticada*
