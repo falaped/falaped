@@ -33,7 +33,10 @@ Decimal phases appear between their surrounding integers in numeric order.
   2. O médico define a duração padrão do slot (ex: 30 min) e vê os horários livres gerados dentro das faixas — as regras ficam armazenadas e os slots são expandidos na leitura por uma função pura testável.
   3. O médico bloqueia uma exceção pontual por data (folga/feriado) e os horários daquele dia somem da grade recorrente.
   4. O médico alterna entre dia, semana e mês e vê os horários livres corretos nas viradas de dia/semana/mês (intervalos meio-abertos, semana começando na segunda) e no fuso fixo da clínica (America/Sao_Paulo), sem slot duplicado nem sumido em transição.
-**Plans**: TBD
+**Plans**: 3 plans
+- [ ] 06-01-PLAN.md — Tabelas availability_rules + availability_exceptions (RLS + policies), módulos CRUD escopados, schema Zod; aplicar migração (AGENDA-01, AGENDA-03)
+- [ ] 06-02-PLAN.md — @date-fns/tz + função pura expandAvailability (regras→slots, fuso, viradas) + suite .spec (AGENDA-02, AGENDA-04)
+- [ ] 06-03-PLAN.md — Actions (gate auth+paid+Zod) + rota RSC /dashboard/agenda + editor de grade, views dia/semana/mês, dialog de folga, sidebar (AGENDA-01..04)
 **UI hint**: yes
 
 ### Phase 7: Consultas & Ciclo de Status
@@ -92,7 +95,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 6. Disponibilidade & Calendário do Médico | 0/? | Not started | - |
+| 6. Disponibilidade & Calendário do Médico | 0/3 | Not started | - |
 | 7. Consultas & Ciclo de Status | 0/? | Not started | - |
 | 8. Assentos & Convite — Fundação de Acesso Delegado | 0/? | Not started | - |
 | 9. UI de Agendamento da Assistente | 0/? | Not started | - |
