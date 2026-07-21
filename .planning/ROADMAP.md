@@ -15,7 +15,7 @@ Este milestone dá ao pediatra solo uma agenda de consultas de primeira classe: 
 
 Decimal phases appear between their surrounding integers in numeric order.
 
-- [ ] **Phase 6: Disponibilidade & Calendário do Médico** - Disponibilidade recorrente (grade semanal + duração de slot + exceções) expandida em slots na leitura, visualizada em dia/semana/mês no fuso da clínica
+- [x] **Phase 6: Disponibilidade & Calendário do Médico** - Disponibilidade recorrente (grade semanal + duração de slot + exceções) expandida em slots na leitura, visualizada em dia/semana/mês no fuso da clínica (completed 2026-07-21)
 - [ ] **Phase 7: Consultas & Ciclo de Status** - Consultas criadas pelo médico, ligadas a um paciente, com ciclo solicitada→confirmada→realizada/falta/cancelada e garantia de não-double-booking no banco (exclusion constraint sobre pendente+confirmada)
 - [ ] **Phase 8: Assentos & Convite — Fundação de Acesso Delegado (FUNDAÇÃO DE SEGURANÇA)** - Identidade real: tabela de membership (dono ↔ membro, role 'assistant_agenda', status ativo/revogado), fluxo de convite/aceite sobre Supabase Auth, e enforcement de escopo (RLS + verificação de membership) — a assistente logada só alcança agenda + busca/criação mínima de paciente do médico convidante, nunca módulos clínicos nem outro médico; construída e testada cross-tenant/cross-scope em isolamento, com UI mínima
 - [ ] **Phase 9: UI de Agendamento da Assistente** - Sobre a sessão autenticada do assento: a assistente loga, vê só a agenda, busca/cria paciente mínimo (dedupe) e marca uma consulta que entra como "pedido a confirmar" e segura o horário
@@ -35,7 +35,7 @@ Decimal phases appear between their surrounding integers in numeric order.
   3. O médico bloqueia uma exceção pontual por data (folga/feriado) e os horários daquele dia somem da grade recorrente.
   4. O médico alterna entre dia, semana e mês e vê os horários livres corretos nas viradas de dia/semana/mês (intervalos meio-abertos, semana começando na segunda) e no fuso fixo da clínica (America/Sao_Paulo), sem slot duplicado nem sumido em transição.
 
-**Plans**: 2/3 plans executed
+**Plans**: 3/3 plans complete
 **Wave 1**
 
 - [x] 06-01-PLAN.md — Tabelas availability_rules + availability_exceptions (RLS + policies), módulos CRUD escopados, schema Zod; aplicar migração (AGENDA-01, AGENDA-03)
@@ -43,7 +43,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
-- [ ] 06-03-PLAN.md — Actions (gate auth+paid+Zod) + rota RSC /dashboard/agenda + editor de grade, views dia/semana/mês, dialog de folga, sidebar (AGENDA-01..04)
+- [x] 06-03-PLAN.md — Actions (gate auth+paid+Zod) + rota RSC /dashboard/agenda + editor de grade, views dia/semana/mês, dialog de folga, sidebar (AGENDA-01..04)
 
 **UI hint**: yes
 
@@ -111,7 +111,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 6. Disponibilidade & Calendário do Médico | 2/3 | In Progress|  |
+| 6. Disponibilidade & Calendário do Médico | 3/3 | Complete   | 2026-07-21 |
 | 7. Consultas & Ciclo de Status | 0/? | Not started | - |
 | 8. Assentos & Convite — Fundação de Acesso Delegado | 0/? | Not started | - |
 | 9. UI de Agendamento da Assistente | 0/? | Not started | - |

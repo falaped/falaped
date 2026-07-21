@@ -4,17 +4,17 @@ milestone: v1.1
 milestone_name: Agenda & Ganhos
 current_phase: 06
 current_phase_name: disponibilidade-calend-rio-do-m-dico
-status: executing
-stopped_at: Completed 06-01-PLAN.md
-last_updated: "2026-07-21T12:11:32.555Z"
+status: verifying
+stopped_at: Completed 06-03-PLAN.md
+last_updated: "2026-07-21T12:22:25.450Z"
 last_activity: 2026-07-21
 last_activity_desc: "06-01 completo: tabelas availability + RLS + módulos CRUD, migração aplicada à DB viva"
 progress:
   total_phases: 5
-  completed_phases: 0
+  completed_phases: 1
   total_plans: 3
-  completed_plans: 2
-  percent: 0
+  completed_plans: 3
+  percent: 20
 ---
 
 # Project State
@@ -30,7 +30,7 @@ See: .planning/PROJECT.md (updated 2026-07-20)
 
 Phase: 06 (disponibilidade-calend-rio-do-m-dico) — EXECUTING
 Plan: 3 of 3
-Status: Ready to execute
+Status: Phase complete — ready for verification
 Last activity: 2026-07-21 — 06-01 completo: tabelas availability + RLS + módulos CRUD, migração aplicada à DB viva
 
 ## Roadmap (milestone v1.1)
@@ -64,6 +64,7 @@ Last activity: 2026-07-21 — 06-01 completo: tabelas availability + RLS + módu
 
 *Updated after each plan completion*
 | Phase 06 P02 | 8 | 2 tasks | 5 files |
+| Phase 06 P03 | 389 | 3 tasks | 10 files |
 
 ## Accumulated Context
 
@@ -82,6 +83,8 @@ Recent decisions affecting current work (milestone v1.1):
 - [Decisão travada v1.1]: Fuso fixo único da clínica (America/Sao_Paulo) para expansão de slots (Phase 6) e buckets de ganhos (Phase 10)
 
 <!-- Decisões do v1.0 arquivadas com o milestone. -->
+
+- [Phase ?]: Agenda: navegação Dia/Semana/Mês re-agrupa client-side os slots já expandidos da semana atual + byDay para o mês.
 
 ### Pending Todos
 
@@ -120,7 +123,7 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-07-21T12:11:24.995Z
-Stopped at: Completed 06-01-PLAN.md
+Last session: 2026-07-21T12:22:17.053Z
+Stopped at: Completed 06-03-PLAN.md
 Resume file: None
 Next: executar 06-02-PLAN.md (expandAvailability puro + suite .spec)

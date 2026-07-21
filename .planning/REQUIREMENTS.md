@@ -11,9 +11,9 @@ Cada requisito mapeia para exatamente uma fase do roadmap.
 
 ### Disponibilidade & Agenda (AGENDA)
 
-- [ ] **AGENDA-01**: O médico define disponibilidade recorrente por dia da semana e faixa de horário (ex: seg e qua, 14h–18h), que se repete automaticamente semana após semana
+- [x] **AGENDA-01**: O médico define disponibilidade recorrente por dia da semana e faixa de horário (ex: seg e qua, 14h–18h), que se repete automaticamente semana após semana
 - [x] **AGENDA-02**: O médico define a duração padrão do slot de consulta (ex: 30 min); os horários disponíveis são gerados dentro das faixas recorrentes (regras armazenadas, slots expandidos na leitura)
-- [ ] **AGENDA-03**: O médico bloqueia exceções pontuais por data (folga/feriado) que removem horários da grade recorrente
+- [x] **AGENDA-03**: O médico bloqueia exceções pontuais por data (folga/feriado) que removem horários da grade recorrente
 - [x] **AGENDA-04**: O médico visualiza a agenda em dia, semana e mês, vendo os horários livres e as consultas marcadas, corretos nas viradas de dia/semana/mês e no fuso da clínica
 
 ### Agendamento & Ciclo (APPT)
@@ -68,9 +68,9 @@ Cada requisito mapeia para exatamente uma fase do roadmap. Preenchido na criaç�
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| AGENDA-01 | Phase 6 | Pending |
+| AGENDA-01 | Phase 6 | Complete |
 | AGENDA-02 | Phase 6 | Complete |
-| AGENDA-03 | Phase 6 | Pending |
+| AGENDA-03 | Phase 6 | Complete |
 | AGENDA-04 | Phase 6 | Complete |
 | APPT-01 | Phase 7 | Pending |
 | APPT-02 | Phase 7 | Pending |
