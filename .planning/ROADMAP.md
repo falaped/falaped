@@ -25,25 +25,18 @@ Decimal phases appear between their surrounding integers in numeric order.
 
 ### Phase 6: Disponibilidade & Calendário do Médico
 
-**Goal**: O médico configura sua disponibilidade recorrente uma vez e vê sua agenda corretamente em dia, semana e mês — a base de calendário sobre a qual tudo o mais é construído, sem nenhuma nova superfície externa de ataque.
+**Goal**: O médico gerencia sua disponibilidade num **calendário único editável** (dia/semana/mês, fuso America/Sao_Paulo): pinta disponibilidade (verde) e folgas por clique/arraste/dia-inteiro, alterna entre disponibilidade e folga por um toggle, e salva em lote — sobre um modelo **híbrido** (template recorrente + overrides por data, aditivos e subtrativos). Slots expandidos na leitura por função pura. Sem nova superfície externa de ataque. _(v2 redesign — a v1 foi entregue e arquivada em `archive-v1/`.)_
 **Depends on**: Nothing (first phase of milestone; continues from archived v1.0 Phase 5)
-**Requirements**: AGENDA-01, AGENDA-02, AGENDA-03, AGENDA-04
+**Requirements**: AGENDA-01, AGENDA-02, AGENDA-03, AGENDA-04, AGENDA-05
 **Success Criteria** (what must be TRUE):
 
-  1. O médico define uma disponibilidade recorrente por dia da semana e faixa de horário (ex: seg e qua 14h–18h) que se repete automaticamente semana após semana sem recriar rows por slot.
-  2. O médico define a duração padrão do slot (ex: 30 min) e vê os horários livres gerados dentro das faixas — as regras ficam armazenadas e os slots são expandidos na leitura por uma função pura testável.
-  3. O médico bloqueia uma exceção pontual por data (folga/feriado) e os horários daquele dia somem da grade recorrente.
-  4. O médico alterna entre dia, semana e mês e vê os horários livres corretos nas viradas de dia/semana/mês (intervalos meio-abertos, semana começando na segunda) e no fuso fixo da clínica (America/Sao_Paulo), sem slot duplicado nem sumido em transição.
+  1. O médico define disponibilidade recorrente por dia da semana + faixa (pintando no calendário) que se repete semana após semana, sem recriar rows por slot.
+  2. O médico define a duração de slot (por faixa) e vê os horários livres gerados — regras armazenadas, slots expandidos na leitura por função pura testável.
+  3. O médico bloqueia folga por data (dia inteiro ou faixa parcial) e os horários daquele dia somem; e abre disponibilidade extra pontual por data (override aditivo, AGENDA-05) que soma fora do template.
+  4. O médico alterna dia/semana/mês e vê os horários corretos nas viradas (meio-abertos, semana na segunda) no fuso America/Sao_Paulo, sem slot duplicado/sumido; mês = indicador (ponto + contagem), edição em dia/semana.
+  5. O médico pinta por clique (slot), arraste (período) e "dia inteiro", com toggle Disponibilidade|Folga, e salva em lote com confirmação antes de descartar mudanças não salvas.
 
-**Plans**: 3/3 plans complete
-**Wave 1**
-
-- [x] 06-01-PLAN.md — Tabelas availability_rules + availability_exceptions (RLS + policies), módulos CRUD escopados, schema Zod; aplicar migração (AGENDA-01, AGENDA-03)
-- [x] 06-02-PLAN.md — @date-fns/tz + função pura expandAvailability (regras→slots, fuso, viradas) + suite .spec (AGENDA-02, AGENDA-04)
-
-**Wave 2** *(blocked on Wave 1 completion)*
-
-- [x] 06-03-PLAN.md — Actions (gate auth+paid+Zod) + rota RSC /dashboard/agenda + editor de grade, views dia/semana/mês, dialog de folga, sidebar (AGENDA-01..04)
+**Plans**: replanning (v2) — v1 plans archived in `archive-v1/`
 
 **UI hint**: yes
 
