@@ -36,10 +36,10 @@ Decimal phases appear between their surrounding integers in numeric order.
   4. O médico alterna dia/semana/mês e vê os horários corretos nas viradas (meio-abertos, semana na segunda) no fuso America/Sao_Paulo, sem slot duplicado/sumido; mês = indicador (ponto + contagem), edição em dia/semana.
   5. O médico pinta por clique (slot), arraste (período) e "dia inteiro", com toggle Disponibilidade|Folga, e salva em lote com confirmação antes de descartar mudanças não salvas.
 
-**Plans**: 1/3 plans executed
+**Plans**: 2/3 plans executed
 
 - [x] 06-01-PLAN.md — Migração híbrida ALTER+backfill + expandAvailability híbrida DST-safe + schema WR-02/03 (checkpoint de push da migração)
-- [ ] 06-02-PLAN.md — Módulos CRUD de override owner-scoped + action de salvar-em-lote
+- [x] 06-02-PLAN.md — Módulos CRUD de override owner-scoped + action de salvar-em-lote
 - [ ] 06-03-PLAN.md — Calendário único editável (pintura/toggle/batch save/guarda) + RSC migrado (checkpoint visual)
 
 **UI hint**: yes
@@ -108,7 +108,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 6. Disponibilidade & Calendário do Médico | 1/3 | In Progress|  |
+| 6. Disponibilidade & Calendário do Médico | 2/3 | In Progress|  |
 | 7. Consultas & Ciclo de Status | 0/? | Not started | - |
 | 8. Assentos & Convite — Fundação de Acesso Delegado | 0/? | Not started | - |
 | 9. UI de Agendamento da Assistente | 0/? | Not started | - |
