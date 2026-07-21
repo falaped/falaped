@@ -587,7 +587,9 @@ const { slots, byDay } = expandAvailability({
 | A7 | Teto de minutos = 1440 (24:00 = fim do dia), coerente com WR-04 | Modelo de Dados / WR-03 | Baixo — RESEARCH v1 já recomendou 1440; planner decide/documenta 1440 vs 1410. |
 | A8 | Rename da tabela para `availability_overrides` é cosmético e NÃO recomendado (custo de refactor > benefício) | Modelo de Dados | Baixo — reversível; decisão do planner. |
 
-## Open Questions
+## Open Questions (RESOLVED no discuss/plan — 2026-07-21)
+
+> **RESOLVED:** Q1 → o aditivo carrega `slot_minutes` próprio (nullable no schema, obrigatório quando `type='add'`) — Planos 01/02/03. Q2 → aditivo e subtrativo podem coexistir no mesmo dia; o algoritmo D-21 resolve (folga vence) — decisão do CONTEXT v2. Q3 → guarda de navegação via `beforeunload` (refresh/fechar) + checagem `isDirty` na troca de aba (estado local, não rota); o executor confirma a API exata de exit-guard do App Router na implementação (RESEARCH marca A5 como MEDIUM). Q4 → CONTEXT v2 (D-14..D-18) é a autoridade de UI; UI-SPEC v2 dedicada via /gsd-ui-phase é follow-up recomendado.
 
 1. **Aditivo herda a duração do template ou tem `slot_minutes` próprio? (A2)**
    - What we know: D-09 (duração por faixa) vale para o template; AGENDA-05 abre "horário extra pontual".
