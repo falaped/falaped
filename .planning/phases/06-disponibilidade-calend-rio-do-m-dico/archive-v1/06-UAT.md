@@ -8,20 +8,19 @@ updated: 2026-07-21
 
 ## Current Test
 
-number: 1
-name: Pintar a grade semanal, escolher duração por faixa e salvar disponibilidade
+number: 2
+name: Folga de dia inteiro e folga parcial subtraem slots
 expected: |
-  Logado como perfil paid em /dashboard/agenda, ao pintar a grade clicável,
-  escolher duração por faixa e clicar em "Salvar disponibilidade": toast
-  "Disponibilidade salva."; ao recarregar, a grade reflete as faixas salvas
-  (recorrência semana após semana).
+  Os horários do dia inteiro somem por completo da grade; na folga parcial
+  apenas os slots a partir da faixa bloqueada somem; a folga aparece na lista
+  com badge neutro "Folga".
 awaiting: user response
 
 ## Tests
 
 ### 1. Salvar grade semanal (click-to-toggle + duração por faixa)
 expected: Toast "Disponibilidade salva."; ao recarregar, a grade reflete as faixas salvas (recorrência semana após semana).
-result: [pending]
+result: pass
 
 ### 2. Folga de dia inteiro e folga parcial subtraem slots
 expected: Os horários do dia inteiro somem por completo da grade; na folga parcial apenas os slots a partir da faixa bloqueada somem; a folga aparece na lista com badge neutro "Folga".
@@ -34,9 +33,9 @@ result: [pending]
 ## Summary
 
 total: 3
-passed: 0
+passed: 1
 issues: 0
-pending: 3
+pending: 2
 skipped: 0
 blocked: 0
 
