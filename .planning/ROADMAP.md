@@ -38,7 +38,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 **Plans**: 3 plans
 **Wave 1**
 
-- [ ] 06-01-PLAN.md — Tabelas availability_rules + availability_exceptions (RLS + policies), módulos CRUD escopados, schema Zod; aplicar migração (AGENDA-01, AGENDA-03)
+- [x] 06-01-PLAN.md — Tabelas availability_rules + availability_exceptions (RLS + policies), módulos CRUD escopados, schema Zod; aplicar migração (AGENDA-01, AGENDA-03)
 - [ ] 06-02-PLAN.md — @date-fns/tz + função pura expandAvailability (regras→slots, fuso, viradas) + suite .spec (AGENDA-02, AGENDA-04)
 
 **Wave 2** *(blocked on Wave 1 completion)*
@@ -111,7 +111,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 6. Disponibilidade & Calendário do Médico | 0/3 | Not started | - |
+| 6. Disponibilidade & Calendário do Médico | 1/3 | In progress | - |
 | 7. Consultas & Ciclo de Status | 0/? | Not started | - |
 | 8. Assentos & Convite — Fundação de Acesso Delegado | 0/? | Not started | - |
 | 9. UI de Agendamento da Assistente | 0/? | Not started | - |

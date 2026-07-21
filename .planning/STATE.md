@@ -2,18 +2,19 @@
 gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: Agenda & Ganhos
-current_phase_name: roadmap criado, planejamento não iniciado
-status: roadmap_ready
-stopped_at: Phase 6 UI-SPEC approved
-last_updated: "2026-07-21T02:35:20.077Z"
-last_activity: 2026-07-20
-last_activity_desc: "Roadmap v1.1 criado; acesso da assistente definido como assento leve por membership (login real), substituindo a proposta de link/token; fases continuam a partir do v1.0 arquivado (última fase: 5), começando na Phase 6"
+current_phase: 06
+current_phase_name: disponibilidade-calend-rio-do-m-dico
+status: executing
+stopped_at: Completed 06-01-PLAN.md
+last_updated: "2026-07-21T11:57:00.000Z"
+last_activity: 2026-07-21
+last_activity_desc: Completed 06-01 (availability tables + RLS + CRUD modules, migration applied)
 progress:
   total_phases: 5
   completed_phases: 0
-  total_plans: 0
-  completed_plans: 0
-  percent: 0
+  total_plans: 3
+  completed_plans: 1
+  percent: 33
 ---
 
 # Project State
@@ -23,14 +24,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-07-20)
 
 **Core value:** A consulta pediátrica flui sem fricção — abrir o paciente, conduzir a consulta e gerar os documentos certos (impressos corretamente) em poucos cliques.
-**Current focus:** Milestone v1.1 "Agenda & Ganhos" — roadmap criado (5 fases, 6–10); próximo passo `/gsd-plan-phase 6`
+**Current focus:** Phase 06 — disponibilidade-calend-rio-do-m-dico
 
 ## Current Position
 
-Phase: Not started (roadmap criado, planejamento não iniciado)
-Plan: —
-Status: Roadmap ready (18/18 requisitos mapeados, 0 órfãos)
-Last activity: 2026-07-20 — Roadmap v1.1 criado; acesso da assistente definido como assento leve por membership (login real), substituindo a proposta de link/token; fases continuam a partir do v1.0 arquivado (última fase: 5), começando na Phase 6
+Phase: 06 (disponibilidade-calend-rio-do-m-dico) — EXECUTING
+Plan: 2 of 3
+Status: Executing Phase 06 (06-01 completo)
+Last activity: 2026-07-21 — 06-01 completo: tabelas availability + RLS + módulos CRUD, migração aplicada à DB viva
 
 ## Roadmap (milestone v1.1)
 
@@ -54,7 +55,7 @@ Last activity: 2026-07-20 — Roadmap v1.1 criado; acesso da assistente definido
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
-| (v1.1 ainda não iniciado) | 0 | - | - |
+| 6 | 1/3 | — | — |
 
 **Recent Trend:**
 
@@ -118,7 +119,7 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-07-21T02:35:20.062Z
-Stopped at: Phase 6 UI-SPEC approved
-Resume file: .planning/phases/06-disponibilidade-calend-rio-do-m-dico/06-UI-SPEC.md
-Next: `/gsd-plan-phase 6`
+Last session: 2026-07-21T11:57:00.000Z
+Stopped at: Completed 06-01-PLAN.md
+Resume file: None
+Next: executar 06-02-PLAN.md (expandAvailability puro + suite .spec)
