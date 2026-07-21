@@ -1,4 +1,8 @@
 export {
+  saveAvailabilityAction,
+  type SaveAvailabilityResult,
+} from "./save-availability"
+export {
   saveAvailabilityRulesAction,
   type SaveAvailabilityRulesResult,
 } from "./save-availability-rules"
