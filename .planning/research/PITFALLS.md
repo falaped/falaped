@@ -1,150 +1,382 @@
 # Pitfalls Research
 
-**Domain:** Brazilian pediatric medical practice web app (Falaped) — brownfield Next.js 16 + Supabase + pdfkit
-**Researched:** 2026-06-28
-**Confidence:** HIGH for pdfkit (read the actual kit source + repo) and Supabase brownfield (read the actual migrations/concerns); MEDIUM-HIGH for age math, vaccine calendar, and LGPD (verified against official sources + library docs).
+**Domain:** Appointment scheduling + token-authenticated external booking link + financial ledger, added to a no-RLS, `profile_id`-scoped, paid-gated multi-tenant pediatric web app (Falaped v1.1 "Agenda & Ganhos")
+**Researched:** 2026-07-20
+**Confidence:** HIGH (grounded in this codebase's actual security posture — proxy matcher, absent RLS, IDOR precedent, `phone_link_codes` token precedent — plus verified DB techniques for overlap-prevention and money storage)
+
+> **How to read this file.** The two highest-blast-radius families are **token-link security** (Pitfalls 1–7) and **double-booking / slot correctness** (Pitfalls 8–12). Financial precision is Pitfalls 13–16. The cross-cutting no-RLS reality (Pitfalls 17–19) applies to *every* new action and table in this milestone. Each pitfall names the owning phase so requirements/success-criteria can absorb it.
 
 ---
 
 ## Critical Pitfalls
 
-### Pitfall 1: pdfkit manual `y`-tracking diverges from `doc.y`, producing extra whitespace and phantom page breaks
+### Pitfall 1: Token stored raw in the database (steal-the-DB = steal-every-doctor's-agenda)
 
 **What goes wrong:**
-This is the active "relatório sobra espaço / às vezes gera página extra" bug. In the kit (`@falaped/falaped-kit/dist/pdf/index.js`), report sections are laid out with a hand-tracked `let y` variable: each block calls `doc.text(content, ml(), y, opts)` and then reads `y = doc.y + paragraphSpacing` (`mountSectionsHead`, lines 389-411; `mountLastSection`, 357-388). Height is independently *estimated* up front via `estimateReportBodyHeight` / `estimateSectionBlockHeight` using `doc.heightOfString` (lines 147-160, 330-342), and the page-break decision compares the estimate against `contentLimit`/`maxY` (`preparePageForLastSection`, 343-356). The PDF ends up taller than the rendered content (trailing blank space) and sometimes spills onto an extra near-empty page.
-
-Three independent root causes stack up:
-1. **Estimate ≠ render.** `heightOfString` is computed with a particular `{ width, lineGap, align }`, but the actual `doc.text` adds `reportBodyParagraphGapPt` (6pt) *between* paragraphs (line 143) and `paragraphSpacing`/`sectionSpacing` after blocks. If the estimate and the render don't add *exactly* the same inter-paragraph/section gaps, the page-break math reserves space that never gets used → trailing whitespace, or under-reserves → overflow onto a new page.
-2. **`doc.text` auto-page-breaks behind the tracker's back.** When a section's text reaches the bottom margin, pdfkit silently inserts a page and resets `doc.y` to the top margin. The code then does `y = doc.y + paragraphSpacing` — so the manual `y` jumps to the *new page top*, the separator line (`drawHorizontalLine`, line 407) is drawn there, and `sectionSpacing` is added on top, compounding the gap. The first page is left with a tall empty tail.
-3. **`heightOfString` with a `height` cap is unreliable for break decisions.** The "last section" path passes `opts.height = cap` to clip (lines 364-381); but `heightOfString` does not account for the same clipping, so the reserved footer zone (`REPORT_MIN_GAP_SECTION_TO_FOOTER = 200`) and the estimate fight each other.
+The assistant link token is stored as a plaintext column. A read-only leak of that one table (backup, log, SQL error surfacing a row, a future IDOR on the tokens table itself) hands an attacker working links into every doctor's agenda + patient base. Note the existing precedent — `phone_link_codes` stores the code **raw** (`modules/phone-link-codes/create-link-code.ts` inserts `code` in plaintext) — so the path of least resistance is to copy that pattern. It is acceptable for a 5-minute, single-use, 6-digit code; it is **not** acceptable for a long-lived agenda link.
 
 **Why it happens:**
-pdfkit has *two* layout models and mixing them is the classic trap: (a) the **flow model**, where you call `doc.text(...)` repeatedly and let pdfkit advance `doc.y` and auto-page-break; and (b) the **absolute model**, where you pass explicit `x, y` and manage placement yourself. The kit mixes both — it passes explicit `y` *and* relies on `doc.y` after the call *and* pre-estimates with `heightOfString`. Each model has a different idea of "where the cursor is," and they drift. `heightOfString` is also famously approximate when `lineGap`, `paragraphGap`, and wrapping interact, and it does not include the gaps the caller adds manually.
+Copying the `phone_link_codes` precedent without re-evaluating threat model for a long-lived, high-privilege token; "it's already random, why hash it."
 
 **How to avoid:**
-Pick ONE model and make estimate and render share a single code path.
-- **Recommended:** Use the flow model consistently. After setting font/size, call `doc.text(content, { width, align, lineGap, paragraphGap })` *without* an explicit `y` (let pdfkit own the cursor), and use `doc.moveDown()` or a single known `paragraphGap` for spacing — never both a manual `y +=` and reliance on `doc.y`. Never re-read `doc.y` into a manual tracker after a call that can auto-break.
-- For page-break-before-block decisions, compute the block height with the *exact same* options object you will render with, including any manual gaps, by routing both through one helper (e.g. `measureBlock(opts)` and `renderBlock(opts)` that share `opts`). Don't compute the estimate one way and render another.
-- To force a clean break instead of letting a section dribble onto a new page, check `doc.y + measuredHeight > doc.page.height - doc.page.margins.bottom` and call `doc.addPage()` deliberately — but only with a measurement that matches the render.
-- Reserve the footer with `setFutureMargins` / bottom margin *once*, and let pdfkit's own bottom-margin handling do the breaking, rather than a separate `REPORT_MIN_GAP_SECTION_TO_FOOTER` constant racing the estimate.
-- Verify visually: generate the same report at 1, 2, and ~1.05 pages of content (the boundary case) and confirm no trailing blank page and no large bottom gap.
+Store only a **hash** of the token (SHA-256 is sufficient for a high-entropy random secret — no per-token salt/bcrypt needed because the input is not a low-entropy password). Generate the token with `crypto.getRandomValues` / `crypto.randomBytes` (≥ 32 bytes → base64url), show the full token to the doctor exactly once, persist `token_hash`. On each request, hash the incoming token and look up by hash. The DB never holds a usable credential.
 
 **Warning signs:**
-- Generated PDF page count is one more than the visible content warrants.
-- A consistent tall blank band at the bottom of a page before content continues.
-- Separator lines or section titles appearing flush at the top of a fresh page with extra space above the next block.
-- The bug is content-length-sensitive (short reports fine, longer ones break) — a tell that the estimate/render gap accumulates per paragraph.
+A `token` / `link_token` text column that appears in `SELECT *` results readable in plaintext; the token visible in a DB admin panel; code that compares `row.token === incoming`.
 
 **Phase to address:**
-Bloco 1 / "Corrigir espaçamento de impressão" phase — this is the named active bug. Fix in the kit's report builder (or wrap/override it) before adding the new document types (Bloco 3), because the new documents (encaminhamento, pedido de exames, relatório médico) will reuse the same builder and inherit the bug.
+Phase that builds the token/link data model (assistant-link foundation) — before any external route exists.
 
 ---
 
-### Pitfall 2: Pediatric age computed with timezone-naive or off-by-one date math
+### Pitfall 2: Low-entropy or guessable/enumerable token
 
 **What goes wrong:**
-Pediatric care needs age in **days** and in **months + days** with real precision (dosing, vaccine eligibility, milestones). Common failures: (a) `new Date("2024-03-15")` parses as **UTC midnight**, so in Brazil (UTC-3) it becomes 21:00 on Mar 14 local — every age in days is silently off by one near midnight; (b) naive `(now - birth) / 86400000` ignores DST transitions (Brazil has had DST historically; even if currently off, libraries and historical dates carry the assumption) and can yield 1.96 days where it should be 2; (c) "months + days" computed by subtracting month numbers mishandles month-length differences — e.g. born Jan 31, "1 month" has no Feb 31, so the remainder days are wrong; (d) Feb 29 birthdays in non-leap years (`differenceInMonths` rounding) flip the day count.
+Token is a sequential id, a UUIDv1 (time-ordered), a short code, or a `profile_id`-derived value. Because this is the app's **first unauthenticated surface**, a guessable token = anyone on the internet enumerating agendas and the pediatric patient base (LGPD minors). The `phone_link_codes` generator emits only **6 decimal digits** (~10^6 space) — fine for a 5-minute code, catastrophic for a durable link.
 
 **Why it happens:**
-JavaScript `Date` is a UTC timestamp with a local-time façade; string parsing rules differ between `"2024-03-15"` (UTC) and `"2024-03-15T00:00"` (local). Developers reach for millisecond subtraction because it's one line, not realizing it conflates calendar arithmetic (which is what age is) with elapsed-time arithmetic. `differenceInMonths`-style functions return *whole* months and the "+days" remainder must be computed by adding those months back and diffing — a step people skip.
+Reusing the 6-digit generator; using `gen_random_uuid()` and assuming "UUID = unguessable" (v4 is fine; but if someone reaches for a sequence or short slug it is not).
 
 **How to avoid:**
-- Treat birth date as a **calendar date, not an instant.** Store and compute on `YYYY-MM-DD` only; build local-midnight dates explicitly (`new Date(y, m-1, d)`) or use a calendar-date library (`date-fns` with care, or Temporal `PlainDate` where available) so no timezone is involved.
-- Compute "days" as a calendar-day difference of two local-midnight dates, not a millisecond divide-and-floor.
-- Compute "months + days" by: take whole months via `differenceInMonths`, add them back to the birth date, then take `differenceInDays` to the consultation date for the remainder. This is the only way the remainder respects variable month lengths.
-- Decide an explicit policy for Feb 29 birthdays and document it (treat as Feb 28 or Mar 1 in non-leap years) — pick one and unit-test it.
-- Anchor "today" to the doctor's local date, not the server's UTC `Date.now()`.
-- **Unit test the edge cases** (this app's `modules/`/`lib/` is where tests live): birth on month-end (Jan 31), leap-day birth, age across a year boundary, a date near local midnight, and newborn (0 days, 1 day).
+≥ 256 bits of CSPRNG entropy encoded base64url. Do not derive the token from `profile_id`, email, or a counter. Treat the token as the *entire* secret — no "link id + token" where the id is guessable and leaks existence.
 
 **Warning signs:**
-- Age in days flips by 1 depending on what time of day the doctor opens the patient.
-- "1 month and -2 days" or a negative/zero remainder appearing.
-- Newborns showing "1 day" on the day of birth (or "0 days" the day after).
-- Tests pass on the developer's machine (whose TZ may be UTC or local) but field reports of wrong ages.
+Token length < 20 chars; token contains readable segments; incrementing one character yields another valid link.
 
 **Phase to address:**
-Bloco 1 / "Exibir idade em dias e meses+dias" phase. Build a single, unit-tested `computePediatricAge(birthDate, today)` helper in `lib/` and reuse it everywhere (display, and later vaccine-eligibility). Do not inline the math in components.
+Assistant-link foundation phase (same as Pitfall 1).
 
 ---
 
-### Pitfall 3: Vaccine calendar data is hard-coded, goes stale, and gives unsafe guidance
+### Pitfall 3: No expiration and no revocation path
 
 **What goes wrong:**
-The Brazilian PNI/SUS calendar is **revised annually** — there is a published *Instrução Normativa do Calendário Nacional de Vacinação 2026*, and recent additions (gestante VSR vaccine from 28 weeks; nirsevimab/anticorpo monoclonal for infants/preemies) landed only in the last cycle. A schedule hard-coded once will silently become wrong; for a clinical tool, "wrong vaccine age/dose" is a patient-safety defect, not a cosmetic bug. Additional traps: conflating the **SUS (PNI)** schedule with the **private/SBIm** schedule (they differ — e.g. some vaccines/doses available privately but not SUS), and computing "pending/overdue by age" using the buggy age math from Pitfall 2, so eligibility windows are off.
+The link works forever. When the doctor changes assistants, or a link leaks (WhatsApp forward, shared screenshot), there is no way to kill it. Because it grants access to the children's patient base, a stale link is an open LGPD exposure with no off-switch.
 
 **Why it happens:**
-It's tempting to bake the calendar into a TypeScript constant and move on. Medical content feels static until you learn it has a yearly normative cycle plus mid-year additions. The SUS-vs-private distinction is easy to flatten into one table.
+"It's just for my assistant"; revocation UI is extra work and gets cut from MVP.
 
 **How to avoid:**
-- Treat the calendar as **versioned reference data with a source and an effective date**, not code. Store each schedule (SUS, private, gestante) with `source`, `version`/`effectiveDate`, and a visible "based on PNI/SBIm <date>" label in the UI so the doctor knows the vintage and can sanity-check.
-- Keep SUS, private, and gestante as **separate, clearly-labeled datasets** — never merge into one ambiguous table.
-- Make the dataset **easy to update without a code deploy where feasible** (e.g. data table/seed), or at minimum isolate it in one file with a clear "verified against <official PDF> on <date>" comment and an owner.
-- Source from official references: gov.br PNI / Calendário Nacional (SUS), SBIm/SBP (private + gestante). Cite the document and date in the data.
-- Per-patient "pending/overdue" must consume the single tested age helper (Pitfall 2), and present recommendations as **decision support, not prescription** — the doctor confirms. Add a disclaimer that the doctor verifies against the current official calendar.
-- Add a recurring review reminder (annual, around the new Instrução Normativa) to re-verify the data.
+Model the token row with `revoked_at` (nullable) and optionally `expires_at`. The verification query must filter `revoked_at IS NULL AND (expires_at IS NULL OR expires_at > now())`. Ship a doctor-facing "revoke / regenerate link" control in the SAME phase as the link — regeneration issues a new token and invalidates the old row. Do not defer revocation to "later."
 
 **Warning signs:**
-- The calendar table has no source/date metadata.
-- SUS and private vaccines appear interchangeably in one list.
-- "Overdue" flags that don't match what the pediatrician expects (often a symptom of age-math errors feeding eligibility).
-- The dataset hasn't been touched since the last annual revision.
+No `revoked_at`/`expires_at` columns; no UI to rotate the link; verification is a bare equality lookup.
 
 **Phase to address:**
-Bloco 2 / Vacinas phase. Define the data model (with source + effective date + schedule type) before building the UI. Gate the per-patient vaccination card on the tested age helper from Bloco 1.
+Assistant-link foundation phase — revocation is table-stakes, not a follow-up.
 
 ---
 
-### Pitfall 4: Child photos stored in a public bucket (LGPD violation for minors' sensitive data)
+### Pitfall 4: Token route not correctly exempted from middleware (either still redirected, OR the exemption opens a hole)
 
 **What goes wrong:**
-Photos of children are personal data of a minor under the LGPD, requiring processing in the child's *best interest* with specific, highlighted consent from a parent/guardian — and they're especially sensitive (a photo of the doctor with the child). The concrete brownfield trap: the existing **`profile-logos` bucket is `public = true`** (`supabase/migrations/20260228200000_storage_profile_logos_rls.sql`), even though it has RLS *write* policies. **RLS does not restrict reads on a public bucket** — anyone with the object URL can fetch it. The natural instinct ("a child photo is just another profile image, copy the logo bucket pattern") would put minors' photos in a world-readable bucket and likely persist the public URL in the DB, leaking it forever once shared/logged.
+Two symmetric failures. (a) The token route inherits `proxy.ts` → `updateSession`, which for any unauthenticated request calls `supabase.auth.signOut()` and **redirects to `/auth/login`** (see `lib/supabase/proxy.ts` lines 77–94) — so the assistant link never loads. (b) Over-correcting: the developer broadens the matcher exemption or adds a permissive `pathname.startsWith(...)` bypass that accidentally exempts *other* protected paths, punching a hole in the auth wall for the whole dashboard.
 
 **Why it happens:**
-The logo bucket is public *on purpose* (logos go on PDFs via a public URL), so copying that pattern feels consistent. Supabase's public/private distinction is subtle: RLS policies on `storage.objects` look like protection, but for a public bucket they only govern mutations, not GET-by-URL. `getPublicUrl` returns a permanent unauthenticated link.
+The current matcher (`proxy.ts`) intercepts everything except static assets; the unauth branch is aggressive (signs out + redirects). Fixing (a) by loosening the matcher is easy to get too wide.
 
 **How to avoid:**
-- Put child photos in a **private bucket** (`public = false`), modeled on the existing **`prescriptions`** bucket (`supabase/migrations/20260315010000_storage_prescriptions.sql`), not on `profile-logos`. Path-scope objects to `profile_id/...` and add owner-scoped RLS select/insert/update/delete policies exactly like the prescriptions bucket.
-- Serve images via **short-lived signed URLs** (`createSignedUrl`) generated server-side per request, never `getPublicUrl`. Do not store a public URL in the DB; store only the storage path.
-- Enforce ownership at the action layer too (this app has no table RLS per CONCERNS.md — see Pitfall 5): the photo upload/read action must scope by the authenticated `profile_id`.
-- LGPD posture: record that photos are processed for clinical identification, capture guardian consent, support deletion (right to erasure) that removes both the storage object and any DB reference, and minimize retention. Don't send child photos to third parties (e.g. don't pass them to the Groq AI flows).
-- Verify with an unauthenticated `curl` of the object URL: a private bucket returns 400/403, a public one returns the image — make this an explicit acceptance check.
+Add a **narrow, exact** exemption for the token path only. Prefer checking the specific prefix inside `updateSession` (e.g. an early `if (pathname.startsWith("/agenda/link/")) return supabaseResponse;` guard placed **before** the sign-out/redirect branch) rather than widening the regex matcher. The token route must do its **own** token verification — never rely on the middleware for its auth. Add a test asserting (i) `/agenda/link/...` is not redirected and (ii) a random `/dashboard/*` path still redirects unauthenticated.
 
 **Warning signs:**
-- The migration for the photo bucket has `public = true`.
-- Code calls `getPublicUrl` for child photos, or a `*_url` column stores an unauthenticated link.
-- The photo loads in an incognito window with no auth.
-- No consent capture / deletion path for the photo.
+Assistant link 302-redirects to login; matcher regex grew a broad negative lookahead; any dashboard route becomes reachable logged-out.
 
 **Phase to address:**
-Bloco 1 / "Foto na identificação da criança" phase. Decide bucket privacy + signed-URL serving + consent/deletion *before* writing the upload feature; a public-bucket mistake is expensive to walk back once URLs are in the wild.
+Assistant-link external-route phase (the phase that first serves the token URL).
 
 ---
 
-### Pitfall 5: New slices break the app-layer-only tenant isolation, the paid gate, or the per-request client pattern
+### Pitfall 5: Token scope creep — the link grants more than the agenda
 
 **What goes wrong:**
-Per CONCERNS.md and ARCHITECTURE.md, this app has **no table RLS** — multi-tenant isolation depends *entirely* on every query carrying `.eq("profile_id", ...)` (or `user_phone`), and there is already a live IDOR (deletes filter by `id` only). New slices this cycle (photos, vaccination card, three new document types, blank prescription, orientation templates) multiply the query surface. Each new module is a fresh chance to: (a) forget the `profile_id` filter → cross-tenant read/delete; (b) reuse the dangerous pattern of passing the **service-role admin client** into a delete path (which bypasses even storage RLS); (c) skip the `profile.status === "paid"` gate in a new action; (d) construct a Supabase client inside a module or use a global client, violating the per-request/Fluid-compute constraint; (e) import `next/cache`/`next/headers` in `modules/`.
+The token endpoint reuses existing patient/case modules or actions that were written for the authenticated doctor, and thereby exposes prontuário, documents, growth curves, vaccines, or the AI assistant. The milestone explicitly forbids this ("nunca prontuário ou resto do app"). Because there is **no RLS**, nothing at the DB layer stops an over-broad query — the scope boundary lives entirely in which code paths the token route calls.
 
 **Why it happens:**
-The three-layer pattern is conventions, not enforcement — nothing stops a new action from skipping a step, and there are zero tests on `actions/`/`components/`. Copy-paste from an existing module that happens to omit the owner filter (like the known-buggy deletes) propagates the bug. The paid gate is easy to forget when you're focused on the feature.
+Convenience reuse of `getAuthenticatedUser`-style flows; importing a general `getPatientById` that returns the full clinical record; a single shared action that "does everything."
 
 **How to avoid:**
-- For **every** new module data function: filter by `profile_id` on reads, writes, **and deletes** (`.delete().eq("id", x).eq("profile_id", profileId)`). Thread `profile.id` from the action into the module — never delete by `id` alone (don't copy the existing prescription/certificate delete bug).
-- For **every** new action/route handler: build a per-request client, call `getAuthenticatedUser(supabase)`, gate on `profile.status === "paid"`, validate input with Zod, return a `{ ok } | { ok:false; error }` union. Use this as a literal checklist for each new slice.
-- Reserve `createAdminClient()` for `auth.admin.*` only; never use the service-role client on a query lacking an explicit ownership filter (it bypasses storage RLS — the exact blast-radius widener flagged in CONCERNS.md).
-- In `modules/`: inject the `SupabaseClient`, never construct it; never import `next/cache`/`next/headers`.
-- **Add the missing tests** for the new slices' ownership enforcement — CONCERNS.md notes a single ownership test would have caught the IDOR. While RLS is absent, an ownership unit test per new module is the cheapest defense.
-- Strongly consider enabling **table RLS** as defense-in-depth as part of this cycle (or at least for the new tables: photos, vaccination records, new documents) so a forgotten filter isn't catastrophic.
+Build a **dedicated, minimal action surface** for the token context: only `searchPatientsForBooking` (returns name/DOB/id — nothing clinical), `createPatientForBooking` (minimal demographic fields), `listAvailability`, and `createPendingAppointment`. These take the resolved `profile_id` **from the token row**, never from a user session. Do not route token traffic through `getAuthenticatedUser` or any paid-gated action. Return DTOs with an explicit allowlist of fields (never `SELECT *` / the full patient row).
 
 **Warning signs:**
-- A new query with no `.eq("profile_id", ...)` / `user_phone`.
-- A new action without the `getAuthenticatedUser` + paid-status check.
-- `createAdminClient()` appearing in a new feature path.
-- A module that imports `createClient`/`next/headers` or references a module-level client.
-- New tables created without RLS while handling another tenant's data.
+Token route imports a module used by the doctor dashboard; a booking response includes clinical fields (IMC, case notes, photos); the token path can reach anything under `/dashboard`.
 
 **Phase to address:**
-Cross-cutting — every Bloco 2/3/4 slice. Add an explicit "scoping + paid-gate + ownership-test" success criterion to each new-data-table/new-action phase. Consider a dedicated early "enable RLS on new (and ideally existing) tables" hardening step so the rest of the cycle is built on a safe backstop.
+Assistant booking-actions phase.
+
+---
+
+### Pitfall 6: Patient-base leak via the search feature (enumeration + over-broad results)
+
+**What goes wrong:**
+The assistant search returns too much (clinical data, all patients, or fuzzy matches across tenants) or has no rate limit, letting whoever holds the link scrape the doctor's entire roster of children. Even scoped to one `profile_id`, an unbounded/wildcard search that dumps the full list on empty input exposes the whole minor patient base in one call.
+
+**Why it happens:**
+Search is written like the internal dashboard search (returns everything the doctor can see); empty query returns all rows; results include DOB + clinical hints "to help the assistant pick."
+
+**How to avoid:**
+Require a minimum query length (e.g. ≥ 3 chars) before returning anything; cap result count (e.g. 10); scope every query by the token's `profile_id`; return the **minimum** identifying fields (name + partial DOB) needed to disambiguate, nothing clinical. Log/limit search volume per token. Consider that the assistant only needs to find an *existing* child to attach a booking — it does not need the medical record.
+
+**Warning signs:**
+Empty search returns rows; results carry clinical fields; no result cap; same query repeatable thousands of times with no throttle.
+
+**Phase to address:**
+Assistant booking-actions phase (with rate-limiting from Pitfall 7).
+
+---
+
+### Pitfall 7: No CSRF / rate-limiting / abuse controls on the session-less route
+
+**What goes wrong:**
+Because this route does **not** use the cookie session, the app's implicit same-site cookie protections don't apply, and there's no per-user throttle. An attacker with (or brute-forcing toward) the link can hammer patient creation, spam pending appointments (DoS the doctor's confirmation queue), or attempt token guessing at high rate. There is **no rate-limiting infra today** (no Redis; per INTEGRATIONS.md) and **no error tracking**, so abuse is invisible.
+
+**Why it happens:**
+Rate limiting feels like scale-work and gets deferred; the team assumes "middleware handles auth" and forgets this route bypasses it.
+
+**How to avoid:**
+(a) Token verification itself is the CSRF defense — mutations require the secret token in the request, which a cross-site attacker cannot supply; ensure the token is required on **every** mutating call, not just page load. (b) Add coarse rate-limiting keyed by token (and by IP for token-verification failures) — even a simple DB-backed counter or a lightweight limiter is enough at this scale; the goal is to make token-guessing and appointment-spam impractical. (c) Constant-time compare on the token hash lookup. (d) Cap pending appointments per token per hour.
+
+**Warning signs:**
+Unlimited failed-token attempts accepted; a script can create 1000 pending appointments; no counter/limit anywhere on the token path.
+
+**Phase to address:**
+Assistant external-route / booking-actions phase.
+
+---
+
+### Pitfall 8: Double-booking via race condition on concurrent slot reservation
+
+**What goes wrong:**
+Two requests (assistant + doctor, or two assistant tabs) check "is this slot free?" then both insert — a classic check-then-act TOCTOU. Application-level "SELECT then INSERT" **cannot** prevent this under concurrency; both see the slot free and both write. Result: two children booked into the same time.
+
+**Why it happens:**
+The natural implementation is `getSlot() → if free → insert`. It passes every single-user test and fails only under concurrency, so it ships looking done.
+
+**How to avoid:**
+Enforce non-overlap **at the database level**, not in app code. Use a Postgres exclusion constraint over a time range:
+```sql
+CREATE EXTENSION IF NOT EXISTS btree_gist;
+ALTER TABLE appointments ADD CONSTRAINT no_overlap
+  EXCLUDE USING gist (
+    profile_id WITH =,
+    tstzrange(starts_at, ends_at) WITH &&
+  ) WHERE (status = 'confirmed');
+```
+This makes Postgres atomically reject the second overlapping insert. Decide deliberately whether **pending** ("pedido a confirmar") requests also block the slot: since the milestone models bookings as pending-then-confirmed, either (a) only `confirmed` participates in the constraint (pending requests can overlap, doctor resolves conflicts at confirm time — simpler, matches "pedido a confirmar" semantics), or (b) include pending too (no double *requests*). Pick one explicitly and encode it in the `WHERE`. Catch the unique/exclusion violation in the action and return a friendly "horário já ocupado" result union.
+
+**Warning signs:**
+Booking logic is `select ... then insert ...` with no DB constraint; no `btree_gist`/EXCLUDE in migrations; the only test is single-user.
+
+**Phase to address:**
+Availability & appointments data-model phase — the constraint is part of the schema, not the UI.
+
+---
+
+### Pitfall 9: Timezone/DST bugs in recurring availability
+
+**What goes wrong:**
+Recurring rules ("seg/qua 14h–18h") are stored or computed in UTC or in the server's timezone. When Brazil's local time or any DST-style shift is involved, a "14:00" recurring slot drifts to 13:00 or 15:00, or a slot appears/disappears on transition days. Even without current Brazilian DST, storing wall-clock intent as a UTC instant and regenerating slots re-introduces the bug the moment the server TZ ≠ the doctor's TZ (Vercel runs UTC).
+
+**Why it happens:**
+`new Date()` / `toISOString()` on the server (UTC) is treated as local; recurrence expanded by adding 7×24h in ms (which is wrong across any offset change); mixing "wall clock" (14:00 every Wednesday) with "instant" (a specific UTC timestamp).
+
+**How to avoid:**
+Store the recurring **rule** as wall-clock intent (day-of-week + local start/end time) plus an explicit IANA timezone (e.g. `America/Sao_Paulo`), **not** as pre-materialized UTC instants. Convert to concrete instants only when generating slots for a specific date, using a timezone-aware conversion — never by adding fixed millisecond offsets. `date-fns` (already a dependency, v4 with `@date-fns/tz`) or storing everything in the doctor's local zone consistently. Concrete `appointments` rows store real `timestamptz` instants; the *recurrence template* stores wall-clock + zone.
+
+**Warning signs:**
+Slots shift by an hour for some users; a recurring rule stored as an array of UTC timestamps; slot generation uses `+ n*86400000`; times computed with server-local `Date` and no zone.
+
+**Phase to address:**
+Availability (recurring grid) phase.
+
+---
+
+### Pitfall 10: Off-by-one on week/month boundaries and slot generation from recurrence
+
+**What goes wrong:**
+The day/week/month views double-count or drop the boundary slot: the last slot of the day, the Sunday-vs-Monday week start, the appointment exactly at midnight or at the month edge. Inclusive-vs-exclusive end handling means a 14:00–15:00 slot and a 15:00–16:00 slot either collide or leave a gap; a week view built with `< endOfWeek` vs `<= endOfWeek` shows 6 or 8 days.
+
+**Why it happens:**
+Half-open interval discipline isn't applied consistently ([start, end) everywhere); week-start locale (BR often Monday) not pinned; boundary instants assigned to two adjacent buckets.
+
+**How to avoid:**
+Adopt **half-open intervals `[start, end)`** everywhere — a slot owns its start instant, not its end; this also aligns with the `tstzrange` `&&` semantics from Pitfall 8. Pin an explicit `weekStartsOn` (Monday for BR) in every `date-fns` range call. Generate slots from the recurrence with a single tested function and unit-test it against boundary cases: first/last slot of day, DST-ish transition, month-end, week wrap. This is exactly the kind of pure function the codebase already tests in `modules/` — add specs.
+
+**Warning signs:**
+A slot shows in two views; week view has 6 or 8 columns; overlapping/gapped adjacent slots; no boundary unit tests.
+
+**Phase to address:**
+Availability + agenda-views phase.
+
+---
+
+### Pitfall 11: Materializing recurrence into rows (and drift when the rule changes)
+
+**What goes wrong:**
+Availability is expanded into thousands of concrete slot rows up front. Then the doctor edits the weekly grid and past/future materialized rows are now inconsistent with the rule; deleting a day of availability doesn't cascade; the table grows unbounded.
+
+**Why it happens:**
+"Slots as rows" is easier to query for the calendar; materializing feels concrete.
+
+**How to avoid:**
+Keep availability as a compact **recurrence rule** and compute free slots on the fly for the requested date range (day/week/month window is small). Persist a concrete row **only** when an actual appointment is booked. This keeps the rule as the single source of truth and avoids drift. If performance ever demands materialization, materialize a bounded forward window and regenerate on rule change — but at this scale (one doctor's agenda) on-the-fly generation is correct.
+
+**Warning signs:**
+An `availability_slots` table with row-per-slot; editing the grid leaves stale slots; unbounded row growth.
+
+**Phase to address:**
+Availability (recurring grid) phase.
+
+---
+
+### Pitfall 12: Confirmation flow doesn't atomically claim the slot ("pedido a confirmar" → double confirm)
+
+**What goes wrong:**
+Two pending requests exist for the same time (allowed, per Pitfall 8 option a). The doctor confirms one; the second confirm should now fail — but if confirm is a plain `UPDATE status='confirmed'` with no re-check, both become confirmed and the slot is double-booked at the moment it matters most.
+
+**Why it happens:**
+The exclusion constraint (if scoped `WHERE status='confirmed'`) is the backstop, but a poorly written confirm path can still surprise the user with a raw DB error instead of a graceful message; or the constraint was scoped to include pending and now legitimate double-*requests* are blocked.
+
+**How to avoid:**
+Make **confirmation** the step that must pass the `confirmed`-only exclusion constraint (Pitfall 8). On confirm, attempt the state transition inside a transaction; if the exclusion constraint rejects it, catch it and return `{ ok: false, error: "Esse horário já foi confirmado para outro paciente." }`. Never let a raw Postgres constraint error reach the client (matches the project rule: actions convert throws to result unions).
+
+**Warning signs:**
+Confirm is a bare `UPDATE` with no conflict handling; a raw `23P01`/exclusion error surfaces to the UI; two confirmed appointments share a time.
+
+**Phase to address:**
+Appointments / confirmation-flow phase.
+
+---
+
+### Pitfall 13: Money stored as float (or as reais that permit rounding drift)
+
+**What goes wrong:**
+Consultation values stored as `float`/`double precision` (or as JS `number` reais) accumulate binary-rounding error. Sums over a month, and especially the "valor médio por consulta" average, produce off-by-a-cent totals that a doctor tracking income will notice and distrust.
+
+**Why it happens:**
+`number` is the default JS type; `float8` is the default "decimal" reach in Postgres; it looks fine for a single value and only drifts on aggregation.
+
+**How to avoid:**
+Store money as **integer cents** (`bigint` cents) OR as `NUMERIC(12,2)` — never `float`/`double`. Integer cents is the recommended default for a single-currency (BRL) app: exact, compact, no rounding surprises; convert to reais only at display. If cents, do all arithmetic in cents and format for the UI (`R$ ${(cents/100).toLocaleString('pt-BR', ...)}`). Add a `CHECK (amount_cents >= 0)` if negatives are disallowed. Confirmed by PostgreSQL docs and Crunchy Data guidance: floats are unsuitable for money; avoid the `money` type too (locale/precision footguns).
+
+**Warning signs:**
+Column type `float`/`double precision`/`real` on an amount; JS math on reais with decimals; totals ending in `.9999`/`.0001`; `money` type used.
+
+**Phase to address:**
+Earnings ledger data-model phase.
+
+---
+
+### Pitfall 14: Rounding in averages / aggregation across timezones
+
+**What goes wrong:**
+"Valor médio por consulta" divides total by count and rounds each row then sums (double-rounding), or rounds too early. Separately, day/week/month totals bucket entries by a timestamp interpreted in UTC while the doctor thinks in local time — an 22:00 BRT consultation lands in the *next* UTC day, so daily/weekly totals shift entries into the wrong bucket (same TZ family as Pitfall 9).
+
+**Why it happens:**
+Rounding per-row for display then reusing those rounded values in aggregates; grouping by `date_trunc('day', created_at)` where `created_at` is UTC; server-local date math on Vercel (UTC).
+
+**How to avoid:**
+Aggregate on **exact stored values** (cents), round **once** at the very end for display. Compute the average as `sum(cents) / count` in integer/decimal space, round only the displayed result. For time bucketing, group by the **doctor's local date**: either store an explicit local-date column for the ledger entry, or bucket with `date_trunc('day', ts AT TIME ZONE 'America/Sao_Paulo')`. Decide and document the timezone the earnings panel reports in.
+
+**Warning signs:**
+Averages don't reconcile with `total/count`; a late-evening entry appears on the wrong day's total; `date_trunc` on a raw UTC `timestamptz` with no `AT TIME ZONE`.
+
+**Phase to address:**
+Earnings panel (totals + average) phase.
+
+---
+
+### Pitfall 15: Test/void/cancelled entries silently mixed into totals
+
+**What goes wrong:**
+An entry created by mistake, a voided/refunded value, or a cancelled-appointment charge stays in the sum. The doctor's "ganhos" number is inflated and untrustworthy, or deleting an entry hard-removes audit history.
+
+**Why it happens:**
+No status/soft-delete on ledger entries; "just delete it" or "just edit the amount" mutates history; totals `SUM(amount)` over all rows.
+
+**How to avoid:**
+Give ledger entries a status (`active` / `void`) or a `voided_at`; totals and averages filter to active entries only (`WHERE voided_at IS NULL`). Prefer voiding over hard-deleting so history is auditable. Since earnings may or may not be tied to an appointment (per the milestone decision), ensure a cancelled appointment does **not** auto-drop its money entry without an explicit void — money received is money received.
+
+**Warning signs:**
+`SUM(amount)` with no status filter; entries hard-deleted; cancelling an appointment changes historical totals unexpectedly.
+
+**Phase to address:**
+Earnings ledger data-model + panel phases.
+
+---
+
+### Pitfall 16: Ledger entries not scoped by `profile_id` (money IDOR / cross-tenant totals)
+
+**What goes wrong:**
+A new `earnings`/`ledger` table is created and its read/write/delete actions forget the `profile_id` filter — the exact failure already present in this codebase (`deletePrescription`/`deleteMedicalCertificate` delete by `id` only; see CONCERNS.md IDOR finding). One doctor sees or edits another's income; totals leak across tenants. With **no RLS**, a missing filter is directly exploitable.
+
+**Why it happens:**
+Copying an existing module that has the bug; assuming a doc-comment "RLS ensures ownership" that is false here.
+
+**How to avoid:**
+Every ledger query — SELECT, INSERT (`profile_id` set), UPDATE, DELETE/void, and every aggregate — includes `.eq("profile_id", profileId)` with `profile.id` threaded from the action. Aggregates especially: `SUM`/`AVG`/`GROUP BY` must be inside a `profile_id`-scoped query. Add an ownership unit test for the delete/void path (the IDOR bug "would have been caught by a single ownership test" — CONCERNS.md).
+
+**Warning signs:**
+A ledger delete/update by `id` only; an aggregate query with no `profile_id` predicate; no ownership test.
+
+**Phase to address:**
+Earnings ledger data-model phase (and enforced in every earnings action).
+
+---
+
+### Pitfall 17: New scheduling/booking actions omit `profile_id` scoping (the systemic no-RLS trap)
+
+**What goes wrong:**
+This is the milestone-wide version of Pitfall 16, applied to appointments and availability. Because there is **no table-level RLS** (CONCERNS.md: "All data isolation... depends entirely on the application layer adding `profile_id`/`user_phone` filters to every query"), *any* new appointment/availability read, write, update, or delete that misses the filter leaks or corrupts another doctor's agenda. The token route makes this worse: it resolves `profile_id` from the token, so a bug there scopes to the wrong tenant entirely.
+
+**Why it happens:**
+New domain, many new modules written quickly; the filter is easy to forget on one of them; the token path introduces a *second* way to obtain `profile_id` (from the token, not the session), doubling the surface.
+
+**How to avoid:**
+Treat `profile_id` scoping as a non-negotiable requirement on **every** new module in this milestone. In the token context, derive `profile_id` **only** from the verified token row and pass it explicitly into modules — never trust any `profile_id` sent in the request body. Add ownership specs for appointment/availability read+write+delete (CONCERNS.md flags these modules as "the sole line of defense" while RLS is absent). Strongly consider this milestone as the trigger to finally **enable RLS** on the new tables (appointments, availability, ledger, tokens) as defense-in-depth — a new domain with an external surface is the highest-value place to start.
+
+**Warning signs:**
+An appointment/availability query without `.eq("profile_id", ...)`; `profile_id` read from request input on the token route; new tables created without RLS while carrying LGPD minor data.
+
+**Phase to address:**
+Every phase in the milestone; verified in the availability, appointments, and token phases. Consider a dedicated "RLS on new tables" hardening step.
+
+---
+
+### Pitfall 18: New actions skip the paid gate — but the token route must *not* use it (two opposite mistakes)
+
+**What goes wrong:**
+Symmetric failure. (a) A new **doctor-facing** action (create availability, add earnings entry) forgets `getAuthenticatedUser` + `profile.status === "paid"`, so a non-paying account uses paid features (violates the security convention: "Every action... gates on `profile.status === 'paid'`"). (b) The **token** route wrongly reuses the paid-gated auth flow (or `getAuthenticatedUser`), which either breaks (no session) or accidentally couples the assistant link to the doctor's subscription session — the milestone explicitly requires the token endpoint to NOT inherit the paid session.
+
+**Why it happens:**
+Copy-paste of the standard action header includes the paid gate (good for doctor actions, wrong for token); or a rushed token action skips auth entirely.
+
+**How to avoid:**
+Doctor-facing new actions: keep the standard `getAuthenticatedUser` + paid gate. Token route: its own verification (hash lookup + not-revoked/expired) that yields a `profile_id`, with **no** session and **no** paid check — but still restricted to the minimal booking action surface (Pitfall 5). Make the two auth models explicit and separate in code so neither leaks into the other. Optionally verify the linked doctor is still `paid` when serving the link (a lapsed doctor's assistant link should probably stop working) — decide this deliberately.
+
+**Warning signs:**
+A new doctor action without the paid gate; the token route importing `getAuthenticatedUser`; the token route reachable only with a doctor session.
+
+**Phase to address:**
+Every action phase; especially the assistant-link route phase for the token half.
+
+---
+
+### Pitfall 19: Service-role/admin client reused on the new session-less paths
+
+**What goes wrong:**
+To "make the token route work without a session," a developer reaches for `createAdminClient()` (service-role, bypasses all RLS — CONCERNS.md warns it's already misused in bulk deletes). Now the app's first external, unauthenticated surface runs with god-mode DB access; any logic bug (missing `profile_id`, an injected id) operates with full privileges across all tenants.
+
+**Why it happens:**
+The admin client is the easy way to query without a user session; the pattern already exists in the repo (delete paths), so it's the obvious copy.
+
+**How to avoid:**
+Serve the token route with the **normal (anon/publishable) server client**, applying the token-derived `profile_id` filter in application code — exactly like the rest of the app. Reserve the service-role client strictly for genuine admin operations (`auth.admin.deleteUser`). Never use the admin client on a query lacking an explicit ownership filter (CONCERNS.md). If RLS is enabled on the new tables (Pitfall 17), a scoped anon client is safe by construction.
+
+**Warning signs:**
+`createAdminClient()` imported in any appointment/availability/ledger/token module; the token route using the service-role key.
+
+**Phase to address:**
+Assistant-link route phase; also revisit the existing bulk-delete admin misuse if touched.
 
 ---
 
@@ -152,90 +384,113 @@ Cross-cutting — every Bloco 2/3/4 slice. Add an explicit "scoping + paid-gate 
 
 | Shortcut | Immediate Benefit | Long-term Cost | When Acceptable |
 |----------|-------------------|----------------|-----------------|
-| Hard-code the vaccine calendar in a TS constant | Ship the reference table fast | Goes stale at the next annual PNI revision → unsafe clinical guidance | Only with a visible source+date label and an annual review reminder; never silently |
-| Reuse the `profile-logos` (public) bucket pattern for child photos | One less migration | World-readable minors' photos; LGPD violation; permanent leaked URLs | Never — child photos must be private + signed URLs |
-| Inline age math in the display component | Quick visible result | Bug duplicated into vaccine eligibility; untestable; TZ/leap bugs | Never — extract one tested `lib/` helper |
-| Copy an existing delete module for a new doc type | Matches house style | Inherits the known IDOR (deletes by `id` only) | Only after adding `.eq("profile_id", ...)` and an ownership test |
-| Skip the paid gate "just for now" on a new action | Faster local testing | Unpaid access to paid features; inconsistent gate | Never in committed code |
-| Patch the report spacing by nudging gap constants | Looks fixed for sample data | Estimate/render drift persists; breaks at other content lengths | Never — fix the model mismatch, not the constants |
+| App-level "select-then-insert" instead of a DB exclusion constraint | Ships faster; no `btree_gist` | Double-bookings under concurrency (unfixable in app code); silent corruption | **Never** for slot booking — the constraint is cheap |
+| Store the assistant token raw (copying `phone_link_codes`) | Reuses existing pattern | One DB read leaks every agenda + child patient base | **Never** for a long-lived link (fine only for the 5-min code) |
+| Money as `float`/JS `number` reais | Zero conversion code | Cent drift on every aggregate; doctor distrusts totals | **Never** — use integer cents from day one |
+| Materialize recurrence into slot rows | Simple calendar queries | Drift on rule edits; unbounded growth | Only with a bounded window + regen-on-change; not for MVP |
+| Defer link revocation UI to "later" | Smaller MVP | Stale/leaked link with no off-switch = open LGPD exposure | **Never** — ship revoke with the link |
+| Broaden the middleware matcher to expose the token route | One-line fix | Risk of exempting other protected paths | Only via a narrow exact-prefix guard, tested both ways |
 
 ## Integration Gotchas
 
 | Integration | Common Mistake | Correct Approach |
 |-------------|----------------|------------------|
-| Supabase Storage (child photos) | Public bucket + `getPublicUrl`; RLS write policies assumed to protect reads | Private bucket (model on `prescriptions`), path-scoped RLS, server-side `createSignedUrl` per request, store path not URL |
-| Supabase data (new tables) | New query missing `profile_id` filter (no RLS backstop) | Owner-scoped filter on every read/write/delete + ownership unit test; ideally enable table RLS |
-| Supabase admin client | Using `createAdminClient()` in feature/delete paths | Restrict to `auth.admin.*`; never on unfiltered queries |
-| pdfkit (`@falaped/falaped-kit/pdf`) | Mixing flow (`doc.y`) and absolute (`x,y`) layout; estimate ≠ render | Single layout model; one shared options path for measure + render |
-| Groq AI flows | Passing child photos / minors' identifiable data to the LLM | Keep minors' images out of AI calls (LGPD third-party transfer); photos are display-only |
-| date-fns / JS Date | `new Date("YYYY-MM-DD")` parsed as UTC; ms-divide for days | Calendar-date math at local midnight; months-then-remainder for months+days |
+| Supabase (no RLS) | Assuming doc-comment "RLS ensures ownership" (false here) | Explicit `.eq("profile_id", ...)` on every query; enable RLS on new tables |
+| Supabase service-role client | Using it to bypass "no session" on the token route | Normal client + token-derived `profile_id`; admin client only for `auth.admin.*` |
+| Next.js middleware (`proxy.ts`) | Token route redirected to `/auth/login`, or matcher loosened too far | Narrow exact-prefix exemption inside `updateSession`, before the sign-out branch; test both directions |
+| Vercel runtime (UTC) | Server-local `Date` math for recurrence/earnings buckets | Store wall-clock+IANA zone for rules; `AT TIME ZONE 'America/Sao_Paulo'` for buckets |
+| Postgres `timestamptz` + ranges | Inclusive-end ranges collide/gap | Half-open `[start, end)` + `tstzrange` `&&` exclusion constraint |
 
 ## Performance Traps
 
 | Trap | Symptoms | Prevention | When It Breaks |
 |------|----------|------------|----------------|
-| Sequential per-item storage+DB ops (existing bulk-delete antipattern) repeated for photos/vaccine records | Slow bulk actions, partial-failure inconsistency | Batch with `.in("id", ids).eq("profile_id", pid)` + single `storage.remove([...])` | Bulk operations on many records |
-| Re-fetching/regenerating signed URLs on every render | Latency + storage API churn on photo-heavy lists | Generate signed URLs server-side once per request with a sensible TTL | Patient lists with many photos |
-| Large photo uploads through the 25mb server-action body limit | Upload failures on big images | Resize/compress client-side before upload, or presigned direct-to-storage upload | High-res phone photos |
+| On-the-fly slot generation over a huge date window | Slow month view | Generate only the visible window (day/week/month); cache within request | Only if querying years at once — not at single-doctor scale |
+| Unbounded token-search / no result cap | Slow search, full-roster dump | Min query length + result cap + `profile_id` scope | Immediately (also a security issue — Pitfall 6) |
+| Per-row aggregation of earnings in app code | Slow panel as entries grow | `SUM`/`AVG` in a single scoped SQL query | Thousands of entries |
+| No index on `appointments(profile_id, starts_at)` | Slow agenda queries | Composite index; `btree_gist` index backs the exclusion constraint | Hundreds of appointments |
 
 ## Security Mistakes
 
 | Mistake | Risk | Prevention |
 |---------|------|------------|
-| Child photo in public bucket | Minors' sensitive images world-readable; LGPD breach | Private bucket + signed URLs + owner RLS; verify with unauth `curl` |
-| New delete/query without owner filter | Cross-tenant data access/destruction (active IDOR class) | `.eq("profile_id", ...)` everywhere + ownership tests; enable RLS |
-| Admin (service-role) client in feature paths | God-mode logic bug bypasses all RLS | Admin client only for `auth.admin.*` |
-| Storing public photo URL in DB | Permanent unauthenticated link leaks even after "deletion" | Store storage path; serve via signed URL; deletion removes object + reference |
-| No consent/erasure for minors' photos | LGPD non-compliance (consent + best-interest + erasure) | Capture guardian consent; implement photo deletion (object + DB) |
+| Raw token storage | DB read → every doctor's agenda + child roster compromised | Store SHA-256 hash of a ≥256-bit CSPRNG token; show once |
+| Guessable/enumerable token | Internet-wide enumeration of pediatric patient base (LGPD) | High-entropy random token; no id-derived/sequential tokens |
+| No revocation/expiry | Leaked link works forever | `revoked_at`/`expires_at` + doctor rotate-link UI |
+| Token scope creep | Assistant link exposes prontuário/documents/AI | Dedicated minimal action surface; allowlisted DTO fields; no clinical data |
+| Search leaks roster | Full list of minors scraped via link | Min query length, result cap, non-clinical fields, rate limit |
+| No rate limit on session-less route | Token brute-force, appointment/patient spam | Per-token + per-IP throttle; constant-time hash compare; cap pending/hour |
+| Missing `profile_id` on new tables | Cross-tenant agenda/money IDOR (no RLS backstop) | `.eq("profile_id",...)` everywhere + enable RLS on new tables |
+| Admin client on token route | God-mode DB access on first external surface | Normal client + token-derived scoping only |
+| Minors' data over an external link (LGPD) | Sensitive minor data exposed beyond the doctor | All of the above, plus minimize fields the link ever returns |
 
 ## UX Pitfalls
 
 | Pitfall | User Impact | Better Approach |
 |---------|-------------|-----------------|
-| Showing age without unit clarity (days vs months) | Doctor misreads age for dosing | Show both "X dias" and "Y meses e Z dias" explicitly, labeled |
-| Vaccine recommendations presented as authoritative | Doctor over-trusts possibly-stale data | Label source+date, frame as decision support, doctor confirms |
-| Extra blank page in printed report (current bug) | Wasted paper, looks unprofessional mid-consultation | Fix the pdfkit layout model so page count matches content |
-| Consultation timer that resets/loses state on navigation or refresh | Lost consultation time tracking | Persist timer start (e.g. server/DB or durable client state), compute elapsed from start timestamp not a tick counter |
+| Raw Postgres constraint error on double-book | Confusing failure at confirm time | Catch exclusion violation → friendly "horário já ocupado" result union |
+| Slot shows in two calendar views | Doctor distrusts the agenda | Half-open intervals + single tested slot generator |
+| Earnings total shifts an entry to wrong day | Doctor thinks money is missing | Bucket by local date (`AT TIME ZONE`), document the reporting zone |
+| Deleting a mistaken earnings entry loses history | No audit trail | Void (soft) instead of hard delete; totals filter voided |
+| Assistant can't tell if a slot is pending vs confirmed | Double requests, unclear queue | Distinct visual states for pending "pedido a confirmar" vs confirmed |
 
 ## "Looks Done But Isn't" Checklist
 
-- [ ] **Report PDF spacing fix:** Often verified only on one sample — verify at 1 page, exactly-at-boundary (~1.05 pages), and multi-page content; confirm no trailing blank page and no large bottom gap. Verify it holds for the NEW document types too (they share the builder).
-- [ ] **Child photo upload:** Often missing privacy — verify the bucket is `public=false`, the URL is a signed URL (expires), an unauthenticated `curl` of the object fails, and a deletion removes both object and DB reference.
-- [ ] **Pediatric age:** Often missing edge cases — verify Jan-31 birth, Feb-29 birth in a non-leap year, newborn (0/1 day), year-boundary, and a near-midnight local time; confirm it uses the shared `lib/` helper, not inline math.
-- [ ] **Vaccine calendar:** Often missing provenance — verify each schedule carries source + effective date, SUS/private/gestante are separate, and the UI shows the vintage + a "confirm against current official calendar" note.
-- [ ] **New document types & actions:** Often missing scoping — verify each has the paid gate, `getAuthenticatedUser`, `profile_id` filter on read/write/delete, and an ownership test; no admin client; no client construction in `modules/`.
-- [ ] **Consultation timer:** Often missing persistence — verify it survives a page refresh/navigation and computes elapsed from a stored start time.
+- [ ] **Slot booking:** Often missing the DB exclusion constraint — verify two concurrent bookings for the same time: exactly one succeeds.
+- [ ] **Recurring availability:** Often missing timezone correctness — verify a 14:00 rule renders 14:00 on a UTC-server deploy (Vercel), and boundary slots (first/last of day, week wrap, month end) aren't doubled/dropped.
+- [ ] **Assistant token:** Often missing hash-at-rest + revocation — verify the DB stores no usable token and that revoking kills the link immediately.
+- [ ] **Token route:** Often missing correct middleware exemption — verify the link loads logged-out AND a random `/dashboard/*` path still redirects to login.
+- [ ] **Token scope:** Often missing scope enforcement — verify the link cannot reach prontuário, documents, growth curve, vaccines, or AI; and search returns no clinical fields.
+- [ ] **Token search:** Often missing rate limit + result cap — verify empty query returns nothing and volume is throttled.
+- [ ] **Earnings money:** Often missing integer-cents storage — verify no float column and that month total + average reconcile to the cent.
+- [ ] **Earnings totals:** Often missing void/status filter — verify a voided entry is excluded from totals and average.
+- [ ] **Every new action:** Often missing `profile_id` scope and/or paid gate — verify each doctor action gates on paid and each query filters by owner; verify the token route does neither the paid gate nor session auth but still scopes by token-derived `profile_id`.
+- [ ] **New tables:** Often missing RLS — verify whether RLS was enabled on appointments/availability/ledger/token tables (defense-in-depth for LGPD minor data).
 
 ## Recovery Strategies
 
 | Pitfall | Recovery Cost | Recovery Steps |
 |---------|---------------|----------------|
-| Report extra-page/whitespace bug | MEDIUM | Refactor the kit report builder to a single layout model with shared measure/render options; regression-test at content-length boundaries |
-| Child photos in public bucket | HIGH | Flip bucket to private, migrate objects, replace `getPublicUrl` with signed URLs, purge stored public URLs; assume already-shared URLs are compromised |
-| Wrong age math shipped | LOW-MEDIUM | Centralize into tested helper, replace call sites; recompute on display (no stored derived age to backfill) |
-| Stale vaccine data | LOW (data) / HIGH (if it caused clinical error) | Update versioned dataset, bump effective date; add annual review reminder |
-| Missing owner filter / IDOR in new slice | MEDIUM | Add `.eq("profile_id", ...)`, add ownership test, enable table RLS as backstop, audit logs for cross-tenant access |
+| Double-booking already in prod | MEDIUM | Add `btree_gist` exclusion constraint; identify & manually resolve existing overlaps (constraint creation fails until conflicts cleared) |
+| Token stored raw | MEDIUM | Migrate to hashed storage; force-regenerate all existing links (invalidate old raw tokens) |
+| Leaked/over-broad link discovered | LOW (if revocation exists) / HIGH (if not) | Revoke + regenerate token; if no revocation was built, emergency schema change + rotate — build revocation first |
+| Money stored as float | MEDIUM | Add `amount_cents bigint`; backfill via careful conversion; switch reads/writes/aggregates; drop float column |
+| Missing `profile_id` filter shipped | HIGH | Audit all new queries; add filters + ownership tests; enable RLS to prevent recurrence; assess whether cross-tenant exposure occurred |
+| Timezone drift in agenda | MEDIUM | Re-model rules as wall-clock+zone; regenerate slots; reconcile any mis-bucketed earnings |
 
 ## Pitfall-to-Phase Mapping
 
 | Pitfall | Prevention Phase | Verification |
 |---------|------------------|--------------|
-| pdfkit whitespace / extra page | Bloco 1 — print-spacing fix (before Bloco 3 new docs) | PDF page count matches content at boundary cases; holds for new doc types |
-| Pediatric age math | Bloco 1 — age display | Unit tests for month-end/leap/newborn/year-boundary/near-midnight; single `lib/` helper reused |
-| Vaccine data staleness / SUS-vs-private | Bloco 2 — vaccines (data model first) | Each schedule has source+effective date; schedules separated; UI shows vintage |
-| Child photo LGPD / public bucket | Bloco 1 — child photo | Private bucket, signed URL, unauth `curl` fails, consent + deletion path |
-| Brownfield scoping / paid gate / per-request client | Cross-cutting, every Bloco 2/3/4 slice (+ optional early RLS hardening) | Per-slice: paid gate + `profile_id` filter on all ops + ownership test; no admin client; no module-constructed client |
+| 8 Double-booking race | Availability/appointments data model | Concurrent-insert test: one wins |
+| 9 Timezone/DST in recurrence | Availability (recurring grid) | 14:00 rule renders 14:00 on UTC deploy |
+| 10 Week/month off-by-one | Availability + agenda views | Boundary unit tests pass; week has 7 days |
+| 11 Recurrence materialization drift | Availability (recurring grid) | Editing grid updates all views; no stale rows |
+| 12 Double-confirm | Appointments/confirmation flow | Second confirm returns friendly conflict |
+| 1 Raw token | Assistant-link foundation | DB holds only hashes |
+| 2 Weak token | Assistant-link foundation | Token ≥256-bit CSPRNG; not id-derived |
+| 3 No revoke/expiry | Assistant-link foundation | Revoke kills link; expiry honored |
+| 4 Middleware exemption | Assistant-link route | Link loads logged-out; dashboard still protected |
+| 5 Scope creep | Assistant booking-actions | Link cannot reach clinical data/AI |
+| 6 Search roster leak | Assistant booking-actions | Min-length, capped, non-clinical, throttled |
+| 7 No CSRF/rate-limit | Assistant route/booking-actions | Token required per mutation; abuse throttled |
+| 13 Float money | Earnings ledger data model | No float column; cents used |
+| 14 Average/TZ aggregation | Earnings panel | Average reconciles; local-date buckets |
+| 15 Test/void in totals | Earnings ledger + panel | Voided excluded from totals |
+| 16 Ledger IDOR | Earnings ledger data model | Ownership test on delete/void |
+| 17 Missing profile_id (systemic) | All phases (+ RLS hardening) | Ownership tests; RLS on new tables |
+| 18 Paid gate vs token auth | All action phases | Doctor actions gated; token route session-less+scoped |
+| 19 Admin-client misuse | Assistant-link route | No service-role on token/new paths |
 
 ## Sources
 
-- Read directly: `node_modules/@falaped/falaped-kit/dist/pdf/index.js` (report/prescription/certificate builders — confirmed the mixed flow/absolute layout model and estimate-vs-render gap), `node_modules/@falaped/falaped-kit/README.md`, `modules/prescriptions/generate-prescription-pdf.ts`
-- Read directly: `supabase/migrations/20260228200000_storage_profile_logos_rls.sql` (public logo bucket), `supabase/migrations/20260315010000_storage_prescriptions.sql` (private prescriptions bucket — correct model), `.planning/codebase/CONCERNS.md` (no RLS, IDOR, admin-client misuse, 25mb limit), `.planning/codebase/ARCHITECTURE.md` (three-layer + per-request client constraints)
-- pdfkit docs & issues: [Text in PDFKit](https://pdfkit.org/docs/text.html), [Text measurement and calculations](https://app.studyraid.com/en/read/11913/379546/text-measurement-and-calculations), [Page breaks and content flow](https://app.studyraid.com/en/read/11913/379562/page-breaks-and-content-flow), [foliojs/pdfkit #666 (measure before render)](https://github.com/foliojs/pdfkit/issues/666), [#363 (line height)](https://github.com/foliojs/pdfkit/issues/363)
-- Age math: [Stop miscalculating age in JavaScript (leap years, Feb 29, Jan 31 trap) — DEV](https://dev.to/momin_ali_e002a22d102ff40/stop-miscalculating-age-in-javascript-leap-years-feb-29-and-the-jan-31-trap-22aj), [Accurate JS Age Calculator — kevinleary.net](https://www.kevinleary.net/blog/javascript-age-birthdate-mm-dd-yyyy/), [date-fns](https://date-fns.org/)
-- Vaccine calendar: [Calendário de Vacinação — Ministério da Saúde](https://www.gov.br/saude/pt-br/vacinacao/calendario), [Instrução Normativa Calendário Nacional 2026 (PDF)](https://www.gov.br/saude/pt-br/vacinacao/publicacoes/instrucao-normativa-que-instrui-o-calendario-nacional-de-vacinacao-2026.pdf), [SBIm atualizações](https://sbim.org.br/atualizacoes), [SBP calendário 2025/2026](https://www.sbp.com.br/imprensa/detalhe/news/sbp-lanca-calendario-de-vacinacao-atualizado-20252026/)
-- LGPD minors' data: [ANPD — enunciado dados de crianças e adolescentes](https://www.gov.br/anpd/pt-br/assuntos/noticias/anpd-divulga-enunciado-sobre-o-tratamento-de-dados-pessoais-de-criancas-e-adolescentes), [LGPD Art. 14](https://lgpd-brasil.info/capitulo_02/artigo_14), [Guia orientativo MPCE (PDF)](https://www.mpce.mp.br/wp-content/uploads/2023/10/Guia-orientativo-de-tratamento-de-dados-pessoais-de-criancas-e-adolescentes.pdf)
-- Supabase Storage: [Storage Buckets fundamentals](https://supabase.com/docs/guides/storage/buckets/fundamentals), [Storage Access Control](https://supabase.com/docs/guides/storage/security/access-control), [public bucket vs signedURL discussion #6458](https://github.com/orgs/supabase/discussions/6458)
+- PostgreSQL docs — Monetary/Numeric types (float unsuitable for money): https://www.postgresql.org/docs/current/datatype-money.html , https://www.postgresql.org/docs/current/datatype-numeric.html
+- Crunchy Data — "Working with Money in Postgres" (integer cents vs numeric guidance): https://www.crunchydata.com/blog/working-with-money-in-postgres
+- Exclusion constraints for overlap/double-booking (`btree_gist` + `tstzrange &&`, atomic at DB level; app-level check cannot prevent the race): https://www.jusdb.com/blog/postgresql-range-types-exclusion-constraints , https://jsupskills.dev/how-to-solve-the-double-booking-problem/ , https://boringsql.com/posts/beyond-start-end-columns/
+- Falaped codebase intel (this repo): `.planning/codebase/CONCERNS.md` (no RLS; IDOR delete-by-id; service-role misuse; no error tracking), `.planning/codebase/INTEGRATIONS.md` (no Redis/rate-limit infra; Supabase client model)
+- Falaped source: `lib/supabase/proxy.ts` + `proxy.ts` (middleware matcher + unauth sign-out/redirect branch), `modules/phone-link-codes/create-link-code.ts` (raw-code token precedent — 6-digit, 5-min, single-use)
+- Falaped milestone decisions: `.planning/PROJECT.md` v1.1 (private token link, session-less endpoint, pending-then-confirm, separate financial ledger, LGPD minors constraint)
 
 ---
-*Pitfalls research for: Brazilian pediatric medical practice web app (Falaped) — brownfield Next.js 16 + Supabase + pdfkit*
-*Researched: 2026-06-28*
+*Pitfalls research for: appointment scheduling + token-authenticated external booking + financial ledger on a no-RLS profile_id-scoped app*
+*Researched: 2026-07-20*

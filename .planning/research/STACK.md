@@ -1,211 +1,164 @@
 # Stack Research
 
-**Domain:** Brazilian pediatric medical-practice web app (Falaped) — subsequent milestone (brownfield, in production)
-**Researched:** 2026-06-28
+**Domain:** Appointment scheduling + earnings ledger, added to an in-production Next.js 16 / Supabase pediatric clinical web app (Falaped, milestone v1.1 "Agenda & Ganhos")
+**Researched:** 2026-07-20
 **Confidence:** HIGH
 
-## TL;DR — Headline Recommendation
+## TL;DR — the opinionated call
 
-**This milestone needs essentially zero new runtime dependencies.** Every capability in scope is covered by libraries already in the lockfile (`date-fns` 4.4.0, `@supabase/supabase-js` 2.108.2 + `@supabase/ssr`, React 19, `@falaped/falaped-kit/pdf`, `react-hook-form`, `zod`, `react-day-picker`, shadcn/ui, TipTap).
+**Add almost nothing.** The existing stack already covers ~90% of this milestone. The verified installed deps (`recharts@3.9.0`, `date-fns@4.1.0`, `zod@4.3.6`, `react-day-picker@9.4.4`, native `crypto`, Supabase Postgres) are enough to build recurring availability, the calendar views, the token booking surface, and the earnings panel.
 
-The two areas that actually need engineering attention are **not** dependency choices:
-1. **PDF spacing/extra-page bug** — the fix lives inside `@falaped/falaped-kit` (the kit owns all PDFKit rendering), with input-sanitization mitigation possible in the app.
-2. **Privacy of child photos** — a configuration/RLS decision (private bucket + scoped access), not a library decision.
+- **Charting (earnings panel): reuse `recharts@3.9.0`.** Already installed and already used (`components/dashboard/patients/growth/growth-chart.tsx`). Do NOT add a chart lib.
+- **Token generation: reuse native `crypto` + Postgres.** The `phone-link-codes` module (`modules/phone-link-codes/create-link-code.ts`) is the exact precedent — a cryptographically random secret + `expires_at` column validated by an external caller. Do NOT add `jsonwebtoken`, `jose`, `nanoid`, or `uuid`.
+- **Date/timezone/slots: reuse `date-fns@4` + ADD `@date-fns/tz` (one tiny dep, ~1 kB).** Store instants as `timestamptz` (UTC) in Postgres; treat clinic timezone as a single fixed value (`America/Sao_Paulo`). `@date-fns/tz`'s `TZDate` is the only genuinely-warranted new library, and it's the officially-maintained companion to the v4 already installed.
+- **Calendar day/week/month views: BUILD with primitives (CSS grid + date-fns), do NOT `npm install` a scheduler.** No calendar-scheduler npm package fits the three-layer + shadcn conventions cleanly. The good options (Mina Scheduler, shadcn Event Calendar) are **copy-in shadcn blocks**, not deps — vendor the parts you want, don't take a runtime dependency. `react-day-picker@9` (already installed) handles the month mini-picker.
+- **The token endpoint is a Route Handler (`app/api/agenda/[token]/…/route.ts`) on the Node.js runtime, NOT a Server Action and NOT middleware-gated.** It must bypass the `profile.status === "paid"` session gate and authenticate purely by token.
 
-Add a new dependency only if you decide to do client-side image compression before upload (see Supporting Libraries). Everything else: reuse.
+## Recommended Stack
 
----
+### Core Technologies (all already installed — reuse)
 
-## Recommended Stack (by capability)
+| Technology | Version (installed) | Purpose in this milestone | Why reuse |
+|------------|---------------------|---------------------------|-----------|
+| Next.js | ^16.2.0 | Route Handler for token booking surface; Server Actions for doctor-side agenda/finance mutations | App Router route handlers are the correct primitive for a non-session-gated external endpoint; Server Actions stay for the authenticated doctor flows (matches existing `app/ → actions/ → modules/`) |
+| React | ^19.0.0 | Calendar view components (day/week/month), booking form | Existing |
+| TypeScript | ^5 (strict) | All logic incl. slot-generation module (pure, unit-testable) | Existing |
+| Supabase Postgres | `@supabase/supabase-js` ^2.107.0 | New tables: `availability_rules`, `appointments`, `booking_tokens`, `earnings`; period aggregation via SQL | Slot/earnings aggregation belongs in Postgres (`date_trunc`, `generate_series`), not app code, for correctness at scale |
+| recharts | **3.9.0** | Earnings panel: bar/line totals by day/week/month | **Already installed and already in use** (growth-chart). Zero new deps for charting |
+| date-fns | ^4.1.0 | Slot math, week/day grid construction, formatting | Already the project's date lib; v4 has first-class TZ support |
+| zod | ^4.3.6 | Validate availability rules, booking payloads, earnings input at action/route boundaries | Existing validation convention (`lib/schemas/`) |
+| react-day-picker | ^9.4.4 | Month mini-calendar / date jump in the agenda | Already installed; do not reimplement a month picker |
+| Native `crypto` | Node/Web | Mint opaque booking tokens (`crypto.getRandomValues` / `crypto.randomUUID`), hash before storage | Precedent exists in `modules/phone-link-codes/create-link-code.ts`; zero deps |
 
-### Capability 1 — Patient photo upload / display (child photos)
+### Supporting Libraries
 
-| Concern | Recommendation | Version | Why |
-|---------|----------------|---------|-----|
-| Storage | Supabase Storage, **private bucket** (e.g. `patient-photos`) | supabase-js 2.108.2 (installed) | Already in stack; private-by-default; integrates with existing per-request client factories in `lib/supabase/`. **Child photos are sensitive minor data — never use a public bucket.** |
-| Access scoping | RLS policy keyed on `profile_id` via storage path prefix (`{profile_id}/{patient_id}/...`) | — | Mirrors the existing app-wide ownership rule ("all queries scoped by `profile_id`"). RLS enforces it at the storage layer too. |
-| Display URL | `createSignedUrl(path, expiresIn)` generated server-side in a `modules/` function | supabase-js 2.108.2 | Private bucket → no public URL. Short-lived signed URLs (e.g. 1h) keep minor photos from leaking via shareable links. |
-| Upload transport | **Server Action** receives the file (Server Action `bodySizeLimit` is already `25mb` in `next.config.ts`), or **`createSignedUploadUrl`** for direct client→storage upload | supabase-js 2.108.2 | Photos are small; the existing 25 MB Server-Action limit already accommodates direct upload through the action layer, keeping the auth + paid gate on the path. Use `createSignedUploadUrl` only if you later need larger media or want to offload bandwidth from the function. |
-| On-the-fly resize | `transform: { width, height, resize: 'cover', quality }` on `createSignedUrl` / `getPublicUrl` | supabase-js 2.108.2 | Avoids storing multiple sizes. **CAVEAT (verify against the project's plan): Supabase image transformations require the Pro plan or above.** If the project is not on Pro, do NOT rely on this — compress/resize client-side before upload instead (see Supporting Libraries). |
+| Library | Version | Purpose | When to Use |
+|---------|---------|---------|-------------|
+| **@date-fns/tz** | **^1.4.x** (verify latest at install) | `TZDate` — evaluate recurring rules and render slots in the clinic's fixed timezone (`America/Sao_Paulo`) while storing UTC | **The only new dependency worth adding.** Needed because recurring "Mon 14h–18h" must resolve to correct UTC instants; the official v4 companion, ~1 kB. Use `TZDate`/`TZDateMini` internally |
 
-**Confidence: HIGH** (Supabase Storage + signed URLs + RLS verified against official docs; transform Pro-plan gating verified).
+### Development Tools
 
-### Capability 2 — Consultation timer / chronometer (client-side)
+| Tool | Purpose | Notes |
+|------|---------|-------|
+| `tsx --test` (Node test runner) | Unit-test the pure slot-generation module (`modules/agenda/generate-slots.ts` etc.) | Slot expansion (rule → concrete slots for a date range, minus booked/blocked) is pure logic — cover it with `*.spec.ts` next to the module, per existing convention |
 
-| Concern | Recommendation | Version | Why |
-|---------|----------------|---------|-----|
-| Implementation | **Custom React hook, no library.** Store `startedAt` (epoch ms) in a ref/state; `setInterval` only drives UI repaint; compute `elapsed = Date.now() - startedAt` on each tick | React 19.0 (installed) | A timer is ~30 lines. Adding a dependency for it is unjustified. |
-| Accuracy | Derive elapsed from a **timestamp difference**, never by incrementing a counter inside `setInterval` | — | Pure `setInterval` counting drifts (~1s per 10 min, minutes per day) and stops when the tab is throttled. Timestamp-diff is drift-free and self-corrects after backgrounding. |
-| Persistence (optional) | Persist `startedAt` to the case/consultation row so a refresh or device switch resumes the same elapsed time | Postgres (Supabase) | Pediatric consultations can outlive a page session; storing the start instant makes the timer survive reloads for free. |
+## Detailed recommendations for the four open questions
 
-**What NOT to use:** `react-timer-hook`, `react-use-precision-timer`, `react-countdown`, etc. — all solve a problem the platform already solves; they add bundle weight and a maintenance surface for trivial logic.
+### 1. Token-authenticated external booking surface — the Next 16 pattern
 
-**Confidence: HIGH** (standard, well-documented pattern; verified the drift failure mode of naive `setInterval`).
+**Use a Route Handler, not a Server Action, and put it on the Node.js runtime. Do NOT protect it with the normal `paid` session gate.**
 
-### Capability 3 — Precise pediatric age (days, and months + days)
+- **Location:** `app/api/agenda/[token]/…/route.ts` (dynamic segment carries the opaque token) OR a page `app/agenda/[token]/page.tsx` whose mutations call token-scoped Server Actions that re-verify the token on every call. Recommended: a **page for the assistant's UI + route handlers (or token-verifying actions) for the mutations**. Either way, **every request re-verifies the token server-side** (defense in depth — never trust the URL alone).
+- **Why a route handler over the standard action path:** the standard actions in this repo all call `getAuthenticatedUser(supabase)` and gate on `profile.status === "paid"`. This surface has **no Supabase Auth session** and must not inherit that gate. A dedicated handler/action family with its own `verifyBookingToken()` guard keeps the paid-gate invariant intact everywhere else.
+- **Runtime:** **Node.js runtime** (default for route handlers), NOT Edge. It needs the Supabase server client + `crypto` hashing; Edge middleware notoriously lacks parts of Node `crypto`. Keep the token check inside the handler/action, not in `proxy.ts` middleware (middleware is the first line of defense only; re-verify in the handler).
+- **Token minting/storage/verification (mirror `phone-link-codes`):**
+  - **Mint:** opaque high-entropy secret via `crypto.randomUUID()` or `crypto.getRandomValues` (≥128 bits). This is a **bearer secret, not a JWT** — do not add `jose`/`jsonwebtoken`. Opaque + DB-backed gives instant **revocation** (a JWT can't be revoked without a denylist anyway).
+  - **Store:** a `booking_tokens` row scoped by `profile_id`, with `token_hash` (store a SHA-256 hash, not the raw token — the URL is the credential), `expires_at` (nullable for long-lived assistant links), `revoked_at`, `label`. Hash with native `crypto.subtle.digest`.
+  - **Verify:** hash the incoming token, look up by hash, check `revoked_at IS NULL` and `expires_at` — then resolve the `profile_id` and scope all subsequent queries to it. Enforce **row-level scoping in the handler** (and/or a dedicated RLS policy keyed by a verified token claim).
+- **Scope enforcement:** the token grants exactly: read agenda (of that `profile_id`), search/create `patients` (of that `profile_id`), create `appointments` as `status = 'pending'`. It must NOT expose prontuário/cases/documents. Enforce by only ever calling the whitelisted `modules/` functions from this surface — never the general dashboard actions.
 
-| Concern | Recommendation | Version | Why |
-|---------|----------------|---------|-----|
-| Months + days breakdown | `intervalToDuration({ start: birthDate, end: now })` → `{ years, months, days, ... }` | **date-fns 4.4.0 (installed)** | Calendar-correct decomposition (handles uneven month lengths). Exactly the "X meses e Y dias" pediatric format. |
-| Total days | `differenceInDays(now, birthDate)` | **date-fns 4.4.0 (installed)** | Correct whole-day count for newborns where "age in days" is the clinically used unit. |
-| Total months (if needed) | `differenceInMonths(now, birthDate)` | **date-fns 4.4.0 (installed)** | For vaccine-schedule bucketing by month. |
-| Timezone safety | Normalize both dates to start-of-day in the clinic's local timezone before diffing; store DOB as a date (not timestamp) | date-fns 4.4.0 | Avoids off-by-one-day errors from UTC vs America/Sao_Paulo. **This is the real risk, not the math.** |
+### 2. Recurring weekly availability + day/week/month views
 
-**No new dependency.** date-fns 4 is already a dependency and ships `intervalToDuration`, `differenceInDays`, and `differenceInMonths` as confirmed in `node_modules`.
+**Model the recurrence as rules, not materialized rows. Build views with CSS grid + date-fns. Do NOT install a scheduler library.**
 
-**Confidence: HIGH** (functions verified present in installed `date-fns@4.4.0`).
+- **Data model:** `availability_rules` = `{ profile_id, weekday (0–6), start_time, end_time, slot_minutes }` (+ optional exceptions/blocks table for one-off closures). Concrete slots are **derived on read** by expanding rules across a date window and subtracting booked/blocked slots — a pure function in `modules/agenda/`. This avoids the "materialize infinite recurrence" trap.
+- **Views:** day = single-column time grid; week = 7-column CSS grid; month = `react-day-picker` (installed) as the month surface, or a simple 6×7 grid built from `date-fns` (`startOfWeek`/`eachDayOfInterval`). All three are ~200–400 lines of Tailwind + date-fns; a runtime scheduler dep would fight the shadcn/three-layer conventions and add weight.
+- **If you want a head start on visuals:** vendor (copy source into `components/dashboard/agenda/`) from a shadcn calendar block (e.g. Mina Scheduler / shadcn Event Calendar) — **as source, not a package**. Strip their state libs; wire to your Server Actions.
+- **`@dnd-kit` is already installed** if drag-to-move appointments is ever wanted — no new dep needed for that later.
 
-### Capability 4 — Vaccine schedule (reference calendar) + per-patient vaccination card
+### 3. Date / timezone / slot handling
 
-| Concern | Recommendation | Version | Why |
-|---------|----------------|---------|-----|
-| Reference schedule (SUS + particular + gestante) | **Static seed data in Postgres** (`vaccines`, `vaccine_schedule_entries` tables), seeded via a `supabase/migrations/` + seed SQL | Supabase Postgres (installed) | The SUS/PNI calendar is slow-changing reference data. A static, versioned seed (rather than a third-party API) keeps it offline-reliable, auditable, and reviewable by the physician. Matches existing migration workflow. |
-| Schedule modeling | Model each entry as `(vaccine_id, dose_label, recommended_age_min_months, recommended_age_max_months, source: 'sus'|'particular'|'gestante')` | — | "Due/overdue by age" is then a query: compute patient age in months (date-fns), join against schedule, compare. No special library. |
-| Per-patient card | `patient_vaccinations` table: `(patient_id, profile_id, vaccine_id, dose_label, applied_at, lot, notes)` | Supabase Postgres (installed) | Same three-tier flow (`app/ → actions/ → modules/`), same `profile_id` scoping + paid gate as the rest of the app. "Pendentes/atrasadas" = schedule minus applied, filtered by current age. |
-| Validation | Zod schemas in `lib/schemas/` | zod 4.3.6 (installed) | Consistent with existing action-layer validation. |
+**Assume ONE clinic timezone (`America/Sao_Paulo`), store UTC, convert at the edges.**
 
-**No new dependency.** This is pure data modeling on the existing Postgres + action/module pattern.
+- **Storage:** appointment start/end as Postgres `timestamptz` (UTC instant). Availability rules store **local wall-clock `time`** + `weekday` (recurrence is defined in clinic-local terms).
+- **Conversion:** use `@date-fns/tz` `TZDate` to turn "weekday 14:00 America/Sao_Paulo on date D" into the correct UTC instant, and to render UTC instants back to clinic-local for display. Brazil currently observes no DST, but pinning the tz explicitly future-proofs and keeps server-vs-browser tz bugs out (Vercel servers run UTC).
+- **Slots:** pure module `generate-slots(rules, window, booked, blocks) → Slot[]`, fully unit-tested with `tsx --test`. Keep it side-effect-free (no Supabase, no `next/*` imports) per the modules convention.
+- **Why one dep and not `date-fns-tz`:** `@date-fns/tz` is the officially-maintained v4 companion; `date-fns-tz` is the legacy third-party lib. New code on v4 → `@date-fns/tz`.
 
-**Decision — do NOT pull a vaccine-schedule API or npm package:** none authoritatively tracks the Brazilian PNI/SUS calendar, and a hardcoded, physician-reviewed seed is safer for a clinical tool than an opaque external source. Keep the calendar as reviewable SQL/data the doctor can correct.
+### 4. Earnings aggregation + charting
 
-**Confidence: HIGH** for the modeling approach; **MEDIUM** on the exact schedule contents (the actual PNI dose ages should be confirmed against current Ministério da Saúde / SBP material at build time — this is a data-accuracy task, not a stack risk). Flag for phase-level verification.
+**Aggregate in SQL, chart with recharts (installed).**
 
-### Capability 5 — PDF layout fix (extra whitespace / page overflow)
-
-**Root cause is in the kit, not the app.** All PDFKit rendering for prontuário/receita/atestado lives in `@falaped/falaped-kit/dist` (`buildReportPdf`, `buildPrescriptionPdf`, `buildMedicalCertificatePdf`). The app only maps payloads and calls these functions (`modules/prescriptions/generate-prescription-pdf.ts`, `modules/medical-certificates/...`, `actions/cases/download-case-report-pdf.ts`).
-
-| Concern | Recommendation | Where |
-|---------|----------------|-------|
-| Keep PDFKit | **Stay on PDFKit** (already `serverExternalPackages: ["pdfkit"]`). Do NOT migrate to Puppeteer/`@react-pdf/renderer`/headless-Chrome HTML-to-PDF. | next.config.ts |
-| Fix the spacing | Adjust the report layout logic **inside `@falaped/falaped-kit`** (the kit is the system of record for PDF rendering). | kit repo |
-| App-side mitigation | Sanitize input before sending to the kit: collapse the `\n\n` runs that `htmlToPlainTextForPdf` emits from empty TipTap paragraphs; drop empty sections. | app `modules/` |
-
-**Why the extra page / whitespace happens (verified by reading the kit's compiled `buildReportPdf`):**
-1. **Stacked gaps.** Body paragraphs add `reportBodyParagraphGapPt` *between* every paragraph, and sections add `layout.paragraphSpacing` + `layout.sectionSpacing` after each. Empty paragraphs produced by `htmlToPlainTextForPdf` (which turns `</p><p>` and `<br>` into `\n\n`/`\n`) inflate paragraph count, so trailing blank TipTap lines become real vertical space.
-2. **Footer reservation forces early page breaks.** `footerGeometry` computes a `reservedBottom`/`contentLimit`; `preparePageForLastSection` calls `doc.addPage()` when the *estimated* last-section height would cross `contentLimit`. If the estimate (`heightOfString`) overshoots the actual rendered height, the page breaks one section too early, leaving a near-empty trailing page.
-3. **Estimate vs render drift.** `estimateReportBodyHeight` uses `doc.heightOfString` with the same `lineGap`, but rounding/wrapping differences between the estimate and the real `doc.text` pass can push content just past the limit. This is the classic PDFKit overflow trap.
-
-**Why HTML-to-PDF (Puppeteer) is the wrong fix here:** it would require bundling Chromium (heavy on Vercel functions), rewriting three working document templates, and abandoning the ABNT-margin layout the kit already encodes. The current layout is correct; only the spacing math needs tuning. Targeted fixes to gap constants + estimation are far lower risk than a renderer swap.
-
-**Confidence: HIGH** (root cause read directly from the kit's compiled source).
-
-### Capability 6 — New clinical document types (referral, exam request, medical report)
-
-| Concern | Recommendation | Version | Why |
-|---------|----------------|---------|-----|
-| Generation | **Reuse the existing kit PDF pattern.** The kit's `ReportPdfInput` (title + identification fields + sections + footer) is generic enough to render referral / exam-request / medical-report as new titled documents. | @falaped/falaped-kit (installed) | These are the same "header + body sections + signature/footer" shape as the prontuário. New doc types = new payload mappers + new kit entrypoints (or reuse `buildReportPdf` with a custom `reportTitle`/sections), not a new PDF engine. |
-| Body editing | **TipTap** for rich-text bodies/orientations | @tiptap/* 3.20.1 (installed) | Already used; pairs with the kit's `htmlToPlainTextForPdf`. |
-| Forms / templates | **react-hook-form + Zod**, same wizard + savable-template pattern as prescriptions | rhf 7.71.2 / zod 4.3.6 (installed) | PROJECT.md explicitly mandates "mesmo padrão das receitas." |
-| Delivery | Binary download via `app/api/<doctype>/route.ts` route handler (Server Actions can't stream binary) | Next.js 16 (installed) | Matches existing `app/api/prescriptions/` / `app/api/medical-certificates/` precedent in ARCHITECTURE.md. |
-
-**No new dependency.** This is composition of existing pieces.
-
-**Confidence: HIGH.**
-
----
+- **Data model:** `earnings` = `{ profile_id, appointment_id (nullable — standalone allowed), amount_cents, occurred_at, note }`. Store money as **integer cents** (never float).
+- **Aggregation:** compute totals by day/week/month and average-per-consultation with Postgres `date_trunc('day'|'week'|'month', occurred_at)` + `sum`/`avg`, in a `modules/earnings/` query — do not aggregate large sets in JS.
+- **Charting:** `recharts@3.9.0` bar/line/area — already installed, already used. No new charting dep.
 
 ## Installation
 
 ```bash
-# Core: NOTHING new required for this milestone.
+# The ONLY new runtime dependency for this entire milestone:
+yarn add @date-fns/tz
 
-# OPTIONAL — only if you choose client-side image compression
-# (recommended if the Supabase project is NOT on the Pro plan,
-#  since on-the-fly Storage image transforms are Pro-gated):
-yarn add browser-image-compression
+# Nothing else. recharts, date-fns, zod, react-day-picker, react-hook-form,
+# @dnd-kit, radix/base-ui, sonner, and native crypto are already present.
 ```
 
-> Use `yarn add` (project is pinned to Yarn 1.22.22 via `packageManager`; `npm` is not used here).
-
----
-
-## Supporting Libraries (only-if-needed)
-
-| Library | Version | Purpose | When to Use |
-|---------|---------|---------|-------------|
-| `browser-image-compression` | ^2.0.2 (verify latest at install) | Resize/compress patient photo in the browser before upload | **Only** if you cannot use Supabase Pro image transforms, or you want to cap upload size/strip EXIF (incl. GPS) before sensitive minor photos leave the device. Stripping EXIF GPS is itself a good privacy reason to consider this even on Pro. |
-
-No other supporting libraries are recommended. Timer, age math, vaccine modeling, and document types all use existing deps.
-
----
+Note: repo is **Yarn 1.x only** (per commit `556f6b8`) — use `yarn add`, never `npm install`.
 
 ## Alternatives Considered
 
 | Recommended | Alternative | When to Use Alternative |
 |-------------|-------------|-------------------------|
-| Custom timer hook | `react-timer-hook` / `react-use-precision-timer` | Never for this scope — only if you needed multiple synchronized timers with pause/lap UI out of the box. |
-| date-fns `intervalToDuration` | `dayjs` + duration plugin, `luxon` | Never — date-fns is already the project's date lib; adding a second is pure duplication. |
-| Static seeded vaccine schedule | External vaccine-schedule API/package | Never for BR PNI — no authoritative maintained source; physician-reviewable SQL is safer. |
-| PDFKit (kit) layout fix | Puppeteer / `@react-pdf/renderer` / `@react-pdf/renderer`-style HTML-to-PDF | Only a full future rewrite of all documents with complex multi-column/table layouts would justify it. Not for a spacing bug. |
-| Private bucket + signed URLs | Public bucket + obfuscated path | Never for child photos — minor PII must not be world-readable. |
-| Supabase Storage transforms | Store multiple pre-resized variants on upload | If not on Pro plan, or to avoid per-request transform latency/cost at high volume. |
-
----
+| Build calendar views with CSS grid + date-fns | `react-big-calendar`, FullCalendar, Mina Scheduler (as a dep) | If the doctor later wants heavy drag/resize/overlap-collision UX beyond a simple slot grid. Even then, prefer vendoring a shadcn block over a runtime dep |
+| Opaque DB-backed token (native `crypto`) | JWT via `jose` | If tokens ever had to be verified statelessly by a *separate* service with no DB access. Not the case here; opaque wins on revocability + zero deps |
+| `@date-fns/tz` (`TZDate`) | `date-fns-tz` | Only if migrating legacy `date-fns-tz` code; new v4 code should use `@date-fns/tz` |
+| Store UTC + fixed clinic tz | Store naive local time, no tz | Acceptable-ish because BR has no DST today, but fragile against Vercel-UTC servers and any future multi-tz need. Not worth the risk |
+| recharts | `@nivo`, `visx`, Chart.js | Never here — recharts is already installed and used; adding a second chart lib is pure bloat |
 
 ## What NOT to Use
 
 | Avoid | Why | Use Instead |
 |-------|-----|-------------|
-| Public Supabase Storage bucket for patient photos | Child photos are sensitive minor PII; public buckets yield permanent shareable URLs | Private bucket + RLS scoped by `profile_id` + short-lived `createSignedUrl` |
-| Pure `setInterval` counter for the timer | Drifts and freezes when tab is backgrounded/throttled | Timestamp-diff (`Date.now() - startedAt`); `setInterval` only repaints |
-| Adding a date library (dayjs/luxon/moment) | Duplicates the existing date-fns 4 dependency; `moment` is legacy/unmaintained | date-fns 4.4.0 (already installed) |
-| Puppeteer/headless-Chrome PDF for the spacing bug | Bundles Chromium (heavy on Vercel), throws away working ABNT templates | Tune gap/estimation logic inside `@falaped/falaped-kit` |
-| Bumping Server Action `bodySizeLimit` higher for photos | Already 25 MB; photos are small; larger limits widen abuse surface | Keep 25 MB, or use `createSignedUploadUrl` for direct upload |
-| A third-party React PDF/printing component | Server already renders authoritative PDFs via the kit | Reuse the kit's `buildReportPdf`-style entrypoints |
-
----
+| `jsonwebtoken` / `jose` for the booking token | Adds a dep; JWTs can't be cleanly revoked; overkill for a bearer link | Opaque random token (native `crypto`) + `booking_tokens` table (mirror `phone-link-codes`) |
+| `nanoid` / `uuid` | Native `crypto.randomUUID()` / `crypto.getRandomValues` already available and already used in the repo | Native `crypto` |
+| A calendar-scheduler npm package (FullCalendar, react-big-calendar) as a runtime dep | Fights shadcn + three-layer conventions, adds weight/CSS, hard to theme to the pediatric design system | CSS grid + date-fns; optionally vendor a shadcn calendar block's source |
+| `date-fns-tz` | Legacy third-party lib; not the v4 path | `@date-fns/tz` |
+| A second charting lib | recharts@3.9.0 already installed & used | recharts |
+| Materializing every recurring slot into rows | Unbounded growth, painful edits to recurrence | Store rules; expand to concrete slots on read (pure module) |
+| Putting token auth in `proxy.ts` middleware only | Middleware = Edge by default (partial `crypto`), and it's only a first line of defense | Re-verify token inside the Node.js route handler / token-scoped action |
+| Storing money as float | Rounding errors in totals/averages | Integer `amount_cents` |
 
 ## Stack Patterns by Variant
 
-**If the Supabase project is on the Pro plan:**
-- Use `createSignedUrl(path, expiry, { transform: { width, height, resize, quality } })` for patient-photo display.
-- Still consider EXIF stripping on upload (GPS in a child's photo is a privacy concern).
+**If the assistant link must expire / be rotated per assistant:**
+- Give `booking_tokens` an `expires_at` + `revoked_at` + `label`, and a doctor-side action to mint/list/revoke tokens.
+- Because token is opaque + DB-backed, revocation is a single `UPDATE ... SET revoked_at = now()`.
 
-**If the Supabase project is NOT on Pro:**
-- Resize/compress client-side with `browser-image-compression` before upload (cap dimensions, e.g. 800px, quality ~0.8).
-- Store the already-sized image; serve via plain `createSignedUrl` (no transform).
+**If drag-to-reschedule is wanted later:**
+- Reuse the already-installed `@dnd-kit/*` — no new dep.
 
-**If the consultation timer must survive reloads / device changes:**
-- Persist `started_at` (timestamptz) on the consultation/case row; compute elapsed from it on mount.
-
-**If a new document type needs tables or multi-column layout (beyond current templates):**
-- Extend the kit's PDFKit code with the needed primitives — still PDFKit, not a renderer swap.
-
----
+**If multi-clinic / multi-timezone ever appears:**
+- The `timestamptz` + `@date-fns/tz` design already supports it; add a `timezone` column to the clinic/profile instead of the hardcoded `America/Sao_Paulo` constant.
 
 ## Version Compatibility
 
-| Package | Version (in repo) | Notes |
-|---------|-------------------|-------|
-| `date-fns` | 4.4.0 | `intervalToDuration`, `differenceInDays`, `differenceInMonths` confirmed present in `node_modules`. ESM modular imports; tree-shakes. |
-| `@supabase/supabase-js` | 2.108.2 | Supports `createSignedUrl`/`createSignedUploadUrl` and `transform` option. Image transforms gated to Pro plan at the service level (not the SDK). |
-| `@supabase/ssr` | latest | Existing per-request client factories in `lib/supabase/` (server/client/proxy) are the correct place to run storage calls; do not construct clients in `modules/` (inject them). |
-| `@falaped/falaped-kit` | 0.2.7 | Owns all PDFKit rendering (`buildReportPdf`/`buildPrescriptionPdf`/`buildMedicalCertificatePdf`, `htmlToPlainTextForPdf`). PDF fix and new doc-type entrypoints likely require a kit version bump. |
-| `pdfkit` | (transitive, `serverExternalPackages`) | Keep as external server package; do not bundle. |
-| `react` / `react-dom` | 19.0.0 | Timer hook uses standard `useState`/`useRef`/`useEffect`; no React 19-specific API needed. |
+| Package A | Compatible With | Notes |
+|-----------|-----------------|-------|
+| `@date-fns/tz` ^1.x | `date-fns` ^4.1.0 | Purpose-built companion to date-fns v4; TZDate works with all v4 functions. Confirm latest patch at install time |
+| `recharts` 3.9.0 | React ^19 | Already running in production (growth chart) — no action needed |
+| Route Handlers (Node runtime) | Next.js ^16.2.0 | Default runtime is Node; do not opt into Edge for the token endpoint (needs full `crypto` + Supabase server client) |
+| Native `crypto.subtle` | Node.js (Vercel functions) | Available in Node runtime; another reason to keep the token endpoint off Edge |
 
-**Cross-cutting compatibility note:** The PDF fixes and new document types create a coupling to `@falaped/falaped-kit`. Plan for a coordinated kit release + app bump; the app cannot fully fix the spacing bug alone (only mitigate inputs).
+## Integration points with the existing architecture
 
----
-
-## Roadmap Flags
-
-- **PDF spacing fix spans two repos** (kit + app). Sequence kit changes before/with the app bump; budget for a kit release.
-- **Vaccine schedule data accuracy** needs physician + current PNI/SBP source verification at build time — a content task, flag for phase-level research, not a stack risk.
-- **Supabase plan check** is a prerequisite for the photo capability: it decides transform-on-the-fly vs client-side compression. Resolve before the photo phase starts.
-- **Child-photo privacy** (private bucket, RLS, signed-URL expiry, EXIF stripping) should be treated as a first-class requirement in the photo phase, not an afterthought.
-
----
+- **Layering:** new domains `modules/agenda/`, `modules/appointments/`, `modules/booking-tokens/`, `modules/earnings/` (one function per file, injected `SupabaseClient`, throw `[DOMAIN] ...`). Doctor-side mutations via `actions/agenda/`, `actions/earnings/` with the standard auth + `paid` gate + Zod. Barrels in each `actions/<domain>/index.ts` + root `actions/index.ts`.
+- **The token surface is the one deliberate exception** to the `paid` gate: its route handlers / token-scoped actions call `verifyBookingToken()` instead of `getAuthenticatedUser` + paid check, and only ever invoke the whitelisted agenda/patient-search/appointment-create modules — never general dashboard actions. This is explicitly sanctioned by the PROJECT.md key decisions ("Endpoint do link NÃO usa a sessão paga normal").
+- **Ownership scoping:** every new table carries `profile_id`; all queries filter by it. The token resolves to exactly one `profile_id`.
+- **Slot & aggregation logic** lives in pure `modules/` functions (no `next/cache`, no `next/headers`) so it's unit-testable with `tsx --test`, matching the existing testing convention.
+- **Precedent to copy:** `modules/phone-link-codes/create-link-code.ts` is the closest existing pattern for the token flow (random secret + expiry + external validator).
 
 ## Sources
 
-- Installed packages inspected directly in `node_modules`: `date-fns@4.4.0` (confirmed `intervalToDuration`, `differenceInDays`), `@supabase/supabase-js@2.108.2`, `@falaped/falaped-kit@0.2.7` (read compiled `dist/index.js` PDF rendering + `dist/pdf/index.d.ts`) — HIGH confidence.
-- Falaped app source: `modules/prescriptions/generate-prescription-pdf.ts`, `actions/cases/download-case-report-pdf.ts`, `.planning/codebase/STACK.md`, `.planning/codebase/ARCHITECTURE.md` — HIGH confidence (current codebase).
-- Supabase Storage image transformations (Pro-plan gating, `transform` options) — https://supabase.com/docs/guides/storage/serving/image-transformations — HIGH confidence.
-- Supabase signed upload URLs — https://supabase.com/docs/reference/javascript/storage-from-uploadtosignedurl — MEDIUM-HIGH confidence.
-- PDFKit text/layout semantics (`lineGap`, `paragraphGap`, `heightOfString`, automatic page insertion) — https://pdfkit.org/docs/text.html — HIGH confidence.
-- React stopwatch drift / timestamp-diff pattern — https://tommyto.dev/posts/build-an-accurate-stopwatch-timer-in-react-step-by-step-guide , https://dev.to/rbreahna/javascript-timer-with-react-hooks-560m — MEDIUM confidence (well-corroborated community pattern).
+- Verified installed deps — `/Users/goker1/falaped/package.json` (recharts 3.9.0, date-fns ^4.1.0, zod ^4.3.6, react-day-picker ^9.4.4, @dnd-kit, no jwt/nanoid/uuid) — HIGH
+- Existing token precedent — `modules/phone-link-codes/create-link-code.ts` (native `crypto.getRandomValues` + `expires_at`) — HIGH
+- Existing recharts usage — `components/dashboard/patients/growth/growth-chart.tsx` — HIGH
+- `.planning/codebase/{STACK,ARCHITECTURE,INTEGRATIONS}.md` + `CLAUDE.md` (three-layer, paid gate, Supabase scoping, Yarn-only) — HIGH
+- `.planning/PROJECT.md` v1.1 key decisions (token link not paid-gated; pending-confirm; earnings as separate ledger) — HIGH
+- date-fns v4 timezone / `@date-fns/tz` (TZDate) vs date-fns-tz — https://blog.date-fns.org/v40-with-time-zone-support/ , https://www.npmjs.com/package/@date-fns/tz — HIGH
+- Next.js 16 Route Handlers, dynamic segments, Node vs Edge runtime, middleware-as-first-line-of-defense — https://nextjs.org/docs/app/api-reference/file-conventions/dynamic-routes , https://strapi.io/blog/nextjs-16-route-handlers-explained-3-advanced-usecases — HIGH
+- Appointment UTC storage + explicit timezone best practice — https://learn.microsoft.com/en-us/answers/questions/1194364/what-is-the-best-way-to-store-an-appointment-time — MEDIUM
+- shadcn calendar/scheduler landscape (copy-in blocks, not deps) — https://github.com/Mina-Massoud/mina-scheduler , https://shadcn-event-calendar.vercel.app/ — MEDIUM
 
 ---
-*Stack research for: Falaped pediatric app — consultation-experience, vaccines, and new-document milestone*
-*Researched: 2026-06-28*
+*Stack research for: appointment scheduling + earnings ledger on an existing Next.js 16 / Supabase pediatric app*
+*Researched: 2026-07-20*
