@@ -5,7 +5,10 @@ import { TZDate } from "@date-fns/tz"
 
 import { CLINIC_TIME_ZONE } from "@/lib/clinic-timezone"
 import { expandAvailability } from "@/lib/expand-availability"
-import type { AvailabilityBand, AvailabilityException } from "@/lib/expand-availability"
+import type {
+  AvailabilityBand,
+  AvailabilityOverride,
+} from "@/lib/expand-availability"
 
 // All tests pass an explicit `window {from,to}` and `timeZone`, constructed via
 // TZDate (never `new Date("YYYY-MM-DD")`, which parses UTC midnight → off-by-one
@@ -15,14 +18,20 @@ import type { AvailabilityBand, AvailabilityException } from "@/lib/expand-avail
 const TZ = CLINIC_TIME_ZONE
 
 // Local-wall-clock instant in the clinic zone.
-function spInstant(
+function spInstant(y: number, m: number, d: number, hh = 0, mm = 0): Date {
+  return new Date(TZDate.tz(TZ, y, m - 1, d, hh, mm, 0, 0).getTime())
+}
+
+// Local-wall-clock instant in an ARBITRARY named zone (for the DST case).
+function zonedInstant(
+  timeZone: string,
   y: number,
   m: number,
   d: number,
   hh = 0,
   mm = 0,
 ): Date {
-  return new Date(TZDate.tz(TZ, y, m - 1, d, hh, mm, 0, 0).getTime())
+  return new Date(TZDate.tz(timeZone, y, m - 1, d, hh, mm, 0, 0).getTime())
 }
 
 // Weekday convention: 0=domingo..6=sábado (date-fns getDay()).
@@ -35,11 +44,15 @@ function singleDay(y: number, m: number, d: number) {
   return { from: spInstant(y, m, d, 0, 0), to: spInstant(y, m, d + 1, 0, 0) }
 }
 
-// Minutes-of-day of a slot start in the clinic zone (for readable assertions).
-function localMinuteOfDay(instant: Date): number {
-  const z = new TZDate(instant, TZ)
+// Minutes-of-day of a slot start in a named zone (for readable assertions).
+function localMinuteOfDay(instant: Date, timeZone: string = TZ): number {
+  const z = new TZDate(instant, timeZone)
   return z.getHours() * 60 + z.getMinutes()
 }
+
+// ---------------------------------------------------------------------------
+// 13 casos v1 migrados: `exceptions` → `overrides` (folgas ganham type:"subtract").
+// ---------------------------------------------------------------------------
 
 test("D-02 múltiplas faixas/dia: manhã + tarde → dois blocos, gap do almoço vazio", () => {
   const rules: AvailabilityBand[] = [
@@ -48,7 +61,7 @@ test("D-02 múltiplas faixas/dia: manhã + tarde → dois blocos, gap do almoço
   ]
   const result = expandAvailability({
     rules,
-    exceptions: [],
+    overrides: [],
     window: singleDay(2026, 7, 20),
     timeZone: TZ,
   })
@@ -68,7 +81,7 @@ test("D-09 duração por faixa: manhã @30min e tarde @20min → contagens difer
   ]
   const result = expandAvailability({
     rules,
-    exceptions: [],
+    overrides: [],
     window: singleDay(2026, 7, 20),
     timeZone: TZ,
   })
@@ -84,7 +97,7 @@ test("D-10 sobra descartada: 14:00–18:00 @45min → 5 slots (ignora 15 min fin
   ]
   const result = expandAvailability({
     rules,
-    exceptions: [],
+    overrides: [],
     window: singleDay(2026, 7, 20),
     timeZone: TZ,
   })
@@ -106,7 +119,7 @@ test("D-10 divisão exata: 08:00–12:00 @30min → 8 slots, sem sobra", () => {
   ]
   const result = expandAvailability({
     rules,
-    exceptions: [],
+    overrides: [],
     window: singleDay(2026, 7, 20),
     timeZone: TZ,
   })
@@ -115,16 +128,16 @@ test("D-10 divisão exata: 08:00–12:00 @30min → 8 slots, sem sobra", () => {
   assert.equal(localMinuteOfDay(result.slots[7].start), 11 * 60 + 30)
 })
 
-test("D-04 exceção dia inteiro: 0 slots na data, dias vizinhos intactos", () => {
+test("D-04 folga dia inteiro: 0 slots na data, dias vizinhos intactos", () => {
   const rules: AvailabilityBand[] = [
     { weekday: MONDAY, startMinute: 8 * 60, endMinute: 12 * 60, slotMinutes: 30 },
   ]
-  const exceptions: AvailabilityException[] = [
-    { date: "2026-07-20", startMinute: null, endMinute: null },
+  const overrides: AvailabilityOverride[] = [
+    { date: "2026-07-20", type: "subtract", startMinute: null, endMinute: null, slotMinutes: null },
   ]
   const result = expandAvailability({
     rules,
-    exceptions,
+    overrides,
     // Janela de duas segundas: 2026-07-20 (bloqueada) e 2026-07-27 (intacta).
     window: { from: spInstant(2026, 7, 20, 0, 0), to: spInstant(2026, 7, 28, 0, 0) },
     timeZone: TZ,
@@ -135,17 +148,17 @@ test("D-04 exceção dia inteiro: 0 slots na data, dias vizinhos intactos", () =
   assert.equal(result.byDay["2026-07-27"]?.hasAvailability, true)
 })
 
-test("D-04 exceção parcial: 'saio 16:00' numa quarta 14:00–18:00 → só até 15:30", () => {
+test("D-04 folga parcial: 'saio 16:00' numa quarta 14:00–18:00 → só até 15:30", () => {
   const rules: AvailabilityBand[] = [
     { weekday: WEDNESDAY, startMinute: 14 * 60, endMinute: 18 * 60, slotMinutes: 30 },
   ]
-  const exceptions: AvailabilityException[] = [
+  const overrides: AvailabilityOverride[] = [
     // Remove faixa a partir das 16:00 até o fim do dia.
-    { date: "2026-07-22", startMinute: 16 * 60, endMinute: 24 * 60 },
+    { date: "2026-07-22", type: "subtract", startMinute: 16 * 60, endMinute: 24 * 60, slotMinutes: null },
   ]
   const result = expandAvailability({
     rules,
-    exceptions,
+    overrides,
     window: singleDay(2026, 7, 22),
     timeZone: TZ,
   })
@@ -153,17 +166,17 @@ test("D-04 exceção parcial: 'saio 16:00' numa quarta 14:00–18:00 → só at�
   assert.deepEqual(minutes, [14 * 60, 14 * 60 + 30, 15 * 60, 15 * 60 + 30])
 })
 
-test("D-04 exceção parcial que não sobrepõe: nenhum slot removido", () => {
+test("D-04 folga parcial que não sobrepõe: nenhum slot removido", () => {
   const rules: AvailabilityBand[] = [
     { weekday: WEDNESDAY, startMinute: 14 * 60, endMinute: 18 * 60, slotMinutes: 30 },
   ]
-  const exceptions: AvailabilityException[] = [
-    // Exceção 08:00–10:00, fora da faixa da tarde → não remove nada.
-    { date: "2026-07-22", startMinute: 8 * 60, endMinute: 10 * 60 },
+  const overrides: AvailabilityOverride[] = [
+    // Folga 08:00–10:00, fora da faixa da tarde → não remove nada.
+    { date: "2026-07-22", type: "subtract", startMinute: 8 * 60, endMinute: 10 * 60, slotMinutes: null },
   ]
   const result = expandAvailability({
     rules,
-    exceptions,
+    overrides,
     window: singleDay(2026, 7, 22),
     timeZone: TZ,
   })
@@ -179,7 +192,7 @@ test("D-11 virada de semana: slot de domingo 23:30 pertence à semana corrente, 
   ]
   const result = expandAvailability({
     rules,
-    exceptions: [],
+    overrides: [],
     window: { from: spInstant(2026, 7, 20, 0, 0), to: spInstant(2026, 7, 27, 0, 0) },
     timeZone: TZ,
   })
@@ -200,7 +213,7 @@ test("D-11 virada de dia meio-aberta: slot que termina em 00:00 pertence ao dia 
   ]
   const result = expandAvailability({
     rules,
-    exceptions: [],
+    overrides: [],
     window: singleDay(2026, 7, 26), // domingo
     timeZone: TZ,
   })
@@ -216,7 +229,7 @@ test("D-11 fuso fixo: resultado independe do TZ do processo (instantes e localDa
   ]
   const result = expandAvailability({
     rules,
-    exceptions: [],
+    overrides: [],
     window: singleDay(2026, 7, 20),
     timeZone: TZ,
   })
@@ -236,7 +249,7 @@ test("janela vazia: 0 slots, sem throw", () => {
   const from = spInstant(2026, 7, 20, 0, 0)
   const result = expandAvailability({
     rules,
-    exceptions: [],
+    overrides: [],
     window: { from, to: from }, // janela vazia [from, from)
     timeZone: TZ,
   })
@@ -250,7 +263,7 @@ test("weekday sem faixa: 0 slots, sem throw", () => {
   // Janela numa terça (weekday 2), sem regra → 0 slots.
   const result = expandAvailability({
     rules,
-    exceptions: [],
+    overrides: [],
     window: singleDay(2026, 7, 21),
     timeZone: TZ,
   })
@@ -263,7 +276,7 @@ test("D-07 mês: byDay conta freeSlotCount e marca hasAvailability por dia", () 
   ]
   const result = expandAvailability({
     rules,
-    exceptions: [],
+    overrides: [],
     // Segunda 2026-07-20 + terça 2026-07-21.
     window: { from: spInstant(2026, 7, 20, 0, 0), to: spInstant(2026, 7, 22, 0, 0) },
     timeZone: TZ,
@@ -272,4 +285,162 @@ test("D-07 mês: byDay conta freeSlotCount e marca hasAvailability por dia", () 
   assert.equal(result.byDay["2026-07-20"].hasAvailability, true)
   assert.equal(result.byDay["2026-07-21"]?.freeSlotCount ?? 0, 0)
   assert.equal(result.byDay["2026-07-21"]?.hasAvailability ?? false, false)
+})
+
+// ---------------------------------------------------------------------------
+// 7 casos NOVOS v2: híbrido (aditivo/subtrativo, precedência D-21) + DST (WR-01).
+// ---------------------------------------------------------------------------
+
+test("WR-01 DST spring-forward (America/New_York, 2026-03-08): minutos locais preservados", () => {
+  // Em 2026-03-08 os EUA adiantam o relógio às 02:00 → 03:00 (spring-forward).
+  // Uma faixa 08:00–12:00 @30 no template do domingo (weekday 0) deve preservar os
+  // MINUTOS LOCAIS (08:00, 08:30, ...) — a v1 (`addMinutes` absoluto) derivaria 1h.
+  const NY = "America/New_York"
+  const SUNDAY = 0
+  const rules: AvailabilityBand[] = [
+    { weekday: SUNDAY, startMinute: 8 * 60, endMinute: 12 * 60, slotMinutes: 30 },
+  ]
+  const result = expandAvailability({
+    rules,
+    overrides: [],
+    window: {
+      from: zonedInstant(NY, 2026, 3, 8, 0, 0),
+      to: zonedInstant(NY, 2026, 3, 9, 0, 0),
+    },
+    timeZone: NY,
+  })
+  const minutes = result.slots.map((s) => localMinuteOfDay(s.start, NY))
+  // 08:00–12:00 @30 = 8 slots, todos com minute-of-day começando em múltiplos de 30
+  // a partir das 08:00 — nenhum derivado para 09:00 pela transição DST.
+  assert.equal(result.slots.length, 8)
+  assert.deepEqual(minutes, [480, 510, 540, 570, 600, 630, 660, 690])
+  assert.equal(localMinuteOfDay(result.slots[0].start, NY), 8 * 60)
+})
+
+test("AGENDA-05 aditivo básico: dia sem template + override add 19:00–20:00 @30 → 2 slots só do aditivo", () => {
+  // 2026-07-21 é terça (weekday 2), sem regra no template.
+  const overrides: AvailabilityOverride[] = [
+    { date: "2026-07-21", type: "add", startMinute: 19 * 60, endMinute: 20 * 60, slotMinutes: 30 },
+  ]
+  const result = expandAvailability({
+    rules: [],
+    overrides,
+    window: singleDay(2026, 7, 21),
+    timeZone: TZ,
+  })
+  assert.equal(result.slots.length, 2)
+  assert.deepEqual(
+    result.slots.map((s) => localMinuteOfDay(s.start)),
+    [19 * 60, 19 * 60 + 30],
+  )
+})
+
+test("aditivo sobre template com sobreposição → sem slots duplicados (dedupe por start)", () => {
+  // Segunda com template 08:00–12:00 @30. Aditivo 10:00–12:00 @30 no MESMO dia,
+  // sobrepondo os slots 10:00/10:30/11:00/11:30 do template → não duplica.
+  const rules: AvailabilityBand[] = [
+    { weekday: MONDAY, startMinute: 8 * 60, endMinute: 12 * 60, slotMinutes: 30 },
+  ]
+  const overrides: AvailabilityOverride[] = [
+    { date: "2026-07-20", type: "add", startMinute: 10 * 60, endMinute: 12 * 60, slotMinutes: 30 },
+  ]
+  const result = expandAvailability({
+    rules,
+    overrides,
+    window: singleDay(2026, 7, 20),
+    timeZone: TZ,
+  })
+  // Ainda 8 slots (08:00..11:30), sem duplicação dos 10:00–12:00.
+  assert.equal(result.slots.length, 8)
+  const starts = result.slots.map((s) => localMinuteOfDay(s.start))
+  // Nenhum start repetido.
+  assert.equal(new Set(starts).size, starts.length)
+})
+
+test("aditivo + subtrativo na mesma faixa → 0 slots (folga vence, D-21)", () => {
+  // 2026-07-21 (terça, sem template): aditivo 09:00–11:00 @30 e folga parcial
+  // 09:00–11:00 no mesmo dia → a folga remove todos os slots do aditivo.
+  const overrides: AvailabilityOverride[] = [
+    { date: "2026-07-21", type: "add", startMinute: 9 * 60, endMinute: 11 * 60, slotMinutes: 30 },
+    { date: "2026-07-21", type: "subtract", startMinute: 9 * 60, endMinute: 11 * 60, slotMinutes: null },
+  ]
+  const result = expandAvailability({
+    rules: [],
+    overrides,
+    window: singleDay(2026, 7, 21),
+    timeZone: TZ,
+  })
+  assert.equal(result.slots.length, 0)
+})
+
+test("subtrativo dia-inteiro remove template E aditivos daquele dia → 0 slots", () => {
+  const rules: AvailabilityBand[] = [
+    { weekday: MONDAY, startMinute: 8 * 60, endMinute: 12 * 60, slotMinutes: 30 },
+  ]
+  const overrides: AvailabilityOverride[] = [
+    { date: "2026-07-20", type: "add", startMinute: 19 * 60, endMinute: 20 * 60, slotMinutes: 30 },
+    { date: "2026-07-20", type: "subtract", startMinute: null, endMinute: null, slotMinutes: null },
+  ]
+  const result = expandAvailability({
+    rules,
+    overrides,
+    window: singleDay(2026, 7, 20),
+    timeZone: TZ,
+  })
+  assert.equal(result.slots.length, 0)
+  assert.equal(result.byDay["2026-07-20"]?.hasAvailability ?? false, false)
+})
+
+test("aditivo com slotMinutes próprio (@20) diferente do template (@30) → contagens distintas", () => {
+  // Segunda: template manhã 08:00–12:00 @30 (8 slots) + aditivo tarde 14:00–16:00 @20 (6 slots).
+  const rules: AvailabilityBand[] = [
+    { weekday: MONDAY, startMinute: 8 * 60, endMinute: 12 * 60, slotMinutes: 30 },
+  ]
+  const overrides: AvailabilityOverride[] = [
+    { date: "2026-07-20", type: "add", startMinute: 14 * 60, endMinute: 16 * 60, slotMinutes: 20 },
+  ]
+  const result = expandAvailability({
+    rules,
+    overrides,
+    window: singleDay(2026, 7, 20),
+    timeZone: TZ,
+  })
+  const morning = result.slots.filter((s) => localMinuteOfDay(s.start) < 12 * 60)
+  const afternoon = result.slots.filter((s) => localMinuteOfDay(s.start) >= 14 * 60)
+  assert.equal(morning.length, 8) // 4h / 30min (template)
+  assert.equal(afternoon.length, 6) // 2h / 20min (aditivo)
+  assert.equal(result.slots.length, 14)
+})
+
+test("precedência combinada: template + aditivo + folga parcial num só dia → conjunto final correto", () => {
+  // Segunda: template 08:00–12:00 @30 (8 slots) + aditivo 14:00–16:00 @30 (4 slots)
+  // + folga parcial 10:00–11:00 remove 10:00 e 10:30 do template. Resultado:
+  // manhã 08:00,08:30,09:00,09:30,11:00,11:30 (6) + tarde 14:00,14:30,15:00,15:30 (4) = 10.
+  const rules: AvailabilityBand[] = [
+    { weekday: MONDAY, startMinute: 8 * 60, endMinute: 12 * 60, slotMinutes: 30 },
+  ]
+  const overrides: AvailabilityOverride[] = [
+    { date: "2026-07-20", type: "add", startMinute: 14 * 60, endMinute: 16 * 60, slotMinutes: 30 },
+    { date: "2026-07-20", type: "subtract", startMinute: 10 * 60, endMinute: 11 * 60, slotMinutes: null },
+  ]
+  const result = expandAvailability({
+    rules,
+    overrides,
+    window: singleDay(2026, 7, 20),
+    timeZone: TZ,
+  })
+  const minutes = result.slots.map((s) => localMinuteOfDay(s.start))
+  assert.deepEqual(minutes, [
+    8 * 60,
+    8 * 60 + 30,
+    9 * 60,
+    9 * 60 + 30,
+    11 * 60,
+    11 * 60 + 30,
+    14 * 60,
+    14 * 60 + 30,
+    15 * 60,
+    15 * 60 + 30,
+  ])
+  assert.equal(result.slots.length, 10)
 })

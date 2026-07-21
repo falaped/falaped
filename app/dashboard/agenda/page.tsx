@@ -10,7 +10,7 @@ import { listAvailabilityExceptions } from "@/modules/availability/list-availabi
 import {
   expandAvailability,
   type AvailabilityBand,
-  type AvailabilityException,
+  type AvailabilityOverride,
 } from "@/lib/expand-availability"
 import { CLINIC_TIME_ZONE } from "@/lib/clinic-timezone"
 import { AgendaView } from "@/components/dashboard/agenda/agenda-view"
@@ -52,15 +52,20 @@ export default async function AgendaPage() {
     endMinute: row.end_minute,
     slotMinutes: row.slot_minutes,
   }))
-  const exceptions: AvailabilityException[] = exceptionRows.map((row) => ({
+  // Mapear as folgas v1 (subtrativas) para o modelo de override híbrido (D-20).
+  // O Plano 03 reescreve este RSC para carregar override_type/slot_minutes reais
+  // (aditivos incluídos); aqui só adaptamos o contrato subtrativo existente.
+  const overrides: AvailabilityOverride[] = exceptionRows.map((row) => ({
     date: row.exception_date,
+    type: "subtract" as const,
     startMinute: row.start_minute,
     endMinute: row.end_minute,
+    slotMinutes: null,
   }))
 
   const { slots, byDay } = expandAvailability({
     rules: bands,
-    exceptions,
+    overrides,
     window: { from: weekStart, to: weekEnd },
     timeZone: CLINIC_TIME_ZONE,
   })
