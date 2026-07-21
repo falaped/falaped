@@ -31,6 +31,14 @@ export type PediatricAge = {
   status: PediatricAgeStatus
   band?: AgeBand
   totalDays?: number
+  /**
+   * Chronological whole calendar months (`differenceInMonths(today, birth)`).
+   * Present only when `status` is "ok". Calendar-correct across EVERY band —
+   * unlike `parts`, which omits months in the `days`/`weeks` bands (0–83 days),
+   * so this is the safe source for a 2-month-old's whole-month age. Chronological
+   * only (never corrected).
+   */
+  totalMonths?: number
   parts?: PediatricAgeParts
   corrected?: {
     band: AgeBand
@@ -164,9 +172,10 @@ export function computePediatricAge(
   if (isAfter(birth, today)) return { status: "future" } // D-12
 
   const totalDays = differenceInDays(today, birth)
+  const totalMonths = differenceInMonths(today, birth)
   const { band, parts } = bandFor(birth, today)
 
-  const result: PediatricAge = { status: "ok", band, totalDays, parts }
+  const result: PediatricAge = { status: "ok", band, totalDays, totalMonths, parts }
 
   // Corrected age (D-10): only for preterm infants, only while within the cutoff.
   if (

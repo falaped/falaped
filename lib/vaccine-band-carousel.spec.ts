@@ -5,6 +5,7 @@ import {
   computeOrderedBands,
   resolveCurrentBandIndex,
 } from "@/lib/vaccine-band-carousel"
+import { CANONICAL_VACCINE_BANDS } from "@/lib/vaccine-bands"
 import type { VaccineScheduleWithItems } from "@/modules/vaccines/types"
 
 function item(
@@ -42,34 +43,30 @@ function schedule(
   }
 }
 
-test("computeOrderedBands unions distinct age_labels ordered by min sort_order", () => {
+const CANONICAL_LABELS = CANONICAL_VACCINE_BANDS.map((b) => b.label)
+
+test("computeOrderedBands returns the fixed 11 canonical labels in order", () => {
   const sus = schedule([
     item("a", "Ao nascer", 0, 0),
     item("b", "2 meses", 2, 2),
-    item("c", "4 meses", 4, 4),
   ])
-  const sbim = schedule([
-    item("d", "2 meses", 3, 2), // higher sort_order for same label -> min wins
-    item("e", "3 meses", 3.5, 3),
-  ])
-  const bands = computeOrderedBands([sus, sbim])
-  assert.deepEqual(bands, ["Ao nascer", "2 meses", "3 meses", "4 meses"])
+  const sbim = schedule([item("e", "3 meses", 3.5, 3)])
+  assert.deepEqual(computeOrderedBands([sus, sbim]), CANONICAL_LABELS)
 })
 
-test("computeOrderedBands skips null datasets", () => {
-  const sus = schedule([item("a", "Ao nascer", 0, 0)])
-  assert.deepEqual(computeOrderedBands([sus, null]), ["Ao nascer"])
-  assert.deepEqual(computeOrderedBands([null, null]), [])
+test("computeOrderedBands is data-independent: null datasets still yield the 11 bands", () => {
+  assert.deepEqual(computeOrderedBands([null, null]), CANONICAL_LABELS)
+  assert.deepEqual(computeOrderedBands([]), CANONICAL_LABELS)
 })
 
 test("resolveCurrentBandIndex returns the index of the current band label", () => {
-  const bands = ["Ao nascer", "2 meses", "4 meses"]
+  const bands = CANONICAL_LABELS
   assert.equal(resolveCurrentBandIndex(bands, "2 meses"), 1)
-  assert.equal(resolveCurrentBandIndex(bands, "4 meses"), 2)
+  assert.equal(resolveCurrentBandIndex(bands, "12 a 18 meses"), 8)
 })
 
 test("resolveCurrentBandIndex falls back to 0 when label is null or absent", () => {
-  const bands = ["Ao nascer", "2 meses"]
+  const bands = CANONICAL_LABELS
   assert.equal(resolveCurrentBandIndex(bands, null), 0)
   assert.equal(resolveCurrentBandIndex(bands, "9 anos"), 0)
 })
