@@ -1,369 +1,323 @@
-# Phase 6: Disponibilidade & Calendário do Médico - Pattern Map
+# Phase 06: Disponibilidade & Calendário do Médico (v2 REDESIGN) - Pattern Map
 
 **Mapped:** 2026-07-21
-**Files analyzed:** 18 (2 migrations, 2 pure-lib + specs, 1 lib const, ~6 modules, ~5 actions/schema, 2 pages, 2+ components, 1 sidebar edit)
-**Analogs found:** 15 / 18 (3 são greenfield: expand-availability, clinic-timezone, agenda CSS-grid)
+**Files analyzed:** 12 (new/modified)
+**Analogs found:** 12 / 12
 
-Todos os excertos abaixo são caminhos absolutos e números de linha do repo atual. O planner deve referenciar o **analog + linhas** diretamente nas ações de cada plano.
+> **This is a v2 rewrite, not greenfield.** The v1 slice was shipped and is live in the DB. The closest analog for almost every v2 file is its own **live v1 counterpart** in the repo. This map points each v2 file at that live analog with concrete excerpts, plus the two canonical molds (`patient_vaccine_doses.sql` for owner-scoped migrations, `compute-pediatric-age.ts` for the pure-fn+spec shape). Where a file is genuinely modified in place (not created), that is marked in the Match Quality column.
 
 ## File Classification
 
-| Arquivo novo/modificado | Papel | Fluxo de dados | Analog mais próximo | Qualidade |
-|-------------------------|-------|----------------|---------------------|-----------|
-| `supabase/migrations/<ts>_availability_rules.sql` | migration | persistência (owner-scoped) | `supabase/migrations/20260720000500_patient_vaccine_doses.sql` | exact |
-| `supabase/migrations/<ts>_availability_exceptions.sql` | migration | persistência (owner-scoped) | `supabase/migrations/20260720000500_patient_vaccine_doses.sql` | exact |
-| `lib/clinic-timezone.ts` | config/constant | — | `lib/compute-pediatric-age.ts` (constantes exportadas L59-83) | partial (só padrão de const) |
-| `lib/expand-availability.ts` | utility (função pura) | transform (regras→slots) | `lib/compute-pediatric-age.ts` | role-match (greenfield na lógica de fuso) |
-| `lib/expand-availability.spec.ts` | test | transform | `lib/compute-pediatric-age.spec.ts` | exact |
-| `modules/availability/list-availability-rules.ts` | module (query) | CRUD read | `modules/patient-vaccine-doses/get-taken-dose-ids-by-patient.ts` | exact |
-| `modules/availability/upsert-availability-rules.ts` | module (query) | CRUD write | `modules/patient-vaccine-doses/mark-dose-taken.ts` | role-match (upsert em lote) |
-| `modules/availability/list-availability-exceptions.ts` | module (query) | CRUD read | `modules/patient-vaccine-doses/get-taken-dose-ids-by-patient.ts` | exact |
-| `modules/availability/create-availability-exception.ts` | module (query) | CRUD write | `modules/patient-vaccine-doses/mark-dose-taken.ts` | role-match |
-| `modules/availability/delete-availability-exception.ts` | module (query) | CRUD write | `modules/patient-vaccine-doses/unmark-dose-taken.ts` | role-match |
-| `modules/availability/types.ts` | module (types) | — | `modules/patient-vaccine-doses/types.ts` | exact |
-| `lib/schemas/availability.ts` | config (zod) | validation | `lib/schemas/patient-vaccine-dose.ts` | exact |
-| `actions/availability/*.ts` + `index.ts` | action | request-response | `actions/patient-vaccine-doses/toggle-patient-vaccine-dose.ts` + `index.ts` | exact |
-| `app/dashboard/agenda/page.tsx` | route (RSC) | request-response (read) | `app/dashboard/vaccines/page.tsx` | exact |
-| `components/dashboard/agenda/agenda-view.tsx` (day/week/month) | component (client) | event-driven (interação) | `components/dashboard/vaccines/vaccine-calendar-view.tsx` | role-match (CSS grid é greenfield) |
-| `components/dashboard/agenda/availability-grid.tsx` (editor D-01) | component (client) | event-driven | `components/dashboard/vaccines/vaccine-calendar-view.tsx` | role-match (grade clicável é greenfield) |
-| seletor de data de exceção | component (client) | event-driven | `components/ui/calendar.tsx` (react-day-picker, reuso direto) | exact (reuso) |
-| `components/app-sidebar.tsx` (adicionar item "Agenda") | component (edit) | — | `components/app-sidebar.tsx` L37-80 | exact (self) |
+| v2 File | Role | Data Flow | Closest Analog | Match Quality |
+|---------|------|-----------|----------------|---------------|
+| `supabase/migrations/<ts>_availability_overrides_hybrid.sql` | migration | batch (ALTER+backfill) | `supabase/migrations/20260721000200_availability_exceptions.sql` (the table being altered) + `20260720000500_patient_vaccine_doses.sql` (owner-scope mold) | exact (evolves the very table) |
+| `lib/expand-availability.ts` (rewrite) | utility (pure fn) | transform | itself (v1) + `lib/compute-pediatric-age.ts` (pure-fn mold) | exact (in-place rewrite) |
+| `lib/expand-availability.spec.ts` (rewrite) | test | transform | itself (v1) + `lib/compute-pediatric-age.spec.ts` | exact (in-place, add cases) |
+| `lib/schemas/availability.ts` (modify) | config (schema) | transform | itself (v1) + `computePediatricAge` ISO-date helper | exact (in-place edit) |
+| `modules/availability/types.ts` (modify) | model | — | itself (v1) | exact (in-place edit) |
+| `modules/availability/list-availability-overrides.ts` | service | CRUD (read) | `modules/availability/list-availability-exceptions.ts` | exact (rename/evolve) |
+| `modules/availability/create-availability-override.ts` | service | CRUD (create) | `modules/availability/create-availability-exception.ts` | exact (rename/evolve) |
+| `modules/availability/delete-availability-override.ts` | service | CRUD (delete) | `modules/availability/delete-availability-exception.ts` | exact (rename/evolve) |
+| `modules/availability/upsert-availability-rules.ts` (reuse) | service | CRUD (delete-then-insert) | itself (v1) — unchanged | exact (reuse as-is) |
+| `actions/availability/save-availability.ts` | route (server action) | request-response (batch save) | `actions/availability/save-availability-rules.ts` + `create-availability-exception.ts` | exact (evolve/merge) |
+| `components/dashboard/agenda/calendar-editor.tsx` (+ subcomponents) | component | event-driven (pointer paint) → request-response | `components/dashboard/agenda/agenda-view.tsx` + `availability-grid.tsx` (replaced) | role-match (client shell reused, interaction new) |
+| `app/dashboard/agenda/page.tsx` (modify) | route (RSC) | request-response | itself (v1) | exact (in-place edit) |
 
 ## Pattern Assignments
 
-### `supabase/migrations/<ts>_availability_rules.sql` + `<ts>_availability_exceptions.sql` (migration, owner-scoped)
+### `supabase/migrations/<ts>_availability_overrides_hybrid.sql` (migration, ALTER+backfill)
 
-**Analog:** `supabase/migrations/20260720000500_patient_vaccine_doses.sql` (template owner-scoped completo: tabela + comentário PT-BR + índice + RLS + 4 policies na MESMA migration).
+**Analog:** `supabase/migrations/20260721000200_availability_exceptions.sql` (the live table this migration ALTERs) — **do NOT recreate it** (D-22; RLS lives on it, recreate = silent RLS loss, Pitfall 2/5).
 
-**Tabela + FK + índice** (L17-31):
+**Owner-scope RLS mold (all 4 policies, same file):** `supabase/migrations/20260720000500_patient_vaccine_doses.sql` lines 37-74 — the canonical `select/insert/update/delete ... to authenticated using (profile_id in (select id from public.profiles where auth_user_id = auth.uid()))` block. Reference only; **the ALTER migration must NOT re-emit these** — the existing table already carries them (v1 file lines 51-88). Recreating the table would require re-emitting them, which is exactly what D-22 forbids.
+
+**What the ALTER must do (RESEARCH §Modelo de Dados, lines 334-368):**
 ```sql
-create table public.patient_vaccine_doses (
-  id uuid primary key default gen_random_uuid(),
-  profile_id uuid not null references public.profiles(id) on delete cascade,
-  ...
-  constraint patient_vaccine_doses_unique_mark unique (profile_id, patient_id, schedule_item_id)
-);
+-- 1. add override_type; existing rows (v1 folgas) are subtractive
+alter table public.availability_exceptions
+  add column override_type text not null default 'subtract'
+  check (override_type in ('add', 'subtract'));
 
-comment on table public.patient_vaccine_doses is 'Doses vacinais aplicadas ...';
+-- 2. explicit backfill (auditable intent; covers any inherited null)
+update public.availability_exceptions
+  set override_type = 'subtract'
+  where override_type is null;
 
-create index idx_patient_vaccine_doses_profile_patient
-  on public.patient_vaccine_doses (profile_id, patient_id);
+-- 3. WR-03 minute ceiling (1440 = fim do dia, coherent with WR-04)
+alter table public.availability_exceptions
+  add constraint availability_exceptions_minute_ceiling
+  check (start_minute is null or (start_minute <= 1440 and end_minute <= 1440));
+
+-- 4. slot_minutes for additive bands (AGENDA-05, D-09 applied to override)
+alter table public.availability_exceptions add column slot_minutes smallint;
+alter table public.availability_exceptions
+  add constraint availability_exceptions_add_needs_range_and_slot
+  check (
+    override_type = 'subtract'
+    or (start_minute is not null and end_minute is not null and slot_minutes is not null and slot_minutes > 0)
+  );
 ```
-> Para availability: `availability_rules` sem unique em `(profile_id, weekday)` (múltiplas faixas/dia, D-02); índice `(profile_id, weekday)`. `availability_exceptions` índice `(profile_id, exception_date)`. Adicionar os CHECK constraints do RESEARCH Data Model (múltiplo de 30 D-03, `end > start`, `slot_minutes > 0`, `(start_minute is null) = (end_minute is null)` D-04).
 
-**RLS + as 4 policies (mesma migration, D-13)** (L37-74):
-```sql
-alter table public.patient_vaccine_doses enable row level security;
+**CHECK-constraint style to mirror:** `availability_rules` migration lines 26-31 (named `constraint <table>_<meaning> check (...)`, one per rule). Apply the same `1440` ceiling to `availability_rules` too (WR-03) via ALTER in this same file.
 
-create policy "Patient vaccine doses select own"
-on public.patient_vaccine_doses for select to authenticated
-using (
-  profile_id in (
-    select id from public.profiles where auth_user_id = auth.uid()
-  )
-);
--- insert: with check (...); update: using (...) with check (...); delete: using (...)
-```
-> Copiar as 4 policies (select/insert/update/delete) verbatim trocando o nome da tabela. Owner-scoped por `profile_id in (select id from public.profiles where auth_user_id = auth.uid())`.
-
-**Regra crítica de RLS** — de `supabase/migrations/20260720000100_rls_vaccine_schedules.sql` L2-4:
-```
--- Enabling RLS without a SELECT policy = silent total denial (zero rows, no error).
--- Apply order matters: table -> rls -> seed.
-```
-> Aplica-se a availability: RLS + TODAS as policies no mesmo arquivo. (Pitfall 5 do RESEARCH.) NÃO seguir o `using (true)` global daquele arquivo — availability é owner-scoped, não global-read.
+**Header comment convention:** copy the multi-line intent header from the v1 exceptions migration (lines 1-11) — explain WHY (preserve rows, D-22), forward constraint (Phase 7 writes appointments over the top, no FK now).
 
 ---
 
-### `lib/expand-availability.ts` (utility, função pura transform) — CORAÇÃO DA FASE
+### `lib/expand-availability.ts` (utility, pure transform) — IN-PLACE REWRITE
 
-**Analog:** `lib/compute-pediatric-age.ts` (molde de função pura determinística: recebe o "tempo" por parâmetro, sem I/O, JSDoc rico, constantes nomeadas no topo).
+**Analog:** itself (v1, `lib/expand-availability.ts`). Keep the whole scaffold; change three things: the `exceptions`→`overrides` type/param, the DST-safe wall-clock (WR-01), and the hybrid precedence (D-21).
 
-**Imports date-fns + padrão de constantes exportadas** (`compute-pediatric-age.ts` L1-9, L59-83):
+**Purity contract to preserve (v1 lines 64-71) — the `computePediatricAge` mold:** never `new Date()` internal, never `process.env.TZ`; `window` + `timeZone` by parameter only.
 ```typescript
-import {
-  addDays, differenceInDays, /* ... */ isValid,
-} from "date-fns"
-// constantes nomeadas exportadas no topo — sem magic numbers espalhados
-export const FULL_TERM_GESTATIONAL_WEEKS = 40
+export function expandAvailability(input: {
+  rules: AvailabilityBand[]
+  overrides: AvailabilityOverride[]   // was `exceptions`
+  window: { from: Date; to: Date }
+  timeZone: string
+}): ExpandResult {
 ```
-> Para expand-availability, importar de date-fns `startOfWeek, startOfDay, addMinutes, addDays, eachDayOfInterval` e de `@date-fns/tz` `tz, TZDate`. A constante de fuso vive em `lib/clinic-timezone.ts` (`export const CLINIC_TIME_ZONE = "America/Sao_Paulo"`), importada aqui.
 
-**Determinismo: tempo/janela por parâmetro** (`compute-pediatric-age.ts` L160-165):
+**New override type (replaces `AvailabilityException`, v1 lines 26-30):** per RESEARCH lines 385-391 add `type: "add" | "subtract"` and `slotMinutes: number | null`.
+
+**Zone-safe day iteration to KEEP verbatim (v1 lines 81-98):** the `{ in: tz(timeZone) }` context, `eachDayOfInterval`, `startOfDay(day, context)`, and `new TZDate(day, timeZone).getDay()` for weekday are all correct and stay.
 ```typescript
-export function computePediatricAge(
-  birthDateIso: string | null | undefined,
-  now: Date = new Date(),   // ← nunca lê o relógio internamente sem permitir override
-  ...
-): PediatricAge {
+const context = { in: tz(timeZone) }
+const days = eachDayOfInterval({ start: from, end: to }, context)
+for (const day of days) {
+  const localDate = format(day, "yyyy-MM-dd", context)
+  const weekday = new TZDate(day, timeZone).getDay()
 ```
-> Espelhar: `expandAvailability({ rules, exceptions, window: {from, to}, timeZone })` — nunca lê `process.env.TZ` nem `new Date()` interno. Assinatura exata no RESEARCH §Pure Slot-Expansion (L326-357). Fuso via context `{ in: tz(CLINIC_TIME_ZONE) }` (RESEARCH Pattern 1, L189-207; código pronto L408-423).
 
-**Anti-patterns a herdar** (`compute-pediatric-age.ts` L84-104): NÃO usar `new Date("YYYY-MM-DD")` (UTC midnight → off-by-one BRT); construir instantes via `TZDate`/`{ in }`. Comparar limites meio-aberto `[start, end)` com `< end`, nunca `<=` (D-11).
+**WR-01 FIX — the anti-pattern to REMOVE (v1 lines 120-131):** `addMinutes(dayStart, band.startMinute, context)` sums absolute clock-minutes and drifts 1h across a DST transition. Replace with wall-clock construction (RESEARCH Pattern 1, lines 216-236):
+```typescript
+// REMOVE (v1): addMinutes(dayStart, minute, context)  ← drifts in DST
+// USE: derive h/m from minute-of-day and SET in the zone context
+function wallClock(day: Date, minuteOfDay: number, timeZone: string): Date {
+  const ctx = { in: tz(timeZone) }
+  let d = setHours(day, Math.floor(minuteOfDay / 60), ctx)
+  d = setMinutes(d, minuteOfDay % 60, ctx)
+  d = setSeconds(d, 0, ctx); d = setMilliseconds(d, 0, ctx)
+  return new Date(d.getTime())
+}
+// slot advance ALSO wall-clock: wallClock(day, currentMinute + slotMinutes), never addMinutes on the instant
+```
+
+**D-10 emit + half-open compare to KEEP (v1 lines 123-135):** `while (advance <= bandEnd)` for whole-slot-only, and window recut with `slotStart >= from && slotStart < to` (half-open, `<` never `<=`, D-11).
+
+**D-21 hybrid precedence — NEW body logic (RESEARCH Pattern 2, lines 239-252):**
+```
+slotsDoDia = template(weekday) ∪ additiveOverrides(date)   // union, dedupe by start.getTime()
+slotsDoDia = slotsDoDia − subtractiveOverrides(date)        // folga wins, applied LAST
+```
+Full-day subtractive (`startMinute === null`) removes template AND additives (extend v1 lines 100-110 `fullDayBlocked` to also drop additives). Partial-subtractive overlap check reuses v1 lines 127-132 half-open overlap (`slotStart < exEnd && slotEnd > exStart`). Dedupe additive-over-template by `start.getTime()` (Pitfall 3).
 
 ---
 
-### `lib/expand-availability.spec.ts` (test)
+### `lib/expand-availability.spec.ts` (test, transform) — ADD CASES
 
-**Analog:** `lib/compute-pediatric-age.spec.ts` (node:test + assert/strict, `now`/janela explícitos p/ TZ-independência).
+**Analog:** itself (v1, 13 cases) + `lib/compute-pediatric-age.spec.ts` for structure. Node built-in test runner (`tsx --test`, run via `yarn test`).
 
-**Estrutura de teste + independência de fuso** (L1-13):
-```typescript
-import test from "node:test"
-import assert from "node:assert/strict"
-import { computePediatricAge } from "@/lib/compute-pediatric-age"
-
-// All tests pass an explicit `now` (local-constructed) so they are deterministic
-// and independent of the machine timezone.
-test("missing birth date (null) → status ...", () => {
-  assert.deepEqual(computePediatricAge(null, new Date(2026, 5, 28)), { ... })
-})
-```
-> Cobrir os casos travados (RESEARCH L368-381): D-02 múltiplas faixas, D-09 duração por faixa, D-10 sobra descartada + divisão exata, D-04 exceção dia-todo / parcial / não-sobreposta, D-11 virada de semana/dia meio-aberta, e a **asserção-chave de fuso**: mesmos inputs com `timeZone="America/Sao_Paulo"` produzem os mesmos slots rodando com `TZ=UTC` e `TZ=America/New_York`. Coletado por `find modules lib -name '*.spec.ts' | xargs tsx --test`.
+**New cases required (RESEARCH lines 411-418):** DST-safe (America/New_York spring-forward 2026-03-08 under `TZ=UTC` and `TZ=America/New_York`); additive-basic (AGENDA-05); additive-over-template dedupe; additive+subtractive same band (folga wins → 0); full-day subtractive removes additives; additive with own `slotMinutes`; combined precedence. Keep all 13 v1 cases (map `exceptions`→`overrides` with `type`).
 
 ---
 
-### `modules/availability/list-*.ts` (module, CRUD read)
+### `lib/schemas/availability.ts` (config/schema, transform) — IN-PLACE EDIT
 
-**Analog:** `modules/patient-vaccine-doses/get-taken-dose-ids-by-patient.ts` (uma fn exportada, `SupabaseClient` injetado 1º arg, `.eq(profile_id)` como defesa IDOR além da RLS, `throw new Error("[DOMAIN] ...")`).
+**Analog:** itself (v1). Keep `availabilityRuleSchema` (lines 13-37) and `saveAvailabilityRulesSchema` (lines 40-42). Evolve `createAvailabilityExceptionSchema` (lines 45-82) into the override schema.
 
-**Padrão completo** (L16-34):
+**WR-02 FIX — replace the loose `Date.parse` (v1 lines 48-52):**
 ```typescript
-export async function getTakenDoseIdsByPatient(
-  supabase: SupabaseClient,
-  profileId: string,
-  patientId: string,
-): Promise<Set<string>> {
+// REMOVE: .refine((value) => !Number.isNaN(Date.parse(value)), "Data da exceção inválida.")
+// USE the strict ISO + real-date pattern from compute-pediatric-age.ts (lines 84, 91-104):
+const ISO_DATE_ONLY = /^\d{4}-\d{2}-\d{2}$/
+// + reject rollovers (2026-02-30) by rebuilding the Date and comparing y/m/d back
+```
+
+**WR-03 FIX — add ceiling (missing in v1):** add `.max(1440, "...")` to `start_minute`/`end_minute` (mirrors the DB CHECK). Keep the `multipleOf30` refine (v1 line 10) and the "both-or-neither" + "end > start" refines (v1 lines 65-82). Add `override_type: z.enum(["add", "subtract"])` and conditional `slot_minutes` (required + `>0` when `type === "add"`, per RESEARCH V5 line 562).
+
+**PT-BR messages inline** — every message stays Portuguese (v1 style throughout; `zodErrorToUserMessage` maps at the action boundary).
+
+---
+
+### `modules/availability/types.ts` (model) — IN-PLACE EDIT
+
+**Analog:** itself (v1, lines 22-29). Keep `AvailabilityRuleRow`. Extend `AvailabilityExceptionRow` (add `override_type: "add" | "subtract"` and `slot_minutes: number | null`); optionally alias `AvailabilityOverrideRow`. Keep the owner-scope doc header (lines 1-8).
+
+---
+
+### `modules/availability/list-availability-overrides.ts` (service, CRUD read)
+
+**Analog:** `modules/availability/list-availability-exceptions.ts` (verbatim shape). One fn/file, `SupabaseClient` injected first, `.eq("profile_id", profileId)` ownership backstop (IDOR defense, D-13), `[AVAILABILITY]` error tag.
+```typescript
+export async function listAvailabilityExceptions(supabase: SupabaseClient, profileId: string): Promise<AvailabilityExceptionRow[]> {
   const { data, error } = await supabase
-    .from("patient_vaccine_doses")
-    .select("schedule_item_id")
-    .eq("profile_id", profileId)   // defense-in-depth além da RLS
-    .eq("patient_id", patientId)
-  if (error)
-    throw new Error(`[VACCINE_DOSES] Failed to fetch taken doses: ${error.message}`)
-  ...
+    .from("availability_exceptions")
+    .select("id, profile_id, exception_date, start_minute, end_minute, created_at")  // ADD: override_type, slot_minutes
+    .eq("profile_id", profileId)
+    .order("exception_date", { ascending: true })
+  if (error) throw new Error(`[AVAILABILITY] Failed to list availability exceptions: ${error.message}`)
+  return (data ?? []) as AvailabilityExceptionRow[]
 }
 ```
-> Para availability: `[AVAILABILITY]` como domain tag. Select explícito (não `*`) — skill supabase-falaped. `list-availability-rules(supabase, profileId)` e `list-availability-exceptions(supabase, profileId)`. Ver também o excerto pronto no RESEARCH L428-441.
+**Change:** add `override_type, slot_minutes` to the `.select(...)` string.
 
 ---
 
-### `modules/availability/upsert-availability-rules.ts` / `create-*` / `delete-*` (module, CRUD write)
+### `modules/availability/create-availability-override.ts` (service, CRUD create)
 
-**Analog:** `modules/patient-vaccine-doses/mark-dose-taken.ts` (upsert idempotente, stamp de `profile_id` server-side).
-
-**Padrão de write scoped** (L18-40):
-```typescript
-export async function markDoseTaken(
-  supabase: SupabaseClient,
-  profileId: string,
-  patientId: string,
-  scheduleItemId: string,
-): Promise<void> {
-  const { error } = await supabase
-    .from("patient_vaccine_doses")
-    .upsert({ profile_id: profileId, patient_id: patientId, schedule_item_id: scheduleItemId },
-      { onConflict: "...", ignoreDuplicates: true })
-  if (error)
-    throw new Error(`[VACCINE_DOSES] Failed to mark dose taken: ${error.message}`)
-}
-```
-> `upsert-availability-rules` grava a grade inteira editada (delete-then-insert por `profile_id`, ou upsert em lote). SEMPRE stampar `profile_id` server-side (nunca confiar no cliente). Domain tag `[AVAILABILITY]`. `delete-availability-exception` espelha `unmark-dose-taken.ts` (delete scoped por profile_id + id).
+**Analog:** `modules/availability/create-availability-exception.ts` (lines 20-42). Keep the **profile_id stamped server-side** rule (never trust client — IDOR, D-13, line 27), `.select(...).single()`, `[AVAILABILITY]` tag. Add `override_type` and `slot_minutes` to the insert payload and the input type.
 
 ---
 
-### `modules/availability/types.ts` (module types)
+### `modules/availability/delete-availability-override.ts` (service, CRUD delete)
 
-**Analog:** `modules/patient-vaccine-doses/types.ts` (row em snake_case espelhando a coluna do DB, JSDoc explicando escopo).
-
-**Padrão** (L10-18):
-```typescript
-/** Row mirroring `public.patient_vaccine_doses` (snake_case). */
-export type PatientVaccineDose = {
-  id: string
-  profile_id: string
-  patient_id: string
-  ...
-}
-```
-> `AvailabilityRule` e `AvailabilityException` em snake_case. Tipos camelCase da função pura (`AvailabilityBand`, `FreeSlot`, `ExpandResult`) ficam em `lib/expand-availability.ts` (RESEARCH L328-357) — mapear snake→camel na leitura.
+**Analog:** `modules/availability/delete-availability-exception.ts` (lines 13-28). Copy verbatim — the **double-scoped delete** (`.eq("profile_id", profileId).eq("id", id)`) is the exact IDOR backstop (never delete by id alone), and it is idempotent (no-op on missing). Only the table stays `availability_exceptions`.
 
 ---
 
-### `lib/schemas/availability.ts` (config, zod validation)
+### `modules/availability/upsert-availability-rules.ts` (service, CRUD) — REUSE AS-IS
 
-**Analog:** `lib/schemas/patient-vaccine-dose.ts` (schema + `z.infer` type export, mensagens PT-BR inline).
-
-**Padrão** (L8-16):
-```typescript
-export const togglePatientVaccineDoseSchema = z.object({
-  patientId: z.string().uuid("Paciente inválido."),
-  ...
-  taken: z.boolean(),
-})
-export type TogglePatientVaccineDoseInput = z.infer<typeof togglePatientVaccineDoseSchema>
-```
-> Para availability: validar `weekday` no range, `start_minute < end_minute`, múltiplos de 30 (D-03), `slot_minutes > 0`, data de exceção válida, faixa opcional coerente (D-04). Mensagens PT-BR. Erros mapeados via `lib/zod-error-message.ts` no action.
+**Analog:** itself. The **delete-then-insert whole-grid** strategy (lines 24-57) is exactly what the batch save needs for the recurring template. No change unless the batch action needs it wrapped. Empty array clears the grid (line 39).
 
 ---
 
-### `actions/availability/*.ts` + `index.ts` (action, request-response)
+### `actions/availability/save-availability.ts` (server action, batch save)
 
-**Analog:** `actions/patient-vaccine-doses/toggle-patient-vaccine-dose.ts` (gate auth+paid, zod safeParse, ownership verify, result union, revalidatePath) + `actions/patient-vaccine-doses/index.ts` (barrel).
-
-**Cabeçalho + gate auth/paid** (L1-42):
+**Analog:** `actions/availability/save-availability-rules.ts` (whole file) merged with `create-availability-exception.ts`. The action gate + validate + result-union skeleton is identical and MUST be copied:
 ```typescript
 "use server"
 import { revalidatePath } from "next/cache"
 import { createClient } from "@/lib/supabase/server"
-import { togglePatientVaccineDoseSchema, type TogglePatientVaccineDoseInput } from "@/lib/schemas/..."
+import { zodErrorToUserMessage } from "@/lib/zod-error-message"
 import { getAuthenticatedUser } from "@/modules/supabase/get-authenticated-user"
-
-export type TogglePatientVaccineDoseResult =
-  | { ok: true; taken: boolean }
-  | { ok: false; error: string }
-
-export async function togglePatientVaccineDoseAction(input): Promise<...> {
+// ...
+export async function saveAvailabilityAction(input): Promise<{ ok: true } | { ok: false; error: string }> {
   const supabase = await createClient()
   const { profile } = await getAuthenticatedUser(supabase)
   if (!profile) return { ok: false, error: "Sessão não encontrada." }
   if (profile.status !== "paid")
     return { ok: false, error: "Perfil não ativo. Conclua a configuração da conta em Perfil." }
-  const parsed = schema.safeParse(input)
-  if (!parsed.success) { ... return { ok: false, error: msg } }
-```
-
-**Try/delegate/revalidate/catch** (L51-70):
-```typescript
+  const parsed = <schema>.safeParse(input)
+  if (!parsed.success) return { ok: false, error: zodErrorToUserMessage(parsed.error) }
   try {
-    await markDoseTaken(supabase, profile.id, patientId, scheduleItemId)
-    revalidatePath(`/dashboard/patients/${patientId}`)
-    return { ok: true, taken }
+    // reconcile the diff (RESEARCH lines 489-495):
+    //   upsertAvailabilityRules(supabase, profile.id, parsed.data.rules)   // delete-then-insert
+    //   create each of parsed.data.overridesAdd
+    //   delete each of parsed.data.overridesRemove (scoped profile_id + id)
+    revalidatePath("/dashboard/agenda")
+    return { ok: true }
   } catch (e) {
-    const message = e instanceof Error ? e.message : "Erro ao ... Tente novamente."
+    const message = e instanceof Error ? e.message : "Não foi possível salvar a disponibilidade. Tente novamente."
     return { ok: false, error: message }
   }
 }
 ```
-
-**Barrel** (`index.ts` L1-4):
-```typescript
-export { togglePatientVaccineDoseAction, type TogglePatientVaccineDoseResult } from "./toggle-..."
-```
-> Actions de availability: `saveAvailabilityRulesAction`, `createAvailabilityExceptionAction`, `deleteAvailabilityExceptionAction` (sufixo `Action`). `revalidatePath("/dashboard/agenda")`. **Registrar cada action no barrel do domínio E no `actions/index.ts` raiz** (ver `actions/index.ts`).
+**Barrel:** export from `actions/availability/index.ts` (v1 lines 1-13 pattern). Reuse the paid-gate error strings verbatim (v1 lines 33-38).
 
 ---
 
-### `app/dashboard/agenda/page.tsx` (route, RSC read)
+### `components/dashboard/agenda/calendar-editor.tsx` (+ subcomponents) (component, event-driven → request-response)
 
-**Analog:** `app/dashboard/vaccines/page.tsx` (RSC: createClient → getAuthenticatedUser → redirect se sem perfil → gate paid → reads em `Promise.all` → passa dados a componente client).
+**Analog (replaced):** `components/dashboard/agenda/agenda-view.tsx` (client shell) + `availability-grid.tsx` (painting/derivation). The interaction is new (single editable surface, paint+batch), but reuse:
 
-**Shell RSC + gate** (L12-39):
-```typescript
-export default async function VaccinesPage({ searchParams }: {...}) {
-  const supabase = await createClient()
-  const { profile } = await getAuthenticatedUser(supabase)
-  if (!profile?.id) redirect("/auth/login")
-  // Paid gate (D-10): RLS `to authenticated` NÃO impõe a assinatura — check separado
-  if (profile.status !== "paid") redirect("/dashboard/link-whatsapp")
+**Client-component + zone-helper header (agenda-view.tsx lines 1-64):** `"use client"`, `import { tz, TZDate } from "@date-fns/tz"`, `Tabs/TabsList/TabsTrigger` (Dia/Semana/Mês, D-14), `ptBR` locale, and the two helpers `localDateOf` (line 55-58, `format(date, "yyyy-MM-dd", { in: tz(timeZone) })`) and `localMinuteOf` (line 61-64, `new TZDate(new Date(iso), timeZone).getHours()*60 + getMinutes()`). `STEP = 30` (D-03).
 
-  const [sus, sbim, gestante] = await Promise.all([ ... ])
-  return ( <div className="flex flex-col gap-6"> <header .../> ...<ClientView .../> </div> )
-}
-```
-> Para agenda: ler `list-availability-rules` + `list-availability-exceptions` em `Promise.all`, computar janela da view (default = SEMANA, D-06) via `startOfWeek({ in: tz(CLINIC_TIME_ZONE), weekStartsOn: 1 })`, chamar `expandAvailability(...)` server-side, passar `slots` + `byDay` ao componente client. Header PT-BR com ícone lucide + `<Separator />` (mesmo layout).
+**Client-side re-expansion (D-14 discretion → cliente):** the RSC passes raw `rules[]` + `overrides[]`; the client calls `expandAvailability` on navigation. `agenda-view.tsx` lines 4-13 already import `addDays, addMonths, startOfMonth, endOfMonth, startOfWeek, format` under the tz context — reuse for window computation per view.
+
+**Grid derivation to REUSE (availability-grid.tsx lines 50-70):** `cellKey(weekday, minute)` painted-set model and `bandsForDay(...)` (converts painted cells → contiguous `{start,end}` bands). This is precisely the paint→bands logic the batch diff needs. Toast on save via `sonner` (availability-grid.tsx line 5, `toast`).
+
+**NEW logic (RESEARCH Patterns 3 & 4, lines 254-298) — no analog, use RESEARCH:**
+- Local `draft` state + `isDirty` (`!deepEqual(draft, initial)`), Salvar shows unsaved state (D-17).
+- `beforeunload` guard when dirty; `AlertDialog` ("mudanças não salvas — descartar?") on tab switch / exit (Pitfall 6). Use `components/ui/alert-dialog.tsx`.
+- Pointer-events paint (`setPointerCapture`, `pointerdown/move/up`), `touch-action: none`; **click-toggle is the mandatory baseline**, drag is enhancement (D-16, A4).
+- Toggle Disponibilidade|Folga (D-15): verde = disponível; folga = neutral (`bg-muted`/hatch + "Folga" badge), NOT destructive-red.
+- Month tab = indicator only (dot + count from `byDay`), no painting (D-18) — reuse agenda-view month grid.
 
 ---
 
-### `components/dashboard/agenda/agenda-view.tsx` e `availability-grid.tsx` (component client, event-driven)
+### `app/dashboard/agenda/page.tsx` (RSC) — IN-PLACE EDIT
 
-**Analog:** `components/dashboard/vaccines/vaccine-calendar-view.tsx` (`"use client"`, props tipadas inline, Tabs para trocar de view, `cn()` para classes, reuso de função pura de `lib/`).
+**Analog:** itself (v1). Keep the whole shell; change the exceptions→overrides mapping and the child component.
 
-**`"use client"` + reuso da fn pura + Tabs/estado de view** (L1-11, L32-79):
+**Gate + scoped load to KEEP (v1 lines 29-40):** auth redirect + **paid gate redirect** (line 35, mirrors the action gate — the RLS `to authenticated` does NOT enforce subscription), `Promise.all` scoped loads.
 ```typescript
-"use client"
-import { cn } from "@/lib/utils"
-import { computePediatricAge } from "@/lib/compute-pediatric-age"   // reusa lib pura
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-
-export function VaccineCalendarView({ sus, sbim, ... className }: {
-  sus: VaccineScheduleWithItems | null
-  ...
-}) {
-  return (
-    <Tabs defaultValue="crianca" className={cn("flex flex-col gap-6", className)}>
-      <TabsList>...<TabsTrigger value="crianca">...</TabsTrigger></TabsList>
-      <TabsContent value="crianca"><div className="grid grid-cols-1 gap-4 md:grid-cols-2">...</div></TabsContent>
-    </Tabs>
-  )
-}
+if (profile.status !== "paid") redirect("/dashboard/link-whatsapp")
+const [ruleRows, overrideRows] = await Promise.all([
+  listAvailabilityRules(supabase, profile.id),
+  listAvailabilityOverrides(supabase, profile.id),   // was listAvailabilityExceptions
+])
 ```
-> Para agenda-view: `Tabs` para dia/semana/mês (default="semana", D-06). Grade dia/semana = **CSS grid custom Tailwind** (RESEARCH Pattern 3, L213-231 — `gridTemplateColumns`/`gridTemplateRows`, `sticky` no gutter/header) — NÃO existe analog de grade de agenda no repo (greenfield, D-08). Mês = indicador leve por dia usando `byDay` (D-07). `availability-grid.tsx` = grade clicável de edição (greenfield, D-01) que chama `saveAvailabilityRulesAction`. Strings PT-BR.
 
-**Seletor de data de exceção:** reusar `components/ui/calendar.tsx` (react-day-picker, `locale = ptBR`) diretamente — NÃO como grade de agenda (D-08).
+**Default-week window to KEEP (v1 lines 44-46):** `startOfWeek(new Date(), { ...context, weekStartsOn: 1 })` (Monday, D-11), `addDays(weekStart, 7, context)` (half-open).
+
+**Mapping to CHANGE (v1 lines 55-59):** map override rows to include `type: r.override_type` and `slotMinutes: r.slot_minutes` (RESEARCH lines 467-473), and call `expandAvailability({ rules, overrides, window, timeZone })`. Keep serialize-slots-to-ISO (lines 69-73) and pass raw `rules`+`overrides` to the client for client-side re-expansion. Swap `<AgendaView>` for `<CalendarEditor>`.
 
 ---
-
-### `components/app-sidebar.tsx` (modificação — registrar rota Agenda)
-
-**Analog:** o próprio arquivo, L37-80 (array `navMain`, grupos com `title`/`icon`/`items[{title,url}]`).
-
-**Padrão de item de nav** (L66-78):
-```typescript
-{
-  title: "Serviços",
-  icon: FileCheckIcon,
-  items: [
-    { title: "Vacinas", url: "/dashboard/vaccines" },
-    ...
-  ],
-},
-```
-> Adicionar `{ title: "Agenda", url: "/dashboard/agenda" }` — provavelmente em novo grupo "Agenda" ou dentro de "Atendimentos" (L46-55). Importar um ícone lucide (ex. `CalendarIcon`) no bloco de imports L7-13.
 
 ## Shared Patterns
 
-### Gate de autorização (auth + paid) — defense-in-depth
-**Source (action):** `actions/patient-vaccine-doses/toggle-patient-vaccine-dose.ts` L34-41.
-**Source (RSC):** `app/dashboard/vaccines/page.tsx` L19-24.
-**Apply to:** TODO action novo de availability + `app/dashboard/agenda/page.tsx`.
+### Auth + Paid Gate (every action + RSC)
+**Source:** `actions/availability/save-availability-rules.ts` lines 31-38; RSC form `app/dashboard/agenda/page.tsx` lines 31-35.
+**Apply to:** `save-availability.ts`, `page.tsx`.
 ```typescript
 const { profile } = await getAuthenticatedUser(supabase)
-if (!profile) return { ok: false, error: "Sessão não encontrada." }  // action
-if (profile.status !== "paid") return { ok: false, error: "Perfil não ativo. ..." }
-// RSC: redirect em vez de return
+if (!profile) return { ok: false, error: "Sessão não encontrada." }
+if (profile.status !== "paid")
+  return { ok: false, error: "Perfil não ativo. Conclua a configuração da conta em Perfil." }
+// RSC variant: if (profile.status !== "paid") redirect("/dashboard/link-whatsapp")
 ```
 
-### Escopo por profile_id (IDOR) — módulo + RLS
-**Source:** `modules/patient-vaccine-doses/get-taken-dose-ids-by-patient.ts` L21-26 (`.eq("profile_id", profileId)`) + migration RLS L39-45.
-**Apply to:** TODA query de availability (`.eq("profile_id", profileId)`) + as 4 policies RLS em ambas as tabelas.
+### Ownership scoping / IDOR defense (every module)
+**Source:** `modules/availability/list-availability-exceptions.ts` line 19; `create-availability-exception.ts` line 27 (stamp server-side); `delete-availability-exception.ts` lines 20-23 (double-scoped delete).
+**Apply to:** all `modules/availability/*` override files.
+```typescript
+.eq("profile_id", profileId)                 // read/write backstop, never omit
+.insert({ profile_id: profileId, ... })       // stamp server-side, never trust client
+.delete().eq("profile_id", profileId).eq("id", id)  // delete scoped by BOTH, idempotent
+```
 
-### Erro em módulo vs result union em action
-**Source (módulo):** `modules/patient-vaccine-doses/mark-dose-taken.ts` L38-39 (`throw new Error("[VACCINE_DOSES] ...")`).
-**Source (action):** `actions/patient-vaccine-doses/toggle-patient-vaccine-dose.ts` L64-70 (catch → `{ ok: false, error }`).
-**Apply to:** módulos de availability lançam `[AVAILABILITY] ...`; actions capturam e retornam union.
+### Module conventions (one fn/file, injected client, error tag)
+**Source:** every file in `modules/availability/`.
+**Apply to:** all new override modules.
+- `SupabaseClient` is the first param (injected, never constructed).
+- Never import `next/cache` / `next/headers` in a module.
+- Throw `new Error("[AVAILABILITY] ...")` on failure; the action catches and converts to a result union.
 
-### Validação Zod no boundary
-**Source:** `lib/schemas/patient-vaccine-dose.ts` L8-16 + `actions/.../toggle-*.ts` L43-49 (`safeParse` + mensagem PT-BR).
-**Apply to:** todo action de availability valida input antes de delegar ao módulo.
+### Action result union + revalidate
+**Source:** `actions/availability/save-availability-rules.ts` lines 14-16, 40-55.
+**Apply to:** `save-availability.ts`.
+```typescript
+type Result = { ok: true } | { ok: false; error: string }
+const parsed = schema.safeParse(input)
+if (!parsed.success) return { ok: false, error: zodErrorToUserMessage(parsed.error) }
+try { /* modules */ revalidatePath("/dashboard/agenda"); return { ok: true } }
+catch (e) { return { ok: false, error: e instanceof Error ? e.message : "..." } }
+```
 
-### Função pura testável em lib/ (molde central desta fase)
-**Source:** `lib/compute-pediatric-age.ts` (assinatura determinística, JSDoc, constantes) + `lib/compute-pediatric-age.spec.ts` (node:test, `now` explícito, TZ-independente).
-**Apply to:** `lib/expand-availability.ts` + `.spec.ts` — o único código de negócio genuinamente novo (D-12).
+### DST-safe zone arithmetic (fn + client, `@date-fns/tz`)
+**Source (correct usage to KEEP):** `page.tsx` lines 44-46 (`{ in: tz(CLINIC_TIME_ZONE) }`, `weekStartsOn: 1`); `agenda-view.tsx` lines 55-64 (`tz`/`TZDate` helpers); `CLINIC_TIME_ZONE` from `lib/clinic-timezone.ts`.
+**Anti-pattern to REMOVE:** `addMinutes(startOfDay(...), minute)` (`expand-availability.ts` v1 lines 120-131) — WR-01. Use wall-clock `setHours/setMinutes` in the zone context (RESEARCH Pattern 1).
+**Apply to:** `expand-availability.ts`, `calendar-editor.tsx`.
+
+### Strict ISO date validation (WR-02 fix)
+**Source:** `lib/compute-pediatric-age.ts` lines 84 (`ISO_DATE_ONLY` regex) + 91-104 (`localMidnightFromIso`: regex + rebuild-and-compare to reject `2026-02-30`).
+**Apply to:** `lib/schemas/availability.ts` override date field.
+
+### Owner-scoped migration (RLS + policies same file)
+**Source:** `supabase/migrations/20260720000500_patient_vaccine_doses.sql` lines 37-74 (enable RLS + 4 policies), lines 17-25 (owner FK + CHECK grain); `availability_rules.sql` lines 26-31 (named CHECK style).
+**Apply to:** the hybrid migration — **but only as a reference**: the ALTER preserves the existing table's RLS; do NOT re-emit policies unless recreating (forbidden, D-22).
+
+### Pure-fn + spec mold
+**Source:** `lib/compute-pediatric-age.ts` (no `new Date()` internal for the core, deterministic, banded types + JSDoc) + `lib/compute-pediatric-age.spec.ts`.
+**Apply to:** `expand-availability.ts` rewrite + `.spec.ts`.
 
 ## No Analog Found
 
-Arquivos sem match próximo no repo (planner deve usar os padrões do RESEARCH.md):
-
-| Arquivo | Papel | Fluxo | Motivo |
-|---------|-------|-------|--------|
-| `lib/expand-availability.ts` (lógica de fuso) | utility | transform | Não há tratamento de fuso no repo hoje (sem `@date-fns/tz`, sem `America/Sao_Paulo`). A ESTRUTURA copia `compute-pediatric-age.ts`; a lógica `{ in: tz(...) }` é greenfield → RESEARCH Patterns 1-2 + Code Examples (L185-231, L396-423). Declarar `@date-fns/tz` via `yarn add`. |
-| `lib/clinic-timezone.ts` | config | — | Constante nova; só o PADRÃO de const exportada vem de `compute-pediatric-age.ts` L59. Conteúdo (`America/Sao_Paulo`) é greenfield. |
-| `components/dashboard/agenda/agenda-view.tsx` (grade CSS) | component | event-driven | `components/ui/calendar.tsx` é date-picker, NÃO agenda (D-08). Grade dia/semana em CSS grid é greenfield → RESEARCH Pattern 3 (L213-231). Só o esqueleto de componente client vem do analog de vaccines. |
+None. Every v2 file has a live v1 counterpart or a canonical repo mold. The only genuinely new *behaviors* (no code analog) are the client draft/dirty/discard guard (RESEARCH Pattern 3) and pointer-events painting (RESEARCH Pattern 4) inside `calendar-editor.tsx` — the surrounding client-component shell, zone helpers, and paint→bands derivation are all reused from `agenda-view.tsx` / `availability-grid.tsx`.
 
 ## Metadata
 
-**Analog search scope:** `supabase/migrations/`, `lib/`, `modules/patient-vaccine-doses/`, `actions/`, `app/dashboard/`, `components/dashboard/`, `components/ui/`, `components/app-sidebar.tsx`, `.cursor/skills/`.
-**Files scanned:** ~30 (14 lidos na íntegra).
+**Analog search scope:** `lib/`, `lib/schemas/`, `modules/availability/`, `actions/availability/`, `components/dashboard/agenda/`, `app/dashboard/agenda/`, `supabase/migrations/`.
+**Files scanned (read in full or targeted):** 15 live source files.
 **Pattern extraction date:** 2026-07-21
-**Skills consultados:** supabase-falaped (query por arquivo, client injetado, select explícito), dashboard-falaped (estrutura app/modules/lib, page = shell fino + Content/Loading).
