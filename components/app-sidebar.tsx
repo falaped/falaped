@@ -5,6 +5,7 @@ import Link from "next/link"
 import { usePathname } from "next/navigation"
 import Image from "next/image"
 import {
+  CalendarIcon,
   ChevronRightIcon,
   FileCheckIcon,
   HomeIcon,
@@ -52,6 +53,12 @@ const navMain = [
       { title: "Discussões", url: "/dashboard/discussions" },
       { title: "Pacientes", url: "/dashboard/patients" },
     ],
+  },
+  {
+    title: "Agenda",
+    icon: CalendarIcon,
+    isActive: false,
+    items: [{ title: "Agenda", url: "/dashboard/agenda" }],
   },
   {
     title: "Templates",
