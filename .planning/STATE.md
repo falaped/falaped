@@ -1,19 +1,16 @@
 ---
 gsd_state_version: 1.0
-milestone: v1.0
-milestone_name: milestone
-current_phase: 5
-current_phase_name: Referência
-status: "Phase 5 shipped — PR #5"
-stopped_at: Phase 5 complete; Phase 6 removed from roadmap
-last_updated: "2026-07-20T17:58:14.204Z"
-last_activity: 2026-07-20
+milestone: v1.1
+milestone_name: Agenda & Ganhos
+status: planning
+last_updated: "2026-07-21T01:17:40.705Z"
+last_activity: 2026-07-21
 progress:
-  total_phases: 5
-  completed_phases: 5
-  total_plans: 21
-  completed_plans: 21
-  percent: 100
+  total_phases: 0
+  completed_phases: 0
+  total_plans: 0
+  completed_plans: 0
+  percent: 0
 ---
 
 # Project State
@@ -27,12 +24,10 @@ See: .planning/PROJECT.md (updated 2026-06-27)
 
 ## Current Position
 
-Phase: 5 — Calendário de Vacinas (Referência)
-Plan: 4/4 complete
-Status: Phase 5 shipped — PR #5
-Last activity: 2026-07-20
-
-Progress: [██████████] 100% (plans executed)
+Phase: Not started (defining requirements)
+Plan: —
+Status: Defining requirements
+Last activity: 2026-07-21 — Milestone v1.1 started
 
 ## Performance Metrics
 

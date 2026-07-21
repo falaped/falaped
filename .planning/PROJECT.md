@@ -2,11 +2,21 @@
 
 ## What This Is
 
-Falaped é um app web para o dia a dia do pediatra: cadastro de pacientes (crianças), geração de documentos clínicos (receitas, atestados, laudos/relatórios de caso), templates reutilizáveis, condução de consultas e um assistente de IA (Groq) para apoio clínico e transcrição. Este ciclo foca em melhorar a experiência da consulta pediátrica, ampliar os tipos de documento e adicionar suporte a vacinação.
+Falaped é um app web para o dia a dia do pediatra: cadastro de pacientes (crianças), geração de documentos clínicos (receitas, atestados, laudos/relatórios de caso), templates reutilizáveis, condução de consultas e um assistente de IA (Groq) para apoio clínico e transcrição. Neste ciclo (v1.1) o foco é dar ao pediatra uma agenda de consultas própria — disponibilidade recorrente, agendamento delegado a uma assistente por link privado, e acompanhamento de quanto ele ganha por consulta.
 
 ## Core Value
 
 A consulta pediátrica precisa fluir sem fricção — o médico abre o paciente, conduz a consulta e gera os documentos certos (impressos corretamente) em poucos cliques.
+
+## Current Milestone: v1.1 Agenda & Ganhos
+
+**Goal:** Dar ao pediatra uma agenda de consultas própria — com disponibilidade recorrente, agendamento delegado a uma assistente via link privado (token), e um acompanhamento de quanto ele está ganhando por consulta.
+
+**Target features:**
+- Disponibilidade recorrente (grade semanal) com visualização em dia / semana / mês.
+- Link privado (token) da assistente: acesso só à agenda + busca/criação de paciente + marcação — nunca prontuário ou resto do app.
+- Agendamentos entram como "pedido a confirmar"; o médico/assistente confirma antes de firmar o horário.
+- Painel de ganhos: lançamentos financeiros (ligados a uma consulta ou avulsos) com totais por dia/semana/mês + valor médio por consulta.
 
 ## Requirements
 
@@ -22,33 +32,39 @@ A consulta pediátrica precisa fluir sem fricção — o médico abre o paciente
 - ✓ Geração de PDF dos documentos (via `@falaped/falaped-kit/pdf`) — existing
 - ✓ Autenticação + gate de assinatura (`profile.status === "paid"`) — existing
 
+<!-- Entregue no ciclo v1.0. -->
+
+- ✓ Idade pediátrica precisa (dias/meses/anos) + cronômetro de consulta — v1.0 Phase 1
+- ✓ Correção de impressão de PDF (espaçamento/página extra, Path B in-repo) — v1.0 Phase 1
+- ✓ Foto privada da criança (bucket privado + URL assinada + consentimento LGPD) — v1.0 Phase 2
+- ✓ Curva de crescimento (medições antropométricas + curvas de referência OMS) — v1.0 Phase 3
+- ✓ Novos documentos clínicos (encaminhamento, pedido de exames, relatório médico, receituário em branco, biblioteca de orientações) — v1.0 Phase 4
+- ✓ Calendário de vacinas — referência SUS/PNI + particular/SBIm + gestante (somente leitura) — v1.0 Phase 5
+
 ### Active
 
-<!-- Escopo deste ciclo. Hipóteses até serem entregues e validadas. -->
+<!-- Escopo do ciclo v1.1 (Agenda & Ganhos). Hipóteses até serem entregues e validadas. -->
 
-**Bloco 1 — Experiência da consulta (prioridade #1)**
-- [ ] Exibir idade da criança em dias e em meses + dias (precisão pediátrica)
-- [ ] Foto na identificação de cada criança (foto do médico com a criança), com upload e exibição no perfil
-- [ ] Cronômetro de consulta (iniciar/contar tempo a partir do começo do atendimento)
-- [ ] Corrigir espaçamento/quebras de linha na impressão de relatórios (hoje sobra espaço e às vezes gera página extra)
+**Bloco 1 — Disponibilidade & Agenda**
+- [ ] Definir disponibilidade recorrente (grade semanal, ex: seg/qua 14h–18h) que se repete
+- [ ] Visualizar a agenda em dia / semana / mês
 
-**Bloco 2 — Vacinas**
-- [ ] Tabela de referência de vacinas por idade (calendário SUS e particular) para consulta
-- [ ] Referência de vacinação da gestante (Hepatite B, dTpa, VSR, Influenza, COVID)
-- [ ] Carteira de vacinação por paciente: registrar aplicadas, ver pendentes/atrasadas por idade
+**Bloco 2 — Agendamento delegado (link privado da assistente)**
+- [ ] Link privado com token dá à assistente acesso escopado só à agenda + busca/criação de paciente + marcação (nunca prontuário ou resto do app)
+- [ ] A assistente busca um paciente cadastrado ou cria um cadastro novo ao agendar
+- [ ] Agendamentos entram como "pedido a confirmar"; médico/assistente confirma antes de firmar o horário
 
-**Bloco 3 — Novos documentos clínicos (mesmo padrão das receitas: wizard/formulário + templates salváveis + PDF)**
-- [ ] Encaminhamento médico
-- [ ] Pedido de exames
-- [ ] Relatório médico (tipo de documento novo, separado do laudo/relatório de caso existente)
+**Bloco 3 — Acompanhamento de ganhos**
+- [ ] Registrar lançamentos financeiros por consulta (ligados a um agendamento ou avulsos)
+- [ ] Painel de ganhos com totais por dia/semana/mês + valor médio por consulta
 
-**Bloco 4 — Receitas e orientações**
-- [ ] Receituário em branco (corpo vazio para colar receitas prontas que o médico já mantém)
-- [ ] Biblioteca de templates só de orientações (ex: orientação 1ª consulta, 1 mês, 2 meses...)
+### Deferred (carry-over do ciclo v1.0)
 
-**Bloco 5 — Curva de crescimento (Phase 3)**
-- [ ] Registrar medições antropométricas por paciente (peso, estatura/comprimento, perímetro cefálico; IMC derivado) com histórico editável
-- [ ] Gráficos de curva de crescimento por idade sobre curvas de referência OMS (percentis/z-score), usando o motor de idade pediátrica
+<!-- Reconhecidos e adiados; intocados neste milestone. -->
+
+- [ ] Exclusão de foto + verificação de segurança (`02-03`, PHOTO-03)
+- [ ] Curva de crescimento do prematuro Intergrowth-21st (`03-04`)
+- [ ] Carteira de vacinação por paciente (registrar aplicadas, ver pendentes/atrasadas por idade)
 
 ### Out of Scope
 
@@ -56,6 +72,9 @@ A consulta pediátrica precisa fluir sem fricção — o médico abre o paciente
 
 - Extração/transcrição de exames a partir de foto via IA — adiado para v2; é o item mais complexo e o médico sinalizou como "se não for querer muito". Anexar foto de exame ao paciente pode entrar antes, mas a extração automática fica fora deste ciclo.
 - Reescrever os documentos já existentes (receitas, atestados, laudos) — só estender, não refazer.
+- Notificações (WhatsApp/e-mail) de novo agendamento — v1.1 fica só com o painel; o aviso ativo fica para depois (decisão do médico: "só vejo no painel").
+- Pagamento/cobrança online — o app apenas registra o valor recebido, não processa nem cobra pagamentos.
+- Auto-agendamento pela própria família (link 100% público, self-service) — o link é para a assistente (pessoa confiável), com token/escopo controlado; expor a base de pacientes num link aberto violaria a LGPD.
 
 ## Context
 
@@ -84,6 +103,12 @@ A consulta pediátrica precisa fluir sem fricção — o médico abre o paciente
 | Relatório médico é um tipo NOVO, separado do laudo/relatório de caso | O médico confirmou que é um documento diferente do que já existe | — Pending |
 | Extração de exames por foto (IA) fica para v2 | Item mais complexo; manter foco e entregar o resto mais rápido | — Pending |
 | Curva de crescimento inserida como Phase 3 (antes dos documentos) | Reprioriza acompanhamento de crescimento; consome o motor de idade da Phase 1 e não depende do PDF, então precede os documentos. Documentos → Phase 4, Vacinas → Phases 5–6 (renumeração inteira, 2026-07-09) | — Pending |
+| [v1.1] Link do assistente é privado (token), não público self-service | Assistente é pessoa confiável; um link 100% aberto exporia a base de crianças (LGPD). Token secreto, escopo restrito à agenda + busca de paciente | — Pending |
+| [v1.1] Endpoint do link NÃO usa a sessão paga normal | É a primeira superfície externa do app — precisa de auth própria por token (segredo, expiração, revogação), sem herdar o gate `paid` da sessão do médico | — Pending |
+| [v1.1] Agendamentos entram como "pedido a confirmar" | Dá controle ao médico antes de firmar o horário; evita reserva indevida | — Pending |
+| [v1.1] Ganhos como lançamento financeiro separado (ligado ou não à consulta) | Flexível; não força cada consulta a ter valor nem cada valor a ter consulta | — Pending |
+| [v1.1] Sem notificações neste ciclo (só painel) | Reduz escopo/infra; o painel resolve o essencial de "fiquei sabendo do agendamento" | — Pending |
+| [v1.1] Versão v1.1 (adição de capacidade, não reescrita) | Novo domínio (agenda + finanças) mas sem refazer o que já existe | — Pending |
 
 ## Evolution
 
@@ -103,4 +128,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-07-09 — inserida Phase 3 "Curva de Crescimento"; renumeração inteira (Documentos → Phase 4, Vacinas → Phases 5–6)*
+*Last updated: 2026-07-20 — início do milestone v1.1 (Agenda & Ganhos); v1.0 movido para Validated, itens não entregues marcados como Deferred*
