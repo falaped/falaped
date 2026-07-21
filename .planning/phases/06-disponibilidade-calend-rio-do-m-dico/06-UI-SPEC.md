@@ -1,10 +1,11 @@
 ---
 phase: 6
 slug: disponibilidade-calend-rio-do-m-dico
-status: draft
+status: approved
 shadcn_initialized: true
 preset: radix-nova
 created: 2026-07-20
+reviewed_at: 2026-07-20
 ---
 
 # Phase 6 — UI Design Contract
