@@ -4,17 +4,17 @@ milestone: v1.1
 milestone_name: Agenda & Ganhos
 current_phase: 06
 current_phase_name: disponibilidade-calend-rio-do-m-dico
-status: verifying
-stopped_at: Phase 6 context gathered (v2 redesign)
-last_updated: "2026-07-21T15:46:25.837Z"
+status: executing
+stopped_at: Completed 06-01-PLAN.md (fundação híbrida)
+last_updated: "2026-07-21T19:12:28.686Z"
 last_activity: 2026-07-21
-last_activity_desc: "06-01 completo: tabelas availability + RLS + módulos CRUD, migração aplicada à DB viva"
+last_activity_desc: Phase 06 execution started
 progress:
   total_phases: 5
-  completed_phases: 1
+  completed_phases: 0
   total_plans: 3
-  completed_plans: 3
-  percent: 20
+  completed_plans: 1
+  percent: 0
 ---
 
 # Project State
@@ -29,9 +29,9 @@ See: .planning/PROJECT.md (updated 2026-07-20)
 ## Current Position
 
 Phase: 06 (disponibilidade-calend-rio-do-m-dico) — EXECUTING
-Plan: 3 of 3
-Status: Phase complete — ready for verification
-Last activity: 2026-07-21 — 06-01 completo: tabelas availability + RLS + módulos CRUD, migração aplicada à DB viva
+Plan: 2 of 3
+Status: Ready to execute
+Last activity: 2026-07-21 — Phase 06 execution started
 
 ## Roadmap (milestone v1.1)
 
@@ -65,6 +65,7 @@ Last activity: 2026-07-21 — 06-01 completo: tabelas availability + RLS + módu
 *Updated after each plan completion*
 | Phase 06 P02 | 8 | 2 tasks | 5 files |
 | Phase 06 P03 | 389 | 3 tasks | 10 files |
+| Phase 06 P01 | 4 min | 4 tasks | 5 files |
 
 ## Accumulated Context
 
@@ -85,6 +86,8 @@ Recent decisions affecting current work (milestone v1.1):
 <!-- Decisões do v1.0 arquivadas com o milestone. -->
 
 - [Phase ?]: Agenda: navegação Dia/Semana/Mês re-agrupa client-side os slots já expandidos da semana atual + byDay para o mês.
+- [Phase ?]: [Phase 06-01] Migração híbrida ALTER-only aplicada ao DB vivo — rows v1 preservadas e backfilled para override_type='subtract' (D-20/D-22); RLS + 4 policies intactas
+- [Phase ?]: [Phase 06-01] expandAvailability v2: precedência híbrida D-21 (folga vence) + wall-clock DST-safe (WR-01); schema Zod endurecido (ISO estrita WR-02, teto 1440 WR-03)
 
 ### Pending Todos
 
@@ -123,7 +126,7 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-07-21T15:46:25.823Z
-Stopped at: Phase 6 context gathered (v2 redesign)
-Resume file: .planning/phases/06-disponibilidade-calend-rio-do-m-dico/06-CONTEXT.md
+Last session: 2026-07-21T19:12:28.681Z
+Stopped at: Completed 06-01-PLAN.md (fundação híbrida)
+Resume file: None
 Next: executar 06-02-PLAN.md (expandAvailability puro + suite .spec)
