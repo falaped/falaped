@@ -1,60 +1,51 @@
-# Requirements: Falaped
+# Requirements: Falaped — Milestone v1.1 "Agenda & Ganhos"
 
-**Defined:** 2026-06-28
+**Defined:** 2026-07-20
 **Core Value:** A consulta pediátrica flui sem fricção — abrir o paciente, conduzir a consulta e gerar os documentos certos (impressos corretamente) em poucos cliques.
 
-## v1 Requirements
+> Os requisitos entregues no ciclo **v1.0** (CONS, PHOTO, GROWTH, DOC, VAC) estão registrados em `PROJECT.md ▸ Requirements ▸ Validated` e arquivados em `.planning/archive/milestone-v1.0/`. Este arquivo cobre apenas o escopo do **v1.1**. Tudo escopado por `profile_id` e atrás do gate de assinatura (`paid`) — **exceto** o endpoint do link com token, que autentica pelo próprio token (decisão de PROJECT.md).
 
-Requisitos deste ciclo. Cada um mapeia para uma fase do roadmap. Tudo escopado por `profile_id` e atrás do gate de assinatura (padrão existente do app).
+## Milestone v1.1 Requirements
 
-### Experiência da Consulta (CONS)
+Cada requisito mapeia para exatamente uma fase do roadmap.
 
-- [x] **CONS-01**: Médico vê a idade da criança exibida por faixa etária a partir da data de nascimento — dias (0–28 dias), meses + dias (~1–24 meses) e anos + meses (≥24 meses)
-- [ ] **CONS-02**: Médico inicia um cronômetro de consulta e vê o tempo decorrido ao vivo durante o atendimento
-- [ ] **CONS-03**: O início (e fim) da consulta é persistido no registro do atendimento e sobrevive a recarregar a página
-- [ ] **CONS-04**: Médico imprime/gera PDF de relatórios e documentos sem espaçamento excessivo nem página em branco extra (correção no `@falaped/falaped-kit/pdf`)
+### Disponibilidade & Agenda (AGENDA)
 
-### Foto do Paciente (PHOTO)
+- [ ] **AGENDA-01**: O médico define disponibilidade recorrente por dia da semana e faixa de horário (ex: seg e qua, 14h–18h), que se repete automaticamente semana após semana
+- [ ] **AGENDA-02**: O médico define a duração padrão do slot de consulta (ex: 30 min); os horários disponíveis são gerados dentro das faixas recorrentes (regras armazenadas, slots expandidos na leitura)
+- [ ] **AGENDA-03**: O médico bloqueia exceções pontuais por data (folga/feriado) que removem horários da grade recorrente
+- [ ] **AGENDA-04**: O médico visualiza a agenda em dia, semana e mês, vendo os horários livres e as consultas marcadas, corretos nas viradas de dia/semana/mês e no fuso da clínica
 
-- [x] **PHOTO-01**: Médico pode enviar uma foto na identificação de cada criança
-- [x] **PHOTO-02**: A foto é exibida no perfil/identificação do paciente
-- [x] **PHOTO-03**: As fotos ficam em armazenamento privado, acessíveis apenas ao médico dono (bucket privado, escopo por `profile_id`, URL assinada — não reutilizar o bucket público de logos)
+### Agendamento & Ciclo (APPT)
 
-### Curva de Crescimento (GROWTH)
+- [ ] **APPT-01**: O médico cria e edita uma consulta em um horário livre, ligada a um paciente cadastrado
+- [ ] **APPT-02**: Cada consulta percorre um ciclo de status — solicitada (pedido a confirmar) → confirmada → realizada / falta / cancelada — com falta distinta de cancelada
+- [ ] **APPT-03**: O médico confirma ou recusa um "pedido a confirmar" a partir da agenda / lista de solicitações
+- [ ] **APPT-04**: Um horário com consulta **pendente ou confirmada** não pode receber outra consulta (sem double-booking), garantido no banco (exclusion constraint), escopado por `profile_id`
 
-- [x] **GROWTH-01**: Pediatra registra medições antropométricas de cada criança (peso, comprimento/estatura, perímetro cefálico; IMC derivado de peso+estatura) com data, formando um histórico por paciente que pode ser editado e removido — escopado por `profile_id` + `patient_id`
-- [x] **GROWTH-02**: Sistema exibe a curva de crescimento em gráficos por idade (peso/idade, estatura/idade, IMC/idade, perímetro cefálico/idade), sobrepondo as medições do paciente às curvas de referência OMS (percentis/z-score), com fonte e faixa etária coberta visíveis
-- [x] **GROWTH-03**: As medições são posicionadas pela idade pediátrica (motor da Phase 1); leitura/escrita/exclusão aplicam o gate `paid` e escopam por `profile_id` (sem acesso entre médicos)
+### Link Delegado da Assistente (LINK)
 
-### Documentos Clínicos (DOC)
+- [ ] **LINK-01**: O médico gera um link privado com token para a assistente e pode revogar/rotacionar esse link a qualquer momento
+- [ ] **LINK-02**: A assistente abre o link sem login e vê apenas a agenda (horários livres) do médico — nunca o prontuário nem o resto do app
+- [ ] **LINK-03**: Pelo link, a assistente busca um paciente já cadastrado do médico ou cria um cadastro novo mínimo ao agendar (com dedupe por nome/responsável)
+- [ ] **LINK-04**: Pelo link, a assistente marca uma consulta em um horário livre; ela entra como "pedido a confirmar" e **segura o horário** até o médico confirmar ou recusar
+- [ ] **LINK-05**: O acesso pelo token é escopado a um único médico — `profile_id` derivado **apenas** do token verificado (token com hash-at-rest ≥256-bit, revogação/expiração, cliente service-role), sem herdar o gate `paid`, sem alcançar dados de outro médico (testado cross-tenant)
 
-- [x] **DOC-01**: Médico gera um **encaminhamento** (especialidade/serviço de destino, motivo, resumo clínico/hipótese, urgência) com PDF, auto-preenchido com os dados do paciente
-- [ ] **DOC-02**: Médico gera um **pedido de exames** selecionando itens de um catálogo pesquisável e de painéis reutilizáveis (ex: "rotina lactente"), com hipótese/indicação e observações, gerando PDF
-- [x] **DOC-03**: Médico gera um **relatório médico** de corpo livre (rich text) com cabeçalho/rodapé e PDF — tipo de documento novo, separado do laudo/relatório de caso existente
-- [x] **DOC-04**: Médico pode salvar e reutilizar templates de encaminhamento, pedido de exames e relatório médico (mesmo padrão das receitas)
-- [x] **DOC-05**: Médico gera um **receituário em branco** (corpo vazio no layout de receita) para colar receitas prontas que já mantém
-- [x] **DOC-06**: Médico mantém uma biblioteca de **templates de orientações** por marco (1ª consulta, 1 mês, 2 meses...), podendo selecionar e imprimir
+### Ganhos (EARN)
 
-### Vacinas (VAC)
+- [ ] **EARN-01**: O médico registra o valor recebido por uma consulta (em R$, guardado em centavos inteiros), ligado ao agendamento
+- [ ] **EARN-02**: O médico registra lançamentos financeiros avulsos, não ligados a uma consulta
+- [ ] **EARN-03**: O médico vê um painel de ganhos com totais por dia, semana e mês (agregação em SQL, buckets pela data local da clínica)
+- [ ] **EARN-04**: O painel mostra o valor médio por consulta, calculado como total ÷ número de lançamentos do período (lançamentos avulsos incluídos no denominador), com arredondamento único
+- [ ] **EARN-05**: O médico anula/estorna um lançamento sem apagá-lo (totais auditáveis); leitura/escrita/anulação escopadas por `profile_id` + gate `paid`
 
-- [x] **VAC-01**: Médico consulta uma tabela de referência do calendário **SUS/PNI** por idade
-- [x] **VAC-02**: Médico consulta o calendário **particular (SBIm)** por idade, exibido lado a lado com o SUS
-- [x] **VAC-03**: Médico consulta a referência de **vacinação da gestante** (Hepatite B, dTpa a partir de 20 sem, Influenza, COVID-19, VSR/Abrysvo a partir de 28 sem)
-- [x] **VAC-04**: Os calendários são modelados como dado versionado (`vacina, dose, idade recomendada, fonte SUS|SBIm, ano/versão`) com fonte e data de vigência
+## Deferred (carry-over do ciclo v1.0)
 
-## v2 Requirements
+Reconhecidos e adiados; intocados neste milestone (planos preservados em `.planning/archive/milestone-v1.0/`).
 
-Reconhecidos, mas adiados — fora do roadmap atual.
-
-### Exames por Imagem (EXAM)
-
-- **EXAM-01**: Médico pode anexar foto de um exame ao paciente (sem extração automática)
-- **EXAM-02**: Sistema extrai/transcreve o conteúdo do exame a partir da foto via IA
-
-### IA e Analytics (AI)
-
-- **AI-01**: Rascunho assistido por IA de relatório/encaminhamento a partir da transcrição da consulta (Groq já integrado)
-- **AI-02**: Analytics de tempo de consulta (média, histórico por paciente) a partir dos dados do cronômetro
+- Exclusão de foto + verificação de segurança (`02-03`, complemento de PHOTO-03)
+- Curva de crescimento do prematuro Intergrowth-21st (`03-04`)
+- Carteira de vacinação por paciente (registrar aplicadas, ver pendentes/atrasadas por idade)
 
 ## Out of Scope
 
@@ -62,47 +53,44 @@ Excluído explicitamente para evitar scope creep. Vários são anti-features sin
 
 | Feature | Reason |
 |---------|--------|
-| Extração de exames por foto via IA (neste ciclo) | Item mais complexo; adiado para v2 ("se não for querer muito") |
-| Calendário de vacina editável por médico | PNI/SBIm mudam ~anualmente; edição por usuário desvia da orientação oficial e cria risco/liability |
-| Auto-marcar vacinas como aplicadas por idade | Inferir aplicação é perigoso clinicamente (dose perdida escondida como "feita"); só marcar por entrada explícita |
-| Integração com RNDS/ConecteSUS | Integração pesada, auth e instabilidade de API gov; milestone futuro |
-| Módulo de estoque/inventário de lotes de vacina | Preocupação de gestão de clínica, não de consulta pediátrica (lote fica só como campo opcional na dose) |
-| Lembretes/notificações de atraso (SMS/WhatsApp) | Infra de mensageria + consentimento + LGPD sobre dados de menores; mostrar atraso só in-app |
-| Reescrever receita/atestado/laudo existentes | Só estender o padrão para novos documentos, não refatorar o que já funciona |
+| Notificações de agendamento (WhatsApp/e-mail/SMS) | Decisão do médico: "só vejo no painel". Infra de mensageria + consentimento LGPD fica para depois |
+| Pagamento/cobrança online | O app apenas registra o valor recebido; não processa nem cobra pagamentos |
+| Link 100% público self-service (família marcando direto) | Expor a base de crianças num link aberto violaria a LGPD; o link é da assistente (pessoa confiável), com token/escopo controlado |
+| Quebra do painel por particular/convênio/cortesia | O médico escolheu totais + média simples neste ciclo; classificação por forma de pagamento fica para v2 |
+| Sincronização com Google Calendar / iCal | Integração externa pesada; milestone futuro |
+| Lista de espera / overbooking | Fora do fluxo de "pedido a confirmar" deste ciclo |
 
 ## Traceability
 
-Cada requisito mapeia para exatamente uma fase do roadmap. Sem órfãos, sem duplicatas.
+Cada requisito mapeia para exatamente uma fase do roadmap. Preenchido na criação do roadmap.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| CONS-01 | Phase 1 | Complete |
-| CONS-02 | Phase 1 | Pending |
-| CONS-03 | Phase 1 | Pending |
-| CONS-04 | Phase 1 | Pending |
-| PHOTO-01 | Phase 2 | Complete |
-| PHOTO-02 | Phase 2 | Complete |
-| PHOTO-03 | Phase 2 | Complete |
-| GROWTH-01 | Phase 3 | Complete |
-| GROWTH-02 | Phase 3 | Complete |
-| GROWTH-03 | Phase 3 | Complete |
-| DOC-01 | Phase 4 | Complete |
-| DOC-02 | Phase 4 | Pending |
-| DOC-03 | Phase 4 | Complete |
-| DOC-04 | Phase 4 | Complete |
-| DOC-05 | Phase 4 | Complete |
-| DOC-06 | Phase 4 | Complete |
-| VAC-01 | Phase 5 | Complete |
-| VAC-02 | Phase 5 | Complete |
-| VAC-03 | Phase 5 | Complete |
-| VAC-04 | Phase 5 | Complete |
+| AGENDA-01 | — | Pending |
+| AGENDA-02 | — | Pending |
+| AGENDA-03 | — | Pending |
+| AGENDA-04 | — | Pending |
+| APPT-01 | — | Pending |
+| APPT-02 | — | Pending |
+| APPT-03 | — | Pending |
+| APPT-04 | — | Pending |
+| LINK-01 | — | Pending |
+| LINK-02 | — | Pending |
+| LINK-03 | — | Pending |
+| LINK-04 | — | Pending |
+| LINK-05 | — | Pending |
+| EARN-01 | — | Pending |
+| EARN-02 | — | Pending |
+| EARN-03 | — | Pending |
+| EARN-04 | — | Pending |
+| EARN-05 | — | Pending |
 
 **Coverage:**
 
-- v1 requirements: 20 total
-- Mapped to phases: 20 ✓
-- Unmapped: 0 ✓
+- v1.1 requirements: 18 total
+- Mapped to phases: 0 (roadmap ainda não criado)
+- Unmapped: 18 ⚠️ (será resolvido no roadmap)
 
 ---
-*Requirements defined: 2026-06-28*
-*Last updated: 2026-07-20 — removida Phase 6 "Carteira de Vacinação por Paciente"; VAC-05/06/07 retirados de escopo (carteira por paciente descartada)*
+*Requirements defined: 2026-07-20 (milestone v1.1 "Agenda & Ganhos")*
+*Last updated: 2026-07-20 — definição inicial dos requisitos do v1.1*
