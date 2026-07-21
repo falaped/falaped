@@ -15,7 +15,7 @@ Este milestone dá ao pediatra solo uma agenda de consultas de primeira classe: 
 
 Decimal phases appear between their surrounding integers in numeric order.
 
-- [x] **Phase 6: Disponibilidade & Calendário do Médico** - Disponibilidade recorrente (grade semanal + duração de slot + exceções) expandida em slots na leitura, visualizada em dia/semana/mês no fuso da clínica (completed 2026-07-21)
+- [ ] **Phase 6: Disponibilidade & Calendário do Médico** - Calendário único editável (pintura clique/arraste/dia-inteiro, toggle disponibilidade|folga, salvar em lote) sobre modelo híbrido (template recorrente + overrides por data aditivos/subtrativos); slots expandidos na leitura _(v2 redesign — v1 entregue e arquivada; replanejada 2026-07-21)_
 - [ ] **Phase 7: Consultas & Ciclo de Status** - Consultas criadas pelo médico, ligadas a um paciente, com ciclo solicitada→confirmada→realizada/falta/cancelada e garantia de não-double-booking no banco (exclusion constraint sobre pendente+confirmada)
 - [ ] **Phase 8: Assentos & Convite — Fundação de Acesso Delegado (FUNDAÇÃO DE SEGURANÇA)** - Identidade real: tabela de membership (dono ↔ membro, role 'assistant_agenda', status ativo/revogado), fluxo de convite/aceite sobre Supabase Auth, e enforcement de escopo (RLS + verificação de membership) — a assistente logada só alcança agenda + busca/criação mínima de paciente do médico convidante, nunca módulos clínicos nem outro médico; construída e testada cross-tenant/cross-scope em isolamento, com UI mínima
 - [ ] **Phase 9: UI de Agendamento da Assistente** - Sobre a sessão autenticada do assento: a assistente loga, vê só a agenda, busca/cria paciente mínimo (dedupe) e marca uma consulta que entra como "pedido a confirmar" e segura o horário
