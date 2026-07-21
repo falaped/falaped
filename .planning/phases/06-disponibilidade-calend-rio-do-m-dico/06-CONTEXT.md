@@ -1,53 +1,61 @@
 # Phase 6: Disponibilidade & Calendário do Médico - Context
 
-**Gathered:** 2026-07-20
-**Status:** Ready for planning
+**Gathered:** 2026-07-20 (v1) · **Redesign (v2):** 2026-07-21
+**Status:** Ready for planning (v2 redesign — replaces v1 UX)
+
+> **Nota de redesign (v2).** A v1 desta fase FOI entregue e está no banco (grade recorrente separada + views read-only dia/semana/mês, exceções só subtrativas). Durante o UAT o médico redefiniu a tela: quer **um calendário único editável** com pintura por clique/arraste, toggle Disponibilidade/Folga e salvar em lote. Este CONTEXT reflete o **redesign v2**. As decisões v1 marcadas `[SUPERSEDED]` abaixo não valem mais; as demais (fuso, meio-aberto, função pura, owner-scoped) continuam.
 
 <domain>
 ## Phase Boundary
 
-O médico configura sua disponibilidade recorrente uma vez e vê a agenda corretamente em **dia / semana / mês** no fuso da clínica (America/Sao_Paulo). As **regras** de disponibilidade (dia da semana + faixa de horário + duração de slot) e as **exceções por data** ficam armazenadas; os **slots livres são expandidos na leitura** por uma função pura testável — nenhuma row por slot é persistida.
+O médico gerencia sua disponibilidade e vê o calendário em **dia / semana / mês** (fuso fixo America/Sao_Paulo) numa **única superfície de calendário editável**. Ele **pinta** disponibilidade (verde) e folgas diretamente no calendário — clicando um slot, arrastando um período, ou marcando o dia inteiro — e **salva em lote**. A disponibilidade é **híbrida**: um template recorrente por dia da semana como base + **overrides por data** (aditivos E subtrativos) que sobrescrevem a semana. Os **slots livres continuam expandidos na leitura** por função pura testável — nenhuma row por slot é persistida.
 
-**Entrega esta fase (AGENDA-01..04):** grade recorrente semanal, duração de slot, exceções subtrativas por data, e as três views (dia/semana/mês) com viradas corretas no fuso.
+**Entrega esta fase (AGENDA-01..05):** calendário único editável (dia/semana/mês), pintura clique/arraste/dia-inteiro, toggle disponibilidade|folga, salvar em lote com confirmação de descarte, template recorrente + overrides por data (aditivo/subtrativo), expansão pura de slots correta nas viradas e no fuso.
 
 **NÃO entrega (fases seguintes / fora de escopo):**
-- Consultas, ligação a paciente, ciclo de status, exclusion constraint de não-double-booking → **Phase 7** (APPT-*).
-- Qualquer acesso delegado / assento da assistente → **Phase 8/9** (SEAT-*).
-- Livro-caixa de ganhos → **Phase 10** (EARN-*).
-- Notificações (WhatsApp/e-mail) de agendamento → fora de escopo do milestone.
-- **Zero nova superfície externa de ataque** nesta fase — tudo é do próprio médico dono, escopado por `profile_id`.
+- Consultas, ligação a paciente, ciclo de status, no-double-booking → **Phase 7** (APPT-*).
+- Acesso delegado / assento da assistente → **Phase 8/9** (SEAT-*).
+- Livro-caixa → **Phase 10** (EARN-*). Notificações → fora do milestone.
+- **Zero nova superfície externa de ataque** — tudo é do próprio médico dono, escopado por `profile_id`.
 
 </domain>
 
 <decisions>
 ## Implementation Decisions
 
-### Edição da disponibilidade recorrente
-- **D-01:** A entrada é uma **grade semanal clicável** (Seg–Dom × horas); o médico pinta/seleciona os blocos disponíveis. NÃO é um formulário de linhas. Não existe componente pronto para isso no repo — é construção nova.
-- **D-02:** **Múltiplas faixas por dia** são suportadas — o médico deixa o bloco do almoço de fora e o dia vira duas faixas (ex: manhã 08–12 + tarde 14–18). O expandir-slots trata cada faixa contígua independentemente.
-- **D-03:** Granularidade da grade = **passo de 30 min** (blocos de 30 min: 08:00, 08:30, ...). Faixas sempre começam/terminam em múltiplos de 30 min.
+### Superfície: calendário único editável
+- **D-14 (v2):** A tela é **um calendário só** com **abas Dia / Semana / Mês à esquerda** e um **painel de ações à direita**. Navegação anterior/hoje/próximo, incluindo **entre meses**. Substitui a grade-editora-separada + views read-only da v1.
+- **D-15 (v2):** Um **toggle único no painel direito: Disponibilidade | Folga**. O modo ativo define o que a pintura aplica. **Verde = disponível**; folga = tratamento neutro (bg-muted/hachura, badge "Folga"), NÃO destructive-red (um dia off não é erro — UI-SPEC v1 §Color).
+- **D-16 (v2):** **Interação de pintura** — **clicar** um slot alterna aquele horário; **clicar-e-arrastar** marca um **período contíguo** no dia; controle **"dia inteiro"** marca/desmarca o dia todo. Passo de 30 min preservado (D-03).
+- **D-17 (v2):** **Salvar em lote** — o médico pinta várias mudanças e clica **Salvar** uma vez. Estado **"não salvo" visível** (ex.: no botão Salvar / indicador). Ao **navegar/trocar de aba/sair com mudanças não salvas → confirmar antes de descartar** ("você tem mudanças não salvas — descartar?"). Não salvar automático, não perder em silêncio.
+- **D-18 (v2):** A aba **Mês é só indicador** (ponto + contagem de livres por dia, como D-07); a **edição/pintura acontece em Dia/Semana**, onde há slots de tempo. Clicar um dia no Mês pode navegar para aquele Dia (a critério do UI-spec), mas não pinta faixa no Mês.
 
-### Modelo de exceções (folga/feriado)
-- **D-04:** Exceção é por **data**, podendo ser **dia inteiro** (feriado/folga) OU **parcial** (bloquear só uma faixa daquela data, ex: "nessa quarta saio 16h"). O schema da exceção guarda a data + uma faixa opcional (null = dia todo).
-- **D-05:** Exceções são **apenas subtrativas** nesta fase — removem horário da grade recorrente (roadmap: "removem horários da grade"). Abrir disponibilidade extra pontual (aditivo) está **adiado** (ver Deferred).
+### Modelo de disponibilidade: HÍBRIDO (recorrente + overrides por data)
+- **D-19 (v2):** **Template recorrente** por dia da semana + faixa + duração-por-faixa continua sendo a **base** (evolui a v1 `availability_rules`; D-02/D-09 mantidos: múltiplas faixas/dia, duração por faixa).
+- **D-20 (v2):** **Overrides por data** sobrescrevem a semana para uma data específica, podendo ser **ADITIVOS** (abrir horário extra pontual — capacidade nova, AGENDA-05) **OU SUBTRATIVOS** (folga: dia inteiro ou faixa parcial — a antiga exceção da v1, D-04). Substitui D-05 (que era só-subtrativo).
+- **D-21 (v2):** **Ordem de precedência da expansão** (default sensato — refinar em research/planner): **template recorrente → aplica overrides aditivos da data → aplica folgas subtrativas da data**. Folga vence disponibilidade no mesmo horário. Forma exata do schema (tabela nova `availability_overrides` vs. evolução de `availability_exceptions` com coluna de tipo aditivo/subtrativo) fica a critério do planner, respeitando D-22.
 
-### Views do calendário
-- **D-06:** Três views dia/semana/mês; **view padrão = SEMANA** (horizonte natural da recorrência semanal e da rotina do pediatra solo).
-- **D-07:** A view de **MÊS** mostra um **indicador leve por dia** (atende vs folga/sem disponibilidade — cor/ponto + total de slots livres), NÃO os slots reais dentro da célula. Detalhe de horários fica em semana/dia. (Racional: sem consultas na Fase 6, slots reais no mês ficariam densos/ilegíveis.)
-- **D-08:** A grade de agenda **dia/semana** (colunas de dias × linhas de horário) é **CSS grid custom** (Tailwind), **sem adicionar lib de calendário**. O `components/ui/calendar.tsx` existente é date-picker (react-day-picker), não serve como agenda — mas segue disponível para o seletor de data das exceções.
+### Migração dos dados da v1
+- **D-22 (v2):** **Preservar e migrar** (não recomeçar limpo). Evoluir o schema existente via **ALTER + tabela/coluna nova de overrides**, preservando as `availability_rules` e `availability_exceptions` já cadastradas (regras + folgas de teste). Nova migration owner-scoped, RLS + policies na mesma migration (D-13). As folgas subtrativas existentes devem mapear para o novo conceito de override subtrativo sem perda.
 
-### Geração de slots
-- **D-09:** A **duração do slot é POR FAIXA** — cada faixa contígua carrega sua própria duração (manhã 08–12 = 30min; tarde 14–18 = 20min). A duração é um campo da linha de faixa, não uma config global. **Divergência consciente** de AGENDA-02 ("duração padrão do slot"): o médico quer variar por período do dia.
-- **D-10:** **Descartar a sobra** quando a faixa não divide certo pela duração (14:00–18:00 com 45min → 14:00, 14:45, 15:30, 16:15, 17:00; ignora os 15min finais). Nunca cria slot parcial/quebrado. Este caso é um teste explícito no `.spec`.
+### Requisito novo
+- **D-23 (v2):** Registrar **AGENDA-05** em REQUIREMENTS.md: "O médico abre disponibilidade extra pontual por data (override aditivo) que soma horários fora do template recorrente daquele dia." AGENDA-01..04 permanecem (a rastreabilidade deles reabre nesta fase: a UI muda, a expansão muda).
 
-### Travado pelo roadmap / requisitos (não re-discutido — flui direto pro plano)
-- **D-11:** Fuso **fixo America/Sao_Paulo**; **semana começa na segunda**; intervalos **meio-abertos** `[início, fim)`; sem slot duplicado nem sumido nas viradas de dia/semana/mês.
-- **D-12:** Regras/exceções **armazenadas**; slots **expandidos na leitura** por **função pura testável** (`.spec.ts`, molde: `lib/vaccine-*`, `lib/compute-pediatric-age`). Nenhuma row-por-slot persistida.
-- **D-13:** Tabelas **owner-scoped por `profile_id`** com **RLS habilitada + policies na mesma migration** (padrão do repo). Padrão de três camadas `app/ → actions/ → modules/`, uma função exportada por arquivo, `SupabaseClient` injetado, gate de assinatura (`profile.status === "paid"`) nos actions.
+### Continuam válidas da v1 (não re-discutidas)
+- **D-03:** Passo de **30 min**. **D-02:** múltiplas faixas por dia. **D-09:** duração **por faixa**. **D-10:** descartar a sobra que não divide certo.
+- **D-11:** fuso **fixo America/Sao_Paulo**, **semana começa na segunda**, intervalos **meio-abertos** `[início, fim)`, sem slot duplicado/sumido nas viradas.
+- **D-12:** regras/overrides **armazenados**; slots **expandidos na leitura** por **função pura testável** (`.spec.ts`). Nenhuma row-por-slot.
+- **D-13:** tabelas **owner-scoped por `profile_id`**, RLS + policies na mesma migration; três camadas `app/ → actions/ → modules/`, gate `profile.status === "paid"` em actions e no RSC.
 
-### Claude's Discretion
-- Range de horas visível na grade (ex: 06:00–22:00), rótulos, densidade visual, e detalhes de interação (arrastar vs clicar-célula) ficam a critério do planner/UI-spec, respeitando o passo de 30 min (D-03).
-- Nomes de tabelas/colunas e forma exata da assinatura da função pura de expansão ficam a critério do planner (respeitando D-04/D-09: exceção com faixa opcional, duração por faixa).
+### [SUPERSEDED pela v2]
+- ~~**D-01** grade-editora separada da view~~ → **D-14** (calendário único editável).
+- ~~**D-05** exceções apenas subtrativas~~ → **D-20** (overrides aditivos E subtrativos).
+- ~~Views read-only dia/semana/mês (v1 06-03)~~ → **D-16/D-17** (calendário editável com pintura + salvar em lote).
+
+### Claude's / planner's discretion
+- **Expansão na navegação:** mover a expansão para o **cliente** (a função pura roda no browser conforme navega dia/semana/mês, sobre rules+overrides carregados uma vez) OU round-trip ao servidor por janela. Preferência de partida: **cliente** (a fn já é pura e serializável), mas é decisão de research/planner (avaliar custo de payload de overrides).
+- **Mecânica de arraste** (pointer events, seleção retangular numa coluna-dia, feedback visual durante o arraste), range de horas visível, densidade e rótulos — a critério do UI-spec, respeitando D-16 e o passo de 30 min.
+- **Forma do schema de overrides** (tabela nova vs. coluna de tipo em `availability_exceptions`), nomes de tabelas/colunas, assinatura exata da `expandAvailability` v2.
 
 </decisions>
 
@@ -57,64 +65,55 @@ O médico configura sua disponibilidade recorrente uma vez e vê a agenda corret
 **Downstream agents MUST read these before planning or implementing.**
 
 ### Escopo & requisitos desta fase
-- `.planning/ROADMAP.md` § "Phase 6: Disponibilidade & Calendário do Médico" — Goal, Success Criteria (1–4), UI hint. **Fonte da verdade do escopo.**
-- `.planning/REQUIREMENTS.md` — AGENDA-01, AGENDA-02, AGENDA-03, AGENDA-04 (texto integral dos requisitos).
-- `.planning/PROJECT.md` § Key Decisions — decisões v1.1 (agendamento como "pedido a confirmar" é Phase 7; sem notificações; assento leve é Phase 8+).
+- `.planning/ROADMAP.md` § "Phase 6" — Goal, Success Criteria, UI hint. **Fonte da verdade do escopo.**
+- `.planning/REQUIREMENTS.md` — AGENDA-01..04 (integral) + **AGENDA-05** (a ser adicionado nesta fase, D-23).
+- `.planning/PROJECT.md` § Key Decisions — agendamento é Phase 7; sem notificações; assento leve Phase 8+.
 
-### Padrões de código a seguir (do próprio repo)
-- `.planning/codebase/CONVENTIONS.md` — three-layer, one-export-per-file, error handling, naming.
-- `.planning/codebase/ARCHITECTURE.md` — auth + paid gate, per-request Supabase client, ownership scoping.
-- `supabase/migrations/20260720000500_patient_vaccine_doses.sql` — **template de tabela owner-scoped** (`profile_id` + RLS + policies na mesma migration; comentários explicativos).
-- `supabase/migrations/20260720000100_rls_vaccine_schedules.sql` — convenções de RLS (enable + policies juntos; regra "RLS sem policy = negação silenciosa").
-- `lib/compute-pediatric-age.ts` + `lib/compute-pediatric-age.spec.ts` — **molde de função pura + teste** (padrão para o expandir-slots).
-- `modules/patient-vaccine-doses/` — molde de módulo CRUD owner-scoped (uma fn por arquivo, client injetado).
+### Código v1 desta fase (EVOLUIR, não recriar do zero — D-22)
+- `supabase/migrations/20260721000100_availability_rules.sql` — tabela recorrente v1 (base do template, D-19).
+- `supabase/migrations/20260721000200_availability_exceptions.sql` — exceções subtrativas v1 (evoluir para overrides híbridos, D-20/D-22).
+- `lib/expand-availability.ts` + `lib/expand-availability.spec.ts` — **função pura v1 a reescrever** para o modelo híbrido (aditivo+subtrativo, precedência D-21). Manter estilo puro/testável.
+- `lib/clinic-timezone.ts` — `CLINIC_TIME_ZONE`.
+- `modules/availability/` — 5 módulos CRUD owner-scoped v1 (base para os novos módulos de override).
+- `actions/availability/` — 3 actions gated v1. `app/dashboard/agenda/page.tsx` + `components/dashboard/agenda/*` — UI v1 read-only a substituir pelo calendário editável (D-14..D-18).
+- `.planning/phases/06-disponibilidade-calend-rio-do-m-dico/06-REVIEW.md` — **pitfalls confirmados a corrigir no v2**: WR-01 (DST-unsafe `addMinutes` absoluto — corrigir na reescrita da fn pura), WR-02 (validação de `exception_date` frouxa com `Date.parse`), WR-03 (sem teto de `end_minute` > 24h), WR-04 (24:00 inalcançável na UI parcial).
+- `.planning/phases/06-disponibilidade-calend-rio-do-m-dico/06-01-SUMMARY.md`, `06-02-SUMMARY.md`, `06-03-SUMMARY.md` — o que a v1 entregou.
 
-### Achado de scan relevante para pesquisa
-- ⚠️ **Não há tratamento de fuso horário no código hoje** — sem `date-fns-tz`, sem `America/Sao_Paulo`. `date-fns` ^4.1.0 está instalado. A lógica de virada dia/semana/mês em SP (D-11) é **greenfield** — item forte de pesquisa no `plan-phase` (avaliar `@date-fns/tz`/`date-fns-tz` vs. `Intl`/Temporal-polyfill).
+### Padrões de código a seguir
+- `.planning/codebase/CONVENTIONS.md`, `.planning/codebase/ARCHITECTURE.md` — three-layer, auth+paid gate, ownership scoping.
+- `supabase/migrations/20260720000500_patient_vaccine_doses.sql` — template de tabela owner-scoped (RLS + policies juntos).
+- `lib/compute-pediatric-age.ts` (+ `.spec.ts`) — molde de função pura + teste.
 
 </canonical_refs>
 
 <code_context>
 ## Existing Code Insights
 
-### Reusable Assets
-- **`lib/*.spec.ts` + `tsx --test`**: forte precedente de função pura testada (`lib/vaccine-current-band.ts`, `lib/lms-zscore.ts`, `lib/compute-pediatric-age.ts`). O expandir-slots deve nascer como `lib/<nome>.ts` com `.spec.ts` cobrindo: múltiplas faixas/dia (D-02), sobra descartada (D-10), duração por faixa (D-09), exceção parcial e dia-todo (D-04), viradas de fuso (D-11).
-- **`components/ui/calendar.tsx`** (react-day-picker): serve como **date-picker do seletor de data de exceção**, NÃO como grade de agenda.
-- **`date-fns` ^4.1.0**: já instalado, usado em `lib/formatters.ts`, `lib/brazilian-date-form.ts`, wizards. Reusar para aritmética de datas — mas fuso precisa de solução adicional (ver canonical_refs).
+### Reusable Assets (a evoluir)
+- **`lib/expand-availability.ts`** já é pura/determinística e testada (13 casos, verde sob TZ=UTC e America/New_York). A v2 reescreve para o modelo híbrido mas mantém o contrato puro (window+timeZone por parâmetro) e corrige WR-01 (usar aritmética wall-clock no named-zone, não `addMinutes` absoluto).
+- **`@date-fns/tz` ^1.5.0** já instalado e usado (`tz`/`TZDate`). Reusar.
+- **`components/ui/*`** (Tabs, Button, Select, Dialog, AlertDialog, react-day-picker) — reusar; o calendário editável (dia/semana) permanece **CSS grid custom, sem lib de calendário** (D-08).
+- **`modules/availability/` + `actions/availability/`** — base para os novos módulos/actions de override e para o salvar-em-lote (D-17: provável action que recebe o diff da grade + overrides).
 
 ### Established Patterns
-- **Migrations** `supabase/migrations/YYYYMMDDHHMMSS_*.sql`, ordem `table → rls → seed`, RLS sempre no mesmo arquivo (D-13).
-- **Módulos** `modules/<domain>/` uma fn exportada por arquivo, `SupabaseClient` injetado, `throw new Error("[DOMAIN] ...")`; actions capturam e retornam result unions `{ ok: true } | { ok: false; error }` com gate `profile.status === "paid"`.
-- **Rotas** `app/dashboard/<domain>/` — nova rota de agenda seguirá o padrão (provável `app/dashboard/agenda/`).
+- Migrations `YYYYMMDDHHMMSS_*.sql`, RLS+policies no mesmo arquivo. Módulos: uma fn/arquivo, `SupabaseClient` injetado, `[AVAILABILITY]` error tag. Actions: `"use server"`, gate paid, Zod `safeParse`, result union, `revalidatePath`. Rota RSC `app/dashboard/agenda/`.
 
 ### Integration Points
-- Nova tabela(s) de disponibilidade + exceções escopadas por `profile_id` referenciando `public.profiles(id)`.
-- Nova rota de dashboard (agenda) + novo módulo `modules/<agenda>/` + actions.
-- **Alvo futuro:** Phase 7 (consultas) vai ligar consultas a estes horários; manter o modelo de disponibilidade limpo o suficiente para a exclusion constraint da Phase 7 escrever por cima. Não implementar nada de consulta aqui.
+- Fase 7 (APPT) escreverá consultas POR CIMA da disponibilidade (forward constraint) — não adicionar FK/coluna de consulta agora.
+- O calendário editável deve continuar owner-only, gate paid no RSC e em todo action.
 
 </code_context>
-
-<specifics>
-## Specific Ideas
-
-- O médico quer refletir a rotina real da clínica pediátrica: **manhã e tarde separadas por almoço** (motivou D-02 múltiplas faixas) e **durações diferentes por período** (motivou D-09 duração por faixa).
-- Exceção "saio mais cedo nessa data" precisa existir sem desmontar a recorrência (motivou D-04 exceção parcial).
-
-</specifics>
 
 <deferred>
 ## Deferred Ideas
 
-- **Disponibilidade extra pontual (exceção aditiva):** abrir um horário num dia que normalmente não atende (ex: "nesse sábado específico atendo 09–12"). Fora de escopo da Fase 6 (roadmap = só subtrativo). Revisitar se surgir demanda real — exigiria o expandir-slots somar faixas ad-hoc.
-- **Duração de slot global única:** se a duração por faixa (D-09) se mostrar excesso na prática, um fallback de duração padrão global é uma simplificação possível no futuro.
-- **Slots reais na célula do mês / view de mês mais rica:** só faz sentido depois que houver consultas (Phase 7+) para ancorar visualmente.
-
-### Reviewed Todos (not folded)
-None — nenhum todo pendente casou com a Fase 6.
+- **Arraste entre múltiplos dias no Mês** (pintar um range de dias de folga de uma vez) — v2 mantém Mês como indicador (D-18); pintura multi-dia fica para evolução futura.
+- **Desfazer/refazer (undo/redo)** da pintura antes de salvar — não nesta fase; o "confirmar descarte" (D-17) já cobre a proteção mínima.
+- **No-double-booking / consultas** — Phase 7 (APPT-*).
 
 </deferred>
 
 ---
 
-*Phase: 6-Disponibilidade & Calendário do Médico*
-*Context gathered: 2026-07-20*
+*Phase: 06-disponibilidade-calend-rio-do-m-dico*
+*Context gathered: 2026-07-20 (v1); redesign 2026-07-21 via discuss-phase (v2)*
