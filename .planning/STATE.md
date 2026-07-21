@@ -6,15 +6,15 @@ current_phase: 06
 current_phase_name: disponibilidade-calend-rio-do-m-dico
 status: executing
 stopped_at: Completed 06-01-PLAN.md
-last_updated: "2026-07-21T11:57:00.000Z"
+last_updated: "2026-07-21T12:11:32.555Z"
 last_activity: 2026-07-21
-last_activity_desc: Completed 06-01 (availability tables + RLS + CRUD modules, migration applied)
+last_activity_desc: "06-01 completo: tabelas availability + RLS + módulos CRUD, migração aplicada à DB viva"
 progress:
   total_phases: 5
   completed_phases: 0
   total_plans: 3
-  completed_plans: 1
-  percent: 33
+  completed_plans: 2
+  percent: 0
 ---
 
 # Project State
@@ -29,8 +29,8 @@ See: .planning/PROJECT.md (updated 2026-07-20)
 ## Current Position
 
 Phase: 06 (disponibilidade-calend-rio-do-m-dico) — EXECUTING
-Plan: 2 of 3
-Status: Executing Phase 06 (06-01 completo)
+Plan: 3 of 3
+Status: Ready to execute
 Last activity: 2026-07-21 — 06-01 completo: tabelas availability + RLS + módulos CRUD, migração aplicada à DB viva
 
 ## Roadmap (milestone v1.1)
@@ -63,6 +63,7 @@ Last activity: 2026-07-21 — 06-01 completo: tabelas availability + RLS + módu
 - Trend: —
 
 *Updated after each plan completion*
+| Phase 06 P02 | 8 | 2 tasks | 5 files |
 
 ## Accumulated Context
 
@@ -119,7 +120,7 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-07-21T11:57:00.000Z
+Last session: 2026-07-21T12:11:24.995Z
 Stopped at: Completed 06-01-PLAN.md
 Resume file: None
 Next: executar 06-02-PLAN.md (expandAvailability puro + suite .spec)

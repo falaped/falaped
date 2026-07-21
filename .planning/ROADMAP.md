@@ -35,11 +35,11 @@ Decimal phases appear between their surrounding integers in numeric order.
   3. O médico bloqueia uma exceção pontual por data (folga/feriado) e os horários daquele dia somem da grade recorrente.
   4. O médico alterna entre dia, semana e mês e vê os horários livres corretos nas viradas de dia/semana/mês (intervalos meio-abertos, semana começando na segunda) e no fuso fixo da clínica (America/Sao_Paulo), sem slot duplicado nem sumido em transição.
 
-**Plans**: 3 plans
+**Plans**: 2/3 plans executed
 **Wave 1**
 
 - [x] 06-01-PLAN.md — Tabelas availability_rules + availability_exceptions (RLS + policies), módulos CRUD escopados, schema Zod; aplicar migração (AGENDA-01, AGENDA-03)
-- [ ] 06-02-PLAN.md — @date-fns/tz + função pura expandAvailability (regras→slots, fuso, viradas) + suite .spec (AGENDA-02, AGENDA-04)
+- [x] 06-02-PLAN.md — @date-fns/tz + função pura expandAvailability (regras→slots, fuso, viradas) + suite .spec (AGENDA-02, AGENDA-04)
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
@@ -111,7 +111,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 6. Disponibilidade & Calendário do Médico | 1/3 | In progress | - |
+| 6. Disponibilidade & Calendário do Médico | 2/3 | In Progress|  |
 | 7. Consultas & Ciclo de Status | 0/? | Not started | - |
 | 8. Assentos & Convite — Fundação de Acesso Delegado | 0/? | Not started | - |
 | 9. UI de Agendamento da Assistente | 0/? | Not started | - |
