@@ -258,6 +258,12 @@ export function CalendarEditor({
     null,
   )
 
+  // Confirmação antes de limpar em lote (disponibilidade|folga do escopo visível).
+  const [pendingClear, setPendingClear] = React.useState<null | {
+    title: string
+    apply: () => void
+  }>(null)
+
   const isDirty = React.useMemo(
     () => !draftsEqual(draft, savedDraft),
     [draft, savedDraft],
@@ -363,6 +369,57 @@ export function CalendarEditor({
     },
     [],
   )
+
+  /**
+   * Limpa a DISPONIBILIDADE do escopo visível (mutação no draft, não persiste).
+   * Remove o template recorrente (`rulePainted`) dos dias da semana visíveis E
+   * os overrides aditivos (`addCells`) das datas visíveis. Como o template é
+   * recorrente, limpar uma terça esvazia todas as terças (consequência intencional).
+   */
+  const clearAvailabilityForDates = React.useCallback(
+    (localDates: string[]) => {
+      const weekdays = new Set(
+        localDates.map((localDate) => weekdayOf(localDate, timeZone)),
+      )
+      setDraft((prev) => {
+        const next = cloneDraft(prev)
+        for (const key of [...next.rulePainted]) {
+          const weekday = Number(key.slice(0, key.indexOf(":")))
+          if (weekdays.has(weekday)) next.rulePainted.delete(key)
+        }
+        for (const key of Object.keys(next.ruleDurations)) {
+          const weekday = Number(key.slice(0, key.indexOf(":")))
+          if (weekdays.has(weekday)) delete next.ruleDurations[key]
+        }
+        for (const localDate of localDates) {
+          for (const key of [...next.addCells]) {
+            if (key.slice(0, key.lastIndexOf(":")) === localDate) {
+              next.addCells.delete(key)
+            }
+          }
+        }
+        return next
+      })
+    },
+    [timeZone],
+  )
+
+  /**
+   * Limpa as FOLGAS (`subtractCells`) das datas visíveis (mutação no draft).
+   * Não toca o template recorrente nem os overrides aditivos.
+   */
+  const clearFolgasForDates = React.useCallback((localDates: string[]) => {
+    const dateSet = new Set(localDates)
+    setDraft((prev) => {
+      const next = cloneDraft(prev)
+      for (const key of [...next.subtractCells]) {
+        if (dateSet.has(key.slice(0, key.lastIndexOf(":")))) {
+          next.subtractCells.delete(key)
+        }
+      }
+      return next
+    })
+  }, [])
 
   /** Faixa de disponibilidade (respeita o escopo atual). */
   const addAvailabilityPeriod = React.useCallback(
@@ -625,6 +682,39 @@ export function CalendarEditor({
     return Array.from({ length: 5 }, (_, i) => addDays(weekStart, i, context))
   }, [dayCursor, context])
 
+  // Datas visíveis do escopo de limpeza: Dia = 1 data; Semana = as 5 (Seg–Sex).
+  // Mês não pinta faixas, então os botões de limpeza ficam desabilitados.
+  const clearScopeDates = React.useMemo(() => {
+    if (activeTab === "dia") return [localDateOf(dayCursor)]
+    if (activeTab === "semana") return weekDays.map(localDateOf)
+    return []
+  }, [activeTab, dayCursor, weekDays, localDateOf])
+
+  const clearDisabled = activeTab === "mes" || clearScopeDates.length === 0
+  const clearScopeNoun = activeTab === "semana" ? "da semana" : "do dia"
+
+  function requestClearAvailability() {
+    if (clearDisabled) return
+    setPendingClear({
+      title: `Limpar toda a disponibilidade ${clearScopeNoun}?`,
+      apply: () => clearAvailabilityForDates(clearScopeDates),
+    })
+  }
+
+  function requestClearFolgas() {
+    if (clearDisabled) return
+    setPendingClear({
+      title: `Limpar todas as folgas ${clearScopeNoun}?`,
+      apply: () => clearFolgasForDates(clearScopeDates),
+    })
+  }
+
+  function confirmClear() {
+    const pending = pendingClear
+    setPendingClear(null)
+    if (pending) pending.apply()
+  }
+
   // Navegação por aba (rótulo + prev/hoje/next).
   const nav = React.useMemo(() => {
     if (activeTab === "dia") {
@@ -714,6 +804,30 @@ export function CalendarEditor({
           <span className="ml-1 text-sm font-medium capitalize text-muted-foreground">
             {nav.label}
           </span>
+        </div>
+
+        {/* Limpar disponibilidade | folgas do escopo visível (desabilitado no Mês). */}
+        <div className="flex items-center gap-1">
+          <Button
+            variant="outline"
+            size="sm"
+            className="h-7 px-2 text-xs"
+            onClick={requestClearAvailability}
+            disabled={clearDisabled}
+            aria-disabled={clearDisabled}
+          >
+            Limpar disponibilidade
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            className="h-7 px-2 text-xs"
+            onClick={requestClearFolgas}
+            disabled={clearDisabled}
+            aria-disabled={clearDisabled}
+          >
+            Limpar folgas
+          </Button>
         </div>
 
         {/* Salvar + indicador de mudanças não salvas (rework: no toolbar). */}
@@ -827,6 +941,30 @@ export function CalendarEditor({
             <AlertDialogAction onClick={confirmDiscard}>
               Descartar mudanças
             </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Confirmação antes de limpar em lote (disponibilidade|folga do escopo). */}
+      <AlertDialog
+        open={pendingClear !== null}
+        onOpenChange={(open) => {
+          if (!open) setPendingClear(null)
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{pendingClear?.title}</AlertDialogTitle>
+            <AlertDialogDescription>
+              Esta ação altera o rascunho e ainda não salva nada. Clique em
+              Salvar depois para confirmar as mudanças.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setPendingClear(null)}>
+              Cancelar
+            </AlertDialogCancel>
+            <AlertDialogAction onClick={confirmClear}>Limpar</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
