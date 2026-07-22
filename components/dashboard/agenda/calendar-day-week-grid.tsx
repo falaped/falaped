@@ -72,7 +72,7 @@ export type MenuAnchor = { x: number; y: number }
  * `touch-action: none` no container + `setPointerCapture` na célula inicial
  * garantem que o arraste receba os `pointermove` mesmo saindo do alvo original.
  *
- * Verde (`bg-primary/25`) = disponível; folga = neutro (`bg-muted` + hachura),
+ * Verde (`bg-primary/25`) = disponível; folga = cinza claro liso (`bg-muted`, sem hachura),
  * NUNCA destructive-red (D-15). Não persiste nada — só emite callbacks ao pai,
  * que mantém o draft e salva em lote (D-17).
  */
@@ -299,8 +299,7 @@ export function CalendarDayWeekGrid({
                       "h-full w-full transition-colors",
                       state === "available" &&
                         "bg-primary/25 hover:bg-primary/35",
-                      state === "off" &&
-                        "bg-muted [background-image:repeating-linear-gradient(45deg,transparent,transparent_4px,var(--color-muted-foreground)_4px,var(--color-muted-foreground)_5px)] opacity-70 hover:opacity-90",
+                      state === "off" && "bg-muted hover:bg-muted/80",
                       state === "empty" && "hover:bg-muted",
                       previewed && "ring-2 ring-inset ring-primary bg-primary/40",
                     )}
