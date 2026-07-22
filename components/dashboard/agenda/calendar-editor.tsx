@@ -65,6 +65,25 @@ type ByDay = Record<string, { freeSlotCount: number; hasAvailability: boolean }>
 
 const DAY_LABELS_MON_FIRST = ["Seg", "Ter", "Qua", "Qui", "Sex", "Sáb", "Dom"]
 
+/** É sábado (6) ou domingo (0)? A grade de edição é só Seg–Sex. */
+function isWeekend(date: Date): boolean {
+  const wd = date.getDay()
+  return wd === 0 || wd === 6
+}
+
+/**
+ * Move `date` em passos de 1 dia na direção `step` (±1) até cair num dia útil
+ * (Seg–Sex), pulando fim de semana. Garante que o médico nunca aterrisse num
+ * dia oculto na navegação Anterior/Próximo do modo Dia.
+ */
+function skipWeekend(date: Date, step: 1 | -1, context: { in: ReturnType<typeof tz> }): Date {
+  let cursor = date
+  while (isWeekend(cursor)) {
+    cursor = addDays(cursor, step, context)
+  }
+  return cursor
+}
+
 /** Chave "weekday:minute" da grade recorrente. */
 function ruleCellKey(weekday: number, minute: number): string {
   return `${weekday}:${minute}`
@@ -215,7 +234,10 @@ export function CalendarEditor({
 
   const [paintMode, setPaintMode] = React.useState<PaintMode>("available")
   const [slotMinutes, setSlotMinutes] = React.useState<number>(DEFAULT_SLOT)
-  const [dayCursor, setDayCursor] = React.useState<Date>(() => new Date())
+  // Dia inicial = dia útil mais próximo (a grade Dia oculta Sáb/Dom).
+  const [dayCursor, setDayCursor] = React.useState<Date>(() =>
+    skipWeekend(new Date(), 1, { in: tz(timeZone) }),
+  )
   const [monthCursor, setMonthCursor] = React.useState<Date>(() => new Date())
   const [activeTab, setActiveTab] = React.useState<string>("semana")
   const [saving, setSaving] = React.useState(false)
@@ -247,11 +269,12 @@ export function CalendarEditor({
   )
   const todayLocal = localDateOf(new Date())
 
-  // Faixa visível: 06:00–22:00 default, estendida por qualquer célula pintada,
-  // sempre alcançando ATÉ 24:00 (1440, WR-04) — nunca com cap em 23:30.
+  // Faixa visível: 06:00–18:00 default (piso 6h–18h, configurável-por-dado),
+  // ESTENDIDA por qualquer rule/override pintado fora dessa janela (clamp 0..1440,
+  // preserva WR-04) — nada pintado fica inacessível. Passo 30 min, teto 24:00.
   const minuteRows = React.useMemo(() => {
     let start = 6 * 60
-    let end = 22 * 60
+    let end = 18 * 60
     const scanMinuteFromKey = (key: string) => {
       const minute = Number(key.slice(key.lastIndexOf(":") + 1))
       start = Math.min(start, minute)
@@ -552,9 +575,11 @@ export function CalendarEditor({
     [localDateOf, context, todayLocal],
   )
 
+  // Semana = só dias úteis (Seg–Sex). Segunda é o início (weekStartsOn: 1),
+  // então as 5 primeiras posições são Seg..Sex; Sáb/Dom ficam ocultos (D-adj).
   const weekDays = React.useMemo(() => {
     const weekStart = startOfWeek(dayCursor, { ...context, weekStartsOn: 1 })
-    return Array.from({ length: 7 }, (_, i) => addDays(weekStart, i, context))
+    return Array.from({ length: 5 }, (_, i) => addDays(weekStart, i, context))
   }, [dayCursor, context])
 
   return (
@@ -593,9 +618,13 @@ export function CalendarEditor({
               ...context,
               locale: ptBR,
             })}
-            onPrev={() => setDayCursor((d) => addDays(d, -1, context))}
-            onToday={() => setDayCursor(new Date())}
-            onNext={() => setDayCursor((d) => addDays(d, 1, context))}
+            onPrev={() =>
+              setDayCursor((d) => skipWeekend(addDays(d, -1, context), -1, context))
+            }
+            onToday={() => setDayCursor(skipWeekend(new Date(), 1, context))}
+            onNext={() =>
+              setDayCursor((d) => skipWeekend(addDays(d, 1, context), 1, context))
+            }
           />
           <CalendarDayWeekGrid
             days={dayColumns([dayCursor])}
@@ -644,7 +673,9 @@ export function CalendarEditor({
             todayLocal={todayLocal}
             onSelectDay={(day) => {
               runGuarded(() => {
-                setDayCursor(day)
+                // A grade Dia é só Seg–Sex: se clicar num fim de semana no mês,
+                // aterrissa no dia útil mais próximo à frente.
+                setDayCursor(skipWeekend(day, 1, context))
                 setActiveTab("dia")
               })
             }}
