@@ -4,17 +4,17 @@ milestone: v1.1
 milestone_name: Agenda & Ganhos
 current_phase: 06
 current_phase_name: disponibilidade-calend-rio-do-m-dico
-status: executing
-stopped_at: Completed 06-01-PLAN.md (fundação híbrida)
-last_updated: "2026-07-21T19:17:17.659Z"
+status: verifying
+stopped_at: Completed 06-03-PLAN.md (calendário editável, checkpoint aprovado)
+last_updated: "2026-07-22T16:51:32.792Z"
 last_activity: 2026-07-21
 last_activity_desc: Phase 06 execution started
 progress:
   total_phases: 5
-  completed_phases: 0
+  completed_phases: 1
   total_plans: 3
-  completed_plans: 2
-  percent: 0
+  completed_plans: 3
+  percent: 20
 ---
 
 # Project State
@@ -30,7 +30,7 @@ See: .planning/PROJECT.md (updated 2026-07-20)
 
 Phase: 06 (disponibilidade-calend-rio-do-m-dico) — EXECUTING
 Plan: 3 of 3
-Status: Ready to execute
+Status: Phase complete — ready for verification
 Last activity: 2026-07-21 — Phase 06 execution started
 
 ## Roadmap (milestone v1.1)
@@ -67,6 +67,7 @@ Last activity: 2026-07-21 — Phase 06 execution started
 | Phase 06 P03 | 389 | 3 tasks | 10 files |
 | Phase 06 P01 | 4 min | 4 tasks | 5 files |
 | Phase 06 P02 | ~3min | 2 tasks | 7 files |
+| Phase 06 P03 | ~2h | 3 tasks | 9 files |
 
 ## Accumulated Context
 
@@ -89,6 +90,7 @@ Recent decisions affecting current work (milestone v1.1):
 - [Phase ?]: Agenda: navegação Dia/Semana/Mês re-agrupa client-side os slots já expandidos da semana atual + byDay para o mês.
 - [Phase ?]: [Phase 06-01] Migração híbrida ALTER-only aplicada ao DB vivo — rows v1 preservadas e backfilled para override_type='subtract' (D-20/D-22); RLS + 4 policies intactas
 - [Phase ?]: [Phase 06-01] expandAvailability v2: precedência híbrida D-21 (folga vence) + wall-clock DST-safe (WR-01); schema Zod endurecido (ISO estrita WR-02, teto 1440 WR-03)
+- [Phase ?]: [Phase 06-03] Calendário único editável entregue; interação D-15/D-16 (toggle+click/drag) supersedida com aprovação do usuário por menu de contexto cursor-anchored (esq=disponibilidade, dir=folga), toolbar slim no topo, janela 06-18 dias úteis, folga cinza-claro, batch save + guarda de descarte, botões limpar por view
 
 ### Pending Todos
 
@@ -127,7 +129,7 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-07-21T19:17:07.382Z
-Stopped at: Completed 06-01-PLAN.md (fundação híbrida)
+Last session: 2026-07-22T16:51:32.782Z
+Stopped at: Completed 06-03-PLAN.md (calendário editável, checkpoint aprovado)
 Resume file: None
 Next: executar 06-02-PLAN.md (expandAvailability puro + suite .spec)

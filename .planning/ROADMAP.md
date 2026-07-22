@@ -15,7 +15,7 @@ Este milestone dá ao pediatra solo uma agenda de consultas de primeira classe: 
 
 Decimal phases appear between their surrounding integers in numeric order.
 
-- [ ] **Phase 6: Disponibilidade & Calendário do Médico** - Calendário único editável (pintura clique/arraste/dia-inteiro, toggle disponibilidade|folga, salvar em lote) sobre modelo híbrido (template recorrente + overrides por data aditivos/subtrativos); slots expandidos na leitura _(v2 redesign — v1 entregue e arquivada; replanejada 2026-07-21)_
+- [x] **Phase 6: Disponibilidade & Calendário do Médico** - Calendário único editável (pintura clique/arraste/dia-inteiro, toggle disponibilidade|folga, salvar em lote) sobre modelo híbrido (template recorrente + overrides por data aditivos/subtrativos); slots expandidos na leitura _(v2 redesign — v1 entregue e arquivada; replanejada 2026-07-21)_ (completed 2026-07-22)
 - [ ] **Phase 7: Consultas & Ciclo de Status** - Consultas criadas pelo médico, ligadas a um paciente, com ciclo solicitada→confirmada→realizada/falta/cancelada e garantia de não-double-booking no banco (exclusion constraint sobre pendente+confirmada)
 - [ ] **Phase 8: Assentos & Convite — Fundação de Acesso Delegado (FUNDAÇÃO DE SEGURANÇA)** - Identidade real: tabela de membership (dono ↔ membro, role 'assistant_agenda', status ativo/revogado), fluxo de convite/aceite sobre Supabase Auth, e enforcement de escopo (RLS + verificação de membership) — a assistente logada só alcança agenda + busca/criação mínima de paciente do médico convidante, nunca módulos clínicos nem outro médico; construída e testada cross-tenant/cross-scope em isolamento, com UI mínima
 - [ ] **Phase 9: UI de Agendamento da Assistente** - Sobre a sessão autenticada do assento: a assistente loga, vê só a agenda, busca/cria paciente mínimo (dedupe) e marca uma consulta que entra como "pedido a confirmar" e segura o horário
@@ -36,11 +36,11 @@ Decimal phases appear between their surrounding integers in numeric order.
   4. O médico alterna dia/semana/mês e vê os horários corretos nas viradas (meio-abertos, semana na segunda) no fuso America/Sao_Paulo, sem slot duplicado/sumido; mês = indicador (ponto + contagem), edição em dia/semana.
   5. O médico pinta por clique (slot), arraste (período) e "dia inteiro", com toggle Disponibilidade|Folga, e salva em lote com confirmação antes de descartar mudanças não salvas.
 
-**Plans**: 2/3 plans executed
+**Plans**: 3/3 plans complete
 
 - [x] 06-01-PLAN.md — Migração híbrida ALTER+backfill + expandAvailability híbrida DST-safe + schema WR-02/03 (checkpoint de push da migração)
 - [x] 06-02-PLAN.md — Módulos CRUD de override owner-scoped + action de salvar-em-lote
-- [ ] 06-03-PLAN.md — Calendário único editável (pintura/toggle/batch save/guarda) + RSC migrado (checkpoint visual)
+- [x] 06-03-PLAN.md — Calendário único editável (pintura/toggle/batch save/guarda) + RSC migrado (checkpoint visual)
 
 **UI hint**: yes
 
@@ -108,7 +108,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 6. Disponibilidade & Calendário do Médico | 2/3 | In Progress|  |
+| 6. Disponibilidade & Calendário do Médico | 3/3 | Complete   | 2026-07-22 |
 | 7. Consultas & Ciclo de Status | 0/? | Not started | - |
 | 8. Assentos & Convite — Fundação de Acesso Delegado | 0/? | Not started | - |
 | 9. UI de Agendamento da Assistente | 0/? | Not started | - |
