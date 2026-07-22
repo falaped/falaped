@@ -9,9 +9,6 @@ import {
 } from "@/lib/schemas/availability"
 import { zodErrorToUserMessage } from "@/lib/zod-error-message"
 import { getAuthenticatedUser } from "@/modules/supabase/get-authenticated-user"
-import { upsertAvailabilityRules } from "@/modules/availability/upsert-availability-rules"
-import { createAvailabilityOverride } from "@/modules/availability/create-availability-override"
-import { deleteAvailabilityOverride } from "@/modules/availability/delete-availability-override"
 
 export type SaveAvailabilityResult =
   | { ok: true }
@@ -23,10 +20,16 @@ export type SaveAvailabilityResult =
  * reconciliação (AGENDA-01/AGENDA-02/AGENDA-03/AGENDA-05).
  *
  * Gate auth + paid (T-06-05), depois Zod safeParse do diff no boundary (T-06-03)
- * antes de delegar. O profile.id é sempre stampado server-side nos módulos
- * (nunca confiar no cliente — D-13). Reconciliação: (1) substitui a grade
- * recorrente via delete-then-insert; (2) cria cada override aditivo/subtrativo;
- * (3) remove cada override por id (scoped profile_id + id). Revalida
+ * antes de delegar.
+ *
+ * TRANSACIONALIDADE (CR-02): a reconciliação roda numa ÚNICA RPC Postgres
+ * (`public.save_availability`) cujo corpo plpgsql é implicitamente atômico —
+ * substitui a grade, remove overrides marcados e insere overrides novos ou faz
+ * rollback INTEIRO se qualquer statement falhar. Isso substitui os 3 round-trips
+ * não-transacionais da v2 anterior (delete+insert de rules, inserts, deletes),
+ * que numa falha no meio corrompiam o estado (grade zerada ou overrides
+ * divergentes). O profile.id é sempre stampado server-side (nunca confiar no
+ * cliente — D-13); a própria RPC re-verifica o dono via auth.uid(). Revalida
  * /dashboard/agenda para a RSC re-expandir os slots na próxima leitura.
  */
 export async function saveAvailabilityAction(
@@ -46,34 +49,24 @@ export async function saveAvailabilityAction(
     return { ok: false, error: zodErrorToUserMessage(parsed.error) }
   }
 
-  try {
-    // (1) Substitui a grade recorrente completa (delete-then-insert).
-    await upsertAvailabilityRules(supabase, profile.id, parsed.data.rules)
+  const { rules, overridesAdd, overridesRemove } = parsed.data
 
-    // (2) Cria os overrides adicionados (aditivos carregam slot_minutes próprio;
-    // subtrativos deixam slot_minutes null).
-    for (const override of parsed.data.overridesAdd) {
-      await createAvailabilityOverride(supabase, profile.id, {
-        override_type: override.override_type,
-        exception_date: override.exception_date,
-        start_minute: override.start_minute,
-        end_minute: override.end_minute,
-        slot_minutes: override.slot_minutes,
-      })
+  const { error } = await supabase.rpc("save_availability", {
+    p_profile_id: profile.id,
+    p_rules: rules,
+    p_overrides_add: overridesAdd,
+    p_overrides_remove: overridesRemove.map((o) => o.id),
+  })
+
+  if (error) {
+    return {
+      ok: false,
+      error:
+        error.message ||
+        "Não foi possível salvar a disponibilidade. Tente novamente.",
     }
-
-    // (3) Remove os overrides marcados (double-scoped profile_id + id no módulo).
-    for (const { id } of parsed.data.overridesRemove) {
-      await deleteAvailabilityOverride(supabase, profile.id, id)
-    }
-
-    revalidatePath("/dashboard/agenda")
-    return { ok: true }
-  } catch (e) {
-    const message =
-      e instanceof Error
-        ? e.message
-        : "Não foi possível salvar a disponibilidade. Tente novamente."
-    return { ok: false, error: message }
   }
+
+  revalidatePath("/dashboard/agenda")
+  return { ok: true }
 }
