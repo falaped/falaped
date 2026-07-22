@@ -270,8 +270,12 @@ export function CalendarEditor({
   const todayLocal = localDateOf(new Date())
 
   // Faixa visível: 06:00–18:00 default (piso 6h–18h, configurável-por-dado),
-  // ESTENDIDA por qualquer rule/override pintado fora dessa janela (clamp 0..1440,
-  // preserva WR-04) — nada pintado fica inacessível. Passo 30 min, teto 24:00.
+  // ESTENDIDA apenas pela DISPONIBILIDADE pintada fora dessa janela — grade
+  // recorrente (`rulePainted`) e disponibilidade extra pontual (`addCells`)
+  // (clamp 0..1440, preserva WR-04). Folgas (`subtractCells`) NUNCA alargam a
+  // janela: elas subtraem de disponibilidade que já está dentro dela, então uma
+  // folga de dia inteiro (0..1440) não pode abrir a grade para 00:00–24:00.
+  // Passo 30 min, teto 24:00.
   const minuteRows = React.useMemo(() => {
     let start = 6 * 60
     let end = 18 * 60
@@ -282,7 +286,6 @@ export function CalendarEditor({
     }
     draft.rulePainted.forEach(scanMinuteFromKey)
     draft.addCells.forEach(scanMinuteFromKey)
-    draft.subtractCells.forEach(scanMinuteFromKey)
     start = Math.max(0, start)
     end = Math.min(DAY_END, end)
     const rows: number[] = []
