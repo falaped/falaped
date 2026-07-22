@@ -69,10 +69,10 @@ Cada requisito mapeia para exatamente uma fase do roadmap. Preenchido na cria√ß√
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| AGENDA-01 | Phase 6 | In Progress (reopened for v2 redesign) |
-| AGENDA-02 | Phase 6 | In Progress (reopened for v2 redesign) |
-| AGENDA-03 | Phase 6 | In Progress (reopened for v2 redesign) |
-| AGENDA-04 | Phase 6 | In Progress (reopened for v2 redesign) |
+| AGENDA-01 | Phase 6 | Complete |
+| AGENDA-02 | Phase 6 | Complete |
+| AGENDA-03 | Phase 6 | Complete |
+| AGENDA-04 | Phase 6 | Complete |
 | AGENDA-05 | Phase 6 | Complete |
 | APPT-01 | Phase 7 | Pending |
 | APPT-02 | Phase 7 | Pending |
