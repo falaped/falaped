@@ -10,7 +10,7 @@ import {
   startOfWeek,
 } from "date-fns"
 import { ptBR } from "date-fns/locale"
-import { ChevronLeft, ChevronRight } from "lucide-react"
+import { ChevronLeft, ChevronRight, Loader2 } from "lucide-react"
 import { toast } from "sonner"
 
 import { saveAvailabilityAction } from "@/actions"
@@ -28,9 +28,12 @@ import { Button } from "@/components/ui/button"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { expandAvailability } from "@/lib/expand-availability"
 import {
-  AvailabilityActionPanel,
+  AvailabilityCellMenu,
   DEFAULT_SLOT,
-} from "./availability-action-panel"
+  type AvailabilityScope,
+  type MenuTarget,
+  type PeriodDraft,
+} from "./availability-cell-menu"
 import {
   CalendarDayWeekGrid,
   DAY_END,
@@ -38,7 +41,7 @@ import {
   minutesToLabel,
   type CellState,
   type DayColumn,
-  type PaintMode,
+  type MenuAnchor,
 } from "./calendar-day-week-grid"
 import { CalendarMonthIndicator } from "./calendar-month-indicator"
 
@@ -73,10 +76,13 @@ function isWeekend(date: Date): boolean {
 
 /**
  * Move `date` em passos de 1 dia na direção `step` (±1) até cair num dia útil
- * (Seg–Sex), pulando fim de semana. Garante que o médico nunca aterrisse num
- * dia oculto na navegação Anterior/Próximo do modo Dia.
+ * (Seg–Sex), pulando fim de semana.
  */
-function skipWeekend(date: Date, step: 1 | -1, context: { in: ReturnType<typeof tz> }): Date {
+function skipWeekend(
+  date: Date,
+  step: 1 | -1,
+  context: { in: ReturnType<typeof tz> },
+): Date {
   let cursor = date
   while (isWeekend(cursor)) {
     cursor = addDays(cursor, step, context)
@@ -184,33 +190,29 @@ function draftsEqual(a: Draft, b: Draft): boolean {
   return true
 }
 
+function weekdayOf(localDate: string, timeZone: string): number {
+  return new TZDate(new Date(`${localDate}T00:00:00`), timeZone).getDay()
+}
+
 /**
- * Calendário único editável (D-14..D-18) — a superfície v2 que substitui a
- * agenda-view + availability-grid + exception-dialog read-only da v1.
+ * Calendário único editável (D-14..D-18) — rework v2 da interação.
  *
- * LAYOUT (D-14): abas Dia/Semana/Mês à ESQUERDA (default Semana) + painel de
- * ações à direita. Navegação anterior/hoje/próximo, incluindo entre meses.
+ * LAYOUT (rework): abas Dia/Semana/Mês MENORES e à ESQUERDA no topo, alinhadas
+ * a uma barra fina que também traz a navegação (Anterior/Hoje/Próximo + rótulo
+ * do período) e o botão Salvar com o indicador "não salvo". O painel de ações
+ * lateral da v2-anterior foi REMOVIDO; o toggle Disponibilidade|Folga sumiu — o
+ * BOTÃO do mouse agora escolhe o modo.
  *
- * RE-EXPANSÃO CLIENT-SIDE (D-14, discretion → cliente): o RSC passa as rows
- * CRUAS (rules + overrides) uma vez; ao navegar/trocar aba, `expandAvailability`
- * (fn pura/serializável do Plano 01) roda no browser para a janela da view. O
- * draft editável é a fonte de verdade da grade exibida (as células pintadas),
- * e a expansão do draft alimenta o resumo do Mês (D-18).
+ * INTERAÇÃO (rework):
+ * - Clique ESQUERDO numa célula → menu "Disponibilidade" (Dia inteiro | Período;
+ *   escopo Recorrente/padrão vs. Só nesta data/AGENDA-05).
+ * - ARRASTE com o botão esquerdo → cria disponibilidade para o período contíguo
+ *   (escopo default = recorrente, template do dia da semana).
+ * - Clique DIREITO numa célula → menu "Folga" (Dia inteiro | Período), por data.
+ * - Toda ação é ADITIVA: nunca limpa faixas existentes → multi-band por dia.
  *
- * PINTURA (D-16): clique alterna (baseline) / arraste pinta período contíguo
- * (enhancement) / dia-inteiro no painel. O toggle Disponibilidade|Folga (D-15)
- * define o modo. Verde = disponível; folga = neutro (nunca destructive-red).
- *
- * BATCH SAVE (D-17): o diff {rules, overridesAdd, overridesRemove} é computado
- * do draft e enviado a `saveAvailabilityAction` uma vez. Estado não-salvo
- * visível; guarda de descarte (`beforeunload` + AlertDialog na troca de aba /
- * navegação) quando há mudanças não salvas.
- *
- * NOTA de saída de rota: a proteção contra perda cobre os pontos de saída
- * conhecidos — refresh/fechar aba (`beforeunload`) e troca de aba/navegação
- * interna do editor (AlertDialog). Uma navegação client-side do Next para fora
- * de /dashboard/agenda por um link externo ao editor não dispara o AlertDialog;
- * o `beforeunload` cobre o hard-navigation/refresh.
+ * RE-EXPANSÃO CLIENT-SIDE, BATCH SAVE, GUARDA DE DESCARTE, PRECEDÊNCIA HÍBRIDA
+ * (folga vence) e JANELA 06–18 (folgas não alargam) — preservados da v2.
  */
 export function CalendarEditor({
   rules,
@@ -232,8 +234,8 @@ export function CalendarEditor({
     cloneDraft(initialDraftRef.current),
   )
 
-  const [paintMode, setPaintMode] = React.useState<PaintMode>("available")
-  const [slotMinutes, setSlotMinutes] = React.useState<number>(DEFAULT_SLOT)
+  // Duração default aplicada a faixas recorrentes criadas por arraste.
+  const [slotMinutes] = React.useState<number>(DEFAULT_SLOT)
   // Dia inicial = dia útil mais próximo (a grade Dia oculta Sáb/Dom).
   const [dayCursor, setDayCursor] = React.useState<Date>(() =>
     skipWeekend(new Date(), 1, { in: tz(timeZone) }),
@@ -242,7 +244,16 @@ export function CalendarEditor({
   const [activeTab, setActiveTab] = React.useState<string>("semana")
   const [saving, setSaving] = React.useState(false)
 
-  // Guarda de descarte: intenção pendente (troca de aba/navegação) aguardando confirmação.
+  // Escopo default da disponibilidade: template recorrente (D-19).
+  const [scope, setScope] = React.useState<AvailabilityScope>("recurring")
+
+  // Menu de contexto aberto (kind = disponibilidade|folga) + alvo.
+  const [menu, setMenu] = React.useState<{
+    kind: "available" | "off"
+    target: MenuTarget
+  } | null>(null)
+
+  // Guarda de descarte: intenção pendente aguardando confirmação.
   const [pendingAction, setPendingAction] = React.useState<null | (() => void)>(
     null,
   )
@@ -252,7 +263,7 @@ export function CalendarEditor({
     [draft, savedDraft],
   )
 
-  // beforeunload (D-17, Pitfall 6): cobre refresh/fechar aba com mudanças não salvas.
+  // beforeunload (D-17): cobre refresh/fechar aba com mudanças não salvas.
   React.useEffect(() => {
     if (!isDirty) return
     function handler(event: BeforeUnloadEvent) {
@@ -269,13 +280,8 @@ export function CalendarEditor({
   )
   const todayLocal = localDateOf(new Date())
 
-  // Faixa visível: 06:00–18:00 default (piso 6h–18h, configurável-por-dado),
-  // ESTENDIDA apenas pela DISPONIBILIDADE pintada fora dessa janela — grade
-  // recorrente (`rulePainted`) e disponibilidade extra pontual (`addCells`)
-  // (clamp 0..1440, preserva WR-04). Folgas (`subtractCells`) NUNCA alargam a
-  // janela: elas subtraem de disponibilidade que já está dentro dela, então uma
-  // folga de dia inteiro (0..1440) não pode abrir a grade para 00:00–24:00.
-  // Passo 30 min, teto 24:00.
+  // Faixa visível: 06:00–18:00 default, ESTENDIDA apenas pela DISPONIBILIDADE
+  // pintada fora dessa janela (rulePainted + addCells). Folgas NUNCA alargam.
   const minuteRows = React.useMemo(() => {
     let start = 6 * 60
     let end = 18 * 60
@@ -293,69 +299,159 @@ export function CalendarEditor({
     return rows
   }, [draft])
 
-  // Estado de uma célula por DATA (aplica a precedência de exibição do draft):
-  // folga vence; senão aditivo/template = disponível.
+  // Estado de exibição de uma célula (folga vence; senão aditivo/template).
   const cellStateOf = React.useCallback(
     (localDate: string, minute: number): CellState => {
       if (draft.subtractCells.has(dateKey(localDate, minute))) return "off"
       if (draft.addCells.has(dateKey(localDate, minute))) return "available"
-      const zoned = new TZDate(new Date(`${localDate}T00:00:00`), timeZone)
-      const weekday = zoned.getDay()
+      const weekday = weekdayOf(localDate, timeZone)
       if (draft.rulePainted.has(ruleCellKey(weekday, minute))) return "available"
       return "empty"
     },
     [draft, timeZone],
   )
 
-  // Aplica o modo ativo a uma célula-data (clique = toggle, arraste = set).
-  const paintCell = React.useCallback(
-    (localDate: string, minute: number, options?: { toggle?: boolean }) => {
-      const toggle = options?.toggle ?? false
+  // ---------- mutações ADITIVAS do draft ----------
+
+  /** Disponibilidade RECORRENTE (template do dia da semana) para [start, end). */
+  const addRecurringPeriod = React.useCallback(
+    (localDate: string, start: number, end: number, slot: number) => {
+      const weekday = weekdayOf(localDate, timeZone)
       setDraft((prev) => {
         const next = cloneDraft(prev)
-        const zoned = new TZDate(new Date(`${localDate}T00:00:00`), timeZone)
-        const weekday = zoned.getDay()
-        const dk = dateKey(localDate, minute)
-        const currentState: CellState = next.subtractCells.has(dk)
-          ? "off"
-          : next.addCells.has(dk)
-            ? "available"
-            : next.rulePainted.has(ruleCellKey(weekday, minute))
-              ? "available"
-              : "empty"
-
-        if (paintMode === "off") {
-          // Folga: adiciona (ou alterna) uma célula subtrativa naquela data.
-          if (toggle && currentState === "off") next.subtractCells.delete(dk)
-          else {
-            next.subtractCells.add(dk)
-            next.addCells.delete(dk)
-          }
-          return next
-        }
-
-        // Disponibilidade: edita a GRADE RECORRENTE do weekday por padrão; se a
-        // data tem folga naquele minuto, primeiro remove a folga. Se o template
-        // já cobre, um clique-toggle desliga o template daquele weekday.
-        if (next.subtractCells.has(dk)) {
-          // Reabrir um horário que estava em folga: remove a folga da data.
+        for (let m = start; m < end; m += STEP) {
+          const dk = dateKey(localDate, m)
+          // Reabrir horário que estava em folga naquele minuto (só nesta data).
           next.subtractCells.delete(dk)
-          if (!toggle) next.rulePainted.add(ruleCellKey(weekday, minute))
-          return next
+          next.rulePainted.add(ruleCellKey(weekday, m))
         }
+        next.ruleDurations[`${weekday}:${start}`] = slot
+        return next
+      })
+    },
+    [timeZone],
+  )
 
-        const rk = ruleCellKey(weekday, minute)
-        if (toggle && currentState === "available") {
-          // Desligar disponibilidade: remove do template recorrente e de aditivo.
-          next.rulePainted.delete(rk)
-          next.addCells.delete(dk)
-        } else {
-          next.rulePainted.add(rk)
+  /** Disponibilidade extra POR DATA (aditivo, AGENDA-05) para [start, end). */
+  const addDatePeriod = React.useCallback(
+    (localDate: string, start: number, end: number) => {
+      setDraft((prev) => {
+        const next = cloneDraft(prev)
+        for (let m = start; m < end; m += STEP) {
+          const dk = dateKey(localDate, m)
+          next.subtractCells.delete(dk)
+          next.addCells.add(dk)
         }
         return next
       })
     },
-    [paintMode, timeZone],
+    [],
+  )
+
+  /** Folga (subtrativo) POR DATA para [start, end). */
+  const addFolgaPeriod = React.useCallback(
+    (localDate: string, start: number, end: number) => {
+      setDraft((prev) => {
+        const next = cloneDraft(prev)
+        for (let m = start; m < end; m += STEP) {
+          const dk = dateKey(localDate, m)
+          next.addCells.delete(dk)
+          next.subtractCells.add(dk)
+        }
+        return next
+      })
+    },
+    [],
+  )
+
+  /** Faixa de disponibilidade (respeita o escopo atual). */
+  const addAvailabilityPeriod = React.useCallback(
+    (
+      localDate: string,
+      start: number,
+      end: number,
+      slot: number,
+      periodScope: AvailabilityScope,
+    ) => {
+      if (periodScope === "date") addDatePeriod(localDate, start, end)
+      else addRecurringPeriod(localDate, start, end, slot)
+    },
+    [addDatePeriod, addRecurringPeriod],
+  )
+
+  // ---------- callbacks da grade ----------
+
+  /** Arraste esquerdo concluído → disponibilidade no período (escopo atual). */
+  const handleDragSelect = React.useCallback(
+    (localDate: string, start: number, end: number) => {
+      addAvailabilityPeriod(localDate, start, end, slotMinutes, scope)
+    },
+    [addAvailabilityPeriod, scope, slotMinutes],
+  )
+
+  /** Clique numa célula → abre o menu (esquerdo=disponibilidade, direito=folga). */
+  const handleCellMenu = React.useCallback(
+    (
+      localDate: string,
+      minute: number,
+      button: "left" | "right",
+      anchor: MenuAnchor,
+    ) => {
+      const weekdayLabel = format(
+        new TZDate(new Date(`${localDate}T00:00:00`), timeZone),
+        "EEEE",
+        { locale: ptBR },
+      )
+      const target: MenuTarget = { localDate, minute, weekdayLabel, anchor }
+      setMenu({ kind: button === "left" ? "available" : "off", target })
+    },
+    [timeZone],
+  )
+
+  // ---------- ações do menu ----------
+
+  /** Janela de dia inteiro = faixa visível corrente (06–18 ou o que estiver aberto). */
+  const dayWindow = React.useMemo(() => {
+    if (minuteRows.length === 0) return { start: 6 * 60, end: 18 * 60 }
+    return {
+      start: minuteRows[0],
+      end: minuteRows[minuteRows.length - 1] + STEP,
+    }
+  }, [minuteRows])
+
+  const handleMenuWholeDay = React.useCallback(() => {
+    if (!menu) return
+    const { localDate } = menu.target
+    if (menu.kind === "off") {
+      addFolgaPeriod(localDate, dayWindow.start, dayWindow.end)
+    } else {
+      addAvailabilityPeriod(
+        localDate,
+        dayWindow.start,
+        dayWindow.end,
+        slotMinutes,
+        scope,
+      )
+    }
+  }, [menu, dayWindow, addFolgaPeriod, addAvailabilityPeriod, scope, slotMinutes])
+
+  const handleMenuPeriod = React.useCallback(
+    (period: PeriodDraft) => {
+      if (!menu) return
+      const { localDate } = menu.target
+      if (menu.kind === "off") {
+        addFolgaPeriod(localDate, period.startMinute, period.endMinute)
+      } else {
+        addAvailabilityPeriod(
+          localDate,
+          period.startMinute,
+          period.endMinute,
+          period.slotMinutes,
+          scope,
+        )
+      }
+    },
+    [menu, addFolgaPeriod, addAvailabilityPeriod, scope],
   )
 
   // ---------- navegação com guarda de descarte ----------
@@ -368,7 +464,6 @@ export function CalendarEditor({
   }
 
   function confirmDiscard() {
-    // Descarta o draft: volta ao último estado salvo.
     setDraft(cloneDraft(savedDraft))
     const action = pendingAction
     setPendingAction(null)
@@ -379,54 +474,8 @@ export function CalendarEditor({
     runGuarded(() => setActiveTab(next))
   }
 
-  // ---------- dia inteiro (D-16) ----------
-  const activeDayLabel = React.useMemo(() => {
-    if (activeTab === "mes") return null
-    return format(dayCursor, "dd/MM", { ...context, locale: ptBR })
-  }, [activeTab, dayCursor, context])
-
-  function fillActiveDay() {
-    const localDate = localDateOf(dayCursor)
-    setDraft((prev) => {
-      const next = cloneDraft(prev)
-      const zoned = new TZDate(new Date(`${localDate}T00:00:00`), timeZone)
-      const weekday = zoned.getDay()
-      for (const minute of minuteRows) {
-        const dk = dateKey(localDate, minute)
-        if (paintMode === "off") {
-          next.subtractCells.add(dk)
-          next.addCells.delete(dk)
-        } else {
-          next.subtractCells.delete(dk)
-          next.rulePainted.add(ruleCellKey(weekday, minute))
-        }
-      }
-      return next
-    })
-  }
-
-  function clearActiveDay() {
-    const localDate = localDateOf(dayCursor)
-    setDraft((prev) => {
-      const next = cloneDraft(prev)
-      const zoned = new TZDate(new Date(`${localDate}T00:00:00`), timeZone)
-      const weekday = zoned.getDay()
-      for (const minute of minuteRows) {
-        const dk = dateKey(localDate, minute)
-        next.subtractCells.delete(dk)
-        next.addCells.delete(dk)
-        // Folga subtrativa para "esconder" o template recorrente naquele dia.
-        if (next.rulePainted.has(ruleCellKey(weekday, minute))) {
-          next.subtractCells.add(dk)
-        }
-      }
-      return next
-    })
-  }
-
   // ---------- batch save (D-17) ----------
   function computeDiff() {
-    // (1) Grade recorrente completa a partir de rulePainted + ruleDurations.
     const rulesPayload: {
       weekday: number
       start_minute: number
@@ -449,7 +498,6 @@ export function CalendarEditor({
       }
     }
 
-    // (2) Overrides adicionados: agrupa subtractCells e addCells por data em faixas.
     const overridesAdd: {
       override_type: "add" | "subtract"
       exception_date: string
@@ -458,10 +506,7 @@ export function CalendarEditor({
       slot_minutes: number | null
     }[] = []
 
-    const groupByDate = (
-      cells: Set<string>,
-      type: "add" | "subtract",
-    ) => {
+    const groupByDate = (cells: Set<string>, type: "add" | "subtract") => {
       const byDate = new Map<string, Set<number>>()
       for (const key of cells) {
         const idx = key.lastIndexOf(":")
@@ -492,8 +537,6 @@ export function CalendarEditor({
     groupByDate(draft.subtractCells, "subtract")
     groupByDate(draft.addCells, "add")
 
-    // (3) Overrides removidos: todos os overrides originais são substituídos —
-    // marcamos todos os ids originais para remoção e recriamos do draft.
     const overridesRemove = overrides.map((ov) => ({ id: ov.id }))
 
     return { rules: rulesPayload, overridesAdd, overridesRemove }
@@ -506,7 +549,6 @@ export function CalendarEditor({
     setSaving(false)
     if (result.ok) {
       toast.success("Disponibilidade salva.")
-      // Sincroniza o baseline: o draft atual vira o estado salvo.
       const snapshot = cloneDraft(draft)
       setSavedDraft(snapshot)
       removedOverrideIds.current.clear()
@@ -578,126 +620,189 @@ export function CalendarEditor({
     [localDateOf, context, todayLocal],
   )
 
-  // Semana = só dias úteis (Seg–Sex). Segunda é o início (weekStartsOn: 1),
-  // então as 5 primeiras posições são Seg..Sex; Sáb/Dom ficam ocultos (D-adj).
   const weekDays = React.useMemo(() => {
     const weekStart = startOfWeek(dayCursor, { ...context, weekStartsOn: 1 })
     return Array.from({ length: 5 }, (_, i) => addDays(weekStart, i, context))
   }, [dayCursor, context])
 
+  // Navegação por aba (rótulo + prev/hoje/next).
+  const nav = React.useMemo(() => {
+    if (activeTab === "dia") {
+      return {
+        label: format(dayCursor, "EEEE, dd 'de' MMMM", {
+          ...context,
+          locale: ptBR,
+        }),
+        onPrev: () =>
+          setDayCursor((d) => skipWeekend(addDays(d, -1, context), -1, context)),
+        onToday: () => setDayCursor(skipWeekend(new Date(), 1, context)),
+        onNext: () =>
+          setDayCursor((d) => skipWeekend(addDays(d, 1, context), 1, context)),
+      }
+    }
+    if (activeTab === "semana") {
+      return {
+        label: `Semana de ${format(weekDays[0], "dd/MM", {
+          ...context,
+          locale: ptBR,
+        })}`,
+        onPrev: () => setDayCursor((d) => addDays(d, -7, context)),
+        onToday: () => setDayCursor(new Date()),
+        onNext: () => setDayCursor((d) => addDays(d, 7, context)),
+      }
+    }
+    return {
+      label: format(monthCursor, "MMMM 'de' yyyy", { ...context, locale: ptBR }),
+      onPrev: () => setMonthCursor((d) => addMonths(d, -1, context)),
+      onToday: () => setMonthCursor(new Date()),
+      onNext: () => setMonthCursor((d) => addMonths(d, 1, context)),
+    }
+  }, [activeTab, dayCursor, weekDays, monthCursor, context])
+
   return (
-    <div className="flex flex-col gap-6 lg:flex-row">
-      {/* Coluna esquerda: abas Dia/Semana/Mês (D-14). */}
-      <Tabs
-        value={activeTab}
-        onValueChange={handleTabChange}
-        className="flex flex-1 flex-col gap-4"
-      >
-        <TabsList>
-          <TabsTrigger
-            value="dia"
-            className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
-          >
-            Dia
-          </TabsTrigger>
-          <TabsTrigger
-            value="semana"
-            className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
-          >
-            Semana
-          </TabsTrigger>
-          <TabsTrigger
-            value="mes"
-            className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
-          >
-            Mês
-          </TabsTrigger>
+    <Tabs
+      value={activeTab}
+      onValueChange={handleTabChange}
+      className="flex flex-col gap-4"
+    >
+      {/* Barra fina: abas menores à esquerda + navegação + salvar (rework). */}
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+        <TabsList className="h-8 p-0.5">
+          {[
+            { value: "dia", label: "Dia" },
+            { value: "semana", label: "Semana" },
+            { value: "mes", label: "Mês" },
+          ].map((tab) => (
+            <TabsTrigger
+              key={tab.value}
+              value={tab.value}
+              className="h-7 px-2.5 text-xs data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
+            >
+              {tab.label}
+            </TabsTrigger>
+          ))}
         </TabsList>
 
-        {/* ---------- DIA ---------- */}
-        <TabsContent value="dia" className="flex flex-col gap-4">
-          <NavBar
-            label={format(dayCursor, "EEEE, dd 'de' MMMM", {
-              ...context,
-              locale: ptBR,
-            })}
-            onPrev={() =>
-              setDayCursor((d) => skipWeekend(addDays(d, -1, context), -1, context))
-            }
-            onToday={() => setDayCursor(skipWeekend(new Date(), 1, context))}
-            onNext={() =>
-              setDayCursor((d) => skipWeekend(addDays(d, 1, context), 1, context))
-            }
-          />
-          <CalendarDayWeekGrid
-            days={dayColumns([dayCursor])}
-            minuteRows={minuteRows}
-            cellStateOf={cellStateOf}
-            paintMode={paintMode}
-            onPaint={paintCell}
-          />
-        </TabsContent>
+        {/* Navegação Anterior · Hoje · Próximo + rótulo do período. */}
+        <div className="flex items-center gap-1">
+          <Button
+            variant="outline"
+            size="icon"
+            className="size-7"
+            onClick={nav.onPrev}
+            aria-label="Anterior"
+          >
+            <ChevronLeft className="size-4" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-7 px-2 text-xs"
+            onClick={nav.onToday}
+          >
+            Hoje
+          </Button>
+          <Button
+            variant="outline"
+            size="icon"
+            className="size-7"
+            onClick={nav.onNext}
+            aria-label="Próximo"
+          >
+            <ChevronRight className="size-4" />
+          </Button>
+          <span className="ml-1 text-sm font-medium capitalize text-muted-foreground">
+            {nav.label}
+          </span>
+        </div>
 
-        {/* ---------- SEMANA ---------- */}
-        <TabsContent value="semana" className="flex flex-col gap-4">
-          <NavBar
-            label={`Semana de ${format(weekDays[0], "dd/MM", {
-              ...context,
-              locale: ptBR,
-            })}`}
-            onPrev={() => setDayCursor((d) => addDays(d, -7, context))}
-            onToday={() => setDayCursor(new Date())}
-            onNext={() => setDayCursor((d) => addDays(d, 7, context))}
-          />
-          <CalendarDayWeekGrid
-            days={dayColumns(weekDays)}
-            minuteRows={minuteRows}
-            cellStateOf={cellStateOf}
-            paintMode={paintMode}
-            onPaint={paintCell}
-          />
-        </TabsContent>
+        {/* Salvar + indicador de mudanças não salvas (rework: no toolbar). */}
+        <div className="ml-auto flex items-center gap-2">
+          {isDirty ? (
+            <span className="flex items-center gap-1.5 text-xs font-medium text-amber-600 dark:text-amber-500">
+              <span className="size-2 rounded-full bg-amber-500" />
+              Mudanças não salvas
+            </span>
+          ) : (
+            <span className="text-xs text-muted-foreground">Tudo salvo.</span>
+          )}
+          <Button
+            size="sm"
+            className="h-7"
+            onClick={handleSave}
+            disabled={saving || !isDirty}
+          >
+            {saving ? (
+              <>
+                <Loader2 className="size-4 animate-spin" />
+                Salvando...
+              </>
+            ) : (
+              "Salvar"
+            )}
+          </Button>
+        </div>
+      </div>
 
-        {/* ---------- MÊS (indicador, D-18) ---------- */}
-        <TabsContent value="mes" className="flex flex-col gap-4">
-          <NavBar
-            label={format(monthCursor, "MMMM 'de' yyyy", {
-              ...context,
-              locale: ptBR,
-            })}
-            onPrev={() => setMonthCursor((d) => addMonths(d, -1, context))}
-            onToday={() => setMonthCursor(new Date())}
-            onNext={() => setMonthCursor((d) => addMonths(d, 1, context))}
-          />
-          <CalendarMonthIndicator
-            monthCursor={monthCursor}
-            byDay={monthByDay}
-            timeZone={timeZone}
-            todayLocal={todayLocal}
-            onSelectDay={(day) => {
-              runGuarded(() => {
-                // A grade Dia é só Seg–Sex: se clicar num fim de semana no mês,
-                // aterrissa no dia útil mais próximo à frente.
-                setDayCursor(skipWeekend(day, 1, context))
-                setActiveTab("dia")
-              })
-            }}
-          />
-        </TabsContent>
-      </Tabs>
+      {/* Dica de interação (substitui o antigo painel de instruções). */}
+      <p className="text-xs text-muted-foreground">
+        Clique numa célula para{" "}
+        <span className="font-medium text-foreground">disponibilidade</span> ou
+        arraste para marcar um período; botão direito para{" "}
+        <span className="font-medium text-foreground">folga</span>. Verde =
+        disponível.
+      </p>
 
-      {/* Coluna direita: painel de ações (D-14). */}
-      <AvailabilityActionPanel
-        paintMode={paintMode}
-        onPaintModeChange={setPaintMode}
-        slotMinutes={slotMinutes}
-        onSlotMinutesChange={setSlotMinutes}
-        onFillActiveDay={fillActiveDay}
-        onClearActiveDay={clearActiveDay}
-        activeDayLabel={activeTab === "mes" ? null : activeDayLabel}
-        isDirty={isDirty}
-        saving={saving}
-        onSave={handleSave}
+      {/* ---------- DIA ---------- */}
+      <TabsContent value="dia" className="flex flex-col gap-4">
+        <CalendarDayWeekGrid
+          days={dayColumns([dayCursor])}
+          minuteRows={minuteRows}
+          cellStateOf={cellStateOf}
+          onDragSelect={handleDragSelect}
+          onCellMenu={handleCellMenu}
+        />
+      </TabsContent>
+
+      {/* ---------- SEMANA ---------- */}
+      <TabsContent value="semana" className="flex flex-col gap-4">
+        <CalendarDayWeekGrid
+          days={dayColumns(weekDays)}
+          minuteRows={minuteRows}
+          cellStateOf={cellStateOf}
+          onDragSelect={handleDragSelect}
+          onCellMenu={handleCellMenu}
+        />
+      </TabsContent>
+
+      {/* ---------- MÊS (indicador, D-18) ---------- */}
+      <TabsContent value="mes" className="flex flex-col gap-4">
+        <CalendarMonthIndicator
+          monthCursor={monthCursor}
+          byDay={monthByDay}
+          timeZone={timeZone}
+          todayLocal={todayLocal}
+          onSelectDay={(day) => {
+            runGuarded(() => {
+              setDayCursor(skipWeekend(day, 1, context))
+              setActiveTab("dia")
+            })
+          }}
+        />
+      </TabsContent>
+
+      {/* Menu de contexto da célula (disponibilidade|folga). */}
+      <AvailabilityCellMenu
+        kind={menu?.kind ?? "available"}
+        target={menu?.target ?? null}
+        open={menu !== null}
+        onOpenChange={(open) => {
+          if (!open) setMenu(null)
+        }}
+        scope={scope}
+        onScopeChange={setScope}
+        onWholeDay={handleMenuWholeDay}
+        onPeriod={handleMenuPeriod}
       />
 
       {/* Guarda de descarte (D-17). */}
@@ -725,47 +830,7 @@ export function CalendarEditor({
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </div>
-  )
-}
-
-/** Barra de navegação Anterior · Hoje · Próximo (D-14). */
-function NavBar({
-  label,
-  onPrev,
-  onToday,
-  onNext,
-}: {
-  label: string
-  onPrev: () => void
-  onToday: () => void
-  onNext: () => void
-}) {
-  return (
-    <div className="flex items-center justify-between">
-      <span className="text-base font-semibold capitalize">{label}</span>
-      <div className="flex items-center gap-1">
-        <Button
-          variant="outline"
-          size="icon"
-          onClick={onPrev}
-          aria-label="Anterior"
-        >
-          <ChevronLeft className="h-4 w-4" />
-        </Button>
-        <Button variant="ghost" size="sm" onClick={onToday}>
-          Hoje
-        </Button>
-        <Button
-          variant="outline"
-          size="icon"
-          onClick={onNext}
-          aria-label="Próximo"
-        >
-          <ChevronRight className="h-4 w-4" />
-        </Button>
-      </div>
-    </div>
+    </Tabs>
   )
 }
 
