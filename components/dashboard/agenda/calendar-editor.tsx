@@ -190,8 +190,21 @@ function draftsEqual(a: Draft, b: Draft): boolean {
   return true
 }
 
+/**
+ * Weekday (0=domingo..6=sábado) de uma data local `YYYY-MM-DD` ANCORADA no fuso da
+ * CLÍNICA — casa com o servidor (`expandAvailability` faz `new TZDate(day, tz).getDay()`
+ * sobre dias já ancorados no zone).
+ *
+ * PORQUÊ construir a TZDate a partir dos componentes ano/mês/dia (e não de
+ * `new Date(\`${localDate}T00:00:00\`)`): a string SEM sufixo de offset é parseada no
+ * fuso do HOST. Num host UTC (Vercel), a meia-noite local vira 00:00Z e, ao reinterpretar
+ * no fuso da clínica (America/Sao_Paulo, UTC-3), recua para 21:00 do dia ANTERIOR — o
+ * `.getDay()` então devolve o weekday errado e diverge do servidor (bug CR-01). O
+ * construtor por componentes ancora a meia-noite DIRETO no fuso da clínica, imune ao TZ do host.
+ */
 function weekdayOf(localDate: string, timeZone: string): number {
-  return new TZDate(new Date(`${localDate}T00:00:00`), timeZone).getDay()
+  const [year, month, day] = localDate.split("-").map(Number)
+  return new TZDate(year, month - 1, day, timeZone).getDay()
 }
 
 /**
@@ -454,8 +467,12 @@ export function CalendarEditor({
       button: "left" | "right",
       anchor: MenuAnchor,
     ) => {
+      // Mesma correção zone-aware do `weekdayOf` (CR-01): ancorar a data no fuso da
+      // clínica a partir dos componentes, nunca via `new Date(\`...T00:00:00\`)` (que
+      // parseia no TZ do host e recua um dia num host UTC).
+      const [year, month, day] = localDate.split("-").map(Number)
       const weekdayLabel = format(
-        new TZDate(new Date(`${localDate}T00:00:00`), timeZone),
+        new TZDate(year, month - 1, day, timeZone),
         "EEEE",
         { locale: ptBR },
       )
