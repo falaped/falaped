@@ -7,6 +7,8 @@ import { createClient } from "@/lib/supabase/server"
 import { getAuthenticatedUser } from "@/modules/supabase/get-authenticated-user"
 import { listAvailabilityRules } from "@/modules/availability/list-availability-rules"
 import { listAvailabilityOverrides } from "@/modules/availability/list-availability-overrides"
+import { listAppointmentsByProfileId } from "@/modules/appointments/list-appointments-by-profile-id"
+import { getPatientsByProfileId } from "@/modules/patients/get-patients-by-profile-id"
 import {
   expandAvailability,
   type AvailabilityBand,
@@ -35,16 +37,51 @@ export default async function AgendaPage() {
   // gate paid é regra de app e DEVE ficar aqui, igual aos actions.
   if (profile.status !== "paid") redirect("/dashboard/link-whatsapp")
 
-  const [ruleRows, overrideRows] = await Promise.all([
-    listAvailabilityRules(supabase, profile.id),
-    listAvailabilityOverrides(supabase, profile.id),
-  ])
-
   // Janela default = SEMANA, fuso da clínica, segunda→domingo (D-11).
   // Meio-aberta [weekStart, weekStart + 7d): a expansão compara com `< to`.
   const context = { in: tz(CLINIC_TIME_ZONE) }
   const weekStart = startOfWeek(new Date(), { ...context, weekStartsOn: 1 })
   const weekEnd = addDays(weekStart, 7, context)
+
+  // Carrega disponibilidade + consultas da janela + pacientes do perfil EM
+  // PARALELO (mesmo gate auth+paid + escopo profile_id do RSC). Se a lista de
+  // consultas falhar, a agenda mostra a copy de erro do UI-SPEC.
+  let appointmentRows: Awaited<
+    ReturnType<typeof listAppointmentsByProfileId>
+  > = []
+  let appointmentsLoadError: string | null = null
+  const [ruleRows, overrideRows, patients] = await Promise.all([
+    listAvailabilityRules(supabase, profile.id),
+    listAvailabilityOverrides(supabase, profile.id),
+    getPatientsByProfileId(supabase, profile.id),
+  ])
+  try {
+    appointmentRows = await listAppointmentsByProfileId(
+      supabase,
+      profile.id,
+      weekStart,
+      weekEnd,
+    )
+  } catch {
+    appointmentsLoadError =
+      "Não foi possível carregar as consultas. Atualize a página para tentar novamente."
+  }
+
+  // Enriquecer as linhas de consulta com nome/responsável do paciente (join
+  // client-side via mapa; a busca do dialog reusa a mesma lista de pacientes).
+  const patientById = new Map(patients.map((p) => [p.id, p]))
+  const editorAppointments = appointmentRows.map((row) => {
+    const patient = patientById.get(row.patient_id)
+    return {
+      id: row.id,
+      patient_id: row.patient_id,
+      status: row.status,
+      starts_at: row.starts_at,
+      ends_at: row.ends_at,
+      patient_name: patient?.name ?? "Paciente",
+      patient_responsible: patient?.responsible ?? null,
+    }
+  })
 
   // Mapear snake_case (DB) → camelCase (fn pura). A fn é agnóstica de storage.
   const bands: AvailabilityBand[] = ruleRows.map((row) => ({
@@ -106,9 +143,17 @@ export default async function AgendaPage() {
 
       <Separator />
 
+      {appointmentsLoadError ? (
+        <p className="rounded-lg border border-destructive/40 bg-destructive/10 p-3 text-sm text-destructive">
+          {appointmentsLoadError}
+        </p>
+      ) : null}
+
       <CalendarEditor
         rules={editorRules}
         overrides={editorOverrides}
+        appointments={editorAppointments}
+        patients={patients}
         timeZone={CLINIC_TIME_ZONE}
       />
     </div>

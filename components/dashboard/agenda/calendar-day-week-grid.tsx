@@ -1,8 +1,16 @@
 "use client"
 
 import * as React from "react"
+import {
+  CalendarCheck,
+  CalendarX,
+  Check,
+  Clock,
+  UserX,
+} from "lucide-react"
 
 import { cn } from "@/lib/utils"
+import type { AppointmentStatus } from "@/modules/appointments/types"
 
 /** Passo de 30 min por célula (D-03). */
 export const STEP = 30
@@ -33,6 +41,81 @@ const DAY_LABELS = ["Seg", "Ter", "Qua", "Qui", "Sex", "Sáb", "Dom"]
 
 /** Estado por célula derivado das grades disponível/folga. */
 export type CellState = "available" | "off" | "empty"
+
+/**
+ * Consulta que ocupa exatamente uma célula (D-01). O pai resolve o status e a
+ * identificação a partir da linha crua (starts_at UTC → célula no fuso da clínica),
+ * incluindo a precedência ativo>histórico num horário re-marcado (D-07).
+ */
+export type CellAppointment = {
+  /** id da consulta (para a transição de status). */
+  id: string
+  status: AppointmentStatus
+  /** Nome do paciente (para o rótulo curto in-grid e o detalhe). */
+  patientName: string
+  responsible: string | null
+  /** Rótulo PT-BR da data/horário (para o detalhe). */
+  dateLabel: string
+  timeLabel: string
+  /** Status corrente (para o compare-and-set nas transições). */
+}
+
+/**
+ * Contrato visual dos 5 status (07-UI-SPEC §Appointment status color system).
+ * Cada status = fill/border + ícone lucide + variante de badge. Tokens oklch —
+ * sem hex/rgb. `hatch` marca a Cancelada (overlay de gradiente repetido real).
+ */
+export const APPOINTMENT_STATUS_STYLE: Record<
+  AppointmentStatus,
+  {
+    /** Classe de fill+border da célula. */
+    cell: string
+    /** Ícone lucide do status. */
+    Icon: React.ComponentType<{ className?: string }>
+    /** Rótulo PT-BR do status. */
+    label: string
+    /** Aplica strikethrough no nome (Cancelada). */
+    strike: boolean
+    /** Aplica a hachura diagonal (Cancelada). */
+    hatch: boolean
+  }
+> = {
+  pending: {
+    cell: "bg-primary/10 border border-dashed border-primary/60 text-primary",
+    Icon: Clock,
+    label: "Pendente",
+    strike: false,
+    hatch: false,
+  },
+  confirmed: {
+    cell: "bg-primary/70 border border-primary text-primary-foreground",
+    Icon: CalendarCheck,
+    label: "Confirmada",
+    strike: false,
+    hatch: false,
+  },
+  done: {
+    cell: "bg-muted border border-border text-muted-foreground",
+    Icon: Check,
+    label: "Realizada",
+    strike: false,
+    hatch: false,
+  },
+  no_show: {
+    cell: "bg-destructive/10 border border-destructive/40 text-destructive",
+    Icon: UserX,
+    label: "Falta",
+    strike: false,
+    hatch: false,
+  },
+  canceled: {
+    cell: "bg-muted border border-border text-muted-foreground",
+    Icon: CalendarX,
+    label: "Cancelada",
+    strike: true,
+    hatch: true,
+  },
+}
 
 export type DayColumn = {
   /** Data local "YYYY-MM-DD". */
@@ -80,13 +163,22 @@ export function CalendarDayWeekGrid({
   days,
   minuteRows,
   cellStateOf,
+  appointmentOf,
   onDragSelect,
   onCellMenu,
+  onAppointmentCreate,
+  onAppointmentSelect,
 }: {
   days: DayColumn[]
   minuteRows: number[]
   /** Estado atual de uma célula (available/off/empty) no draft. */
   cellStateOf: (localDate: string, minute: number) => CellState
+  /**
+   * Consulta ATIVA/histórica exibida numa célula (D-07: ativo vence histórico).
+   * `null` = célula sem consulta. Opcional: quando ausente, a grade é só de
+   * disponibilidade (Fase 6).
+   */
+  appointmentOf?: (localDate: string, minute: number) => CellAppointment | null
   /**
    * Arraste concluído: cria disponibilidade para [startMinute, endMinute) da
    * coluna-dia `localDate` (intervalo meio-aberto; `endMinute` = último + STEP).
@@ -101,6 +193,21 @@ export function CalendarDayWeekGrid({
     localDate: string,
     minute: number,
     button: "left" | "right",
+    anchor: MenuAnchor,
+  ) => void
+  /**
+   * Clique esquerdo num slot LIVRE (available) SEM consulta → abre "Nova consulta"
+   * (regra de desambiguação: slot livre → criação; célula vazia → menu Fase 6).
+   * O clique alcança a criação SEM desvio de modo.
+   */
+  onAppointmentCreate?: (
+    localDate: string,
+    minute: number,
+    anchor: MenuAnchor,
+  ) => void
+  /** Clique num slot com consulta → abre o detalhe/menu de transição no pai. */
+  onAppointmentSelect?: (
+    appointment: CellAppointment,
     anchor: MenuAnchor,
   ) => void
 }) {
@@ -199,11 +306,20 @@ export function CalendarDayWeekGrid({
       // Intervalo meio-aberto [lo, hi + STEP) — inclui a última célula tocada.
       onDragSelect(gesture.localDate, lo, hi + STEP)
     } else {
-      // Clique puro (sem arraste) → menu "Disponibilidade" ancorado no ponto.
-      onCellMenu(localDate, minute, "left", {
-        x: event.clientX,
-        y: event.clientY,
-      })
+      // Clique puro (sem arraste). Desambiguação (07-UI-SPEC §1):
+      //  - célula COM consulta → abre o detalhe/menu de transição;
+      //  - slot LIVRE (available) SEM consulta → abre "Nova consulta" DIRETO;
+      //  - célula vazia → mantém o menu "Disponibilidade" da Fase 6.
+      const anchor = { x: event.clientX, y: event.clientY }
+      const appointment = appointmentOf?.(localDate, minute) ?? null
+      const state = cellStateOf(localDate, minute)
+      if (appointment && onAppointmentSelect) {
+        onAppointmentSelect(appointment, anchor)
+      } else if (state === "available" && onAppointmentCreate) {
+        onAppointmentCreate(localDate, minute, anchor)
+      } else {
+        onCellMenu(localDate, minute, "left", anchor)
+      }
     }
     clearGesture()
   }
@@ -264,6 +380,10 @@ export function CalendarDayWeekGrid({
             {days.map((day) => {
               const state = cellStateOf(day.localDate, minute)
               const previewed = isPreviewed(day.localDate, minute)
+              const appointment = appointmentOf?.(day.localDate, minute) ?? null
+              const style = appointment
+                ? APPOINTMENT_STATUS_STYLE[appointment.status]
+                : null
               return (
                 <div
                   key={dateCellKey(day.localDate, minute)}
@@ -274,14 +394,18 @@ export function CalendarDayWeekGrid({
                 >
                   <button
                     type="button"
-                    aria-label={`${minutesToLabel(minute)} — ${
-                      state === "available"
-                        ? "disponível"
-                        : state === "off"
-                          ? "folga"
-                          : "vazio"
-                    } (clique para disponibilidade, botão direito para folga)`}
-                    aria-pressed={state !== "empty"}
+                    aria-label={
+                      appointment && style
+                        ? `${minutesToLabel(minute)} — ${style.label}: ${appointment.patientName}`
+                        : `${minutesToLabel(minute)} — ${
+                            state === "available"
+                              ? "disponível (clique para agendar uma consulta)"
+                              : state === "off"
+                                ? "folga"
+                                : "vazio"
+                          } (botão direito para folga)`
+                    }
+                    aria-pressed={state !== "empty" || appointment !== null}
                     onPointerDown={(event) =>
                       handlePointerDown(event, day.localDate, minute)
                     }
@@ -296,14 +420,39 @@ export function CalendarDayWeekGrid({
                       handleContextMenu(event, day.localDate, minute)
                     }
                     className={cn(
-                      "h-full w-full transition-colors",
-                      state === "available" &&
+                      "relative flex h-full w-full items-center gap-1 overflow-hidden px-1 text-left transition-colors",
+                      // Sem consulta → tratamento de disponibilidade (Fase 6).
+                      !appointment && state === "available" &&
                         "bg-primary/25 hover:bg-primary/35",
-                      state === "off" && "bg-muted hover:bg-muted/80",
-                      state === "empty" && "hover:bg-muted",
+                      !appointment && state === "off" &&
+                        "bg-muted hover:bg-muted/80",
+                      !appointment && state === "empty" && "hover:bg-muted",
+                      // Com consulta → tratamento de status (07-UI-SPEC).
+                      style?.cell,
                       previewed && "ring-2 ring-inset ring-primary bg-primary/40",
                     )}
-                  />
+                  >
+                    {appointment && style ? (
+                      <>
+                        {/* Hachura diagonal real (Cancelada) — token-only. */}
+                        {style.hatch ? (
+                          <span
+                            aria-hidden
+                            className="pointer-events-none absolute inset-0 opacity-40 [background-image:repeating-linear-gradient(45deg,var(--color-muted-foreground)_0,var(--color-muted-foreground)_1px,transparent_1px,transparent_6px)]"
+                          />
+                        ) : null}
+                        <style.Icon className="relative size-3 shrink-0" />
+                        <span
+                          className={cn(
+                            "relative truncate text-xs",
+                            style.strike && "line-through",
+                          )}
+                        >
+                          {appointment.patientName}
+                        </span>
+                      </>
+                    ) : null}
+                  </button>
                 </div>
               )
             })}

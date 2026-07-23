@@ -39,11 +39,23 @@ import {
   DAY_END,
   STEP,
   minutesToLabel,
+  type CellAppointment,
   type CellState,
   type DayColumn,
   type MenuAnchor,
 } from "./calendar-day-week-grid"
 import { CalendarMonthIndicator } from "./calendar-month-indicator"
+import {
+  AppointmentCreateDialog,
+  type CreateTarget,
+} from "./appointment-create-dialog"
+import {
+  PendingRequestsPanel,
+  type PendingRequest,
+} from "./pending-requests-panel"
+import { AppointmentDetailMenu } from "./appointment-detail-menu"
+import type { AppointmentStatus } from "@/modules/appointments/types"
+import type { Patient } from "@/modules/patients/types"
 
 /** Linha crua de rule (snake_case, espelha o DB / Plano 01). */
 type RuleRow = {
@@ -66,7 +78,30 @@ type OverrideRow = {
 
 type ByDay = Record<string, { freeSlotCount: number; hasAvailability: boolean }>
 
+/**
+ * Linha crua de consulta (snake_case, espelha o DB / Plano 01-02) já enriquecida
+ * com o nome/responsável do paciente pelo RSC. starts_at/ends_at são ISO UTC.
+ */
+export type AppointmentRow = {
+  id: string
+  patient_id: string
+  status: AppointmentStatus
+  starts_at: string
+  ends_at: string
+  patient_name: string
+  patient_responsible: string | null
+}
+
 const DAY_LABELS_MON_FIRST = ["Seg", "Ter", "Qua", "Qui", "Sex", "Sáb", "Dom"]
+
+/** Precedência de exibição num horário re-marcado (D-07): ativo vence histórico. */
+const STATUS_PRECEDENCE: Record<AppointmentStatus, number> = {
+  pending: 4,
+  confirmed: 5,
+  done: 2,
+  no_show: 2,
+  canceled: 1,
+}
 
 /** É sábado (6) ou domingo (0)? A grade de edição é só Seg–Sex. */
 function isWeekend(date: Date): boolean {
@@ -230,10 +265,16 @@ function weekdayOf(localDate: string, timeZone: string): number {
 export function CalendarEditor({
   rules,
   overrides,
+  appointments = [],
+  patients = [],
   timeZone,
 }: {
   rules: RuleRow[]
   overrides: OverrideRow[]
+  /** Consultas da janela visível (todos os status, D-07). */
+  appointments?: AppointmentRow[]
+  /** Pacientes do perfil para a busca no dialog de criação (D-04). */
+  patients?: Patient[]
   timeZone: string
 }) {
   const context = React.useMemo(() => ({ in: tz(timeZone) }), [timeZone])
@@ -328,6 +369,149 @@ export function CalendarEditor({
       return "empty"
     },
     [draft, timeZone],
+  )
+
+  // ---------- consultas: mapa célula → consulta (D-07) ----------
+
+  /**
+   * Deriva a data local (YYYY-MM-DD) e o minuto-do-dia de um instante UTC no
+   * fuso da CLÍNICA — casa com como a grade indexa as células (weekdayOf/localDate
+   * já ancorados no zone). `starts_at` é o instante gravado por expandAvailability.
+   */
+  const cellKeyOfInstant = React.useCallback(
+    (isoUtc: string): { localDate: string; minute: number } => {
+      const localDate = format(new Date(isoUtc), "yyyy-MM-dd", context)
+      const hh = Number(format(new Date(isoUtc), "HH", context))
+      const mm = Number(format(new Date(isoUtc), "mm", context))
+      return { localDate, minute: hh * 60 + mm }
+    },
+    [context],
+  )
+
+  /** Rótulos PT-BR de data/horário de um instante (para dialog/detalhe/pedidos). */
+  const labelsOfInstant = React.useCallback(
+    (isoUtc: string) => ({
+      dateLabel: format(new Date(isoUtc), "dd/MM", { ...context, locale: ptBR }),
+      dateLongLabel: format(new Date(isoUtc), "EEEE, dd 'de' MMMM", {
+        ...context,
+        locale: ptBR,
+      }),
+      timeLabel: format(new Date(isoUtc), "HH:mm", context),
+    }),
+    [context],
+  )
+
+  /** Mapa "localDate:minute" → consulta exibida (ativo vence histórico, D-07). */
+  const appointmentByCell = React.useMemo(() => {
+    const map = new Map<string, CellAppointment>()
+    for (const appt of appointments) {
+      const { localDate, minute } = cellKeyOfInstant(appt.starts_at)
+      const key = `${localDate}:${minute}`
+      const labels = labelsOfInstant(appt.starts_at)
+      const candidate: CellAppointment = {
+        id: appt.id,
+        status: appt.status,
+        patientName: appt.patient_name,
+        responsible: appt.patient_responsible,
+        dateLabel: labels.dateLabel,
+        timeLabel: labels.timeLabel,
+      }
+      const existing = map.get(key)
+      if (
+        !existing ||
+        STATUS_PRECEDENCE[candidate.status] > STATUS_PRECEDENCE[existing.status]
+      ) {
+        map.set(key, candidate)
+      }
+    }
+    return map
+  }, [appointments, cellKeyOfInstant, labelsOfInstant])
+
+  const appointmentOf = React.useCallback(
+    (localDate: string, minute: number): CellAppointment | null =>
+      appointmentByCell.get(`${localDate}:${minute}`) ?? null,
+    [appointmentByCell],
+  )
+
+  /** Fila de pedidos pendentes (APPT-03) — ordenada por horário. */
+  const pendingRequests = React.useMemo<PendingRequest[]>(() => {
+    return appointments
+      .filter((a) => a.status === "pending")
+      .sort((a, b) => a.starts_at.localeCompare(b.starts_at))
+      .map((a) => {
+        const labels = labelsOfInstant(a.starts_at)
+        return {
+          id: a.id,
+          patientName: a.patient_name,
+          responsible: a.patient_responsible,
+          dateLabel: labels.dateLabel,
+          timeLabel: labels.timeLabel,
+        }
+      })
+  }, [appointments, labelsOfInstant])
+
+  // Dialog de criação: slot alvo (null = fechado).
+  const [createTarget, setCreateTarget] = React.useState<CreateTarget | null>(
+    null,
+  )
+  // Detalhe/menu de transição: consulta selecionada + âncora do clique.
+  const [detail, setDetail] = React.useState<{
+    appointment: CellAppointment
+    anchor: MenuAnchor
+  } | null>(null)
+
+  /**
+   * Duração do slot (min) da faixa recorrente que contém `minute` no `weekday`,
+   * senão o default. Usado para derivar o endsAt do slot clicado (D-01: 1 célula).
+   */
+  const slotMinutesFor = React.useCallback(
+    (weekday: number, minute: number): number => {
+      let slot = slotMinutes
+      for (const key of Object.keys(draft.ruleDurations)) {
+        const [wd, bandStart] = key.split(":").map(Number)
+        if (wd === weekday && bandStart <= minute) slot = draft.ruleDurations[key]
+      }
+      return slot
+    },
+    [draft.ruleDurations, slotMinutes],
+  )
+
+  /**
+   * Constrói o alvo de criação (instantes ISO UTC + rótulos) a partir de uma
+   * célula LIVRE clicada. A meia-noite local é ancorada no fuso da clínica via
+   * TZDate a partir dos componentes (correção CR-01) e o wall-clock do minuto é
+   * somado; espelha como o servidor expande o FreeSlot (start/end UTC).
+   */
+  const buildCreateTarget = React.useCallback(
+    (localDate: string, minute: number): CreateTarget => {
+      const [year, month, day] = localDate.split("-").map(Number)
+      const hours = Math.floor(minute / 60)
+      const minutes = minute % 60
+      const startDate = new TZDate(
+        year,
+        month - 1,
+        day,
+        hours,
+        minutes,
+        0,
+        0,
+        timeZone,
+      )
+      const weekday = weekdayOf(localDate, timeZone)
+      const slot = slotMinutesFor(weekday, minute)
+      const startIso = new Date(startDate.getTime()).toISOString()
+      const endIso = new Date(
+        startDate.getTime() + slot * 60_000,
+      ).toISOString()
+      const labels = labelsOfInstant(startIso)
+      return {
+        startsAt: startIso,
+        endsAt: endIso,
+        dateLabel: labels.dateLongLabel,
+        timeLabel: labels.timeLabel,
+      }
+    },
+    [labelsOfInstant, slotMinutesFor, timeZone],
   )
 
   // ---------- mutações ADITIVAS do draft ----------
@@ -480,6 +664,22 @@ export function CalendarEditor({
       setMenu({ kind: button === "left" ? "available" : "off", target })
     },
     [timeZone],
+  )
+
+  /** Clique num slot LIVRE → abre "Nova consulta" direto (sem desvio de modo). */
+  const handleAppointmentCreate = React.useCallback(
+    (localDate: string, minute: number) => {
+      setCreateTarget(buildCreateTarget(localDate, minute))
+    },
+    [buildCreateTarget],
+  )
+
+  /** Clique num slot COM consulta → abre o detalhe/menu de transição. */
+  const handleAppointmentSelect = React.useCallback(
+    (appointment: CellAppointment, anchor: MenuAnchor) => {
+      setDetail({ appointment, anchor })
+    },
+    [],
   )
 
   // ---------- ações do menu ----------
@@ -877,33 +1077,54 @@ export function CalendarEditor({
 
       {/* Dica de interação (substitui o antigo painel de instruções). */}
       <p className="text-xs text-muted-foreground">
-        Clique numa célula para{" "}
-        <span className="font-medium text-foreground">disponibilidade</span> ou
-        arraste para marcar um período; botão direito para{" "}
-        <span className="font-medium text-foreground">folga</span>. Verde =
-        disponível.
+        Clique num horário livre (azul) para{" "}
+        <span className="font-medium text-foreground">agendar uma consulta</span>{" "}
+        ou arraste numa célula vazia para marcar{" "}
+        <span className="font-medium text-foreground">disponibilidade</span>;
+        botão direito para{" "}
+        <span className="font-medium text-foreground">folga</span>.
       </p>
 
       {/* ---------- DIA ---------- */}
       <TabsContent value="dia" className="flex flex-col gap-4">
-        <CalendarDayWeekGrid
-          days={dayColumns([dayCursor])}
-          minuteRows={minuteRows}
-          cellStateOf={cellStateOf}
-          onDragSelect={handleDragSelect}
-          onCellMenu={handleCellMenu}
-        />
+        <div className="flex flex-col gap-6 lg:flex-row">
+          <div className="min-w-0 flex-1">
+            <CalendarDayWeekGrid
+              days={dayColumns([dayCursor])}
+              minuteRows={minuteRows}
+              cellStateOf={cellStateOf}
+              appointmentOf={appointmentOf}
+              onDragSelect={handleDragSelect}
+              onCellMenu={handleCellMenu}
+              onAppointmentCreate={handleAppointmentCreate}
+              onAppointmentSelect={handleAppointmentSelect}
+            />
+          </div>
+          <div className="w-full lg:w-80 lg:shrink-0">
+            <PendingRequestsPanel requests={pendingRequests} />
+          </div>
+        </div>
       </TabsContent>
 
       {/* ---------- SEMANA ---------- */}
       <TabsContent value="semana" className="flex flex-col gap-4">
-        <CalendarDayWeekGrid
-          days={dayColumns(weekDays)}
-          minuteRows={minuteRows}
-          cellStateOf={cellStateOf}
-          onDragSelect={handleDragSelect}
-          onCellMenu={handleCellMenu}
-        />
+        <div className="flex flex-col gap-6 lg:flex-row">
+          <div className="min-w-0 flex-1">
+            <CalendarDayWeekGrid
+              days={dayColumns(weekDays)}
+              minuteRows={minuteRows}
+              cellStateOf={cellStateOf}
+              appointmentOf={appointmentOf}
+              onDragSelect={handleDragSelect}
+              onCellMenu={handleCellMenu}
+              onAppointmentCreate={handleAppointmentCreate}
+              onAppointmentSelect={handleAppointmentSelect}
+            />
+          </div>
+          <div className="w-full lg:w-80 lg:shrink-0">
+            <PendingRequestsPanel requests={pendingRequests} />
+          </div>
+        </div>
       </TabsContent>
 
       {/* ---------- MÊS (indicador, D-18) ---------- */}
@@ -934,6 +1155,24 @@ export function CalendarEditor({
         onScopeChange={setScope}
         onWholeDay={handleMenuWholeDay}
         onPeriod={handleMenuPeriod}
+      />
+
+      {/* Dialog de criação de consulta (clique num slot livre). */}
+      <AppointmentCreateDialog
+        target={createTarget}
+        patients={patients}
+        onOpenChange={(open) => {
+          if (!open) setCreateTarget(null)
+        }}
+      />
+
+      {/* Detalhe + menu de transição de status (clique numa consulta). */}
+      <AppointmentDetailMenu
+        appointment={detail?.appointment ?? null}
+        anchor={detail?.anchor ?? null}
+        onOpenChange={(open) => {
+          if (!open) setDetail(null)
+        }}
       />
 
       {/* Guarda de descarte (D-17). */}
