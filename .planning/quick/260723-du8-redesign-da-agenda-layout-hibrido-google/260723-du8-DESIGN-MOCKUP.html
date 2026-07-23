@@ -1,0 +1,575 @@
+<title>Agenda Falaped — Inspiração de design</title>
+<style>
+  :root{
+    --bg: oklch(0.985 0.004 255);
+    --surface: oklch(1 0 0);
+    --surface-2: oklch(0.985 0.004 255);
+    --ink: oklch(0.24 0.02 260);
+    --ink-soft: oklch(0.44 0.02 260);
+    --muted: oklch(0.58 0.015 260);
+    --faint: oklch(0.72 0.01 260);
+    --line: oklch(0.915 0.006 260);
+    --line-soft: oklch(0.945 0.005 260);
+
+    --brand: oklch(0.58 0.11 255);
+    --brand-strong: oklch(0.52 0.115 255);
+    --brand-tint: oklch(0.955 0.028 255);
+
+    /* status — derivado SÓ dos tokens Falaped: --primary (azul 255), --muted (cinza), --destructive (vermelho 27) */
+    --pend: oklch(0.7603 0.0916 255.41);   /* --primary (token) */
+    --pend-tint: oklch(0.965 0.03 255);
+    --conf: oklch(0.55 0.12 255);          /* primary, passo com contraste p/ texto branco */
+    --conf-tint: oklch(0.95 0.035 255);
+    --done: oklch(0.556 0 0);              /* --muted-foreground (token) */
+    --done-tint: oklch(0.968 0 0);         /* ~ --muted (token) */
+    --miss: oklch(0.58 0.22 27);           /* --destructive (token) */
+    --miss-tint: oklch(0.955 0.05 27);
+    --canc: oklch(0.64 0.008 260);
+    --canc-tint: oklch(0.965 0.004 260);
+
+    --now: oklch(0.6 0.2 26);
+
+    --radius: 14px;
+    --hour-h: 54px;
+    --shadow: 0 1px 2px oklch(0.2 0.03 260 / 0.05), 0 12px 40px oklch(0.2 0.05 260 / 0.10);
+    font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+  }
+
+  *{ box-sizing:border-box; }
+
+  .fp-page{
+    background:
+      radial-gradient(1200px 600px at 80% -10%, oklch(0.95 0.03 255 / 0.55), transparent 60%),
+      var(--bg);
+    color: var(--ink);
+    min-height:100%;
+    padding: clamp(20px, 4vw, 56px) clamp(14px, 4vw, 56px) 64px;
+    -webkit-font-smoothing: antialiased;
+  }
+  .fp-wrap{ max-width: 1180px; margin:0 auto; }
+
+  /* ---------- intro ---------- */
+  .fp-eyebrow{
+    display:inline-flex; align-items:center; gap:8px;
+    font-size:12px; font-weight:600; letter-spacing:.09em; text-transform:uppercase;
+    color: var(--brand-strong);
+  }
+  .fp-eyebrow::before{ content:""; width:20px; height:1.5px; background: var(--brand); border-radius:2px; }
+  .fp-h1{
+    margin:14px 0 8px; font-size: clamp(26px, 4.2vw, 40px); font-weight:680;
+    letter-spacing:-0.02em; line-height:1.05; text-wrap:balance; max-width:20ch;
+  }
+  .fp-lede{ margin:0 0 4px; color: var(--ink-soft); font-size:16px; line-height:1.55; max-width:62ch; }
+  .fp-lede b{ color: var(--ink); font-weight:600; }
+
+  /* ---------- window ---------- */
+  .fp-window{
+    margin-top:30px; background: var(--surface); border:1px solid var(--line);
+    border-radius: 18px; box-shadow: var(--shadow); overflow:hidden;
+  }
+  .fp-titlebar{
+    display:flex; align-items:center; gap:14px; padding:12px 16px;
+    border-bottom:1px solid var(--line); background: var(--surface-2);
+  }
+  .fp-dots{ display:flex; gap:7px; }
+  .fp-dots span{ width:11px; height:11px; border-radius:50%; background: var(--line); }
+  .fp-dots span:nth-child(1){ background: oklch(0.72 0.17 25); }
+  .fp-dots span:nth-child(2){ background: oklch(0.83 0.13 85); }
+  .fp-dots span:nth-child(3){ background: oklch(0.78 0.13 150); }
+  .fp-brand{ display:flex; align-items:center; gap:9px; font-weight:640; letter-spacing:-0.01em; }
+  .fp-brand .mark{
+    width:22px; height:22px; border-radius:7px; display:grid; place-items:center;
+    background: linear-gradient(150deg, var(--brand), var(--brand-strong)); color:#fff; font-size:13px; font-weight:700;
+  }
+  .fp-brand small{ color: var(--faint); font-weight:500; }
+
+  /* ---------- toolbar ---------- */
+  .fp-toolbar{
+    display:flex; align-items:center; gap:16px; flex-wrap:wrap;
+    padding:16px 20px; border-bottom:1px solid var(--line);
+  }
+  .fp-month{ font-size:19px; font-weight:660; letter-spacing:-0.015em; min-width:150px; }
+  .fp-month b{ font-weight:700; }
+  .fp-month span{ color: var(--faint); font-weight:500; }
+  .fp-nav{ display:flex; align-items:center; gap:6px; }
+  .fp-nav button, .fp-today{
+    height:34px; border:1px solid var(--line); background: var(--surface);
+    border-radius:9px; color: var(--ink-soft); cursor:pointer; font:inherit; font-weight:560;
+  }
+  .fp-nav button{ width:34px; display:grid; place-items:center; font-size:15px; }
+  .fp-today{ padding:0 14px; }
+  .fp-nav button:hover, .fp-today:hover{ background: var(--surface-2); color: var(--ink); border-color: var(--faint); }
+
+  .fp-seg{
+    margin-left:auto; display:inline-flex; padding:3px; gap:2px;
+    background: var(--surface-2); border:1px solid var(--line); border-radius:11px;
+  }
+  .fp-seg button{
+    border:0; background:transparent; font:inherit; font-weight:560; font-size:13.5px;
+    color: var(--muted); padding:6px 15px; border-radius:8px; cursor:pointer;
+  }
+  .fp-seg button[aria-pressed="true"]{
+    background: var(--surface); color: var(--ink);
+    box-shadow: 0 1px 2px oklch(0.2 0 0 / 0.08); font-weight:620;
+  }
+  .fp-cta{
+    display:inline-flex; align-items:center; gap:7px; height:36px; padding:0 15px;
+    border:0; border-radius:10px; cursor:pointer; font:inherit; font-weight:600; font-size:13.5px;
+    color:#fff; background: linear-gradient(150deg, var(--brand), var(--brand-strong));
+    box-shadow: 0 1px 2px oklch(0.4 0.12 255 / 0.35);
+  }
+  .fp-cta:hover{ filter:saturate(1.08) brightness(1.03); }
+  .fp-cta svg{ width:15px; height:15px; }
+
+  /* ---------- body split ---------- */
+  .fp-body{ display:grid; grid-template-columns: 1fr 332px; }
+  @media (max-width: 940px){ .fp-body{ grid-template-columns:1fr; } }
+
+  /* ---------- week grid ---------- */
+  .fp-cal{ padding:8px 4px 14px 0; overflow-x:auto; }
+  .fp-daynames{
+    display:grid; grid-template-columns: 52px repeat(5, 1fr);
+    border-bottom:1px solid var(--line); position:sticky; top:0; background:var(--surface); z-index:3;
+  }
+  .fp-daynames .cell{ padding:10px 8px 12px; text-align:center; }
+  .fp-daynames .cell .dow{ font-size:11px; font-weight:600; letter-spacing:.05em; text-transform:uppercase; color: var(--muted); }
+  .fp-daynames .cell .dnum{
+    font-size:19px; font-weight:640; margin-top:3px; letter-spacing:-0.01em;
+    font-variant-numeric: tabular-nums;
+  }
+  .fp-daynames .today .dow{ color: var(--brand-strong); }
+  .fp-daynames .today .dnum{
+    color:#fff; background: var(--brand); width:30px; height:30px; line-height:30px;
+    border-radius:50%; display:inline-block; margin-top:1px;
+  }
+  .fp-daynames .spacer{ border:0; }
+
+  .fp-grid{ display:grid; grid-template-columns: 52px repeat(5, 1fr); position:relative; }
+  .fp-times{ display:flex; flex-direction:column; }
+  .fp-times .t{
+    height:var(--hour-h); font-size:11px; font-variant-numeric:tabular-nums; color: var(--faint);
+    text-align:right; padding-right:9px; transform: translateY(-6px);
+  }
+  .fp-col{ position:relative; border-left:1px solid var(--line-soft); }
+  .fp-col.today{ background: linear-gradient(var(--brand-tint), transparent 55%); }
+  .fp-col .row{ height:var(--hour-h); border-bottom:1px solid var(--line-soft); }
+
+  /* now line */
+  .fp-now{ position:absolute; left:0; right:0; height:0; z-index:4; pointer-events:none; }
+  .fp-now::before{ content:""; position:absolute; left:-4px; top:-4px; width:8px; height:8px; border-radius:50%; background:var(--now); }
+  .fp-now::after{ content:""; position:absolute; left:0; right:0; top:0; height:1.5px; background:var(--now); }
+
+  /* events */
+  .fp-ev{
+    position:absolute; left:5px; right:5px; border-radius:9px; padding:6px 8px 5px;
+    font-size:12px; line-height:1.25; overflow:hidden; cursor:pointer;
+    border:1px solid transparent; transition: transform .12s ease, box-shadow .12s ease;
+  }
+  .fp-ev:hover{ transform: translateY(-1px); box-shadow: 0 6px 16px oklch(0.3 0.05 260 / 0.16); z-index:6; }
+  .fp-ev .who{ font-weight:640; letter-spacing:-0.01em; display:flex; align-items:center; gap:5px; }
+  .fp-ev .who svg{ width:12px; height:12px; flex:none; }
+  .fp-ev .when{ font-variant-numeric:tabular-nums; opacity:.85; margin-top:1px; font-size:11px; }
+
+  .ev-conf{ background: var(--conf); color:#fff; border-color: oklch(0.5 0.12 255); }
+  .ev-conf .when{ color: oklch(0.92 0.03 255); opacity:1; }
+  .ev-pend{ background: var(--pend-tint); color: oklch(0.42 0.1 255); border:1.5px dashed var(--pend); }
+  .ev-done{ background: var(--done-tint); color: var(--done); border-color: var(--line); }
+  .ev-miss{ background: var(--miss-tint); color: oklch(0.46 0.16 26); border-color: oklch(0.85 0.08 26); }
+  .ev-canc{
+    background: var(--canc-tint); color: var(--muted); border-color: var(--line);
+    background-image: repeating-linear-gradient(45deg, oklch(0.9 0.005 260 / 0.6) 0 5px, transparent 5px 10px);
+  }
+  .ev-canc .who{ text-decoration: line-through; text-decoration-thickness:1px; }
+
+  /* free-slot ghost (the one being booked) */
+  .fp-ghost{
+    position:absolute; left:5px; right:5px; border-radius:9px;
+    border:2px solid var(--brand); background: oklch(0.62 0.12 255 / 0.10);
+    display:flex; align-items:center; justify-content:center; gap:6px;
+    font-size:11.5px; font-weight:620; color: var(--brand-strong); z-index:5;
+  }
+  .fp-ghost svg{ width:13px; height:13px; }
+
+  /* ---------- month view ---------- */
+  .fp-cal[hidden], .fp-month-view[hidden]{ display:none; }
+  .fp-month-view{ padding:14px 18px 20px; }
+  .fp-mv-head{ display:grid; grid-template-columns:repeat(7,1fr); margin-bottom:6px; }
+  .fp-mv-head span{ font-size:11px; font-weight:600; letter-spacing:.05em; text-transform:uppercase; color: var(--muted); text-align:left; padding:0 4px; }
+  .fp-mv-grid{ display:grid; grid-template-columns:repeat(7,1fr); grid-auto-rows: 96px; border:1px solid var(--line); border-radius:12px; overflow:hidden; }
+  .fp-mv-cell{ border-right:1px solid var(--line-soft); border-bottom:1px solid var(--line-soft); padding:7px 8px; display:flex; flex-direction:column; gap:4px; }
+  .fp-mv-cell .num{ font-size:13px; font-weight:560; color: var(--ink-soft); font-variant-numeric:tabular-nums; }
+  .fp-mv-cell.out .num{ color: var(--faint); }
+  .fp-mv-cell.today .num{ color:#fff; background:var(--brand); width:24px; height:24px; line-height:24px; text-align:center; border-radius:50%; font-weight:640; }
+  .fp-pill{
+    font-size:11px; font-weight:560; border-radius:6px; padding:2px 6px; line-height:1.3;
+    white-space:nowrap; overflow:hidden; text-overflow:ellipsis; display:flex; align-items:center; gap:4px;
+  }
+  .fp-pill::before{ content:""; width:6px; height:6px; border-radius:50%; flex:none; }
+  .p-conf{ background: var(--conf-tint); color: oklch(0.4 0.1 255); }
+  .p-conf::before{ background: var(--conf); }
+  .p-pend{ background: var(--pend-tint); color: oklch(0.42 0.1 255); }
+  .p-pend::before{ background: var(--pend); }
+  .p-done{ background: var(--done-tint); color: oklch(0.42 0 0); }
+  .p-done::before{ background: var(--done); }
+  .fp-more{ font-size:11px; color: var(--muted); font-weight:500; padding-left:2px; }
+
+  /* ---------- booking rail (Calendly) ---------- */
+  .fp-rail{ border-left:1px solid var(--line); background: var(--surface-2); padding:18px 18px 20px; }
+  .fp-rail h2{ margin:0 0 2px; font-size:16px; font-weight:660; letter-spacing:-0.015em; }
+  .fp-rail .sub{ margin:0 0 14px; font-size:12.5px; color: var(--muted); }
+
+  .fp-mini{ background: var(--surface); border:1px solid var(--line); border-radius:12px; padding:12px; }
+  .fp-mini-top{ display:flex; align-items:center; justify-content:space-between; margin-bottom:8px; }
+  .fp-mini-top .m{ font-size:13px; font-weight:620; letter-spacing:-0.01em; }
+  .fp-mini-top button{ width:26px; height:26px; border:1px solid var(--line); background:var(--surface); border-radius:7px; cursor:pointer; color:var(--ink-soft); }
+  .fp-mini-top button:hover{ background: var(--surface-2); }
+  .fp-mini-grid{ display:grid; grid-template-columns:repeat(7,1fr); gap:2px; }
+  .fp-mini-grid .h{ font-size:10px; font-weight:600; color: var(--faint); text-align:center; padding-bottom:4px; text-transform:uppercase; }
+  .fp-day{
+    aspect-ratio:1; border:0; background:transparent; border-radius:50%; cursor:pointer;
+    font:inherit; font-size:12.5px; font-variant-numeric:tabular-nums; color: var(--ink);
+    display:grid; place-items:center; position:relative;
+  }
+  .fp-day.pastday{ color: var(--faint); cursor:default; }
+  .fp-day.avail{ background: var(--brand-tint); color: var(--brand-strong); font-weight:600; }
+  .fp-day.avail:hover{ background: oklch(0.9 0.05 255); }
+  .fp-day.sel{ background: var(--brand); color:#fff; font-weight:680; }
+  .fp-day.sel::after{ content:""; position:absolute; bottom:4px; width:3px; height:3px; border-radius:50%; background:#fff; }
+  .fp-day.empty{ visibility:hidden; }
+
+  .fp-field{ margin-top:16px; }
+  .fp-field label{ display:block; font-size:11px; font-weight:640; letter-spacing:.04em; text-transform:uppercase; color: var(--muted); margin-bottom:6px; }
+  .fp-search{
+    display:flex; align-items:center; gap:8px; height:40px; padding:0 12px;
+    background: var(--surface); border:1px solid var(--line); border-radius:10px;
+  }
+  .fp-search svg{ width:15px; height:15px; color: var(--faint); flex:none; }
+  .fp-search .picked{ display:flex; flex-direction:column; line-height:1.15; }
+  .fp-search .picked b{ font-size:13.5px; font-weight:600; letter-spacing:-0.01em; }
+  .fp-search .picked small{ font-size:11px; color: var(--muted); }
+  .fp-search .swap{ margin-left:auto; font-size:11.5px; color: var(--brand-strong); font-weight:600; cursor:pointer; }
+
+  .fp-chips{ display:flex; flex-wrap:wrap; gap:6px; }
+  .fp-chip{
+    border:1px solid var(--line); background:var(--surface); border-radius:999px; cursor:pointer;
+    font:inherit; font-size:12.5px; font-weight:560; padding:6px 12px; color: var(--ink-soft);
+    font-variant-numeric:tabular-nums;
+  }
+  .fp-chip[aria-pressed="true"]{ border-color: var(--brand); background: var(--brand-tint); color: var(--brand-strong); font-weight:640; }
+  .fp-chip:hover{ border-color: var(--faint); }
+
+  .fp-slots{ margin-top:8px; display:grid; gap:7px; max-height:196px; overflow-y:auto; padding-right:2px; }
+  .fp-slot{
+    height:42px; border:1.5px solid var(--brand); background: var(--surface); border-radius:10px;
+    color: var(--brand-strong); font:inherit; font-weight:660; font-size:14px; cursor:pointer;
+    font-variant-numeric:tabular-nums; letter-spacing:.01em;
+  }
+  .fp-slot:hover{ background: var(--brand-tint); }
+  .fp-slot[aria-pressed="true"]{ background: var(--brand); color:#fff; border-color: var(--brand); }
+
+  .fp-book{
+    margin-top:14px; width:100%; height:44px; border:0; border-radius:11px; cursor:pointer;
+    font:inherit; font-weight:680; font-size:14.5px; color:#fff;
+    background: linear-gradient(150deg, var(--brand), var(--brand-strong));
+    box-shadow: 0 2px 6px oklch(0.4 0.12 255 / 0.3);
+  }
+  .fp-book:hover{ filter: brightness(1.04); }
+  .fp-tz{ margin-top:10px; font-size:11.5px; color: var(--muted); display:flex; align-items:center; gap:6px; justify-content:center; }
+  .fp-tz svg{ width:13px; height:13px; }
+
+  /* ---------- legend ---------- */
+  .fp-legend{ margin-top:34px; }
+  .fp-legend h3{ font-size:13px; font-weight:600; letter-spacing:.06em; text-transform:uppercase; color: var(--muted); margin:0 0 14px; }
+  .fp-legend-grid{ display:grid; grid-template-columns:repeat(5,1fr); gap:12px; }
+  @media (max-width:820px){ .fp-legend-grid{ grid-template-columns:repeat(2,1fr); } }
+  .fp-lg{ background: var(--surface); border:1px solid var(--line); border-radius:12px; padding:14px; }
+  .fp-lg .swatch{ height:30px; border-radius:8px; margin-bottom:10px; display:flex; align-items:center; padding:0 9px; gap:6px; font-size:11.5px; font-weight:640; }
+  .fp-lg .swatch svg{ width:13px; height:13px; }
+  .fp-lg .name{ font-size:13.5px; font-weight:640; letter-spacing:-0.01em; }
+  .fp-lg .desc{ font-size:12px; color: var(--muted); margin-top:3px; line-height:1.45; }
+
+  .fp-foot{ margin-top:30px; font-size:12.5px; color: var(--faint); text-align:center; }
+
+  @media (prefers-reduced-motion: reduce){ *{ transition:none !important; } }
+  :focus-visible{ outline:2px solid var(--brand); outline-offset:2px; border-radius:8px; }
+</style>
+
+<div class="fp-page">
+  <div class="fp-wrap">
+
+    <p class="fp-eyebrow">Inspiração de design · Agenda Falaped</p>
+    <h1 class="fp-h1">Híbrido Google&nbsp;Agenda × Calendly</h1>
+    <p class="fp-lede">Uma <b>grade de tempo semanal</b> como no Google Agenda para o médico ler o dia num relance —
+      com um <b>trilho de agendamento fixo estilo Calendly</b> à direita para marcar em poucos cliques. As 5 fases da consulta
+      ficam legíveis usando <b>só os tokens Falaped</b> (primary azul, muted cinza, destructive vermelho): a distinção vem de
+      <b>forma + passo de tom on-token</b> — sólido vs. tracejado, hachura, ícone — não de cores inventadas.</p>
+
+    <div class="fp-window">
+      <!-- titlebar -->
+      <div class="fp-titlebar">
+        <div class="fp-dots"><span></span><span></span><span></span></div>
+        <div class="fp-brand">
+          <span class="mark">F</span> Falaped <small>· Agenda</small>
+        </div>
+      </div>
+
+      <!-- toolbar -->
+      <div class="fp-toolbar">
+        <div class="fp-month"><b>Julho</b> <span>2026</span></div>
+        <div class="fp-nav">
+          <button aria-label="Semana anterior">‹</button>
+          <button class="fp-today">Hoje</button>
+          <button aria-label="Próxima semana">›</button>
+        </div>
+        <div class="fp-seg" role="group" aria-label="Visão">
+          <button data-view="day" aria-pressed="false">Dia</button>
+          <button data-view="week" aria-pressed="true">Semana</button>
+          <button data-view="month" aria-pressed="false">Mês</button>
+        </div>
+        <button class="fp-cta">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+          Nova consulta
+        </button>
+      </div>
+
+      <!-- body -->
+      <div class="fp-body">
+        <div class="fp-main">
+          <!-- WEEK / DAY grid -->
+          <div class="fp-cal" id="calWeek">
+            <div class="fp-daynames" id="dayNames">
+              <div class="spacer"></div>
+              <div class="cell"><div class="dow">seg</div><div class="dnum">20</div></div>
+              <div class="cell"><div class="dow">ter</div><div class="dnum">21</div></div>
+              <div class="cell"><div class="dow">qua</div><div class="dnum">22</div></div>
+              <div class="cell today"><div class="dow">qui</div><div class="dnum">23</div></div>
+              <div class="cell"><div class="dow">sex</div><div class="dnum">24</div></div>
+            </div>
+            <div class="fp-grid" id="grid"><!-- filled by JS --></div>
+          </div>
+
+          <!-- MONTH view -->
+          <div class="fp-month-view" id="calMonth" hidden>
+            <div class="fp-mv-head"><span>seg</span><span>ter</span><span>qua</span><span>qui</span><span>sex</span><span>sáb</span><span>dom</span></div>
+            <div class="fp-mv-grid" id="monthGrid"><!-- filled by JS --></div>
+          </div>
+        </div>
+
+        <!-- RAIL -->
+        <aside class="fp-rail">
+          <h2>Nova consulta</h2>
+          <p class="sub">Escolha o dia, a duração e um horário livre.</p>
+
+          <div class="fp-mini">
+            <div class="fp-mini-top">
+              <button aria-label="Mês anterior">‹</button>
+              <div class="m">julho 2026</div>
+              <button aria-label="Próximo mês">›</button>
+            </div>
+            <div class="fp-mini-grid" id="mini"><!-- filled by JS --></div>
+          </div>
+
+          <div class="fp-field">
+            <label>Paciente</label>
+            <div class="fp-search">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+              <div class="picked"><b>Laura Nunes</b><small>responsável · Carla Nunes</small></div>
+              <span class="swap">trocar</span>
+            </div>
+          </div>
+
+          <div class="fp-field">
+            <label>Duração</label>
+            <div class="fp-chips" role="group" aria-label="Duração">
+              <button class="fp-chip">15</button>
+              <button class="fp-chip" aria-pressed="true">30&nbsp;min</button>
+              <button class="fp-chip">45</button>
+              <button class="fp-chip">60</button>
+              <button class="fp-chip">90</button>
+            </div>
+          </div>
+
+          <div class="fp-field">
+            <label>quinta-feira, 23 de julho</label>
+            <div class="fp-slots" id="slots"><!-- filled by JS --></div>
+          </div>
+
+          <button class="fp-book">Agendar consulta</button>
+          <div class="fp-tz">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a15 15 0 0 1 0 18M12 3a15 15 0 0 0 0 18"/></svg>
+            Horário de Brasília (09:40)
+          </div>
+        </aside>
+      </div>
+    </div>
+
+    <!-- legend -->
+    <div class="fp-legend">
+      <h3>Sistema de status — só tokens Falaped, leitura instantânea</h3>
+      <div class="fp-legend-grid" id="legend"></div>
+    </div>
+
+    <p class="fp-foot">Mockup de direção visual · não é o app em produção · tokens derivados da identidade Falaped (oklch, hue 255)</p>
+  </div>
+</div>
+
+<script>
+(function(){
+  var ICONS = {
+    clock:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>',
+    check:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>',
+    calcheck:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M3 9h18M8 2v4M16 2v4M9 15l2 2 4-4"/></svg>',
+    userx:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.4"/><path d="M3 20c0-3.3 2.7-6 6-6s6 2.7 6 6M17 9l4 4M21 9l-4 4"/></svg>',
+    calx:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M3 9h18M8 2v4M16 2v4M9.5 13.5l5 5M14.5 13.5l-5 5"/></svg>',
+    plus:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>'
+  };
+
+  var HOUR0 = 8, HOURS = 11, HH = 54; // 08:00 → 19:00
+  function top(h){ return (h - HOUR0) * HH; }
+
+  // events per column index (0=seg..4=sex)
+  var EVENTS = [
+    { col:0, start:9,    dur:0.75, cls:'ev-conf', icon:'calcheck', who:'Sofia Almeida',   when:'09:00 · confirmada' },
+    { col:0, start:11,   dur:0.5,  cls:'ev-pend', icon:'clock',    who:'Laura Nunes',     when:'11:00 · pendente' },
+    { col:1, start:8.5,  dur:0.5,  cls:'ev-done', icon:'check',    who:'Theo Ribeiro',    when:'08:30 · realizada' },
+    { col:1, start:14,   dur:0.5,  cls:'ev-miss', icon:'userx',    who:'Enzo Cardoso',    when:'14:00 · falta' },
+    { col:2, start:10,   dur:1,    cls:'ev-conf', icon:'calcheck', who:'Miguel Ferreira', when:'10:00 · confirmada' },
+    { col:2, start:16,   dur:0.5,  cls:'ev-canc', icon:'calx',     who:'Valentina Costa', when:'16:00 · cancelada' },
+    { col:3, start:9.5,  dur:0.75, cls:'ev-conf', icon:'calcheck', who:'Helena Martins',  when:'09:30 · confirmada' },
+    { col:3, start:15,   dur:0.5,  cls:'ev-pend', icon:'clock',    who:'Bento Araújo',    when:'15:00 · pendente' },
+    { col:4, start:11,   dur:0.5,  cls:'ev-conf', icon:'calcheck', who:'Antônio Melo',    when:'11:00 · confirmada' }
+  ];
+
+  var grid = document.getElementById('grid');
+  // time gutter
+  var times = document.createElement('div'); times.className='fp-times';
+  for(var h=0; h<=HOURS; h++){
+    var t=document.createElement('div'); t.className='t';
+    t.textContent = String(HOUR0+h).padStart(2,'0')+':00';
+    times.appendChild(t);
+  }
+  grid.appendChild(times);
+
+  for(var c=0;c<5;c++){
+    var col=document.createElement('div');
+    col.className='fp-col'+(c===3?' today':'');
+    for(var r=0;r<HOURS;r++){ var row=document.createElement('div'); row.className='row'; col.appendChild(row); }
+    // now line on today at 09:40
+    if(c===3){
+      var now=document.createElement('div'); now.className='fp-now';
+      now.style.top = top(9 + 40/60)+'px';
+      col.appendChild(now);
+      // booking ghost slot 14:30 (30min) selected
+      var g=document.createElement('div'); g.className='fp-ghost';
+      g.style.top = top(14.5)+'px'; g.style.height=(0.5*HH-2)+'px';
+      g.innerHTML = ICONS.plus + '<span>14:30</span>';
+      col.appendChild(g);
+    }
+    EVENTS.filter(function(e){return e.col===c;}).forEach(function(e){
+      var el=document.createElement('div');
+      el.className='fp-ev '+e.cls;
+      el.style.top = top(e.start)+'px';
+      el.style.height = (e.dur*HH-3)+'px';
+      el.innerHTML = '<div class="who">'+ICONS[e.icon]+'<span>'+e.who+'</span></div><div class="when">'+e.when+'</div>';
+      col.appendChild(el);
+    });
+    grid.appendChild(col);
+  }
+
+  // ---- mini date picker (Monday-start July 2026) ----
+  var mini=document.getElementById('mini');
+  ['seg','ter','qua','qui','sex','sáb','dom'].forEach(function(d){
+    var h=document.createElement('div'); h.className='h'; h.textContent=d; mini.appendChild(h);
+  });
+  // July 1 2026 = Wed → 2 leading blanks (seg,ter)
+  var lead=2;
+  for(var i=0;i<lead;i++){ var b=document.createElement('button'); b.className='fp-day empty'; b.tabIndex=-1; mini.appendChild(b); }
+  var avail={23:1,24:1,27:1,28:1,29:1,30:1,31:1};
+  for(var d=1; d<=31; d++){
+    var b=document.createElement('button'); b.className='fp-day'; b.textContent=d;
+    if(d<23){ b.classList.add('pastday'); }
+    else if(avail[d]){ b.classList.add('avail'); }
+    if(d===23){ b.className='fp-day sel'; }
+    mini.appendChild(b);
+  }
+
+  // ---- slots ----
+  var slots=document.getElementById('slots');
+  ['14:00','14:30','15:00','15:30','16:00','16:30','17:00'].forEach(function(s){
+    var btn=document.createElement('button'); btn.className='fp-slot'; btn.textContent=s;
+    if(s==='14:30') btn.setAttribute('aria-pressed','true');
+    btn.addEventListener('click',function(){
+      slots.querySelectorAll('.fp-slot').forEach(function(x){x.removeAttribute('aria-pressed');});
+      btn.setAttribute('aria-pressed','true');
+    });
+    slots.appendChild(btn);
+  });
+
+  // chips + duration toggle
+  document.querySelectorAll('.fp-chips').forEach(function(grp){
+    grp.addEventListener('click',function(e){
+      var b=e.target.closest('.fp-chip'); if(!b)return;
+      grp.querySelectorAll('.fp-chip').forEach(function(x){x.removeAttribute('aria-pressed');});
+      b.setAttribute('aria-pressed','true');
+    });
+  });
+
+  // ---- month view ----
+  var mg=document.getElementById('monthGrid');
+  var MEV={
+    3:[{c:'p-conf',t:'Sofia · 09:00'},{c:'p-pend',t:'Laura · 11:00'}],
+    4:[{c:'p-done',t:'Theo · 08:30'}],
+    5:[{c:'p-conf',t:'Miguel · 10:00'},{c:'p-conf',t:'+2'}],
+    9:[{c:'p-conf',t:'Helena · 09:30'},{c:'p-pend',t:'Bento · 15:00'}],
+    10:[{c:'p-conf',t:'Antônio · 11:00'}],
+    16:[{c:'p-conf',t:'Consulta · 3'}],
+    22:[{c:'p-conf',t:'Retorno · 14:00'}]
+  };
+  var start=-1; // seg=col0; Jul1=Wed → first cell holds Jun 29 (Mon)
+  var prevTail=[29,30]; // Jun 29,30 in seg,ter
+  var cells=[];
+  prevTail.forEach(function(n){ cells.push({n:n,out:true}); });
+  for(var d=1; d<=31; d++){ cells.push({n:d, out:false, today:d===23}); }
+  var nextLead=1; for(var n=1;n<=nextLead;n++){ cells.push({n:'ago '+n, out:true}); }
+  cells.forEach(function(cell,idx){
+    var el=document.createElement('div');
+    el.className='fp-mv-cell'+(cell.out?' out':'')+(cell.today?' today':'');
+    var num=document.createElement('div'); num.className='num'; num.textContent=cell.n; el.appendChild(num);
+    var evs = !cell.out && MEV[idx-2]; // offset by 2 leading out-days
+    if(evs){
+      evs.slice(0,2).forEach(function(ev){
+        var p=document.createElement('div'); p.className='fp-pill '+ev.c; p.textContent=ev.t; el.appendChild(p);
+      });
+    }
+    mg.appendChild(el);
+  });
+
+  // ---- view toggle ----
+  var seg=document.querySelector('.fp-seg');
+  var week=document.getElementById('calWeek'), month=document.getElementById('calMonth');
+  seg.addEventListener('click',function(e){
+    var b=e.target.closest('button'); if(!b)return;
+    seg.querySelectorAll('button').forEach(function(x){x.setAttribute('aria-pressed','false');});
+    b.setAttribute('aria-pressed','true');
+    var v=b.dataset.view;
+    if(v==='month'){ week.hidden=true; month.hidden=false; }
+    else { month.hidden=true; week.hidden=false; }
+  });
+
+  // ---- legend ----
+  var LEG=[
+    {name:'Pendente', tag:'pedido a confirmar', sw:'ev-pend', icon:'clock', desc:'Primary tracejado (leve) — segura o horário. Forma ≠ da confirmada.'},
+    {name:'Confirmada', tag:'agendada', sw:'ev-conf', icon:'calcheck', desc:'Primary sólido, texto claro — segura o horário. Máximo destaque.'},
+    {name:'Realizada', tag:'concluída', sw:'ev-done', icon:'check', desc:'Muted (cinza) + check — consulta atendida, libera o horário.'},
+    {name:'Falta', tag:'no-show', sw:'ev-miss', icon:'userx', desc:'Destructive (vermelho) — único status em vermelho, ≠ da cancelada.'},
+    {name:'Cancelada', tag:'desmarcada', sw:'ev-canc', icon:'calx', desc:'Muted + hachura + nome riscado — desmarcada, libera o horário.'}
+  ];
+  var lg=document.getElementById('legend');
+  LEG.forEach(function(s){
+    var card=document.createElement('div'); card.className='fp-lg';
+    card.innerHTML='<div class="swatch '+s.sw+'">'+ICONS[s.icon]+'<span>'+s.tag+'</span></div>'+
+      '<div class="name">'+s.name+'</div><div class="desc">'+s.desc+'</div>';
+    lg.appendChild(card);
+  });
+})();
+</script>
