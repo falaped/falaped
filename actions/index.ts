@@ -42,6 +42,12 @@ export {
   type TogglePatientVaccineDoseResult,
 } from "./patient-vaccine-doses"
 export {
+  createAppointmentAction,
+  type CreateAppointmentResult,
+  transitionAppointmentStatusAction,
+  type TransitionAppointmentStatusResult,
+} from "./appointments"
+export {
   saveAvailabilityAction,
   type SaveAvailabilityResult,
   saveAvailabilityRulesAction,
