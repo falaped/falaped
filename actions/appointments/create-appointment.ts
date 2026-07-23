@@ -107,12 +107,33 @@ export async function createAppointmentAction(
     timeZone: CLINIC_TIME_ZONE,
   })
 
-  const match = slots.find(
-    (s) =>
-      s.start.getTime() === startsAt.getTime() &&
-      s.end.getTime() === endsAt.getTime(),
+  // Issue C: a consulta pode DURAR mais que um slot (o médico escolhe a duração).
+  // O intervalo pedido [startsAt, endsAt) precisa ser COBERTO por slots livres
+  // CONTÍGUOS: o primeiro slot começa exatamente em startsAt e, encadeando por
+  // start===prevEnd, a cobertura alcança (ou passa) endsAt sem buracos. A exclusion
+  // constraint no banco continua sendo a defesa final contra corrida (23P01).
+  const sorted = [...slots].sort(
+    (a, b) => a.start.getTime() - b.start.getTime(),
   )
-  if (!match) {
+  const startIndex = sorted.findIndex(
+    (s) => s.start.getTime() === startsAt.getTime(),
+  )
+  let covered = false
+  if (startIndex !== -1) {
+    let cursor = sorted[startIndex].end.getTime()
+    covered = cursor >= endsAt.getTime()
+    for (
+      let i = startIndex + 1;
+      !covered && i < sorted.length;
+      i += 1
+    ) {
+      // Buraco entre slots (folga/indisponibilidade no meio) → cobertura quebra.
+      if (sorted[i].start.getTime() !== cursor) break
+      cursor = sorted[i].end.getTime()
+      covered = cursor >= endsAt.getTime()
+    }
+  }
+  if (!covered) {
     return {
       ok: false,
       error: "Este horário não está mais disponível. Atualize a agenda e escolha outro.",

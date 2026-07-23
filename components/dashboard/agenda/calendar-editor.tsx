@@ -519,10 +519,12 @@ export function CalendarEditor({
   )
 
   /**
-   * Constrói o alvo de criação (instantes ISO UTC + rótulos) a partir de uma
-   * célula LIVRE clicada. A meia-noite local é ancorada no fuso da clínica via
-   * TZDate a partir dos componentes (correção CR-01) e o wall-clock do minuto é
-   * somado; espelha como o servidor expande o FreeSlot (start/end UTC).
+   * Constrói o alvo de criação (instante de início ISO UTC + rótulos + duração
+   * default) a partir de uma célula LIVRE clicada. A meia-noite local é ancorada
+   * no fuso da clínica via TZDate a partir dos componentes (correção CR-01) e o
+   * wall-clock do minuto é somado; espelha como o servidor expande o FreeSlot.
+   * A duração default = slot_minutes da faixa clicada (Issue C); o médico pode
+   * escolher outra no dialog, e o `ends_at` é derivado lá.
    */
   const buildCreateTarget = React.useCallback(
     (localDate: string, minute: number): CreateTarget => {
@@ -542,15 +544,12 @@ export function CalendarEditor({
       const weekday = weekdayOf(localDate, timeZone)
       const slot = slotMinutesFor(weekday, minute)
       const startIso = new Date(startDate.getTime()).toISOString()
-      const endIso = new Date(
-        startDate.getTime() + slot * 60_000,
-      ).toISOString()
       const labels = labelsOfInstant(startIso)
       return {
         startsAt: startIso,
-        endsAt: endIso,
         dateLabel: labels.dateLongLabel,
         timeLabel: labels.timeLabel,
+        defaultDuration: slot,
       }
     },
     [labelsOfInstant, slotMinutesFor, timeZone],

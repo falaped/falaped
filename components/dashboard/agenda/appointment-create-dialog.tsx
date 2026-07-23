@@ -24,24 +24,36 @@ import {
 } from "@/components/ui/dialog"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
+import { Label } from "@/components/ui/label"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 import { Skeleton } from "@/components/ui/skeleton"
 import { cn } from "@/lib/utils"
 
 /**
- * Alvo de criação de consulta: o slot livre clicado (D-01 — 1 slot, sem edição
- * de horário). Os instantes são ISO UTC (o que expandAvailability emite); os
- * rótulos {data}/{horário} já vêm formatados no fuso da clínica pelo pai.
+ * Alvo de criação de consulta: o slot livre clicado. Os instantes são ISO UTC (o
+ * que expandAvailability emite); os rótulos {data}/{horário} já vêm formatados no
+ * fuso da clínica pelo pai. O médico escolhe a DURAÇÃO no dialog (Issue C): o
+ * `endsAt` final é derivado de `startsAt + duração` (não mais fixo em 1 slot).
  */
 export type CreateTarget = {
   /** Instante UTC (ISO) do início do slot. */
   startsAt: string
-  /** Instante UTC (ISO) do fim (exclusivo) do slot. */
-  endsAt: string
   /** Rótulo PT-BR da data (ex.: "terça, 12 de agosto"). */
   dateLabel: string
   /** Rótulo PT-BR do horário (ex.: "14:00"). */
   timeLabel: string
+  /** Duração default (min) = slot_minutes da faixa clicada (fallback 30). */
+  defaultDuration: number
 }
+
+/** Presets de duração da consulta (Issue C). */
+const DURATION_PRESETS = [15, 30, 45, 60, 90] as const
 
 /**
  * Iniciais do paciente para o avatar de fallback (sem foto no fluxo de busca).
@@ -80,8 +92,17 @@ export function AppointmentCreateDialog({
   const [saving, setSaving] = React.useState(false)
   const [inlineError, setInlineError] = React.useState<string | null>(null)
   const [fieldError, setFieldError] = React.useState<string | null>(null)
+  // Duração escolhida (min). Default = slot_minutes da faixa clicada (Issue C).
+  const [duration, setDuration] = React.useState<number>(30)
 
   const open = target !== null
+
+  // Presets ∪ a duração default da faixa (se off-preset, ainda selecionável).
+  const durationOptions = React.useMemo(() => {
+    const set = new Set<number>(DURATION_PRESETS)
+    if (target?.defaultDuration) set.add(target.defaultDuration)
+    return [...set].sort((a, b) => a - b)
+  }, [target?.defaultDuration])
 
   // Reset ao abrir/fechar para um novo slot.
   React.useEffect(() => {
@@ -91,8 +112,9 @@ export function AppointmentCreateDialog({
       setSaving(false)
       setInlineError(null)
       setFieldError(null)
+      setDuration(target?.defaultDuration ?? 30)
     }
-  }, [open, target?.startsAt])
+  }, [open, target?.startsAt, target?.defaultDuration])
 
   // Filtro client-side por nome do paciente OU responsável (mirror do domínio
   // patients — findPatientByProfileIdNameAndResponsible). Antes de digitar não
@@ -115,10 +137,15 @@ export function AppointmentCreateDialog({
     }
     setSaving(true)
     setInlineError(null)
+    // ends_at = starts_at + duração escolhida (Issue C): pode cobrir várias
+    // células de 30 min. O servidor valida que o intervalo inteiro está livre.
+    const endsAt = new Date(
+      new Date(target.startsAt).getTime() + duration * 60_000,
+    ).toISOString()
     const result = await createAppointmentAction({
       patient_id: selected.id,
       starts_at: target.startsAt,
-      ends_at: target.endsAt,
+      ends_at: endsAt,
     })
     setSaving(false)
     if (result.ok) {
@@ -236,6 +263,25 @@ export function AppointmentCreateDialog({
               </CommandList>
             </Command>
           )}
+
+          <div className="flex flex-col gap-2">
+            <Label htmlFor="appointment-duration">Duração</Label>
+            <Select
+              value={String(duration)}
+              onValueChange={(value) => setDuration(Number(value))}
+            >
+              <SelectTrigger id="appointment-duration" className="w-full">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {durationOptions.map((minutes) => (
+                  <SelectItem key={minutes} value={String(minutes)}>
+                    {minutes} min
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
 
           {fieldError ? (
             <p className="text-sm text-destructive">{fieldError}</p>
