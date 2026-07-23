@@ -1,10 +1,11 @@
 ---
 phase: 7
 slug: consultas-ciclo-de-status
-status: draft
+status: approved
 shadcn_initialized: true
 preset: radix-nova
 created: 2026-07-22
+reviewed_at: 2026-07-22
 ---
 
 # Phase 7 — UI Design Contract
