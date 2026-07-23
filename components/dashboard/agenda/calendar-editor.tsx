@@ -987,19 +987,42 @@ export function CalendarEditor({
     })
   }, [selectedRailDate, timeZone])
 
+  /**
+   * `Date` ancorada no fuso da clínica a partir de `selectedRailDate` (M-1): a
+   * visão Dia renderiza ESTA coluna, mantendo-a coerente com o dia global do
+   * painel. Ancoramos a meia-noite direto no zone via TZDate a partir dos
+   * componentes (mesmo padrão de `selectedRailDayLongLabel`), imune ao TZ do host.
+   */
+  const selectedRailDateObj = React.useMemo(() => {
+    const [y, m, d] = selectedRailDate.split("-").map(Number)
+    return new TZDate(y, m - 1, d, timeZone)
+  }, [selectedRailDate, timeZone])
+
   // Navegação por aba (rótulo + prev/hoje/next).
   const nav = React.useMemo(() => {
     if (activeTab === "dia") {
+      // A visão Dia opera sobre o DIA SELECIONADO global (M-1): prev/hoje/next
+      // atualizam `selectedRailDate` (mantendo skipWeekend) para permanecer
+      // coerente com o painel e o destaque.
+      const stepSelected = (step: 1 | -1) => {
+        const next = skipWeekend(
+          addDays(selectedRailDateObj, step, context),
+          step,
+          context,
+        )
+        setSelectedRailDate(format(next, "yyyy-MM-dd", context))
+      }
       return {
-        label: format(dayCursor, "EEEE, dd 'de' MMMM", {
+        label: format(selectedRailDateObj, "EEEE, dd 'de' MMMM", {
           ...context,
           locale: ptBR,
         }),
-        onPrev: () =>
-          setDayCursor((d) => skipWeekend(addDays(d, -1, context), -1, context)),
-        onToday: () => setDayCursor(skipWeekend(new Date(), 1, context)),
-        onNext: () =>
-          setDayCursor((d) => skipWeekend(addDays(d, 1, context), 1, context)),
+        onPrev: () => stepSelected(-1),
+        onToday: () =>
+          setSelectedRailDate(
+            format(skipWeekend(new Date(), 1, context), "yyyy-MM-dd", context),
+          ),
+        onNext: () => stepSelected(1),
       }
     }
     if (activeTab === "semana") {
@@ -1019,7 +1042,7 @@ export function CalendarEditor({
       onToday: () => setMonthCursor(new Date()),
       onNext: () => setMonthCursor((d) => addMonths(d, 1, context)),
     }
-  }, [activeTab, dayCursor, weekDays, monthCursor, context])
+  }, [activeTab, dayCursor, selectedRailDateObj, weekDays, monthCursor, context])
 
   return (
     <Tabs
@@ -1099,14 +1122,16 @@ export function CalendarEditor({
         <div className="flex flex-col gap-6 lg:flex-row">
           <div className="min-w-0 flex-1">
             <CalendarTimeGrid
-              days={dayColumns([dayCursor])}
+              days={dayColumns([selectedRailDateObj])}
               minuteRows={minuteRows}
-              positioned={positionedFor(dayColumns([dayCursor]))}
+              positioned={positionedFor(dayColumns([selectedRailDateObj]))}
               cellStateOf={cellStateOf}
               appointmentOf={appointmentOf}
               isCellBookable={isCellBookable}
               nowMinuteOfToday={nowMinuteOfToday}
               todayLocalDate={todayLocal}
+              selectedLocalDate={selectedRailDate}
+              onSelectDay={setSelectedRailDate}
               onAppointmentCreate={handleAppointmentCreate}
               onAppointmentSelect={handleAppointmentSelect}
             />
@@ -1139,6 +1164,8 @@ export function CalendarEditor({
               isCellBookable={isCellBookable}
               nowMinuteOfToday={nowMinuteOfToday}
               todayLocalDate={todayLocal}
+              selectedLocalDate={selectedRailDate}
+              onSelectDay={setSelectedRailDate}
               onAppointmentCreate={handleAppointmentCreate}
               onAppointmentSelect={handleAppointmentSelect}
             />
@@ -1165,8 +1192,11 @@ export function CalendarEditor({
           byDay={monthByDay}
           timeZone={timeZone}
           todayLocal={todayLocal}
+          selectedLocalDate={selectedRailDate}
           onSelectDay={(day) => {
-            setDayCursor(skipWeekend(day, 1, context))
+            // M-1: o dia clicado no Mês vira o dia global; a visão Dia mostra-o.
+            const picked = skipWeekend(day, 1, context)
+            setSelectedRailDate(format(picked, "yyyy-MM-dd", context))
             setActiveTab("dia")
           }}
         />

@@ -19,13 +19,16 @@ export function CalendarMonthIndicator({
   byDay,
   timeZone,
   todayLocal,
+  selectedLocalDate,
   onSelectDay,
 }: {
   monthCursor: Date
   byDay: ByDay
   timeZone: string
   todayLocal: string
-  /** Navega para o Dia clicado (D-18: navega, não pinta). */
+  /** Data local (YYYY-MM-DD) do dia SELECIONADO — destaque token-only (M-2). */
+  selectedLocalDate?: string
+  /** Seleciona o dia clicado (M-1: o dia global vira o clicado). */
   onSelectDay: (day: Date) => void
 }) {
   const context = { in: tz(timeZone) }
@@ -78,14 +81,19 @@ export function CalendarMonthIndicator({
           const inMonth = day >= monthStart && day <= monthEnd
           const summary = byDay[localDate]
           const isToday = localDate === todayLocal
+          const isSelected = localDate === selectedLocalDate
           return (
             <button
               key={localDate}
               type="button"
+              aria-pressed={isSelected}
               onClick={() => onSelectDay(day)}
               className={cn(
                 "flex min-h-20 flex-col gap-1 bg-background p-2 text-left transition-colors hover:bg-muted/50",
                 !inMonth && "bg-muted/40 text-muted-foreground",
+                // Célula do dia SELECIONADO (M-2): anel token-only, distinto do
+                // círculo de "hoje".
+                isSelected && "ring-2 ring-inset ring-primary",
               )}
             >
               <div className="flex items-center justify-between">
@@ -113,7 +121,7 @@ export function CalendarMonthIndicator({
       </div>
 
       <p className="text-xs text-muted-foreground">
-        O mês é só um resumo. Clique num dia para editar a disponibilidade dele.
+        O mês é só um resumo. Clique num dia para selecioná-lo.
       </p>
     </div>
   )

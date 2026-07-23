@@ -70,6 +70,8 @@ export function CalendarTimeGrid({
   isCellBookable,
   nowMinuteOfToday,
   todayLocalDate,
+  selectedLocalDate,
+  onSelectDay,
   onAppointmentCreate,
   onAppointmentSelect,
 }: {
@@ -94,6 +96,16 @@ export function CalendarTimeGrid({
   nowMinuteOfToday: number | null
   /** Data local (YYYY-MM-DD) de hoje, para achar a coluna da linha de agora. */
   todayLocalDate: string
+  /**
+   * Data local (YYYY-MM-DD) do dia SELECIONADO no painel (M-2). Quando presente,
+   * o cabeçalho/coluna correspondente recebe destaque token-only distinto de hoje.
+   */
+  selectedLocalDate?: string
+  /**
+   * Seleciona um dia clicando no cabeçalho da coluna (M-1). Quando presente, o
+   * cabeçalho vira um `<button>` acessível que chama `onSelectDay(localDate)`.
+   */
+  onSelectDay?: (localDate: string) => void
   onAppointmentCreate?: (
     localDate: string,
     minute: number,
@@ -167,24 +179,54 @@ export function CalendarTimeGrid({
           style={{ gridTemplateColumns }}
         >
           <div className="border-r bg-muted" />
-          {days.map((day) => (
-            <div
-              key={`head-${day.localDate}`}
-              className={cn(
-                "flex flex-col items-center justify-center gap-1 bg-muted py-2 text-muted-foreground",
-                day.isToday && "text-primary",
-              )}
-            >
-              <span className="text-xs uppercase">{day.weekdayLabel}</span>
-              {day.isToday ? (
-                <span className="flex size-7 items-center justify-center rounded-full bg-primary text-sm font-semibold text-primary-foreground tabular-nums">
-                  {day.dayNumber}
-                </span>
-              ) : (
-                <span className="text-sm tabular-nums">{day.dayNumber}</span>
-              )}
-            </div>
-          ))}
+          {days.map((day) => {
+            const isSelected = day.localDate === selectedLocalDate
+            const headerContent = (
+              <>
+                <span className="text-xs uppercase">{day.weekdayLabel}</span>
+                {day.isToday ? (
+                  <span className="flex size-7 items-center justify-center rounded-full bg-primary text-sm font-semibold text-primary-foreground tabular-nums">
+                    {day.dayNumber}
+                  </span>
+                ) : (
+                  <span className="text-sm tabular-nums">{day.dayNumber}</span>
+                )}
+              </>
+            )
+            // Destaque do dia SELECIONADO (M-2): anel token-only, distinto do
+            // círculo de "hoje" (que continua no número). Os dois coexistem.
+            const selectedRing = isSelected && "ring-2 ring-primary rounded-md"
+            if (onSelectDay) {
+              return (
+                <button
+                  key={`head-${day.localDate}`}
+                  type="button"
+                  aria-pressed={isSelected}
+                  aria-label={`Selecionar dia ${day.weekdayLabel} ${day.dayNumber}`}
+                  onClick={() => onSelectDay(day.localDate)}
+                  className={cn(
+                    "flex flex-col items-center justify-center gap-1 bg-muted py-2 text-muted-foreground transition-colors hover:bg-muted/70",
+                    day.isToday && "text-primary",
+                    selectedRing,
+                  )}
+                >
+                  {headerContent}
+                </button>
+              )
+            }
+            return (
+              <div
+                key={`head-${day.localDate}`}
+                className={cn(
+                  "flex flex-col items-center justify-center gap-1 bg-muted py-2 text-muted-foreground",
+                  day.isToday && "text-primary",
+                  selectedRing,
+                )}
+              >
+                {headerContent}
+              </div>
+            )
+          })}
         </div>
 
         {/* Corpo: gutter de horas + N colunas-dia (blocos absolutos por cima). */}
@@ -209,6 +251,10 @@ export function CalendarTimeGrid({
               className={cn(
                 "relative border-r",
                 day.isToday && "bg-primary/5",
+                // Coluna do dia SELECIONADO (M-2): realce token-only, distinto de
+                // hoje (anel lateral em vez do fundo do círculo).
+                day.localDate === selectedLocalDate &&
+                  "bg-primary/5 ring-2 ring-inset ring-primary/40",
               )}
               style={{ height: bodyHeight }}
             >
