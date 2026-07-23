@@ -1141,7 +1141,7 @@ export function CalendarEditor({
               patients={patients}
               selectedDate={selectedRailDate}
               selectedDayLongLabel={selectedRailDayLongLabel}
-              onSelectedDateChange={setSelectedRailDate}
+              selectedWeekday={weekdayOf(selectedRailDate, timeZone)}
               freeSlots={railFreeSlots}
               onApply={applyAvailabilityIntent}
               savingAvailability={savingAvailability}
@@ -1175,7 +1175,7 @@ export function CalendarEditor({
               patients={patients}
               selectedDate={selectedRailDate}
               selectedDayLongLabel={selectedRailDayLongLabel}
-              onSelectedDateChange={setSelectedRailDate}
+              selectedWeekday={weekdayOf(selectedRailDate, timeZone)}
               freeSlots={railFreeSlots}
               onApply={applyAvailabilityIntent}
               savingAvailability={savingAvailability}

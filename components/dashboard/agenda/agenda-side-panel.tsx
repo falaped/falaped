@@ -19,9 +19,9 @@ type PanelMode = "consulta" | "disponibilidade"
  * modo Disponibilidade = o novo `AvailabilityPanel` (edição de disponibilidade e
  * folga por período/dia-inteiro/recorrência).
  *
- * Ambos os modos compartilham o dia selecionado (`selectedDate` /
- * `onSelectedDateChange`) — o médico escolhe o dia uma vez e alterna o modo. O
- * painel só repassa props; a lógica de save vive no editor (via `onApply`).
+ * Ambos os modos compartilham o dia selecionado (`selectedDate`, read-only) —
+ * escolhido no calendário real (grade/Mês); o painel só o reflete (M-5). O painel
+ * só repassa props; a lógica de save vive no editor (via `onApply`).
  *
  * Tokens oklch apenas; copy PT-BR; sem deps novas.
  */
@@ -29,19 +29,19 @@ export function AgendaSidePanel({
   patients,
   selectedDate,
   selectedDayLongLabel,
-  onSelectedDateChange,
+  selectedWeekday,
   freeSlots,
   onApply,
   savingAvailability = false,
 }: {
   /** Pacientes do perfil (busca client-side no BookingRail). */
   patients: Patient[]
-  /** Dia selecionado (YYYY-MM-DD), compartilhado entre os dois modos. */
+  /** Dia selecionado (YYYY-MM-DD), read-only — escolhido no calendário real (M-5). */
   selectedDate: string
-  /** Rótulo longo PT-BR do dia (para o BookingRail). */
+  /** Rótulo longo PT-BR do dia (para ambos os modos). */
   selectedDayLongLabel: string
-  /** Muda o dia selecionado (o pai deriva os slots livres). */
-  onSelectedDateChange: (localDate: string) => void
+  /** Weekday (0=dom..6=sáb) do dia selecionado, no fuso da clínica (pai calcula). */
+  selectedWeekday: number
   /** Horários LIVRES do dia selecionado (para o BookingRail). */
   freeSlots: FreeSlot[]
   /** Aplica a intenção de disponibilidade/folga (o editor traduz + salva). */
@@ -92,13 +92,13 @@ export function AgendaSidePanel({
           patients={patients}
           selectedDate={selectedDate}
           selectedDayLongLabel={selectedDayLongLabel}
-          onSelectedDateChange={onSelectedDateChange}
           freeSlots={freeSlots}
         />
       ) : (
         <AvailabilityPanel
           selectedDate={selectedDate}
-          onSelectedDateChange={onSelectedDateChange}
+          selectedDayLongLabel={selectedDayLongLabel}
+          selectedWeekday={selectedWeekday}
           onApply={onApply}
           saving={savingAvailability}
         />

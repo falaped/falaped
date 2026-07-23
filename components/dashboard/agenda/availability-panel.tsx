@@ -4,7 +4,6 @@ import * as React from "react"
 import { CalendarCheck, CalendarX, Loader2 } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
-import { Calendar } from "@/components/ui/calendar"
 import { Card } from "@/components/ui/card"
 import { Label } from "@/components/ui/label"
 import {
@@ -124,9 +123,10 @@ function Segment({
 
 /**
  * FORMULÁRIO DE DISPONIBILIDADE E FOLGA (D-4..D-6, 260723-kej) — o ÚNICO lugar de
- * editar disponibilidade/folga desde que a grade virou read-only (D-1). Reusa o
- * mini date-picker do BookingRail (Calendar `weekStartsOn:1`, ptBR) e os selects
- * de horário/duração do padrão de `availability-cell-menu.tsx`.
+ * editar disponibilidade/folga desde que a grade virou read-only (D-1). O dia NÃO
+ * é escolhido aqui (M-5): vem do calendário real (grade/Mês) via `selectedDate`
+ * (read-only). Reusa os selects de horário/duração do padrão de
+ * `availability-cell-menu.tsx`.
  *
  * O médico escolhe Tipo (Disponibilidade | Folga), Escopo (Período | Dia inteiro |
  * Recorrência), faixa/duração e dias da semana, e clica "Aplicar" → emite uma
@@ -137,14 +137,17 @@ function Segment({
  */
 export function AvailabilityPanel({
   selectedDate,
-  onSelectedDateChange,
+  selectedDayLongLabel,
+  selectedWeekday,
   onApply,
   saving = false,
 }: {
-  /** Dia selecionado (YYYY-MM-DD) — compartilhado com o BookingRail. */
+  /** Dia selecionado (YYYY-MM-DD) — read-only; escolhido no calendário real (M-5). */
   selectedDate: string
-  /** Muda o dia selecionado (controlado pelo pai). */
-  onSelectedDateChange: (localDate: string) => void
+  /** Rótulo longo PT-BR do dia (ex.: "quinta-feira, 23 de julho"). */
+  selectedDayLongLabel: string
+  /** Weekday (0=dom..6=sáb) do dia selecionado, no fuso da clínica (pai calcula). */
+  selectedWeekday: number
   /** Aplica a intenção declarativa (o editor traduz em mutações + save). */
   onApply: (intent: AvailabilityIntent) => void
   /** `true` enquanto um save está em andamento. */
@@ -171,19 +174,29 @@ export function AvailabilityPanel({
     prevWholeAvailRef.current = isWholeAvail
   }, [isAvailable, scope])
 
-  // `Date` (meia-noite local do host) ↔ string "YYYY-MM-DD" (mesma forma do BookingRail).
-  const selectedAsDate = React.useMemo(() => {
-    const [y, m, d] = selectedDate.split("-").map(Number)
-    return new Date(y, m - 1, d)
-  }, [selectedDate])
-
-  function handleDayPick(date: Date | undefined) {
-    if (!date) return
-    const y = date.getFullYear()
-    const m = String(date.getMonth() + 1).padStart(2, "0")
-    const d = String(date.getDate()).padStart(2, "0")
-    onSelectedDateChange(`${y}-${m}-${d}`)
-  }
+  /**
+   * RECORRÊNCIA pré-seleciona o weekday do dia selecionado (M-5): ao ENTRAR em
+   * "recurring" (ou ao trocar o dia enquanto em "recurring"), semeia `weekdays`
+   * com o weekday do dia SE o médico ainda não tiver mexido — semeamos apenas
+   * quando o conjunto está VAZIO ou na transição de escopo para "recurring", para
+   * não apagar seleções manuais (a multi-seleção via toggle permanece intacta).
+   */
+  const prevScopeRef = React.useRef<AvailabilityScopeKind>(scope)
+  React.useEffect(() => {
+    const enteredRecurring =
+      scope === "recurring" && prevScopeRef.current !== "recurring"
+    prevScopeRef.current = scope
+    if (scope !== "recurring") return
+    setWeekdays((prev) => {
+      // Transição PARA recorrência → semeia com o weekday do dia (respeitando
+      // seleções manuais preexistentes ao apenas adicionar). Se já em recorrência
+      // e o médico não mexeu (conjunto vazio), semeia o novo weekday ao trocar o dia.
+      if (enteredRecurring || prev.size === 0) {
+        return new Set([selectedWeekday])
+      }
+      return prev
+    })
+  }, [scope, selectedWeekday])
 
   function toggleWeekday(weekday: number) {
     setWeekdays((prev) => {
@@ -228,16 +241,11 @@ export function AvailabilityPanel({
         <p className="text-sm text-muted-foreground">
           Marque disponibilidade ou folga por período, dia inteiro ou recorrência.
         </p>
+        {/* Rótulo do dia selecionado (o picker que antes mostrava o dia sumiu — M-5). */}
+        <p className="text-xs font-semibold uppercase capitalize tracking-wide text-muted-foreground">
+          {selectedDayLongLabel}
+        </p>
       </div>
-
-      {/* Mini date-picker do mês (semana começa segunda, ptBR). */}
-      <Calendar
-        mode="single"
-        weekStartsOn={1}
-        selected={selectedAsDate}
-        onSelect={handleDayPick}
-        className="rounded-lg border border-border p-2"
-      />
 
       {/* Tipo: Disponibilidade | Folga. */}
       <div className="flex flex-col gap-1.5">

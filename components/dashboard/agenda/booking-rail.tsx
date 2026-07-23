@@ -8,7 +8,6 @@ import { createAppointmentAction } from "@/actions"
 import type { Patient } from "@/modules/patients/types"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
-import { Calendar } from "@/components/ui/calendar"
 import { Card } from "@/components/ui/card"
 import {
   Command,
@@ -46,10 +45,10 @@ function initialsOf(name: string): string {
  * client-side de pacientes (domínio `patients` já escopado por profile_id, D-04) e
  * a mesma `createAppointmentAction`.
  *
- * Estrutura (mockup): Card "Nova consulta" + mini date-picker do mês (semana
- * começa Seg, `Calendar`/react-day-picker), busca de paciente (Command/cmdk),
- * chips de duração 15/30/45/60/90, rótulo do dia longo + lista de horários LIVRES
- * do dia, CTA "Agendar consulta", rodapé "Horário de Brasília".
+ * Estrutura: Card "Nova consulta" + busca de paciente (Command/cmdk), chips de
+ * duração 15/30/45/60/90, rótulo do dia longo + lista de horários LIVRES do dia,
+ * CTA "Agendar consulta", rodapé "Horário de Brasília". O dia NÃO é escolhido
+ * aqui — vem do calendário real (grade/Mês) via `selectedDate` (read-only, M-5).
  *
  * O erro de double-booking (23P01 → result union) é renderizado INLINE amigável,
  * NUNCA o erro cru. Tokens oklch; copy PT-BR verbatim do mockup/07-UI-SPEC.
@@ -58,18 +57,15 @@ export function BookingRail({
   patients,
   selectedDate,
   selectedDayLongLabel,
-  onSelectedDateChange,
   freeSlots,
   onCreated,
 }: {
   /** Pacientes do perfil (filtro client-side, mirror do domínio patients — D-04). */
   patients: Patient[]
-  /** Dia selecionado (YYYY-MM-DD). */
+  /** Dia selecionado (YYYY-MM-DD) — read-only; escolhido no calendário real (M-5). */
   selectedDate: string
   /** Rótulo longo PT-BR do dia (ex.: "quinta-feira, 23 de julho"). */
   selectedDayLongLabel: string
-  /** Muda o dia selecionado (o pai deriva os slots livres). */
-  onSelectedDateChange: (localDate: string) => void
   /** Horários LIVRES do dia selecionado (disponibilidade − consultas ativas). */
   freeSlots: FreeSlot[]
   /** Callback pós-sucesso (o pai pode reagir; a agenda revalida via RSC). */
@@ -105,20 +101,6 @@ export function BookingRail({
     setInlineError(null)
   }, [selectedDate])
 
-  // `Date` (meia-noite local do host) ↔ string "YYYY-MM-DD" para o date-picker.
-  const selectedAsDate = React.useMemo(() => {
-    const [y, m, d] = selectedDate.split("-").map(Number)
-    return new Date(y, m - 1, d)
-  }, [selectedDate])
-
-  function handleDayPick(date: Date | undefined) {
-    if (!date) return
-    const y = date.getFullYear()
-    const m = String(date.getMonth() + 1).padStart(2, "0")
-    const d = String(date.getDate()).padStart(2, "0")
-    onSelectedDateChange(`${y}-${m}-${d}`)
-  }
-
   async function handleSubmit() {
     if (!selected || !selectedSlot) return
     setSaving(true)
@@ -151,18 +133,9 @@ export function BookingRail({
       <div className="flex flex-col gap-0.5">
         <h2 className="text-xl font-semibold tracking-tight">Nova consulta</h2>
         <p className="text-sm text-muted-foreground">
-          Escolha o dia, a duração e um horário livre.
+          Escolha a duração e um horário livre.
         </p>
       </div>
-
-      {/* Mini date-picker do mês (semana começa segunda, ptBR). */}
-      <Calendar
-        mode="single"
-        weekStartsOn={1}
-        selected={selectedAsDate}
-        onSelect={handleDayPick}
-        className="rounded-lg border border-border p-2"
-      />
 
       {/* Paciente (busca client-side, reusa o domínio patients). */}
       <div className="flex flex-col gap-1.5">
