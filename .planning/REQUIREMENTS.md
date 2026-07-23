@@ -19,9 +19,9 @@ Cada requisito mapeia para exatamente uma fase do roadmap.
 
 ### Agendamento & Ciclo (APPT)
 
-- [ ] **APPT-01**: O médico cria e edita uma consulta em um horário livre, ligada a um paciente cadastrado
+- [x] **APPT-01**: O médico cria e edita uma consulta em um horário livre, ligada a um paciente cadastrado
 - [x] **APPT-02**: Cada consulta percorre um ciclo de status — solicitada (pedido a confirmar) → confirmada → realizada / falta / cancelada — com falta distinta de cancelada
-- [ ] **APPT-03**: O médico confirma ou recusa um "pedido a confirmar" a partir da agenda / lista de solicitações
+- [x] **APPT-03**: O médico confirma ou recusa um "pedido a confirmar" a partir da agenda / lista de solicitações
 - [x] **APPT-04**: Um horário com consulta **pendente ou confirmada** não pode receber outra consulta (sem double-booking), garantido no banco (exclusion constraint), escopado por `profile_id`
 
 ### Acesso Delegado — Assento da Assistente (SEAT)
@@ -74,9 +74,9 @@ Cada requisito mapeia para exatamente uma fase do roadmap. Preenchido na criaç�
 | AGENDA-03 | Phase 6 | Complete |
 | AGENDA-04 | Phase 6 | Complete |
 | AGENDA-05 | Phase 6 | Complete |
-| APPT-01 | Phase 7 | Pending |
+| APPT-01 | Phase 7 | Complete |
 | APPT-02 | Phase 7 | Complete |
-| APPT-03 | Phase 7 | Pending |
+| APPT-03 | Phase 7 | Complete |
 | APPT-04 | Phase 7 | Complete |
 | SEAT-01 | Phase 8 | Pending |
 | SEAT-05 | Phase 8 | Pending |

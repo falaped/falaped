@@ -6,14 +6,14 @@ current_phase: 07
 current_phase_name: consultas-ciclo-de-status
 status: executing
 stopped_at: Phase 7 UI-SPEC approved
-last_updated: "2026-07-23T03:08:38.601Z"
+last_updated: "2026-07-23T03:14:56.401Z"
 last_activity: 2026-07-23
 last_activity_desc: Phase 07 execution started
 progress:
   total_phases: 5
   completed_phases: 1
   total_plans: 6
-  completed_plans: 4
+  completed_plans: 5
   percent: 20
 ---
 
@@ -29,7 +29,7 @@ See: .planning/PROJECT.md (updated 2026-07-20)
 ## Current Position
 
 Phase: 07 (consultas-ciclo-de-status) — EXECUTING
-Plan: 2 of 3
+Plan: 3 of 3
 Status: Ready to execute
 Last activity: 2026-07-23 — Phase 07 execution started
 
@@ -69,6 +69,7 @@ Last activity: 2026-07-23 — Phase 07 execution started
 | Phase 06 P02 | ~3min | 2 tasks | 7 files |
 | Phase 06 P03 | ~2h | 3 tasks | 9 files |
 | Phase 07 P01 | 2min | 3 tasks | 5 files |
+| Phase 07 P02 | ~3 min | 2 tasks | 7 files |
 
 ## Accumulated Context
 
@@ -93,6 +94,7 @@ Recent decisions affecting current work (milestone v1.1):
 - [Phase ?]: [Phase 06-01] expandAvailability v2: precedência híbrida D-21 (folga vence) + wall-clock DST-safe (WR-01); schema Zod endurecido (ISO estrita WR-02, teto 1440 WR-03)
 - [Phase ?]: [Phase 06-03] Calendário único editável entregue; interação D-15/D-16 (toggle+click/drag) supersedida com aprovação do usuário por menu de contexto cursor-anchored (esq=disponibilidade, dir=folga), toolbar slim no topo, janela 06-18 dias úteis, folga cinza-claro, batch save + guarda de descarte, botões limpar por view
 - [Phase 07-01]: Fundacao DB de appointments viva: enum appointment_status (5 valores), tabela owner-scoped + RLS/4 policies, btree_gist, exclusion constraint parcial (pending+confirmed segura o horario, 23P01), patient_id ON DELETE RESTRICT; maquina de transicoes pura + schemas Zod
+- [Phase ?]: 07-02: createAppointmentAction stamps status confirmed (D-05); slot-free check maps snake to camel before expandAvailability (WARNING 1); 23P01 caught in both actions returns friendly PT-BR result union
 
 ### Pending Todos
 
@@ -131,7 +133,7 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-07-23T03:08:10.284Z
+Last session: 2026-07-23T03:14:40.819Z
 Stopped at: Phase 7 UI-SPEC approved
 Resume file: .planning/phases/07-consultas-ciclo-de-status/07-UI-SPEC.md
 Next: executar 06-02-PLAN.md (expandAvailability puro + suite .spec)
