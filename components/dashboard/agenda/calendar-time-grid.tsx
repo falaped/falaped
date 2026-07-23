@@ -42,17 +42,18 @@ export type PositionedAppointment = {
 
 /**
  * GRADE DE TEMPO Dia/Semana (redesign híbrido Google Agenda × Calendly,
- * 260723-du8). Substitui o papel visual de `CalendarDayWeekGrid` no Dia/Semana:
- * eixo de horas à esquerda (gutter), N colunas-dia (semana começa Seg, o pai já
- * ordena), altura de hora fixa `HOUR_H`, coluna de HOJE destacada, LINHA DE AGORA
- * só na coluna de hoje, e as consultas como BLOCOS ABSOLUTOS posicionados por
- * horário+duração (não uma célula por consulta).
+ * 260723-du8; simplificada em 260723-kej): eixo de horas à esquerda (gutter), N
+ * colunas-dia (semana começa Seg, o pai já ordena), altura de hora fixa `HOUR_H`,
+ * coluna de HOJE destacada, LINHA DE AGORA só na coluna de hoje, e as consultas
+ * como BLOCOS ABSOLUTOS posicionados por horário+duração.
  *
- * A PINTURA DE DISPONIBILIDADE da Fase 6 é PRESERVADA: atrás dos blocos, cada
- * coluna-dia tem uma faixa clicável por linha de 30 min (`STEP`) que reusa a
- * mesma lógica de Pointer Events do grid legado (pointerDown/Enter/Move/Up +
- * contextMenu, `setPointerCapture`, limiar de 6px, distinção clique-vs-arraste).
- * Só o LAYOUT visual muda — a semântica dos callbacks é idêntica.
+ * SOMENTE VISUALIZAÇÃO + CRIAR CONSULTA (D-1, 260723-kej): a grade NÃO edita mais
+ * disponibilidade/folga — todos os gestos de pintura/arraste, o menu de
+ * disponibilidade e o clique-direito-folga foram removidos e vivem agora no painel
+ * lateral. O fundo continua mostrando o read-only (disponível/folga/vazio) e cada
+ * faixa de 30 min é um `<button>` com um `onClick` simples: numa consulta abre o
+ * detalhe; num slot LIVRE+futuro abre a criação de consulta; folga/vazio/passado
+ * são no-op.
  *
  * LINHA DE AGORA: o mockup usa vermelho (`--now`), mas para ficar SÓ em token
  * Falaped usamos `bg-primary` (azul) — o vermelho (`destructive`) fica reservado
@@ -69,8 +70,6 @@ export function CalendarTimeGrid({
   isCellBookable,
   nowMinuteOfToday,
   todayLocalDate,
-  onDragSelect,
-  onCellMenu,
   onAppointmentCreate,
   onAppointmentSelect,
 }: {
@@ -95,17 +94,6 @@ export function CalendarTimeGrid({
   nowMinuteOfToday: number | null
   /** Data local (YYYY-MM-DD) de hoje, para achar a coluna da linha de agora. */
   todayLocalDate: string
-  onDragSelect: (
-    localDate: string,
-    startMinute: number,
-    endMinute: number,
-  ) => void
-  onCellMenu: (
-    localDate: string,
-    minute: number,
-    button: "left" | "right",
-    anchor: MenuAnchor,
-  ) => void
   onAppointmentCreate?: (
     localDate: string,
     minute: number,
@@ -136,128 +124,30 @@ export function CalendarTimeGrid({
     [windowStart],
   )
 
-  // ---------- gesto de disponibilidade (Fase 6, portado 1:1) ----------
-  const gestureRef = React.useRef<{
-    localDate: string
-    startMinute: number
-    currentMinute: number
-    moved: boolean
-    pointerId: number
-    startX: number
-    startY: number
-  } | null>(null)
-
-  const [preview, setPreview] = React.useState<{
-    localDate: string
-    lo: number
-    hi: number
-  } | null>(null)
-
-  const clearGesture = React.useCallback(() => {
-    gestureRef.current = null
-    setPreview(null)
-  }, [])
-
-  function handlePointerDown(
-    event: React.PointerEvent<HTMLButtonElement>,
-    localDate: string,
-    minute: number,
-  ) {
-    if (event.button === 2) return
-    if (event.button !== 0) return
-    gestureRef.current = {
-      localDate,
-      startMinute: minute,
-      currentMinute: minute,
-      moved: false,
-      pointerId: event.pointerId,
-      startX: event.clientX,
-      startY: event.clientY,
-    }
-    setPreview({ localDate, lo: minute, hi: minute })
-    try {
-      event.currentTarget.setPointerCapture(event.pointerId)
-    } catch {
-      // Ambiente sem suporte a pointer capture — arraste vira best-effort.
-    }
-  }
-
-  function handlePointerEnter(localDate: string, minute: number) {
-    const gesture = gestureRef.current
-    if (!gesture) return
-    if (gesture.localDate !== localDate) return
-    if (minute !== gesture.startMinute) gesture.moved = true
-    gesture.currentMinute = minute
-    const lo = Math.min(gesture.startMinute, minute)
-    const hi = Math.max(gesture.startMinute, minute)
-    setPreview({ localDate, lo, hi })
-  }
-
-  function handlePointerMove(event: React.PointerEvent<HTMLButtonElement>) {
-    const gesture = gestureRef.current
-    if (!gesture) return
-    const dx = Math.abs(event.clientX - gesture.startX)
-    const dy = Math.abs(event.clientY - gesture.startY)
-    if (dx > 6 || dy > 6) gesture.moved = true
-  }
-
-  function handlePointerUp(
-    event: React.PointerEvent<HTMLButtonElement>,
-    localDate: string,
-    minute: number,
-  ) {
-    const gesture = gestureRef.current
-    if (!gesture || event.button !== 0) return
-    const wasDrag =
-      gesture.moved && gesture.currentMinute !== gesture.startMinute
-    if (wasDrag) {
-      const lo = Math.min(gesture.startMinute, gesture.currentMinute)
-      const hi = Math.max(gesture.startMinute, gesture.currentMinute)
-      onDragSelect(gesture.localDate, lo, hi + STEP)
-    } else {
-      // Desambiguação idêntica ao grid legado (07-UI-SPEC §1 + 07-03).
-      const anchor = { x: event.clientX, y: event.clientY }
-      const appointment = appointmentOf?.(localDate, minute) ?? null
-      const state = cellStateOf(localDate, minute)
-      const bookable = isCellBookable?.(localDate, minute) ?? true
-      const isActive =
-        appointment !== null &&
-        (appointment.status === "pending" ||
-          appointment.status === "confirmed")
-
-      if (isActive && onAppointmentSelect) {
-        onAppointmentSelect(appointment!, anchor)
-      } else if (state === "available" && bookable && onAppointmentCreate) {
-        onAppointmentCreate(localDate, minute, anchor)
-      } else if (appointment && onAppointmentSelect) {
-        onAppointmentSelect(appointment, anchor)
-      } else if (state === "available" && !bookable) {
-        // Slot livre no passado: não é agendável → no-op.
-      } else {
-        onCellMenu(localDate, minute, "left", anchor)
-      }
-    }
-    clearGesture()
-  }
-
-  function handleContextMenu(
+  /**
+   * Clique simples numa faixa de fundo (D-1, 260723-kej): substitui a antiga
+   * desambiguação clique-vs-arraste. Numa consulta → detalhe; num slot LIVRE +
+   * futuro → criar consulta; folga/vazio/passado → no-op (a grade não edita mais
+   * disponibilidade).
+   */
+  function handleBackgroundClick(
     event: React.MouseEvent<HTMLButtonElement>,
     localDate: string,
     minute: number,
   ) {
-    event.preventDefault()
-    clearGesture()
-    onCellMenu(localDate, minute, "right", {
-      x: event.clientX,
-      y: event.clientY,
-    })
+    const anchor = { x: event.clientX, y: event.clientY }
+    const appointment = appointmentOf?.(localDate, minute) ?? null
+    if (appointment && onAppointmentSelect) {
+      onAppointmentSelect(appointment, anchor)
+      return
+    }
+    const state = cellStateOf(localDate, minute)
+    const bookable = isCellBookable?.(localDate, minute) ?? true
+    if (state === "available" && bookable && onAppointmentCreate) {
+      onAppointmentCreate(localDate, minute, anchor)
+    }
+    // Slot livre no passado, folga e vazio → no-op.
   }
-
-  const isPreviewed = (localDate: string, minute: number) =>
-    preview !== null &&
-    preview.localDate === localDate &&
-    minute >= preview.lo &&
-    minute <= preview.hi
 
   const todayColumnIndex = days.findIndex((d) => d.localDate === todayLocalDate)
   const showNowLine =
@@ -270,12 +160,7 @@ export function CalendarTimeGrid({
 
   return (
     <div className="overflow-x-auto">
-      <div
-        className="min-w-[20rem] select-none"
-        style={{ touchAction: "none" }}
-        onPointerLeave={clearGesture}
-        onPointerCancel={clearGesture}
-      >
+      <div className="min-w-[20rem] select-none">
         {/* Cabeçalho: gutter vazio + uma célula por dia (dow + dnum). */}
         <div
           className="grid border-b"
@@ -327,10 +212,9 @@ export function CalendarTimeGrid({
               )}
               style={{ height: bodyHeight }}
             >
-              {/* Camada de fundo: faixas de 30 min clicáveis (disponibilidade). */}
+              {/* Camada de fundo READ-ONLY: faixas de 30 min (clique = agendar). */}
               {minuteRows.map((minute) => {
                 const state = cellStateOf(day.localDate, minute)
-                const previewed = isPreviewed(day.localDate, minute)
                 return (
                   <button
                     key={dateCellKey(day.localDate, minute)}
@@ -341,20 +225,10 @@ export function CalendarTimeGrid({
                         : state === "off"
                           ? "folga"
                           : "vazio"
-                    } (botão direito para folga)`}
+                    }`}
                     aria-pressed={state !== "empty"}
-                    onPointerDown={(event) =>
-                      handlePointerDown(event, day.localDate, minute)
-                    }
-                    onPointerEnter={() =>
-                      handlePointerEnter(day.localDate, minute)
-                    }
-                    onPointerMove={handlePointerMove}
-                    onPointerUp={(event) =>
-                      handlePointerUp(event, day.localDate, minute)
-                    }
-                    onContextMenu={(event) =>
-                      handleContextMenu(event, day.localDate, minute)
+                    onClick={(event) =>
+                      handleBackgroundClick(event, day.localDate, minute)
                     }
                     className={cn(
                       "absolute left-0 right-0 border-b border-b-border/60 transition-colors",
@@ -362,7 +236,6 @@ export function CalendarTimeGrid({
                         "bg-primary/25 hover:bg-primary/35",
                       state === "off" && "bg-muted hover:bg-muted/80",
                       state === "empty" && "hover:bg-muted",
-                      previewed && "z-[1] bg-primary/40 ring-2 ring-inset ring-primary",
                     )}
                     style={{
                       top: topOf(minute),
