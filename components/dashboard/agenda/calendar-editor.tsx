@@ -388,6 +388,27 @@ export function CalendarEditor({
     [context],
   )
 
+  /**
+   * Minuto-do-dia (wall-clock no fuso da clínica) de um instante UTC, contínuo
+   * através da meia-noite: se o instante caiu num dia local DIFERENTE do dia de
+   * referência (`refLocalDate`), soma 1440 por dia de diferença. Usado para
+   * calcular quantas células de 30 min a consulta cobre (Issue A/C), inclusive
+   * quando `ends_at` atravessa a meia-noite.
+   */
+  const minuteFromRef = React.useCallback(
+    (isoUtc: string, refLocalDate: string): number => {
+      const { localDate, minute } = cellKeyOfInstant(isoUtc)
+      if (localDate === refLocalDate) return minute
+      const [ry, rm, rd] = refLocalDate.split("-").map(Number)
+      const [ly, lm, ld] = localDate.split("-").map(Number)
+      const refMidnight = Date.UTC(ry, rm - 1, rd)
+      const locMidnight = Date.UTC(ly, lm - 1, ld)
+      const dayDelta = Math.round((locMidnight - refMidnight) / 86_400_000)
+      return minute + dayDelta * (24 * 60)
+    },
+    [cellKeyOfInstant],
+  )
+
   /** Rótulos PT-BR de data/horário de um instante (para dialog/detalhe/pedidos). */
   const labelsOfInstant = React.useCallback(
     (isoUtc: string) => ({
@@ -401,31 +422,52 @@ export function CalendarEditor({
     [context],
   )
 
-  /** Mapa "localDate:minute" → consulta exibida (ativo vence histórico, D-07). */
+  /**
+   * Mapa "localDate:minute" → consulta exibida (ativo vence histórico, D-07).
+   *
+   * Cada consulta cobre TODAS as células de 30 min do seu intervalo
+   * `[starts_at, ends_at)` (Issue A/C): o início é ancorado à grade descendo ao
+   * múltiplo de STEP mais próximo (durações não-alinhadas ainda "acertam" a
+   * célula visível), e o fim (exclusivo) é arredondado para cima ao próximo STEP.
+   * `isStart` marca a PRIMEIRA célula coberta — só nela o grid pinta o
+   * ícone/nome (o resto é continuação do mesmo bloco). O clique em QUALQUER
+   * célula coberta resolve a mesma consulta e abre o detalhe.
+   */
   const appointmentByCell = React.useMemo(() => {
     const map = new Map<string, CellAppointment>()
     for (const appt of appointments) {
-      const { localDate, minute } = cellKeyOfInstant(appt.starts_at)
-      const key = `${localDate}:${minute}`
+      const { localDate, minute: rawStart } = cellKeyOfInstant(appt.starts_at)
       const labels = labelsOfInstant(appt.starts_at)
-      const candidate: CellAppointment = {
-        id: appt.id,
-        status: appt.status,
-        patientName: appt.patient_name,
-        responsible: appt.patient_responsible,
-        dateLabel: labels.dateLabel,
-        timeLabel: labels.timeLabel,
-      }
-      const existing = map.get(key)
-      if (
-        !existing ||
-        STATUS_PRECEDENCE[candidate.status] > STATUS_PRECEDENCE[existing.status]
-      ) {
-        map.set(key, candidate)
+      // Ancorar às linhas de 30 min: início desce, fim (exclusivo) sobe.
+      const startMinute = Math.floor(rawStart / STEP) * STEP
+      const rawEnd = minuteFromRef(appt.ends_at, localDate)
+      const endMinute = Math.max(
+        startMinute + STEP,
+        Math.ceil(rawEnd / STEP) * STEP,
+      )
+      for (let m = startMinute; m < endMinute; m += STEP) {
+        const key = `${localDate}:${m}`
+        const candidate: CellAppointment = {
+          id: appt.id,
+          status: appt.status,
+          patientName: appt.patient_name,
+          responsible: appt.patient_responsible,
+          dateLabel: labels.dateLabel,
+          timeLabel: labels.timeLabel,
+          isStart: m === startMinute,
+        }
+        const existing = map.get(key)
+        if (
+          !existing ||
+          STATUS_PRECEDENCE[candidate.status] >
+            STATUS_PRECEDENCE[existing.status]
+        ) {
+          map.set(key, candidate)
+        }
       }
     }
     return map
-  }, [appointments, cellKeyOfInstant, labelsOfInstant])
+  }, [appointments, cellKeyOfInstant, labelsOfInstant, minuteFromRef])
 
   const appointmentOf = React.useCallback(
     (localDate: string, minute: number): CellAppointment | null =>

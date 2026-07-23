@@ -57,7 +57,13 @@ export type CellAppointment = {
   /** Rótulo PT-BR da data/horário (para o detalhe). */
   dateLabel: string
   timeLabel: string
-  /** Status corrente (para o compare-and-set nas transições). */
+  /**
+   * `true` na PRIMEIRA célula de 30 min coberta pela consulta. Uma consulta pode
+   * abranger VÁRIAS células (Issue C: duração escolhida): todas as células
+   * cobertas recebem o fill do status, mas o ícone/nome só é pintado na célula
+   * de início (`isStart`), dando a leitura de um bloco contíguo.
+   */
+  isStart: boolean
 }
 
 /**
@@ -390,6 +396,9 @@ export function CalendarDayWeekGrid({
                   className={cn(
                     "border-b border-r",
                     minute % 60 === 30 && "border-b-muted",
+                    // Continuação de uma consulta multi-célula: some a borda
+                    // superior para o bloco ler contíguo (Issue C).
+                    appointment && !appointment.isStart && "border-t-0",
                   )}
                 >
                   <button
@@ -441,15 +450,21 @@ export function CalendarDayWeekGrid({
                             className="pointer-events-none absolute inset-0 opacity-40 [background-image:repeating-linear-gradient(45deg,var(--color-muted-foreground)_0,var(--color-muted-foreground)_1px,transparent_1px,transparent_6px)]"
                           />
                         ) : null}
-                        <style.Icon className="relative size-3 shrink-0" />
-                        <span
-                          className={cn(
-                            "relative truncate text-xs",
-                            style.strike && "line-through",
-                          )}
-                        >
-                          {appointment.patientName}
-                        </span>
+                        {/* Ícone/nome só na célula de início: as demais células
+                            cobertas mantêm o fill do status como continuação. */}
+                        {appointment.isStart ? (
+                          <>
+                            <style.Icon className="relative size-3 shrink-0" />
+                            <span
+                              className={cn(
+                                "relative truncate text-xs",
+                                style.strike && "line-through",
+                              )}
+                            >
+                              {appointment.patientName}
+                            </span>
+                          </>
+                        ) : null}
                       </>
                     ) : null}
                   </button>
