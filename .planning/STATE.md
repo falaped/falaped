@@ -2,18 +2,18 @@
 gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: Agenda & Ganhos
-current_phase: 7
-current_phase_name: Consultas & Ciclo de Status
-status: verifying
+current_phase: 07
+current_phase_name: consultas-ciclo-de-status
+status: executing
 stopped_at: Phase 7 UI-SPEC approved
-last_updated: "2026-07-23T01:29:36.973Z"
-last_activity: 2026-07-22
-last_activity_desc: Phase 06 complete, transitioned to Phase 7
+last_updated: "2026-07-23T03:08:38.601Z"
+last_activity: 2026-07-23
+last_activity_desc: Phase 07 execution started
 progress:
   total_phases: 5
   completed_phases: 1
-  total_plans: 3
-  completed_plans: 3
+  total_plans: 6
+  completed_plans: 4
   percent: 20
 ---
 
@@ -24,14 +24,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-07-20)
 
 **Core value:** A consulta pediátrica flui sem fricção — abrir o paciente, conduzir a consulta e gerar os documentos certos (impressos corretamente) em poucos cliques.
-**Current focus:** Phase 06 — disponibilidade-calend-rio-do-m-dico
+**Current focus:** Phase 07 — consultas-ciclo-de-status
 
 ## Current Position
 
-Phase: 7 — Consultas & Ciclo de Status
-Plan: Not started
-Status: Phase complete — ready for verification
-Last activity: 2026-07-22 — Phase 06 complete, transitioned to Phase 7
+Phase: 07 (consultas-ciclo-de-status) — EXECUTING
+Plan: 2 of 3
+Status: Ready to execute
+Last activity: 2026-07-23 — Phase 07 execution started
 
 ## Roadmap (milestone v1.1)
 
@@ -68,6 +68,7 @@ Last activity: 2026-07-22 — Phase 06 complete, transitioned to Phase 7
 | Phase 06 P01 | 4 min | 4 tasks | 5 files |
 | Phase 06 P02 | ~3min | 2 tasks | 7 files |
 | Phase 06 P03 | ~2h | 3 tasks | 9 files |
+| Phase 07 P01 | 2min | 3 tasks | 5 files |
 
 ## Accumulated Context
 
@@ -91,6 +92,7 @@ Recent decisions affecting current work (milestone v1.1):
 - [Phase ?]: [Phase 06-01] Migração híbrida ALTER-only aplicada ao DB vivo — rows v1 preservadas e backfilled para override_type='subtract' (D-20/D-22); RLS + 4 policies intactas
 - [Phase ?]: [Phase 06-01] expandAvailability v2: precedência híbrida D-21 (folga vence) + wall-clock DST-safe (WR-01); schema Zod endurecido (ISO estrita WR-02, teto 1440 WR-03)
 - [Phase ?]: [Phase 06-03] Calendário único editável entregue; interação D-15/D-16 (toggle+click/drag) supersedida com aprovação do usuário por menu de contexto cursor-anchored (esq=disponibilidade, dir=folga), toolbar slim no topo, janela 06-18 dias úteis, folga cinza-claro, batch save + guarda de descarte, botões limpar por view
+- [Phase 07-01]: Fundacao DB de appointments viva: enum appointment_status (5 valores), tabela owner-scoped + RLS/4 policies, btree_gist, exclusion constraint parcial (pending+confirmed segura o horario, 23P01), patient_id ON DELETE RESTRICT; maquina de transicoes pura + schemas Zod
 
 ### Pending Todos
 
@@ -129,7 +131,7 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-07-23T01:29:36.963Z
+Last session: 2026-07-23T03:08:10.284Z
 Stopped at: Phase 7 UI-SPEC approved
 Resume file: .planning/phases/07-consultas-ciclo-de-status/07-UI-SPEC.md
 Next: executar 06-02-PLAN.md (expandAvailability puro + suite .spec)

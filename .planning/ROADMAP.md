@@ -56,9 +56,9 @@ Decimal phases appear between their surrounding integers in numeric order.
   3. O médico confirma ou recusa um "pedido a confirmar" a partir da agenda / lista de solicitações, e a agenda distingue visualmente pendente de confirmada.
   4. Um horário com consulta **pendente ou confirmada** rejeita uma segunda consulta no banco (exclusion constraint btree_gist escopada por profile_id sobre status em pending+confirmed — "pendente segura o horário"); a violação vira um result union amigável ("horário já ocupado"), nunca um erro cru 23P01.
 
-**Plans**: 3 plans
+**Plans**: 1/3 plans executed
 
-- [ ] 07-01-PLAN.md — Migração appointments (enum + tabela owner-scoped + RLS + btree_gist + exclusion constraint parcial) + máquina de transições pura + schemas Zod (checkpoint [BLOCKING] de push da migração)
+- [x] 07-01-PLAN.md — Migração appointments (enum + tabela owner-scoped + RLS + btree_gist + exclusion constraint parcial) + máquina de transições pura + schemas Zod (checkpoint [BLOCKING] de push da migração)
 - [ ] 07-02-PLAN.md — Módulos (create com preservação de error.code, list por janela, update-status compare-and-set) + actions (createAppointmentAction Confirmada + 23P01→amigável, transitionAppointmentStatusAction) + barrels
 - [ ] 07-03-PLAN.md — UI: dialog de criação em slot livre + painel "Pedidos a confirmar" + render dos 5 status na agenda + menu de transições + RSC carregando consultas (checkpoint visual)
 
@@ -114,7 +114,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 6. Disponibilidade & Calendário do Médico | 3/3 | Complete    | 2026-07-22 |
-| 7. Consultas & Ciclo de Status | 0/3 | Not started | - |
+| 7. Consultas & Ciclo de Status | 1/3 | In Progress|  |
 | 8. Assentos & Convite — Fundação de Acesso Delegado | 0/? | Not started | - |
 | 9. UI de Agendamento da Assistente | 0/? | Not started | - |
 | 10. Livro-caixa de Ganhos & Painel | 0/? | Not started | - |
