@@ -52,8 +52,8 @@ export type CreateTarget = {
   defaultDuration: number
 }
 
-/** Presets de duração da consulta (Issue C). */
-const DURATION_PRESETS = [15, 30, 45, 60, 90] as const
+/** Presets de duração da consulta (Issue C). Compartilhado com o trilho (booking-rail). */
+export const DURATION_PRESETS = [15, 30, 45, 60, 90] as const
 
 /**
  * Iniciais do paciente para o avatar de fallback (sem foto no fluxo de busca).

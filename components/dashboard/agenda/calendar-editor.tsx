@@ -35,15 +35,20 @@ import {
   type PeriodDraft,
 } from "./availability-cell-menu"
 import {
-  CalendarDayWeekGrid,
   DAY_END,
   STEP,
+  isActiveAppointmentStatus,
   minutesToLabel,
-  type CellAppointment,
   type CellState,
   type DayColumn,
   type MenuAnchor,
 } from "./calendar-day-week-grid"
+import type { CellAppointment } from "./appointment-status-style"
+import {
+  CalendarTimeGrid,
+  type PositionedAppointment,
+} from "./calendar-time-grid"
+import { BookingRail, type FreeSlot } from "./booking-rail"
 import { CalendarMonthIndicator } from "./calendar-month-indicator"
 import {
   AppointmentCreateDialog,
@@ -298,6 +303,13 @@ export function CalendarEditor({
   const [activeTab, setActiveTab] = React.useState<string>("semana")
   const [saving, setSaving] = React.useState(false)
 
+  // Dia selecionado no TRILHO de agendamento (default = dia útil mais próximo).
+  const [selectedRailDate, setSelectedRailDate] = React.useState<string>(() =>
+    format(skipWeekend(new Date(), 1, { in: tz(timeZone) }), "yyyy-MM-dd", {
+      in: tz(timeZone),
+    }),
+  )
+
   // Escopo default da disponibilidade: template recorrente (D-19).
   const [scope, setScope] = React.useState<AvailabilityScope>("recurring")
 
@@ -509,6 +521,72 @@ export function CalendarEditor({
     (localDate: string, minute: number): boolean =>
       slotStartMs(localDate, minute) > nowMs,
     [nowMs, slotStartMs],
+  )
+
+  /**
+   * Minuto-do-dia (wall-clock, fuso da clínica) de "agora" — para a LINHA DE AGORA
+   * da grade de tempo. Congela na montagem (mesmo `nowMs`), imune ao TZ do host.
+   */
+  const nowMinuteOfToday = React.useMemo(() => {
+    const hh = Number(format(new Date(nowMs), "HH", context))
+    const mm = Number(format(new Date(nowMs), "mm", context))
+    return hh * 60 + mm
+  }, [nowMs, context])
+
+  /**
+   * Deriva os BLOCOS posicionados da grade de tempo para um conjunto de colunas-dia
+   * (D-07: ativo vence histórico por horário; a grade só multiplica por HOUR_H).
+   * Ancora o início/fim ao wall-clock da clínica na MESMA janela que a grade
+   * renderiza; a precedência de exibição num horário re-marcado usa o mesmo
+   * STATUS_PRECEDENCE do mapa por célula.
+   */
+  const positionedFor = React.useCallback(
+    (days: DayColumn[]): PositionedAppointment[] => {
+      const indexByDate = new Map(days.map((d, i) => [d.localDate, i]))
+      // Agrupa por (coluna, horário de início) resolvendo a precedência D-07.
+      const byKey = new Map<string, PositionedAppointment>()
+      for (const appt of appointments) {
+        const { localDate, minute: startMinute } = cellKeyOfInstant(
+          appt.starts_at,
+        )
+        const columnIndex = indexByDate.get(localDate)
+        if (columnIndex === undefined) continue
+        const rawEnd = minuteFromRef(appt.ends_at, localDate)
+        const endMinute = Math.max(startMinute + STEP, rawEnd)
+        const labels = labelsOfInstant(appt.starts_at)
+        const candidate: PositionedAppointment = {
+          appointment: {
+            id: appt.id,
+            status: appt.status,
+            patientName: appt.patient_name,
+            responsible: appt.patient_responsible,
+            dateLabel: labels.dateLabel,
+            timeLabel: labels.timeLabel,
+            isStart: true,
+          },
+          columnIndex,
+          startMinute,
+          endMinute,
+          isActive: isActiveAppointmentStatus(appt.status),
+        }
+        const key = `${columnIndex}:${startMinute}`
+        const existing = byKey.get(key)
+        if (
+          !existing ||
+          STATUS_PRECEDENCE[candidate.appointment.status] >
+            STATUS_PRECEDENCE[existing.appointment.status]
+        ) {
+          byKey.set(key, candidate)
+        }
+      }
+      return [...byKey.values()]
+    },
+    [
+      appointments,
+      cellKeyOfInstant,
+      minuteFromRef,
+      labelsOfInstant,
+    ],
   )
 
   /** Fila de pedidos pendentes (APPT-03) — ordenada por horário. */
@@ -976,6 +1054,44 @@ export function CalendarEditor({
     return Array.from({ length: 5 }, (_, i) => addDays(weekStart, i, context))
   }, [dayCursor, context])
 
+  /**
+   * Horários LIVRES do dia selecionado no trilho: minutos DISPONÍVEIS
+   * (`cellStateOf === "available"`), no FUTURO (`isCellBookable`) e SEM consulta
+   * ATIVA (pendente/confirmada) ocupando a célula (D-07). Os instantes ISO UTC são
+   * ancorados no fuso da clínica via `slotStartMs` → `new Date(ms).toISOString()`,
+   * espelhando como o servidor expande o FreeSlot. Alimenta o `BookingRail`.
+   */
+  const railFreeSlots = React.useMemo<FreeSlot[]>(() => {
+    const slots: FreeSlot[] = []
+    for (const minute of minuteRows) {
+      if (cellStateOf(selectedRailDate, minute) !== "available") continue
+      if (!isCellBookable(selectedRailDate, minute)) continue
+      const appt = appointmentByCell.get(`${selectedRailDate}:${minute}`)
+      if (appt && isActiveAppointmentStatus(appt.status)) continue
+      slots.push({
+        minute,
+        label: minutesToLabel(minute),
+        startsAt: new Date(slotStartMs(selectedRailDate, minute)).toISOString(),
+      })
+    }
+    return slots
+  }, [
+    minuteRows,
+    selectedRailDate,
+    cellStateOf,
+    isCellBookable,
+    appointmentByCell,
+    slotStartMs,
+  ])
+
+  /** Rótulo longo PT-BR do dia selecionado no trilho (ex.: "quinta-feira, 23 de julho"). */
+  const selectedRailDayLongLabel = React.useMemo(() => {
+    const [y, m, d] = selectedRailDate.split("-").map(Number)
+    return format(new TZDate(y, m - 1, d, timeZone), "EEEE, dd 'de' MMMM", {
+      locale: ptBR,
+    })
+  }, [selectedRailDate, timeZone])
+
   // Datas visíveis do escopo de limpeza: Dia = 1 data; Semana = as 5 (Seg–Sex).
   // Mês não pinta faixas, então os botões de limpeza ficam desabilitados.
   const clearScopeDates = React.useMemo(() => {
@@ -1163,22 +1279,36 @@ export function CalendarEditor({
       </p>
 
       {/* ---------- DIA ---------- */}
+      {/* Layout híbrido (260723-du8): grade de tempo à esquerda (flex-1) + trilho
+          de agendamento fixo à direita (≥lg), empilhado abaixo em telas menores. O
+          PendingRequestsPanel vive ABAIXO do trilho, na mesma coluna direita, para
+          não competir com a grade — o trilho é o caminho primário de agendamento. */}
       <TabsContent value="dia" className="flex flex-col gap-4">
         <div className="flex flex-col gap-6 lg:flex-row">
           <div className="min-w-0 flex-1">
-            <CalendarDayWeekGrid
+            <CalendarTimeGrid
               days={dayColumns([dayCursor])}
               minuteRows={minuteRows}
+              positioned={positionedFor(dayColumns([dayCursor]))}
               cellStateOf={cellStateOf}
               appointmentOf={appointmentOf}
               isCellBookable={isCellBookable}
+              nowMinuteOfToday={nowMinuteOfToday}
+              todayLocalDate={todayLocal}
               onDragSelect={handleDragSelect}
               onCellMenu={handleCellMenu}
               onAppointmentCreate={handleAppointmentCreate}
               onAppointmentSelect={handleAppointmentSelect}
             />
           </div>
-          <div className="w-full lg:w-80 lg:shrink-0">
+          <div className="flex w-full flex-col gap-4 lg:w-80 lg:shrink-0">
+            <BookingRail
+              patients={patients}
+              selectedDate={selectedRailDate}
+              selectedDayLongLabel={selectedRailDayLongLabel}
+              onSelectedDateChange={setSelectedRailDate}
+              freeSlots={railFreeSlots}
+            />
             <PendingRequestsPanel requests={pendingRequests} />
           </div>
         </div>
@@ -1188,19 +1318,29 @@ export function CalendarEditor({
       <TabsContent value="semana" className="flex flex-col gap-4">
         <div className="flex flex-col gap-6 lg:flex-row">
           <div className="min-w-0 flex-1">
-            <CalendarDayWeekGrid
+            <CalendarTimeGrid
               days={dayColumns(weekDays)}
               minuteRows={minuteRows}
+              positioned={positionedFor(dayColumns(weekDays))}
               cellStateOf={cellStateOf}
               appointmentOf={appointmentOf}
               isCellBookable={isCellBookable}
+              nowMinuteOfToday={nowMinuteOfToday}
+              todayLocalDate={todayLocal}
               onDragSelect={handleDragSelect}
               onCellMenu={handleCellMenu}
               onAppointmentCreate={handleAppointmentCreate}
               onAppointmentSelect={handleAppointmentSelect}
             />
           </div>
-          <div className="w-full lg:w-80 lg:shrink-0">
+          <div className="flex w-full flex-col gap-4 lg:w-80 lg:shrink-0">
+            <BookingRail
+              patients={patients}
+              selectedDate={selectedRailDate}
+              selectedDayLongLabel={selectedRailDayLongLabel}
+              onSelectedDateChange={setSelectedRailDate}
+              freeSlots={railFreeSlots}
+            />
             <PendingRequestsPanel requests={pendingRequests} />
           </div>
         </div>
