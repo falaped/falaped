@@ -21,8 +21,8 @@ import { cn } from "@/lib/utils"
 import {
   APPOINTMENT_STATUS_STYLE,
   type CellAppointment,
-  type MenuAnchor,
-} from "./calendar-day-week-grid"
+} from "./appointment-status-style"
+import { type MenuAnchor } from "./calendar-day-week-grid"
 
 /**
  * Cria uma âncora VIRTUAL (retângulo 0×0) na coordenada do clique — mesmo padrão

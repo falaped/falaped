@@ -1,16 +1,13 @@
 "use client"
 
 import * as React from "react"
-import {
-  CalendarCheck,
-  CalendarX,
-  Check,
-  Clock,
-  UserX,
-} from "lucide-react"
 
 import { cn } from "@/lib/utils"
 import type { AppointmentStatus } from "@/modules/appointments/types"
+import {
+  APPOINTMENT_STATUS_STYLE,
+  type CellAppointment,
+} from "./appointment-status-style"
 
 /** Passo de 30 min por célula (D-03). */
 export const STEP = 30
@@ -53,85 +50,13 @@ export function isActiveAppointmentStatus(status: AppointmentStatus): boolean {
 }
 
 /**
- * Consulta que ocupa exatamente uma célula (D-01). O pai resolve o status e a
- * identificação a partir da linha crua (starts_at UTC → célula no fuso da clínica),
- * incluindo a precedência ativo>histórico num horário re-marcado (D-07).
+ * Contrato de status/consulta MOVIDO para `appointment-status-style.ts` (redesign
+ * híbrido 260723-du8). Re-exportado aqui para não quebrar imports antigos
+ * (`APPOINTMENT_STATUS_STYLE`, `CellAppointment` continuam disponíveis via
+ * `./calendar-day-week-grid`).
  */
-export type CellAppointment = {
-  /** id da consulta (para a transição de status). */
-  id: string
-  status: AppointmentStatus
-  /** Nome do paciente (para o rótulo curto in-grid e o detalhe). */
-  patientName: string
-  responsible: string | null
-  /** Rótulo PT-BR da data/horário (para o detalhe). */
-  dateLabel: string
-  timeLabel: string
-  /**
-   * `true` na PRIMEIRA célula de 30 min coberta pela consulta. Uma consulta pode
-   * abranger VÁRIAS células (Issue C: duração escolhida): todas as células
-   * cobertas recebem o fill do status, mas o ícone/nome só é pintado na célula
-   * de início (`isStart`), dando a leitura de um bloco contíguo.
-   */
-  isStart: boolean
-}
-
-/**
- * Contrato visual dos 5 status (07-UI-SPEC §Appointment status color system).
- * Cada status = fill/border + ícone lucide + variante de badge. Tokens oklch —
- * sem hex/rgb. `hatch` marca a Cancelada (overlay de gradiente repetido real).
- */
-export const APPOINTMENT_STATUS_STYLE: Record<
-  AppointmentStatus,
-  {
-    /** Classe de fill+border da célula. */
-    cell: string
-    /** Ícone lucide do status. */
-    Icon: React.ComponentType<{ className?: string }>
-    /** Rótulo PT-BR do status. */
-    label: string
-    /** Aplica strikethrough no nome (Cancelada). */
-    strike: boolean
-    /** Aplica a hachura diagonal (Cancelada). */
-    hatch: boolean
-  }
-> = {
-  pending: {
-    cell: "bg-primary/10 border border-dashed border-primary/60 text-primary",
-    Icon: Clock,
-    label: "Pendente",
-    strike: false,
-    hatch: false,
-  },
-  confirmed: {
-    cell: "bg-primary/70 border border-primary text-primary-foreground",
-    Icon: CalendarCheck,
-    label: "Confirmada",
-    strike: false,
-    hatch: false,
-  },
-  done: {
-    cell: "bg-muted border border-border text-muted-foreground",
-    Icon: Check,
-    label: "Realizada",
-    strike: false,
-    hatch: false,
-  },
-  no_show: {
-    cell: "bg-destructive/10 border border-destructive/40 text-destructive",
-    Icon: UserX,
-    label: "Falta",
-    strike: false,
-    hatch: false,
-  },
-  canceled: {
-    cell: "bg-muted border border-border text-muted-foreground",
-    Icon: CalendarX,
-    label: "Cancelada",
-    strike: true,
-    hatch: true,
-  },
-}
+export { APPOINTMENT_STATUS_STYLE }
+export type { CellAppointment }
 
 export type DayColumn = {
   /** Data local "YYYY-MM-DD". */
