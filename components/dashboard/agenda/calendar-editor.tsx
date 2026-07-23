@@ -475,6 +475,42 @@ export function CalendarEditor({
     [appointmentByCell],
   )
 
+  /**
+   * Instante "agora" (epoch ms) — referência única para a regra de futuro (07-03).
+   * `Date.now()` é absoluto (epoch), independente do fuso do host: comparamos
+   * contra o epoch do INÍCIO do slot (também absoluto, ancorado via TZDate no fuso
+   * da clínica), então a comparação é imune ao bug de TZ do host (CR-01). Congela
+   * na montagem — a agenda re-carrega via RSC, e um slot no limite não é caso de uso.
+   */
+  const nowMs = React.useMemo(() => Date.now(), [])
+
+  /** Epoch ms do início de um slot (localDate:minute) ancorado no fuso da clínica. */
+  const slotStartMs = React.useCallback(
+    (localDate: string, minute: number): number => {
+      const [year, month, day] = localDate.split("-").map(Number)
+      const hours = Math.floor(minute / 60)
+      const minutes = minute % 60
+      return new TZDate(
+        year,
+        month - 1,
+        day,
+        hours,
+        minutes,
+        0,
+        0,
+        timeZone,
+      ).getTime()
+    },
+    [timeZone],
+  )
+
+  /** `true` se o slot começa DEPOIS de agora (só o futuro é agendável, 07-03). */
+  const isCellBookable = React.useCallback(
+    (localDate: string, minute: number): boolean =>
+      slotStartMs(localDate, minute) > nowMs,
+    [nowMs, slotStartMs],
+  )
+
   /** Fila de pedidos pendentes (APPT-03) — ordenada por horário. */
   const pendingRequests = React.useMemo<PendingRequest[]>(() => {
     return appointments
@@ -1135,6 +1171,7 @@ export function CalendarEditor({
               minuteRows={minuteRows}
               cellStateOf={cellStateOf}
               appointmentOf={appointmentOf}
+              isCellBookable={isCellBookable}
               onDragSelect={handleDragSelect}
               onCellMenu={handleCellMenu}
               onAppointmentCreate={handleAppointmentCreate}
@@ -1156,6 +1193,7 @@ export function CalendarEditor({
               minuteRows={minuteRows}
               cellStateOf={cellStateOf}
               appointmentOf={appointmentOf}
+              isCellBookable={isCellBookable}
               onDragSelect={handleDragSelect}
               onCellMenu={handleCellMenu}
               onAppointmentCreate={handleAppointmentCreate}

@@ -71,6 +71,14 @@ export async function createAppointmentAction(
   const startsAt = new Date(starts_at)
   const endsAt = new Date(ends_at)
 
+  // (0) FUTURE GUARD (07-03): só é possível agendar um horário no futuro.
+  // `startsAt` e `Date.now()` são ambos epoch absolutos — a comparação é imune ao
+  // fuso do host (Vercel = UTC), consistente com a checagem de UI (isCellBookable).
+  // Defesa em camadas: a UI já bloqueia o clique em slots passados; aqui revalidamos.
+  if (startsAt.getTime() <= Date.now()) {
+    return { ok: false, error: "Não é possível agendar um horário no passado." }
+  }
+
   // (1) SLOT-FREE CHECK (D-02, Pattern 5): confirmar que starts_at é um FreeSlot
   // expandido antes do INSERT.
   const [ruleRows, overrideRows] = await Promise.all([

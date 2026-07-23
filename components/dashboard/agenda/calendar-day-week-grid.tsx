@@ -43,6 +43,16 @@ const DAY_LABELS = ["Seg", "Ter", "Qua", "Qui", "Sex", "Sáb", "Dom"]
 export type CellState = "available" | "off" | "empty"
 
 /**
+ * Status ATIVOS (ocupam o slot de fato): pendente/confirmada abrem o
+ * detalhe/menu de transição. Os demais (realizada/falta/cancelada) são FINAIS —
+ * histórico: a exclusion constraint no banco os ignora, então o slot pode ser
+ * re-agendado (quando livre + futuro) em vez de abrir o detalhe (07-03).
+ */
+export function isActiveAppointmentStatus(status: AppointmentStatus): boolean {
+  return status === "pending" || status === "confirmed"
+}
+
+/**
  * Consulta que ocupa exatamente uma célula (D-01). O pai resolve o status e a
  * identificação a partir da linha crua (starts_at UTC → célula no fuso da clínica),
  * incluindo a precedência ativo>histórico num horário re-marcado (D-07).
@@ -174,11 +184,19 @@ export function CalendarDayWeekGrid({
   onCellMenu,
   onAppointmentCreate,
   onAppointmentSelect,
+  isCellBookable,
 }: {
   days: DayColumn[]
   minuteRows: number[]
   /** Estado atual de uma célula (available/off/empty) no draft. */
   cellStateOf: (localDate: string, minute: number) => CellState
+  /**
+   * `true` quando o slot (localDate:minute) começa DEPOIS de "agora" no fuso da
+   * clínica (07-03: só agenda no futuro). O pai avalia o `now` uma única vez no
+   * fuso da clínica (evita o bug de TZ do host, CR-01). Ausente ⇒ sempre livre
+   * (Fase 6, grade sem consultas). Slots no passado NÃO abrem "Nova consulta".
+   */
+  isCellBookable?: (localDate: string, minute: number) => boolean
   /**
    * Consulta ATIVA/histórica exibida numa célula (D-07: ativo vence histórico).
    * `null` = célula sem consulta. Opcional: quando ausente, a grade é só de
@@ -312,17 +330,33 @@ export function CalendarDayWeekGrid({
       // Intervalo meio-aberto [lo, hi + STEP) — inclui a última célula tocada.
       onDragSelect(gesture.localDate, lo, hi + STEP)
     } else {
-      // Clique puro (sem arraste). Desambiguação (07-UI-SPEC §1):
-      //  - célula COM consulta → abre o detalhe/menu de transição;
-      //  - slot LIVRE (available) SEM consulta → abre "Nova consulta" DIRETO;
-      //  - célula vazia → mantém o menu "Disponibilidade" da Fase 6.
+      // Clique puro (sem arraste). Desambiguação (07-UI-SPEC §1 + 07-03):
+      //  - consulta ATIVA (pendente/confirmada) → detalhe/menu de transição;
+      //  - consulta FINAL (cancelada/realizada/falta) SEM ativa sobreposta, em
+      //    slot LIVRE + FUTURO → "Nova consulta" (re-agendar); no PASSADO/fora da
+      //    disponibilidade → detalhe histórico read-only;
+      //  - slot LIVRE SEM consulta + FUTURO → "Nova consulta" DIRETO;
+      //  - slot LIVRE no PASSADO → no-op (não é agendável);
+      //  - célula vazia → menu "Disponibilidade" da Fase 6.
       const anchor = { x: event.clientX, y: event.clientY }
       const appointment = appointmentOf?.(localDate, minute) ?? null
       const state = cellStateOf(localDate, minute)
-      if (appointment && onAppointmentSelect) {
-        onAppointmentSelect(appointment, anchor)
-      } else if (state === "available" && onAppointmentCreate) {
+      // Sem prop ⇒ tudo agendável (grade da Fase 6, sem regra de futuro).
+      const bookable = isCellBookable?.(localDate, minute) ?? true
+      const isActive =
+        appointment !== null && isActiveAppointmentStatus(appointment.status)
+
+      if (isActive && onAppointmentSelect) {
+        // Consulta viva ocupa o slot → detalhe/menu de transição (como hoje).
+        onAppointmentSelect(appointment!, anchor)
+      } else if (state === "available" && bookable && onAppointmentCreate) {
+        // Slot livre no futuro: criação OU re-agendamento sobre histórico final.
         onAppointmentCreate(localDate, minute, anchor)
+      } else if (appointment && onAppointmentSelect) {
+        // Consulta final em slot passado/fora da disponibilidade → histórico.
+        onAppointmentSelect(appointment, anchor)
+      } else if (state === "available" && !bookable) {
+        // Slot livre no passado: não é agendável → no-op.
       } else {
         onCellMenu(localDate, minute, "left", anchor)
       }
