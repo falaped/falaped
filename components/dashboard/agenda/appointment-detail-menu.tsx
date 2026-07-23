@@ -75,6 +75,25 @@ const FINAL_STATUSES: AppointmentStatus[] = ["done", "no_show", "canceled"]
  * acionada pelo painel "Pedidos a confirmar" (não expõe menu aqui, exceto o
  * detalhe). Tokens oklch, copy PT-BR verbatim do UI-SPEC.
  */
+/**
+ * Snapshot da consulta capturado no instante em que uma transição é INICIADA.
+ * Torna o fluxo RESILIENTE ao fechamento do Popover: ao abrir o AlertDialog de
+ * cancelar, o Popover dispara onOpenChange(false) → o pai zera `detail` → a prop
+ * `appointment` vira null. Sem snapshot, o AlertDialog desmontaria e runTransition
+ * abortaria (`if (!appointment) return`). O snapshot mantém `id`/`from` vivos e o
+ * corpo do diálogo renderizável mesmo com a prop já nula (mesmo padrão de
+ * `pending-requests-panel.tsx`).
+ */
+type TransitionSnapshot = {
+  id: string
+  from: AppointmentStatus
+  to: AppointmentStatus
+  successMsg: string
+  patientName: string
+  dateLabel: string
+  timeLabel: string
+}
+
 export function AppointmentDetailMenu({
   appointment,
   anchor,
@@ -85,32 +104,91 @@ export function AppointmentDetailMenu({
   onOpenChange: (open: boolean) => void
 }) {
   const [busy, setBusy] = React.useState(false)
-  const [confirmCancel, setConfirmCancel] = React.useState(false)
+  // Cancelar: snapshot que abre o AlertDialog destrutivo (null = fechado).
+  const [confirmCancel, setConfirmCancel] =
+    React.useState<TransitionSnapshot | null>(null)
 
   const open = appointment !== null
   const anchorRef = virtualAnchorRef(anchor)
 
+  /**
+   * Executa a transição a partir de um SNAPSHOT (não da prop live `appointment`),
+   * imune ao fechamento do Popover / prop virando null no meio da confirmação.
+   */
   const runTransition = React.useCallback(
-    async (from: AppointmentStatus, to: AppointmentStatus, successMsg: string) => {
-      if (!appointment) return
+    async (snapshot: TransitionSnapshot) => {
       setBusy(true)
       const result = await transitionAppointmentStatusAction({
-        id: appointment.id,
-        from,
-        to,
+        id: snapshot.id,
+        from: snapshot.from,
+        to: snapshot.to,
       })
       setBusy(false)
       if (result.ok) {
-        toast.success(successMsg)
+        toast.success(snapshot.successMsg)
         onOpenChange(false)
       } else {
         toast.error(result.error)
       }
     },
-    [appointment, onOpenChange],
+    [onOpenChange],
   )
 
-  if (!appointment) return null
+  // AlertDialog de cancelar dirigido SÓ pelo snapshot `confirmCancel`. Precisa
+  // sobreviver a `appointment === null`: ao abrir, o Popover fecha e o pai zera
+  // `detail`, então a prop vira null — mas o diálogo (e o confirm) seguem vivos.
+  const cancelDialog = (
+    <AlertDialog
+      open={confirmCancel !== null}
+      onOpenChange={(o) => {
+        if (!o) setConfirmCancel(null)
+      }}
+    >
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>Cancelar esta consulta?</AlertDialogTitle>
+          <AlertDialogDescription>
+            {confirmCancel
+              ? `A consulta de ${confirmCancel.patientName} em ${confirmCancel.dateLabel} ${confirmCancel.timeLabel} será cancelada e o horário liberado. Esta ação não pode ser desfeita.`
+              : null}
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel onClick={() => setConfirmCancel(null)}>
+            Voltar
+          </AlertDialogCancel>
+          <AlertDialogAction
+            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            onClick={() => {
+              const snapshot = confirmCancel
+              setConfirmCancel(null)
+              if (snapshot) runTransition(snapshot)
+            }}
+          >
+            Cancelar consulta
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+  )
+
+  // Sem consulta selecionada: o Popover não renderiza, MAS o AlertDialog de
+  // cancelar continua montado enquanto seu snapshot existir (fluxo resiliente).
+  if (!appointment) return cancelDialog
+
+  // Snapshot congelado no clique, a partir da prop live ainda montada.
+  const snapshotFor = (
+    to: AppointmentStatus,
+    successMsg: string,
+  ): TransitionSnapshot => ({
+    id: appointment.id,
+    from: appointment.status,
+    to,
+    successMsg,
+    patientName: appointment.patientName,
+    dateLabel: appointment.dateLabel,
+    timeLabel: appointment.timeLabel,
+  })
 
   const style = APPOINTMENT_STATUS_STYLE[appointment.status]
   const isFinal = FINAL_STATUSES.includes(appointment.status)
@@ -162,7 +240,9 @@ export function AppointmentDetailMenu({
                   className={MENU_ITEM}
                   disabled={busy}
                   onClick={() =>
-                    runTransition("confirmed", "done", "Consulta marcada como realizada.")
+                    runTransition(
+                      snapshotFor("done", "Consulta marcada como realizada."),
+                    )
                   }
                 >
                   Marcar como realizada
@@ -172,7 +252,7 @@ export function AppointmentDetailMenu({
                   className={MENU_ITEM}
                   disabled={busy}
                   onClick={() =>
-                    runTransition("confirmed", "no_show", "Falta registrada.")
+                    runTransition(snapshotFor("no_show", "Falta registrada."))
                   }
                 >
                   Marcar falta
@@ -181,7 +261,11 @@ export function AppointmentDetailMenu({
                   type="button"
                   className={cn(MENU_ITEM, "text-destructive focus:text-destructive")}
                   disabled={busy}
-                  onClick={() => setConfirmCancel(true)}
+                  onClick={() =>
+                    setConfirmCancel(
+                      snapshotFor("canceled", "Consulta cancelada."),
+                    )
+                  }
                 >
                   Cancelar consulta
                 </button>
@@ -195,36 +279,9 @@ export function AppointmentDetailMenu({
         </PopoverPrimitive.Portal>
       </PopoverPrimitive.Root>
 
-      {/* Cancelar consulta (confirmed → canceled): AlertDialog destrutivo. */}
-      <AlertDialog
-        open={confirmCancel}
-        onOpenChange={(o) => {
-          if (!o) setConfirmCancel(false)
-        }}
-      >
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Cancelar esta consulta?</AlertDialogTitle>
-            <AlertDialogDescription>
-              {`A consulta de ${appointment.patientName} em ${appointment.dateLabel} ${appointment.timeLabel} será cancelada e o horário liberado. Esta ação não pode ser desfeita.`}
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel onClick={() => setConfirmCancel(false)}>
-              Voltar
-            </AlertDialogCancel>
-            <AlertDialogAction
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-              onClick={() => {
-                setConfirmCancel(false)
-                runTransition("confirmed", "canceled", "Consulta cancelada.")
-              }}
-            >
-              Cancelar consulta
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      {/* Cancelar consulta (confirmed → canceled): AlertDialog destrutivo
+          dirigido pelo snapshot — resiliente ao fechamento do Popover. */}
+      {cancelDialog}
     </>
   )
 }
