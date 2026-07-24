@@ -46,6 +46,8 @@ export {
   type CreateAppointmentResult,
   transitionAppointmentStatusAction,
   type TransitionAppointmentStatusResult,
+  listAppointmentsByRangeAction,
+  type ListAppointmentsByRangeResult,
 } from "./appointments"
 export {
   saveAvailabilityAction,
