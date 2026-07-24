@@ -71,9 +71,9 @@ const FINAL_STATUSES: AppointmentStatus[] = ["done", "no_show", "canceled"]
  * Popover controlado com âncora virtual no ponto do clique. Confirmada expõe só
  * as transições LEGAIS (Marcar como realizada · Marcar falta · Cancelar consulta
  * via AlertDialog destrutivo). Estados finais (realizada/falta/cancelada) são
- * READ-ONLY: badge + paciente + horário, sem itens de transição. Pendente é
- * acionada pelo painel "Pedidos a confirmar" (não expõe menu aqui, exceto o
- * detalhe). Tokens oklch, copy PT-BR verbatim do UI-SPEC.
+ * READ-ONLY: badge + paciente + horário, sem itens de transição. Pendente expõe
+ * Confirmar (pending→confirmed) e Recusar (pending→canceled) direto no menu (E-5).
+ * Tokens oklch, copy PT-BR verbatim do UI-SPEC.
  */
 /**
  * Snapshot da consulta capturado no instante em que uma transição é INICIADA.
@@ -146,10 +146,16 @@ export function AppointmentDetailMenu({
     >
       <AlertDialogContent>
         <AlertDialogHeader>
-          <AlertDialogTitle>Cancelar esta consulta?</AlertDialogTitle>
+          <AlertDialogTitle>
+            {confirmCancel?.from === "pending"
+              ? "Recusar esta consulta?"
+              : "Cancelar esta consulta?"}
+          </AlertDialogTitle>
           <AlertDialogDescription>
             {confirmCancel
-              ? `A consulta de ${confirmCancel.patientName} em ${confirmCancel.dateLabel} ${confirmCancel.timeLabel} será cancelada e o horário liberado. Esta ação não pode ser desfeita.`
+              ? `A consulta de ${confirmCancel.patientName} em ${confirmCancel.dateLabel} ${confirmCancel.timeLabel} será ${
+                  confirmCancel.from === "pending" ? "recusada" : "cancelada"
+                } e o horário liberado. Esta ação não pode ser desfeita.`
               : null}
           </AlertDialogDescription>
         </AlertDialogHeader>
@@ -165,7 +171,9 @@ export function AppointmentDetailMenu({
               if (snapshot) runTransition(snapshot)
             }}
           >
-            Cancelar consulta
+            {confirmCancel?.from === "pending"
+              ? "Recusar consulta"
+              : "Cancelar consulta"}
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>
@@ -193,6 +201,9 @@ export function AppointmentDetailMenu({
   const style = APPOINTMENT_STATUS_STYLE[appointment.status]
   const isFinal = FINAL_STATUSES.includes(appointment.status)
   const isConfirmed = appointment.status === "confirmed"
+  // E-5: um bloco PENDENTE oferece Confirmar (pending→confirmed) e Recusar
+  // (pending→canceled) — transições legais já existentes na máquina de status.
+  const isPending = appointment.status === "pending"
 
   return (
     <>
@@ -232,8 +243,36 @@ export function AppointmentDetailMenu({
               </p>
             </div>
 
-            {/* Transições LEGAIS (só Confirmada). Finais: nenhum item (D-06). */}
-            {isConfirmed ? (
+            {/* Transições LEGAIS. Pendente: Confirmar/Recusar (E-5). Confirmada:
+                realizada/falta/cancelar. Finais: nenhum item (D-06). */}
+            {isPending ? (
+              <div className="mt-2 flex flex-col border-t border-border pt-2">
+                <button
+                  type="button"
+                  className={MENU_ITEM}
+                  disabled={busy}
+                  onClick={() =>
+                    runTransition(
+                      snapshotFor("confirmed", "Consulta confirmada."),
+                    )
+                  }
+                >
+                  Confirmar
+                </button>
+                <button
+                  type="button"
+                  className={cn(MENU_ITEM, "text-destructive focus:text-destructive")}
+                  disabled={busy}
+                  onClick={() =>
+                    setConfirmCancel(
+                      snapshotFor("canceled", "Consulta recusada."),
+                    )
+                  }
+                >
+                  Recusar
+                </button>
+              </div>
+            ) : isConfirmed ? (
               <div className="mt-2 flex flex-col border-t border-border pt-2">
                 <button
                   type="button"

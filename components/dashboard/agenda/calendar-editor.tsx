@@ -42,10 +42,6 @@ import { type FreeSlot } from "./booking-rail"
 import { AgendaSidePanel } from "./agenda-side-panel"
 import type { AvailabilityIntent } from "./availability-panel"
 import { CalendarMonthIndicator } from "./calendar-month-indicator"
-import {
-  PendingRequestsPanel,
-  type PendingRequest,
-} from "./pending-requests-panel"
 import { AppointmentDetailMenu } from "./appointment-detail-menu"
 import type { AppointmentStatus } from "@/modules/appointments/types"
 import type { Patient } from "@/modules/patients/types"
@@ -520,22 +516,9 @@ export function CalendarEditor({
     ],
   )
 
-  /** Fila de pedidos pendentes (APPT-03) — ordenada por horário. */
-  const pendingRequests = React.useMemo<PendingRequest[]>(() => {
-    return appointments
-      .filter((a) => a.status === "pending")
-      .sort((a, b) => a.starts_at.localeCompare(b.starts_at))
-      .map((a) => {
-        const labels = labelsOfInstant(a.starts_at)
-        return {
-          id: a.id,
-          patientName: a.patient_name,
-          responsible: a.patient_responsible,
-          dateLabel: labels.dateLabel,
-          timeLabel: labels.timeLabel,
-        }
-      })
-  }, [appointments, labelsOfInstant])
+  // E-5: os pedidos pendentes JÁ aparecem como blocos "pendente" na grade
+  // (tracejado azul + Clock) e são confirmados/recusados pelo menu de detalhe —
+  // a seção "Pedidos a confirmar" foi removida (sem fila separada).
 
   // Drawer lateral único (C-3): abre/fecha, modo inicial (Consulta/Disponibilidade)
   // e minuto pré-selecionado (C-4) quando vem de um clique num slot livre.
@@ -1097,10 +1080,10 @@ export function CalendarEditor({
 
       {/* ---------- DIA ---------- */}
       {/* C-1/C-3: grade full-width que preenche a altura da viewport (sem scroll
-          vertical); o painel lateral virou drawer (fora dos TabsContent). O
-          PendingRequestsPanel fica ABAIXO da grade (largura total). A altura é
-          ancorada aqui via h-[calc(100svh-16rem)] — o chrome subtraído (header +
-          toolbar + dica) é o valor a confirmar no checkpoint visual. */}
+          vertical); o painel lateral virou drawer (fora dos TabsContent). A
+          altura é ancorada aqui via h-[calc(100svh-16rem)] — o chrome subtraído
+          (header + toolbar + dica) é o valor a confirmar no checkpoint visual.
+          E-5: sem fila separada de pedidos abaixo da grade. */}
       <TabsContent value="dia" className="flex flex-col gap-4">
         <div className="flex h-[calc(100svh-16rem)] min-h-0 flex-col">
           <div className="min-h-0 min-w-0 flex-1">
@@ -1120,7 +1103,6 @@ export function CalendarEditor({
             />
           </div>
         </div>
-        <PendingRequestsPanel requests={pendingRequests} />
       </TabsContent>
 
       {/* ---------- SEMANA ---------- */}
@@ -1143,7 +1125,6 @@ export function CalendarEditor({
             />
           </div>
         </div>
-        <PendingRequestsPanel requests={pendingRequests} />
       </TabsContent>
 
       {/* ---------- MÊS (indicador, D-18) ---------- */}
