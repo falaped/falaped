@@ -15,6 +15,12 @@ import { toast } from "sonner"
 
 import { saveAvailabilityAction } from "@/actions"
 import { Button } from "@/components/ui/button"
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { expandAvailability } from "@/lib/expand-availability"
 import { DEFAULT_SLOT } from "./availability-cell-menu"
@@ -36,10 +42,6 @@ import { type FreeSlot } from "./booking-rail"
 import { AgendaSidePanel } from "./agenda-side-panel"
 import type { AvailabilityIntent } from "./availability-panel"
 import { CalendarMonthIndicator } from "./calendar-month-indicator"
-import {
-  AppointmentCreateDialog,
-  type CreateTarget,
-} from "./appointment-create-dialog"
 import {
   PendingRequestsPanel,
   type PendingRequest,
@@ -535,68 +537,20 @@ export function CalendarEditor({
       })
   }, [appointments, labelsOfInstant])
 
-  // Dialog de criação: slot alvo (null = fechado).
-  const [createTarget, setCreateTarget] = React.useState<CreateTarget | null>(
-    null,
-  )
+  // Drawer lateral único (C-3): abre/fecha, modo inicial (Consulta/Disponibilidade)
+  // e minuto pré-selecionado (C-4) quando vem de um clique num slot livre.
+  const [drawerOpen, setDrawerOpen] = React.useState(false)
+  const [drawerMode, setDrawerMode] = React.useState<
+    "consulta" | "disponibilidade"
+  >("consulta")
+  const [preselectedMinute, setPreselectedMinute] = React.useState<
+    number | null
+  >(null)
   // Detalhe/menu de transição: consulta selecionada + âncora do clique.
   const [detail, setDetail] = React.useState<{
     appointment: CellAppointment
     anchor: MenuAnchor
   } | null>(null)
-
-  /**
-   * Duração do slot (min) da faixa recorrente que contém `minute` no `weekday`,
-   * senão o default. Usado para derivar o endsAt do slot clicado (D-01: 1 célula).
-   */
-  const slotMinutesFor = React.useCallback(
-    (weekday: number, minute: number): number => {
-      let slot = slotMinutes
-      for (const key of Object.keys(draft.ruleDurations)) {
-        const [wd, bandStart] = key.split(":").map(Number)
-        if (wd === weekday && bandStart <= minute) slot = draft.ruleDurations[key]
-      }
-      return slot
-    },
-    [draft.ruleDurations, slotMinutes],
-  )
-
-  /**
-   * Constrói o alvo de criação (instante de início ISO UTC + rótulos + duração
-   * default) a partir de uma célula LIVRE clicada. A meia-noite local é ancorada
-   * no fuso da clínica via TZDate a partir dos componentes (correção CR-01) e o
-   * wall-clock do minuto é somado; espelha como o servidor expande o FreeSlot.
-   * A duração default = slot_minutes da faixa clicada (Issue C); o médico pode
-   * escolher outra no dialog, e o `ends_at` é derivado lá.
-   */
-  const buildCreateTarget = React.useCallback(
-    (localDate: string, minute: number): CreateTarget => {
-      const [year, month, day] = localDate.split("-").map(Number)
-      const hours = Math.floor(minute / 60)
-      const minutes = minute % 60
-      const startDate = new TZDate(
-        year,
-        month - 1,
-        day,
-        hours,
-        minutes,
-        0,
-        0,
-        timeZone,
-      )
-      const weekday = weekdayOf(localDate, timeZone)
-      const slot = slotMinutesFor(weekday, minute)
-      const startIso = new Date(startDate.getTime()).toISOString()
-      const labels = labelsOfInstant(startIso)
-      return {
-        startsAt: startIso,
-        dateLabel: labels.dateLongLabel,
-        timeLabel: labels.timeLabel,
-        defaultDuration: slot,
-      }
-    },
-    [labelsOfInstant, slotMinutesFor, timeZone],
-  )
 
   // ---------- mutações ADITIVAS do draft (puras: recebem e devolvem draft) ----------
 
@@ -665,12 +619,19 @@ export function CalendarEditor({
 
   // ---------- callbacks da grade ----------
 
-  /** Clique num slot LIVRE → abre "Nova consulta" direto. */
+  /**
+   * Clique num slot LIVRE (C-4) → abre o DRAWER em modo Consulta com o horário
+   * pré-selecionado no BookingRail. O drawer opera sobre o dia selecionado
+   * global, então o clique também sincroniza `selectedRailDate` com a coluna.
+   */
   const handleAppointmentCreate = React.useCallback(
     (localDate: string, minute: number) => {
-      setCreateTarget(buildCreateTarget(localDate, minute))
+      setSelectedRailDate(localDate)
+      setPreselectedMinute(minute)
+      setDrawerMode("consulta")
+      setDrawerOpen(true)
     },
-    [buildCreateTarget],
+    [],
   )
 
   /** Clique num slot COM consulta → abre o detalhe/menu de transição. */
@@ -1101,6 +1062,35 @@ export function CalendarEditor({
             {nav.label}
           </span>
         </div>
+
+        {/* Triggers do drawer (C-3): o botão define só o modo INICIAL; o toggle
+            Consulta↔Disponibilidade continua dentro do drawer. */}
+        <div className="flex items-center gap-2 lg:ml-auto">
+          <Button
+            type="button"
+            size="sm"
+            className="h-7"
+            onClick={() => {
+              setPreselectedMinute(null)
+              setDrawerMode("consulta")
+              setDrawerOpen(true)
+            }}
+          >
+            + Nova consulta
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className="h-7"
+            onClick={() => {
+              setDrawerMode("disponibilidade")
+              setDrawerOpen(true)
+            }}
+          >
+            Disponibilidade
+          </Button>
+        </div>
       </div>
 
       {/* Dica de interação: a grade só agenda; disponibilidade/folga vão no painel. */}
@@ -1115,12 +1105,14 @@ export function CalendarEditor({
       </p>
 
       {/* ---------- DIA ---------- */}
-      {/* Layout híbrido: grade de tempo à esquerda (flex-1) + painel lateral fixo à
-          direita (≥lg), empilhado abaixo em telas menores. O PendingRequestsPanel
-          vive ABAIXO do painel, na mesma coluna direita. */}
+      {/* C-1/C-3: grade full-width que preenche a altura da viewport (sem scroll
+          vertical); o painel lateral virou drawer (fora dos TabsContent). O
+          PendingRequestsPanel fica ABAIXO da grade (largura total). A altura é
+          ancorada aqui via h-[calc(100svh-16rem)] — o chrome subtraído (header +
+          toolbar + dica) é o valor a confirmar no checkpoint visual. */}
       <TabsContent value="dia" className="flex flex-col gap-4">
-        <div className="flex flex-col gap-6 lg:flex-row">
-          <div className="min-w-0 flex-1">
+        <div className="flex h-[calc(100svh-16rem)] min-h-0 flex-col">
+          <div className="min-h-0 min-w-0 flex-1">
             <CalendarTimeGrid
               days={dayColumns([selectedRailDateObj])}
               minuteRows={minuteRows}
@@ -1136,25 +1128,14 @@ export function CalendarEditor({
               onAppointmentSelect={handleAppointmentSelect}
             />
           </div>
-          <div className="flex w-full flex-col gap-4 lg:w-80 lg:shrink-0">
-            <AgendaSidePanel
-              patients={patients}
-              selectedDate={selectedRailDate}
-              selectedDayLongLabel={selectedRailDayLongLabel}
-              selectedWeekday={weekdayOf(selectedRailDate, timeZone)}
-              freeSlots={railFreeSlots}
-              onApply={applyAvailabilityIntent}
-              savingAvailability={savingAvailability}
-            />
-            <PendingRequestsPanel requests={pendingRequests} />
-          </div>
         </div>
+        <PendingRequestsPanel requests={pendingRequests} />
       </TabsContent>
 
       {/* ---------- SEMANA ---------- */}
       <TabsContent value="semana" className="flex flex-col gap-4">
-        <div className="flex flex-col gap-6 lg:flex-row">
-          <div className="min-w-0 flex-1">
+        <div className="flex h-[calc(100svh-16rem)] min-h-0 flex-col">
+          <div className="min-h-0 min-w-0 flex-1">
             <CalendarTimeGrid
               days={dayColumns(weekDays)}
               minuteRows={minuteRows}
@@ -1170,46 +1151,56 @@ export function CalendarEditor({
               onAppointmentSelect={handleAppointmentSelect}
             />
           </div>
-          <div className="flex w-full flex-col gap-4 lg:w-80 lg:shrink-0">
+        </div>
+        <PendingRequestsPanel requests={pendingRequests} />
+      </TabsContent>
+
+      {/* ---------- MÊS (indicador, D-18) ---------- */}
+      {/* C-1: o Mês também preenche a altura da viewport, sem scroll vertical. */}
+      <TabsContent value="mes" className="flex flex-col gap-4">
+        <div className="flex h-[calc(100svh-16rem)] min-h-0 flex-col">
+          <CalendarMonthIndicator
+            monthCursor={monthCursor}
+            byDay={monthByDay}
+            timeZone={timeZone}
+            todayLocal={todayLocal}
+            selectedLocalDate={selectedRailDate}
+            onSelectDay={(day) => {
+              // M-1: o dia clicado no Mês vira o dia global; a visão Dia mostra-o.
+              const picked = skipWeekend(day, 1, context)
+              setSelectedRailDate(format(picked, "yyyy-MM-dd", context))
+              setActiveTab("dia")
+            }}
+          />
+        </div>
+      </TabsContent>
+
+      {/* Drawer lateral único (C-3): hospeda o AgendaSidePanel (Consulta ↔
+          Disponibilidade). Aberto pelos 2 botões da toolbar ou por um clique
+          num slot livre (C-4, modo Consulta com horário pré-marcado). */}
+      <Sheet open={drawerOpen} onOpenChange={setDrawerOpen}>
+        <SheetContent
+          side="right"
+          className="w-full overflow-y-auto sm:max-w-md"
+        >
+          <SheetHeader>
+            <SheetTitle>Agenda do dia</SheetTitle>
+          </SheetHeader>
+          <div className="px-4 pb-4">
             <AgendaSidePanel
               patients={patients}
               selectedDate={selectedRailDate}
               selectedDayLongLabel={selectedRailDayLongLabel}
               selectedWeekday={weekdayOf(selectedRailDate, timeZone)}
               freeSlots={railFreeSlots}
+              initialMode={drawerMode}
+              preselectedMinute={preselectedMinute}
               onApply={applyAvailabilityIntent}
               savingAvailability={savingAvailability}
             />
-            <PendingRequestsPanel requests={pendingRequests} />
           </div>
-        </div>
-      </TabsContent>
-
-      {/* ---------- MÊS (indicador, D-18) ---------- */}
-      <TabsContent value="mes" className="flex flex-col gap-4">
-        <CalendarMonthIndicator
-          monthCursor={monthCursor}
-          byDay={monthByDay}
-          timeZone={timeZone}
-          todayLocal={todayLocal}
-          selectedLocalDate={selectedRailDate}
-          onSelectDay={(day) => {
-            // M-1: o dia clicado no Mês vira o dia global; a visão Dia mostra-o.
-            const picked = skipWeekend(day, 1, context)
-            setSelectedRailDate(format(picked, "yyyy-MM-dd", context))
-            setActiveTab("dia")
-          }}
-        />
-      </TabsContent>
-
-      {/* Dialog de criação de consulta (clique num slot livre). */}
-      <AppointmentCreateDialog
-        target={createTarget}
-        patients={patients}
-        onOpenChange={(open) => {
-          if (!open) setCreateTarget(null)
-        }}
-      />
+        </SheetContent>
+      </Sheet>
 
       {/* Detalhe + menu de transição de status (clique numa consulta). */}
       <AppointmentDetailMenu

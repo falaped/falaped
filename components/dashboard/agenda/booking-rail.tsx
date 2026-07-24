@@ -58,6 +58,7 @@ export function BookingRail({
   selectedDate,
   selectedDayLongLabel,
   freeSlots,
+  preselectedMinute,
   onCreated,
 }: {
   /** Pacientes do perfil (filtro client-side, mirror do domínio patients — D-04). */
@@ -68,6 +69,11 @@ export function BookingRail({
   selectedDayLongLabel: string
   /** Horários LIVRES do dia selecionado (disponibilidade − consultas ativas). */
   freeSlots: FreeSlot[]
+  /**
+   * Minuto-do-dia PRÉ-SELECIONADO (C-4): quando presente e existir um `freeSlot`
+   * com esse `minute`, marca o slot na lista (clique num slot livre → drawer).
+   */
+  preselectedMinute?: number | null
   /** Callback pós-sucesso (o pai pode reagir; a agenda revalida via RSC). */
   onCreated?: () => void
 }) {
@@ -100,6 +106,16 @@ export function BookingRail({
     setSlotMinute(null)
     setInlineError(null)
   }, [selectedDate])
+
+  // C-4: horário PRÉ-SELECIONADO (clique num slot livre → drawer). Prevalece
+  // sobre o reset acima quando presente e o slot existir na lista do dia.
+  React.useEffect(() => {
+    if (preselectedMinute == null) return
+    if (freeSlots.some((s) => s.minute === preselectedMinute)) {
+      setSlotMinute(preselectedMinute)
+      setInlineError(null)
+    }
+  }, [preselectedMinute, selectedDate, freeSlots])
 
   async function handleSubmit() {
     if (!selected || !selectedSlot) return

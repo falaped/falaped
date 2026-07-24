@@ -31,6 +31,8 @@ export function AgendaSidePanel({
   selectedDayLongLabel,
   selectedWeekday,
   freeSlots,
+  initialMode,
+  preselectedMinute,
   onApply,
   savingAvailability = false,
 }: {
@@ -44,12 +46,24 @@ export function AgendaSidePanel({
   selectedWeekday: number
   /** Horários LIVRES do dia selecionado (para o BookingRail). */
   freeSlots: FreeSlot[]
+  /**
+   * Modo INICIAL do painel (C-3): o botão de trigger define só o modo de
+   * abertura do drawer; o toggle interno continua funcional.
+   */
+  initialMode?: PanelMode
+  /** Minuto-do-dia PRÉ-SELECIONADO repassado ao BookingRail (C-4). */
+  preselectedMinute?: number | null
   /** Aplica a intenção de disponibilidade/folga (o editor traduz + salva). */
   onApply: (intent: AvailabilityIntent) => void
   /** `true` enquanto um save de disponibilidade está em andamento. */
   savingAvailability?: boolean
 }) {
-  const [mode, setMode] = React.useState<PanelMode>("consulta")
+  const [mode, setMode] = React.useState<PanelMode>(initialMode ?? "consulta")
+
+  // Sincroniza o modo quando `initialMode` muda entre aberturas do drawer (C-3).
+  React.useEffect(() => {
+    setMode(initialMode ?? "consulta")
+  }, [initialMode])
 
   return (
     <div className="flex flex-col gap-3">
@@ -93,6 +107,7 @@ export function AgendaSidePanel({
           selectedDate={selectedDate}
           selectedDayLongLabel={selectedDayLongLabel}
           freeSlots={freeSlots}
+          preselectedMinute={preselectedMinute}
         />
       ) : (
         <AvailabilityPanel
