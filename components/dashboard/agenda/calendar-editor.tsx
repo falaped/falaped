@@ -541,7 +541,7 @@ export function CalendarEditor({
   // e minuto pré-selecionado (C-4) quando vem de um clique num slot livre.
   const [drawerOpen, setDrawerOpen] = React.useState(false)
   const [drawerMode, setDrawerMode] = React.useState<
-    "consulta" | "disponibilidade"
+    "consulta" | "disponibilidade" | "folga"
   >("consulta")
   const [preselectedMinute, setPreselectedMinute] = React.useState<
     number | null
@@ -811,6 +811,9 @@ export function CalendarEditor({
 
       const result = await persistDraft(next)
       if (result.ok) {
+        // E-2: sucesso (disponibilidade OU folga) → fecha o drawer; o toast com
+        // "Desfazer" permanece. Em erro (else) o drawer NÃO fecha.
+        setDrawerOpen(false)
         toast.success("Disponibilidade salva.", {
           action: {
             label: "Desfazer",
@@ -1063,8 +1066,8 @@ export function CalendarEditor({
           </span>
         </div>
 
-        {/* Triggers do drawer (C-3): o botão define só o modo INICIAL; o toggle
-            Consulta↔Disponibilidade continua dentro do drawer. */}
+        {/* Trigger ÚNICO do drawer (E-4): abre em Consulta; o toggle de 3 opções
+            (Consulta | Disponibilidade | Folga) vive dentro do drawer. */}
         <div className="flex items-center gap-2 lg:ml-auto">
           <Button
             type="button"
@@ -1076,19 +1079,7 @@ export function CalendarEditor({
               setDrawerOpen(true)
             }}
           >
-            + Nova consulta
-          </Button>
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            className="h-7"
-            onClick={() => {
-              setDrawerMode("disponibilidade")
-              setDrawerOpen(true)
-            }}
-          >
-            Disponibilidade
+            + Nova marcação
           </Button>
         </div>
       </div>
@@ -1175,9 +1166,10 @@ export function CalendarEditor({
         </div>
       </TabsContent>
 
-      {/* Drawer lateral único (C-3): hospeda o AgendaSidePanel (Consulta ↔
-          Disponibilidade). Aberto pelos 2 botões da toolbar ou por um clique
-          num slot livre (C-4, modo Consulta com horário pré-marcado). */}
+      {/* Drawer lateral único (C-3/E-4): hospeda o AgendaSidePanel com o toggle
+          de 3 opções (Consulta | Disponibilidade | Folga). Aberto pelo botão
+          único da toolbar ou por um clique num slot livre (C-4, modo Consulta
+          com horário pré-marcado). */}
       <Sheet open={drawerOpen} onOpenChange={setDrawerOpen}>
         <SheetContent
           side="right"
@@ -1196,6 +1188,7 @@ export function CalendarEditor({
               initialMode={drawerMode}
               preselectedMinute={preselectedMinute}
               onApply={applyAvailabilityIntent}
+              onCreated={() => setDrawerOpen(false)}
               savingAvailability={savingAvailability}
             />
           </div>

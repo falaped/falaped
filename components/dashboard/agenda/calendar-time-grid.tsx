@@ -2,6 +2,7 @@
 
 import * as React from "react"
 
+import { Badge } from "@/components/ui/badge"
 import { cn } from "@/lib/utils"
 import {
   APPOINTMENT_STATUS_STYLE,
@@ -196,11 +197,18 @@ export function CalendarTimeGrid({
                 ) : (
                   <span className="text-sm tabular-nums">{day.dayNumber}</span>
                 )}
+                {/* E-3: tag "Selecionado" SÓ no header do dia escolhido,
+                    visualmente distinta do "hoje" (número em bolinha). */}
+                {isSelected ? (
+                  <Badge variant="outline" className="border-primary text-primary">
+                    Selecionado
+                  </Badge>
+                ) : null}
               </>
             )
-            // Destaque do dia SELECIONADO (C-2): aparência de ABA ATIVA
-            // (fundo primary/10 + texto primary + barra inferior grossa),
-            // token-only e DISTINTA do "hoje" (número em bolinha).
+            // E-3: o dia SELECIONADO é marcado APENAS no header (fundo primary/10 +
+            // texto primary + barra inferior), token-only e DISTINTO do "hoje"
+            // (número em bolinha). A coluna/células NÃO recebem realce.
             const selectedTab =
               isSelected &&
               "bg-primary/10 text-primary border-b-2 border-primary"
@@ -263,10 +271,8 @@ export function CalendarTimeGrid({
               className={cn(
                 "relative h-full border-r",
                 day.isToday && "bg-primary/5",
-                // Coluna do dia SELECIONADO (M-2): realce token-only, distinto de
-                // hoje (anel lateral em vez do fundo do círculo).
-                day.localDate === selectedLocalDate &&
-                  "bg-primary/5 ring-2 ring-inset ring-primary/40",
+                // E-3: a coluna NÃO recebe mais realce de seleção — apenas o
+                // HEADER fica marcado (Badge "Selecionado"). Mantido só o "hoje".
               )}
             >
               {/* Camada de fundo READ-ONLY: faixas de 30 min (clique = agendar). */}

@@ -139,6 +139,7 @@ export function AvailabilityPanel({
   selectedDate,
   selectedDayLongLabel,
   selectedWeekday,
+  initialType,
   onApply,
   saving = false,
 }: {
@@ -148,12 +149,25 @@ export function AvailabilityPanel({
   selectedDayLongLabel: string
   /** Weekday (0=dom..6=sáb) do dia selecionado, no fuso da clínica (pai calcula). */
   selectedWeekday: number
+  /**
+   * Tipo PRÉ-SELECIONADO pelo toggle externo (E-4): "available" p/ Disponibilidade,
+   * "off" p/ Folga. Semeia o estado `type` e ressincroniza entre aberturas.
+   */
+  initialType?: AvailabilityKind
   /** Aplica a intenção declarativa (o editor traduz em mutações + save). */
   onApply: (intent: AvailabilityIntent) => void
   /** `true` enquanto um save está em andamento. */
   saving?: boolean
 }) {
-  const [type, setType] = React.useState<AvailabilityKind>("available")
+  const [type, setType] = React.useState<AvailabilityKind>(
+    initialType ?? "available",
+  )
+
+  // Ressincroniza o tipo quando `initialType` muda entre aberturas do drawer
+  // (mesmo padrão do `initialMode` no side-panel).
+  React.useEffect(() => {
+    if (initialType) setType(initialType)
+  }, [initialType])
   const [scope, setScope] = React.useState<AvailabilityScopeKind>("recurring")
   const [startMinute, setStartMinute] = React.useState<number>(DEFAULT_DAY_START)
   const [endMinute, setEndMinute] = React.useState<number>(DEFAULT_DAY_END)
