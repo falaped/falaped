@@ -5,15 +5,15 @@ milestone_name: Agenda & Ganhos
 current_phase: 07
 current_phase_name: consultas-ciclo-de-status
 status: executing
-stopped_at: Phase 7 UI-SPEC approved
-last_updated: "2026-07-23T03:14:56.401Z"
-last_activity: 2026-07-23
-last_activity_desc: "Quick 260723-du8 concluído (redesign híbrido da Agenda, aprovado) na branch redesign/agenda-hibrida"
+stopped_at: Phase 7 plans complete (07-03 closed out); verification pending
+last_updated: "2026-07-24T00:00:00.000Z"
+last_activity: 2026-07-24
+last_activity_desc: "07-03 fechado retroativamente (safe-resume): UI de consultas já commitada em 2026-07-23; SUMMARY escrito. Falta verificação da fase 7."
 progress:
   total_phases: 5
   completed_phases: 1
   total_plans: 6
-  completed_plans: 5
+  completed_plans: 6
   percent: 20
 ---
 
@@ -30,8 +30,8 @@ See: .planning/PROJECT.md (updated 2026-07-20)
 
 Phase: 07 (consultas-ciclo-de-status) — EXECUTING
 Plan: 3 of 3
-Status: Ready to execute
-Last activity: 2026-07-24 — Completed quick task 260724-jka: Detalhe da consulta na agenda (modal + tipo/motivo)
+Status: Plans complete (all 3 have SUMMARYs) — phase verification pending
+Last activity: 2026-07-24 — 07-03 fechado retroativamente via safe-resume (UI de consultas já commitada em 2026-07-23; SUMMARY escrito)
 
 ## Roadmap (milestone v1.1)
 
