@@ -6,15 +6,18 @@ import {
   addDays,
   addMonths,
   format,
+  startOfDay,
   startOfMonth,
   startOfWeek,
 } from "date-fns"
 import { ptBR } from "date-fns/locale"
-import { useRouter } from "next/navigation"
 import { ChevronLeft, ChevronRight } from "lucide-react"
 import { toast } from "sonner"
 
-import { saveAvailabilityAction } from "@/actions"
+import {
+  listAppointmentsByRangeAction,
+  saveAvailabilityAction,
+} from "@/actions"
 import { Button } from "@/components/ui/button"
 import {
   Sheet,
@@ -48,6 +51,7 @@ import type {
   AppointmentStatus,
   AppointmentType,
 } from "@/modules/appointments/types"
+import type { AppointmentListRow } from "@/modules/appointments/list-appointments-by-profile-id"
 import type { Patient } from "@/modules/patients/types"
 
 /** Linha crua de rule (snake_case, espelha o DB / Plano 01). */
@@ -243,7 +247,7 @@ function weekdayOf(localDate: string, timeZone: string): number {
 export function CalendarEditor({
   rules,
   overrides,
-  appointments = [],
+  appointments: appointmentsProp = [],
   patients = [],
   timeZone,
 }: {
@@ -256,10 +260,6 @@ export function CalendarEditor({
   timeZone: string
 }) {
   const context = React.useMemo(() => ({ in: tz(timeZone) }), [timeZone])
-
-  // Roteador para re-renderizar o RSC da página após criar consulta ou transição
-  // de status (as actions já invalidam o cache; o refresh reflete na grade sem reload).
-  const router = useRouter()
 
   const initialDraftRef = React.useRef<Draft>(buildInitialDraft(rules, overrides))
   const [draft, setDraft] = React.useState<Draft>(() =>
@@ -275,6 +275,63 @@ export function CalendarEditor({
   const [monthCursor, setMonthCursor] = React.useState<Date>(() => new Date())
   const [activeTab, setActiveTab] = React.useState<string>("semana")
   const [savingAvailability, setSavingAvailability] = React.useState(false)
+
+  // Consultas como ESTADO do cliente (D-07): semeadas pela prop (load inicial da
+  // semana no RSC) e re-buscadas por JANELA VISÍVEL ao navegar (dia/semana/mês) e
+  // após criar/transitar. A re-expansão da disponibilidade (rules/overrides via
+  // prop) fica INALTERADA — só as consultas viram estado buscado.
+  const [appointments, setAppointments] =
+    React.useState<AppointmentRow[]>(appointmentsProp)
+
+  // Mapa id → paciente para enriquecer as rows CRUAS do action (nome/responsável),
+  // espelhando o join client-side do RSC (page.tsx ~72-86).
+  const patientById = React.useMemo(
+    () => new Map(patients.map((p) => [p.id, p])),
+    [patients],
+  )
+
+  // Enriquece AppointmentListRow[] (forma crua do action) → AppointmentRow[] (forma
+  // local com patient_name/patient_responsible), EXATAMENTE como o RSC.
+  const mapRowsToAppointments = React.useCallback(
+    (rows: AppointmentListRow[]): AppointmentRow[] =>
+      rows.map((row) => {
+        const patient = patientById.get(row.patient_id)
+        return {
+          id: row.id,
+          patient_id: row.patient_id,
+          status: row.status,
+          reason: row.reason,
+          type: row.type,
+          starts_at: row.starts_at,
+          ends_at: row.ends_at,
+          patient_name: patient?.name ?? "Paciente",
+          patient_responsible: patient?.responsible ?? null,
+        }
+      }),
+    [patientById],
+  )
+
+  // Guarda de stale: token da última requisição. Uma resposta antiga (rede lenta)
+  // NUNCA pode sobrescrever os dados de uma navegação mais recente.
+  const latestRangeTokenRef = React.useRef<string>("")
+
+  const reloadAppointments = React.useCallback(
+    async (from: Date, to: Date) => {
+      const token = `${from.getTime()}:${to.getTime()}`
+      latestRangeTokenRef.current = token
+      const result = await listAppointmentsByRangeAction(
+        from.toISOString(),
+        to.toISOString(),
+      )
+      // Resposta obsoleta (o usuário já navegou para outra janela) → ignorar.
+      if (latestRangeTokenRef.current !== token) return
+      if (result.ok) {
+        setAppointments(mapRowsToAppointments(result.appointments))
+      }
+      // Em erro, mantemos os dados atuais (sem toast obrigatório).
+    },
+    [mapRowsToAppointments],
+  )
 
   // Dia selecionado no PAINEL lateral (default = dia útil mais próximo).
   const [selectedRailDate, setSelectedRailDate] = React.useState<string>(() =>
@@ -963,6 +1020,37 @@ export function CalendarEditor({
     return new TZDate(y, m - 1, d, timeZone)
   }, [selectedRailDate, timeZone])
 
+  // ---------- janela VISÍVEL [visibleFrom, visibleTo) por aba ----------
+  // Meio-aberta, no fuso da clínica (context). A busca de consultas casa a
+  // faixa RENDERIZADA em cada visão:
+  //  - semana: [weekStart, weekStart + 7d) — segunda→domingo (D-11).
+  //  - mes: [gridStart, gridStart + 42d) — MESMA origem do grid do mês (monthByDay).
+  //  - dia: [startOfDay(sel), +1d) — o dia selecionado no painel.
+  const { visibleFrom, visibleTo } = React.useMemo(() => {
+    if (activeTab === "dia") {
+      const from = startOfDay(selectedRailDateObj, context)
+      return { visibleFrom: from, visibleTo: addDays(from, 1, context) }
+    }
+    if (activeTab === "mes") {
+      const from = startOfWeek(startOfMonth(monthCursor, context), {
+        ...context,
+        weekStartsOn: 1,
+      })
+      return { visibleFrom: from, visibleTo: addDays(from, 42, context) }
+    }
+    // "semana" (default)
+    const weekStart = startOfWeek(dayCursor, { ...context, weekStartsOn: 1 })
+    return { visibleFrom: weekStart, visibleTo: addDays(weekStart, 7, context) }
+  }, [activeTab, dayCursor, monthCursor, selectedRailDateObj, context])
+
+  // Busca as consultas da janela visível ao navegar (dia/semana/mês). Deps são
+  // APENAS primitivos (getTime()/activeTab) — passar objetos Date dispararia em
+  // todo render, criando um loop de refetch.
+  React.useEffect(() => {
+    reloadAppointments(visibleFrom, visibleTo)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [visibleFrom.getTime(), visibleTo.getTime(), activeTab])
+
   // Navegação por aba (rótulo + prev/hoje/next).
   const nav = React.useMemo(() => {
     if (activeTab === "dia") {
@@ -1242,7 +1330,7 @@ export function CalendarEditor({
               onApply={applyAvailabilityIntent}
               onCreated={() => {
                 setDrawerOpen(false)
-                router.refresh()
+                reloadAppointments(visibleFrom, visibleTo)
               }}
               savingAvailability={savingAvailability}
             />
@@ -1256,7 +1344,7 @@ export function CalendarEditor({
         onOpenChange={(open) => {
           if (!open) setDetail(null)
         }}
-        onChanged={() => router.refresh()}
+        onChanged={() => reloadAppointments(visibleFrom, visibleTo)}
       />
     </Tabs>
   )
