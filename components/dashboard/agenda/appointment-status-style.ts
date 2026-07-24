@@ -38,12 +38,12 @@ export type CellAppointment = {
  * Cada status = fill/border + ícone lucide + variante de badge. Tokens oklch —
  * sem hex/rgb. `hatch` marca a Cancelada (overlay de gradiente repetido real).
  *
- * VERBATIM do que estava em `calendar-day-week-grid.tsx`: mesmas classes
- * token-only (pendente `bg-primary/10 border-dashed border-primary/60` + Clock;
- * confirmada `bg-primary/70 border-primary text-primary-foreground` + CalendarCheck;
- * realizada `bg-muted border-border text-muted-foreground` + Check; falta
- * `bg-destructive/10 border-destructive/40 text-destructive` + UserX; cancelada
- * `bg-muted border-border text-muted-foreground` + hatch + strike + CalendarX).
+ * Paleta pastel clara com degradê (260724-gyi): o campo `cell` combina a classe
+ * de LAYOUT da borda (border / border-dashed) com a classe de COR pastel
+ * `.agenda-st-*` (definida em globals.css, degradê oklch + borda + texto). A FORMA
+ * é preservada: pendente = borda tracejada; confirmada/realizada/falta = borda
+ * sólida; cancelada = borda sólida + hachura (flag `hatch`) + nome riscado (flag
+ * `strike`). Ícones lucide e os flags strike/hatch permanecem inalterados.
  */
 export const APPOINTMENT_STATUS_STYLE: Record<
   AppointmentStatus,
@@ -61,35 +61,35 @@ export const APPOINTMENT_STATUS_STYLE: Record<
   }
 > = {
   pending: {
-    cell: "bg-primary/10 border border-dashed border-primary/60 text-primary",
+    cell: "border border-dashed agenda-st-pending",
     Icon: Clock,
     label: "Pendente",
     strike: false,
     hatch: false,
   },
   confirmed: {
-    cell: "bg-primary/70 border border-primary text-primary-foreground",
+    cell: "border agenda-st-confirmed",
     Icon: CalendarCheck,
     label: "Confirmada",
     strike: false,
     hatch: false,
   },
   done: {
-    cell: "bg-muted border border-border text-muted-foreground",
+    cell: "border agenda-st-done",
     Icon: Check,
     label: "Realizada",
     strike: false,
     hatch: false,
   },
   no_show: {
-    cell: "bg-destructive/10 border border-destructive/40 text-destructive",
+    cell: "border agenda-st-no_show",
     Icon: UserX,
     label: "Falta",
     strike: false,
     hatch: false,
   },
   canceled: {
-    cell: "bg-muted border border-border text-muted-foreground",
+    cell: "border agenda-st-canceled",
     Icon: CalendarX,
     label: "Cancelada",
     strike: true,

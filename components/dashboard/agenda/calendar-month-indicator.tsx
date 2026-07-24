@@ -111,8 +111,9 @@ export function CalendarMonthIndicator({
                   {format(day, "d", context)}
                 </span>
                 {inMonth && summary?.hasAvailability ? (
-                  // E-1: indicador de disponibilidade = verde (var oklch de globals.css).
-                  <span className="h-2 w-2 rounded-full [background-color:var(--calendar-available-strong)]" />
+                  // 260724-gyi: indicador de disponibilidade = menta da paleta pastel
+                  // (a linha mais saturada, boa p/ um ponto pequeno legível).
+                  <span className="h-2 w-2 rounded-full [background-color:var(--agenda-avail-line)]" />
                 ) : null}
               </div>
               {inMonth && summary?.hasAvailability ? (

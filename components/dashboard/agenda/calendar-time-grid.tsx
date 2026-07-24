@@ -354,11 +354,12 @@ export function CalendarTimeGrid({
                         height: `${height}%`,
                       }}
                     >
-                      {/* Hachura diagonal (Cancelada) — token-only. */}
+                      {/* Hachura diagonal (Cancelada) — paleta pastel (260724-gyi):
+                          consome var(--agenda-canceled-hatch) p/ coerência com a cor. */}
                       {style.hatch ? (
                         <span
                           aria-hidden
-                          className="pointer-events-none absolute inset-0 opacity-40 [background-image:repeating-linear-gradient(45deg,var(--color-muted-foreground)_0,var(--color-muted-foreground)_1px,transparent_1px,transparent_6px)]"
+                          className="pointer-events-none absolute inset-0 [background:var(--agenda-canceled-hatch)]"
                         />
                       ) : null}
                       <span className="relative flex items-center gap-1">
