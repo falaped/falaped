@@ -56,9 +56,9 @@ export function CalendarMonthIndicator({
   })
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex h-full min-h-0 flex-col gap-4">
       {!hasAny ? (
-        <div className="rounded-xl border border-dashed p-8 text-center">
+        <div className="shrink-0 rounded-xl border border-dashed p-8 text-center">
           <p className="text-sm font-medium">Sem atendimento neste mês.</p>
           <p className="mt-1 text-sm text-muted-foreground">
             Configure sua disponibilidade nas abas Dia ou Semana para ver os
@@ -67,7 +67,9 @@ export function CalendarMonthIndicator({
         </div>
       ) : null}
 
-      <div className="grid grid-cols-7 gap-px overflow-hidden rounded-lg border bg-border">
+      {/* C-1: o grid preenche a altura (flex-1 min-h-0 + grid-rows-6) em vez de
+          somar min-h-20 por célula — nenhuma scrollbar vertical própria. */}
+      <div className="grid min-h-0 flex-1 grid-cols-7 grid-rows-[auto_repeat(6,1fr)] gap-px overflow-hidden rounded-lg border bg-border">
         {DAY_LABELS.map((label) => (
           <div
             key={`mh-${label}`}
@@ -89,7 +91,7 @@ export function CalendarMonthIndicator({
               aria-pressed={isSelected}
               onClick={() => onSelectDay(day)}
               className={cn(
-                "flex min-h-20 flex-col gap-1 bg-background p-2 text-left transition-colors hover:bg-muted/50",
+                "flex min-h-0 flex-col gap-1 overflow-hidden bg-background p-2 text-left transition-colors hover:bg-muted/50",
                 !inMonth && "bg-muted/40 text-muted-foreground",
                 // Célula do dia SELECIONADO (M-2): anel token-only, distinto do
                 // círculo de "hoje".
@@ -120,7 +122,7 @@ export function CalendarMonthIndicator({
         })}
       </div>
 
-      <p className="text-xs text-muted-foreground">
+      <p className="shrink-0 text-xs text-muted-foreground">
         O mês é só um resumo. Clique num dia para selecioná-lo.
       </p>
     </div>

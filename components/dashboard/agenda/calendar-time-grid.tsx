@@ -16,14 +16,12 @@ import {
   type MenuAnchor,
 } from "./calendar-day-week-grid"
 
-/** Altura de uma hora na grade de tempo, em px (análogo ao `--hour-h` do mockup). */
-export const HOUR_H = 54
-
 /**
  * Um bloco de consulta JÁ POSICIONADO pelo pai (grade "burra"/testável): o pai
  * converte `starts_at`/`ends_at` (fuso da clínica) em `startMinute`/`endMinute`
  * ancorados na MESMA janela que a grade renderiza, e resolve a precedência
- * ativo>histórico (D-07). A grade só multiplica por `HOUR_H` para posicionar.
+ * ativo>histórico (D-07). A grade posiciona por PORCENTAGEM da janela (C-1: sem
+ * scroll vertical — a grade preenche a altura fornecida pelo pai via flex).
  */
 export type PositionedAppointment = {
   appointment: CellAppointment
@@ -43,7 +41,8 @@ export type PositionedAppointment = {
 /**
  * GRADE DE TEMPO Dia/Semana (redesign híbrido Google Agenda × Calendly,
  * 260723-du8; simplificada em 260723-kej): eixo de horas à esquerda (gutter), N
- * colunas-dia (semana começa Seg, o pai já ordena), altura de hora fixa `HOUR_H`,
+ * colunas-dia (semana começa Seg, o pai já ordena), a grade PREENCHE a altura do
+ * container (C-1: sem scroll vertical — porcentagem da janela + flex),
  * coluna de HOJE destacada, LINHA DE AGORA só na coluna de hoje, e as consultas
  * como BLOCOS ABSOLUTOS posicionados por horário+duração.
  *
@@ -120,7 +119,6 @@ export function CalendarTimeGrid({
   const windowEnd =
     minuteRows.length > 0 ? minuteRows[minuteRows.length - 1] + STEP : 18 * 60
   const totalMinutes = windowEnd - windowStart
-  const bodyHeight = (totalMinutes / 60) * HOUR_H
 
   // Rótulos de hora cheia dentro da janela (HH:00).
   const hourLabels = React.useMemo(() => {
@@ -130,10 +128,17 @@ export function CalendarTimeGrid({
     return labels
   }, [windowStart, windowEnd])
 
-  // px do topo de um minuto-do-dia (relativo ao início da janela).
-  const topOf = React.useCallback(
-    (minute: number) => ((minute - windowStart) / 60) * HOUR_H,
-    [windowStart],
+  // Porcentagem do topo de um minuto-do-dia (relativo à janela) — C-1: sem px.
+  const topPct = React.useCallback(
+    (minute: number) => ((minute - windowStart) / totalMinutes) * 100,
+    [windowStart, totalMinutes],
+  )
+
+  // Porcentagem da altura de um intervalo [from, to) relativo à janela — C-1.
+  const heightPct = React.useCallback(
+    (fromMinute: number, toMinute: number) =>
+      ((toMinute - fromMinute) / totalMinutes) * 100,
+    [totalMinutes],
   )
 
   /**
@@ -171,11 +176,11 @@ export function CalendarTimeGrid({
   const gridTemplateColumns = `3.25rem repeat(${days.length}, minmax(3.5rem, 1fr))`
 
   return (
-    <div className="overflow-x-auto">
-      <div className="min-w-[20rem] select-none">
+    <div className="flex h-full flex-col overflow-x-auto">
+      <div className="flex min-h-0 min-w-[20rem] flex-1 flex-col select-none">
         {/* Cabeçalho: gutter vazio + uma célula por dia (dow + dnum). */}
         <div
-          className="grid border-b"
+          className="grid shrink-0 border-b"
           style={{ gridTemplateColumns }}
         >
           <div className="border-r bg-muted" />
@@ -229,15 +234,19 @@ export function CalendarTimeGrid({
           })}
         </div>
 
-        {/* Corpo: gutter de horas + N colunas-dia (blocos absolutos por cima). */}
-        <div className="grid" style={{ gridTemplateColumns }}>
+        {/* Corpo: gutter de horas + N colunas-dia (blocos absolutos por cima).
+            C-1: preenche a altura (flex-1 min-h-0); posicionamento por %. */}
+        <div
+          className="grid min-h-0 flex-1"
+          style={{ gridTemplateColumns }}
+        >
           {/* Gutter de horas. */}
-          <div className="relative border-r bg-muted" style={{ height: bodyHeight }}>
+          <div className="relative h-full border-r bg-muted">
             {hourLabels.map((minute) => (
               <span
                 key={`t-${minute}`}
                 className="absolute right-2 -translate-y-1/2 text-xs text-muted-foreground tabular-nums"
-                style={{ top: topOf(minute) }}
+                style={{ top: `${topPct(minute)}%` }}
               >
                 {minutesToLabel(minute)}
               </span>
@@ -249,14 +258,13 @@ export function CalendarTimeGrid({
             <div
               key={`col-${day.localDate}`}
               className={cn(
-                "relative border-r",
+                "relative h-full border-r",
                 day.isToday && "bg-primary/5",
                 // Coluna do dia SELECIONADO (M-2): realce token-only, distinto de
                 // hoje (anel lateral em vez do fundo do círculo).
                 day.localDate === selectedLocalDate &&
                   "bg-primary/5 ring-2 ring-inset ring-primary/40",
               )}
-              style={{ height: bodyHeight }}
             >
               {/* Camada de fundo READ-ONLY: faixas de 30 min (clique = agendar). */}
               {minuteRows.map((minute) => {
@@ -284,8 +292,8 @@ export function CalendarTimeGrid({
                       state === "empty" && "hover:bg-muted",
                     )}
                     style={{
-                      top: topOf(minute),
-                      height: (STEP / 60) * HOUR_H,
+                      top: `${topPct(minute)}%`,
+                      height: `${heightPct(minute, minute + STEP)}%`,
                     }}
                   />
                 )
@@ -296,7 +304,7 @@ export function CalendarTimeGrid({
                 <div
                   aria-hidden
                   className="pointer-events-none absolute inset-x-0 z-10 h-0"
-                  style={{ top: topOf(nowMinuteOfToday!) }}
+                  style={{ top: `${topPct(nowMinuteOfToday!)}%` }}
                 >
                   <span className="absolute -left-1 -top-1 size-2 rounded-full bg-primary" />
                   <span className="absolute inset-x-0 top-0 h-0.5 bg-primary" />
@@ -308,9 +316,12 @@ export function CalendarTimeGrid({
                 .filter((p) => p.columnIndex === columnIndex)
                 .map((p) => {
                   const style = APPOINTMENT_STATUS_STYLE[p.appointment.status]
-                  const rawHeight =
-                    ((p.endMinute - p.startMinute) / 60) * HOUR_H
-                  const height = Math.max(rawHeight - 2, HOUR_H / 2 - 2)
+                  // Altura em % da janela, com mínimo tolerante (~meia célula)
+                  // para blocos muito curtos ainda serem clicáveis (C-1: sem px).
+                  const height = Math.max(
+                    heightPct(p.startMinute, p.endMinute),
+                    heightPct(p.startMinute, p.startMinute + STEP / 2),
+                  )
                   return (
                     <button
                       key={`ev-${p.appointment.id}-${p.startMinute}`}
@@ -327,7 +338,10 @@ export function CalendarTimeGrid({
                         style.cell,
                         p.isActive ? "z-[6]" : "z-[3]",
                       )}
-                      style={{ top: topOf(p.startMinute), height }}
+                      style={{
+                        top: `${topPct(p.startMinute)}%`,
+                        height: `${height}%`,
+                      }}
                     >
                       {/* Hachura diagonal (Cancelada) — token-only. */}
                       {style.hatch ? (
