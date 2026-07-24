@@ -295,13 +295,12 @@ export function CalendarTimeGrid({
                     }
                     className={cn(
                       "absolute left-0 right-0 border-b border-b-border/60 transition-colors",
-                      // Disponível = VERDE (var oklch centralizada em globals.css,
-                      // E-1); hover usa o verde forte. Folga = cinza; vazio = branco
-                      // (sem fundo base — herda o container).
-                      state === "available" &&
-                        "[background-color:var(--calendar-available)] hover:[background-color:var(--calendar-available-strong)]",
-                      state === "off" && "bg-muted hover:bg-muted/80",
-                      state === "empty" && "hover:bg-muted",
+                      // Paleta pastel (260724-gyi): disponível = menta clara com
+                      // degradê; folga = areia clara com degradê + hachura; vazio =
+                      // branco. Classes utilitárias oklch centralizadas em globals.css.
+                      state === "available" && "agenda-avail",
+                      state === "off" && "agenda-folga",
+                      state === "empty" && "agenda-vazio",
                     )}
                     style={{
                       top: `${topPct(minute)}%`,

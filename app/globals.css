@@ -320,3 +320,123 @@
   content: attr(data-placeholder);
   color: hsl(var(--muted-foreground));
 }
+
+/*
+  ---break---
+*/
+
+/*
+  Agenda — paleta pastel clara com degradê (260724-gyi).
+  Fonte da verdade: 260724-gyi-DESIGN-MOCKUP.html (valores oklch EXATOS, G-1).
+  Preenchimentos = linear-gradient(160deg, ...) em oklch; `-line` = borda,
+  `-ink` = texto/ícone. Substitui o verde saturado do f3j (--calendar-available*).
+  A distinção vem de MATIZ + ícone + forma, não de saturação forte.
+*/
+:root {
+  /* Fundo (camada de disponibilidade) — light */
+  --agenda-avail: linear-gradient(160deg, oklch(0.99 0.016 162), oklch(0.968 0.038 162));
+  --agenda-avail-line: oklch(0.87 0.045 162);
+  --agenda-avail-ink: oklch(0.53 0.07 162);
+  --agenda-folga: linear-gradient(160deg, oklch(0.992 0.004 75), oklch(0.968 0.008 75));
+  --agenda-folga-line: oklch(0.9 0.008 75);
+  --agenda-folga-ink: oklch(0.57 0.015 75);
+  --agenda-vazio: oklch(1 0 0);
+
+  /* Status da consulta (5) — light */
+  --agenda-st-pending: linear-gradient(160deg, oklch(0.986 0.018 74), oklch(0.958 0.046 72));
+  --agenda-st-pending-line: oklch(0.87 0.08 72);
+  --agenda-st-pending-ink: oklch(0.55 0.1 62);
+  --agenda-st-confirmed: linear-gradient(160deg, oklch(0.978 0.02 248), oklch(0.948 0.046 248));
+  --agenda-st-confirmed-line: oklch(0.84 0.07 250);
+  --agenda-st-confirmed-ink: oklch(0.51 0.1 255);
+  --agenda-st-done: linear-gradient(160deg, oklch(0.982 0.018 300), oklch(0.952 0.042 300));
+  --agenda-st-done-line: oklch(0.87 0.05 300);
+  --agenda-st-done-ink: oklch(0.54 0.085 300);
+  --agenda-st-no_show: linear-gradient(160deg, oklch(0.982 0.018 24), oklch(0.952 0.046 22));
+  --agenda-st-no_show-line: oklch(0.88 0.075 22);
+  --agenda-st-no_show-ink: oklch(0.57 0.12 22);
+  --agenda-st-canceled: linear-gradient(160deg, oklch(0.988 0.003 262), oklch(0.968 0.005 262));
+  --agenda-st-canceled-line: oklch(0.91 0.005 262);
+  --agenda-st-canceled-ink: oklch(0.59 0.01 262);
+
+  /* Overlays de hachura (oklch com alpha) — light */
+  --agenda-folga-hatch: repeating-linear-gradient(45deg, oklch(0.9 0.01 75 / 0.45) 0 5px, transparent 5px 11px);
+  --agenda-canceled-hatch: repeating-linear-gradient(45deg, oklch(0.9 0.005 262 / 0.5) 0 5px, transparent 5px 10px);
+}
+
+.dark {
+  /* Fundo (camada de disponibilidade) — dark (G-5: mesmos matizes, claridade adaptada) */
+  --agenda-avail: linear-gradient(160deg, oklch(0.28 0.04 162), oklch(0.32 0.05 162));
+  --agenda-avail-line: oklch(0.5 0.08 162);
+  --agenda-avail-ink: oklch(0.86 0.06 162);
+  --agenda-folga: linear-gradient(160deg, oklch(0.27 0.012 75), oklch(0.3 0.016 75));
+  --agenda-folga-line: oklch(0.46 0.018 75);
+  --agenda-folga-ink: oklch(0.84 0.02 75);
+  --agenda-vazio: oklch(0.205 0 0);
+
+  /* Status da consulta (5) — dark */
+  --agenda-st-pending: linear-gradient(160deg, oklch(0.3 0.05 74), oklch(0.34 0.06 72));
+  --agenda-st-pending-line: oklch(0.52 0.1 72);
+  --agenda-st-pending-ink: oklch(0.88 0.08 72);
+  --agenda-st-confirmed: linear-gradient(160deg, oklch(0.29 0.05 248), oklch(0.33 0.06 248));
+  --agenda-st-confirmed-line: oklch(0.5 0.09 250);
+  --agenda-st-confirmed-ink: oklch(0.86 0.07 250);
+  --agenda-st-done: linear-gradient(160deg, oklch(0.29 0.045 300), oklch(0.33 0.055 300));
+  --agenda-st-done-line: oklch(0.5 0.07 300);
+  --agenda-st-done-ink: oklch(0.87 0.06 300);
+  --agenda-st-no_show: linear-gradient(160deg, oklch(0.29 0.055 24), oklch(0.33 0.065 22));
+  --agenda-st-no_show-line: oklch(0.52 0.11 22);
+  --agenda-st-no_show-ink: oklch(0.86 0.09 22);
+  --agenda-st-canceled: linear-gradient(160deg, oklch(0.26 0.006 262), oklch(0.3 0.008 262));
+  --agenda-st-canceled-line: oklch(0.45 0.008 262);
+  --agenda-st-canceled-ink: oklch(0.82 0.01 262);
+
+  /* Overlays de hachura — dark (alpha mais alto p/ visibilidade no escuro) */
+  --agenda-folga-hatch: repeating-linear-gradient(45deg, oklch(0.6 0.02 75 / 0.35) 0 5px, transparent 5px 11px);
+  --agenda-canceled-hatch: repeating-linear-gradient(45deg, oklch(0.65 0.008 262 / 0.4) 0 5px, transparent 5px 10px);
+}
+
+@layer utilities {
+  /* Fundo da grade */
+  .agenda-avail {
+    background: var(--agenda-avail);
+    border-color: var(--agenda-avail-line);
+    color: var(--agenda-avail-ink);
+  }
+  .agenda-folga {
+    background: var(--agenda-folga-hatch), var(--agenda-folga);
+    border-color: var(--agenda-folga-line);
+    color: var(--agenda-folga-ink);
+  }
+  .agenda-vazio {
+    background: var(--agenda-vazio);
+  }
+
+  /* Status da consulta (cor: fill + borda + texto). Forma (tracejado/hachura/
+     riscado) e ícone vêm do componente/flags, não daqui. */
+  .agenda-st-pending {
+    background: var(--agenda-st-pending);
+    border-color: var(--agenda-st-pending-line);
+    color: var(--agenda-st-pending-ink);
+  }
+  .agenda-st-confirmed {
+    background: var(--agenda-st-confirmed);
+    border-color: var(--agenda-st-confirmed-line);
+    color: var(--agenda-st-confirmed-ink);
+  }
+  .agenda-st-done {
+    background: var(--agenda-st-done);
+    border-color: var(--agenda-st-done-line);
+    color: var(--agenda-st-done-ink);
+  }
+  .agenda-st-no_show {
+    background: var(--agenda-st-no_show);
+    border-color: var(--agenda-st-no_show-line);
+    color: var(--agenda-st-no_show-ink);
+  }
+  .agenda-st-canceled {
+    background: var(--agenda-canceled-hatch), var(--agenda-st-canceled);
+    border-color: var(--agenda-st-canceled-line);
+    color: var(--agenda-st-canceled-ink);
+  }
+}
