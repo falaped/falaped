@@ -116,9 +116,20 @@ export function CalendarTimeGrid({
     anchor: MenuAnchor,
   ) => void
 }) {
-  const windowStart = minuteRows.length > 0 ? minuteRows[0] : 6 * 60
-  const windowEnd =
+  const rowStart = minuteRows.length > 0 ? minuteRows[0] : 6 * 60
+  const rowEnd =
     minuteRows.length > 0 ? minuteRows[minuteRows.length - 1] + STEP : 18 * 60
+  // A janela cobre também as consultas (que podem estar fora da disponibilidade)
+  // e ganha um buffer final de STEP, para o último rótulo de hora e blocos na
+  // borda não serem cortados pelo overflow-y-hidden (fix: 18h cortada).
+  const apptStart = positioned.length
+    ? Math.min(...positioned.map((p) => p.startMinute))
+    : rowStart
+  const apptEnd = positioned.length
+    ? Math.max(...positioned.map((p) => p.endMinute))
+    : rowEnd
+  const windowStart = Math.min(rowStart, apptStart)
+  const windowEnd = Math.max(rowEnd, apptEnd) + STEP
   const totalMinutes = windowEnd - windowStart
 
   // Rótulos de hora cheia dentro da janela (HH:00).
