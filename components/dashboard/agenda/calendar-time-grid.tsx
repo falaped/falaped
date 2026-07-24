@@ -289,8 +289,11 @@ export function CalendarTimeGrid({
                     }
                     className={cn(
                       "absolute left-0 right-0 border-b border-b-border/60 transition-colors",
+                      // Disponível = VERDE (var oklch centralizada em globals.css,
+                      // E-1); hover usa o verde forte. Folga = cinza; vazio = branco
+                      // (sem fundo base — herda o container).
                       state === "available" &&
-                        "bg-primary/25 hover:bg-primary/35",
+                        "[background-color:var(--calendar-available)] hover:[background-color:var(--calendar-available-strong)]",
                       state === "off" && "bg-muted hover:bg-muted/80",
                       state === "empty" && "hover:bg-muted",
                     )}

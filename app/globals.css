@@ -99,6 +99,12 @@
     --chart-4: oklch(0.72 0.09 255);
     --chart-5: oklch(0.66 0.08 255);
     --radius: 0.625rem;
+    /* Agenda: fundo da célula de disponibilidade LIVRE = verde (oklch, hue ~150).
+       --calendar-available = fundo verde claro legível; --calendar-available-strong
+       = verde mais forte p/ borda/acento/hover/ponto do Mês. Desvio consciente da
+       regra "só tokens" (não há verde na paleta) — autorizado em CONTEXT.md E-1. */
+    --calendar-available: oklch(0.93 0.06 150);
+    --calendar-available-strong: oklch(0.7 0.13 150);
     --sidebar: oklch(0.985 0 0);
     --sidebar-foreground: oklch(0.145 0 0);
     --sidebar-primary: oklch(0.7603 0.0916 255.41);
@@ -126,6 +132,9 @@
     --accent-foreground: oklch(0.985 0 0);
     --destructive: oklch(0.704 0.191 22.216);
     --destructive-foreground: 0 0% 98%;
+    /* Agenda verde (dark): fundo com alpha discreto + acento mais luminoso. */
+    --calendar-available: oklch(0.55 0.09 150 / 30%);
+    --calendar-available-strong: oklch(0.72 0.13 150);
     --border: oklch(1 0 0 / 10%);
     --input: oklch(1 0 0 / 15%);
     --ring: oklch(0.76 0.09 255.41);
@@ -197,6 +206,9 @@
   --accent: oklch(0.97 0 0);
   --accent-foreground: oklch(0.205 0 0);
   --destructive: oklch(0.58 0.22 27);
+  /* Agenda verde de disponibilidade (oklch, hue ~150) — ver E-1. */
+  --calendar-available: oklch(0.93 0.06 150);
+  --calendar-available-strong: oklch(0.7 0.13 150);
   --border: oklch(0.922 0 0);
   --input: oklch(0.922 0 0);
   --ring: oklch(0.76 0.09 255.41);
@@ -236,6 +248,9 @@
   --accent: oklch(0.371 0 0);
   --accent-foreground: oklch(0.985 0 0);
   --destructive: oklch(0.704 0.191 22.216);
+  /* Agenda verde (dark) — ver E-1. */
+  --calendar-available: oklch(0.55 0.09 150 / 30%);
+  --calendar-available-strong: oklch(0.72 0.13 150);
   --border: oklch(1 0 0 / 10%);
   --input: oklch(1 0 0 / 15%);
   --ring: oklch(0.76 0.09 255.41);
