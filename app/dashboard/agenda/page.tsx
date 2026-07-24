@@ -76,6 +76,8 @@ export default async function AgendaPage() {
       id: row.id,
       patient_id: row.patient_id,
       status: row.status,
+      reason: row.reason,
+      type: row.type,
       starts_at: row.starts_at,
       ends_at: row.ends_at,
       patient_name: patient?.name ?? "Paciente",

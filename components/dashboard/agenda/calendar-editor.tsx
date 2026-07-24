@@ -43,7 +43,10 @@ import { AgendaSidePanel } from "./agenda-side-panel"
 import type { AvailabilityIntent } from "./availability-panel"
 import { CalendarMonthIndicator } from "./calendar-month-indicator"
 import { AppointmentDetailMenu } from "./appointment-detail-menu"
-import type { AppointmentStatus } from "@/modules/appointments/types"
+import type {
+  AppointmentStatus,
+  AppointmentType,
+} from "@/modules/appointments/types"
 import type { Patient } from "@/modules/patients/types"
 
 /** Linha crua de rule (snake_case, espelha o DB / Plano 01). */
@@ -75,6 +78,8 @@ export type AppointmentRow = {
   id: string
   patient_id: string
   status: AppointmentStatus
+  reason: string | null
+  type: AppointmentType
   starts_at: string
   ends_at: string
   patient_name: string
@@ -389,6 +394,8 @@ export function CalendarEditor({
         const candidate: CellAppointment = {
           id: appt.id,
           status: appt.status,
+          reason: appt.reason,
+          type: appt.type,
           patientName: appt.patient_name,
           responsible: appt.patient_responsible,
           dateLabel: labels.dateLabel,
@@ -485,6 +492,8 @@ export function CalendarEditor({
           appointment: {
             id: appt.id,
             status: appt.status,
+            reason: appt.reason,
+            type: appt.type,
             patientName: appt.patient_name,
             responsible: appt.patient_responsible,
             dateLabel: labels.dateLabel,
@@ -529,10 +538,10 @@ export function CalendarEditor({
   const [preselectedMinute, setPreselectedMinute] = React.useState<
     number | null
   >(null)
-  // Detalhe/menu de transição: consulta selecionada + âncora do clique.
+  // Detalhe/menu de transição: consulta selecionada (modal centralizado — o
+  // detalhe deixou de ser ancorado, então a âncora não é mais necessária).
   const [detail, setDetail] = React.useState<{
     appointment: CellAppointment
-    anchor: MenuAnchor
   } | null>(null)
 
   // ---------- mutações ADITIVAS do draft (puras: recebem e devolvem draft) ----------
@@ -617,10 +626,14 @@ export function CalendarEditor({
     [],
   )
 
-  /** Clique num slot COM consulta → abre o detalhe/menu de transição. */
+  /**
+   * Clique num slot COM consulta → abre o detalhe/menu de transição. A assinatura
+   * recebida da grade ainda inclui `anchor` (contrato de calendar-time-grid), mas o
+   * modal é centralizado — ignoramos a âncora.
+   */
   const handleAppointmentSelect = React.useCallback(
-    (appointment: CellAppointment, anchor: MenuAnchor) => {
-      setDetail({ appointment, anchor })
+    (appointment: CellAppointment, _anchor: MenuAnchor) => {
+      setDetail({ appointment })
     },
     [],
   )
@@ -1232,7 +1245,6 @@ export function CalendarEditor({
       {/* Detalhe + menu de transição de status (clique numa consulta). */}
       <AppointmentDetailMenu
         appointment={detail?.appointment ?? null}
-        anchor={detail?.anchor ?? null}
         onOpenChange={(open) => {
           if (!open) setDetail(null)
         }}
