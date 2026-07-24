@@ -991,6 +991,47 @@ export function CalendarEditor({
     }
   }, [activeTab, dayCursor, selectedRailDateObj, weekDays, monthCursor, context])
 
+  // ---------- altura MEDIDA da grade (fix scroll vertical 260724-hdr) ----------
+  // PORQUÊ medir em vez de calc(100svh-16rem): a cadeia de layout acima é toda
+  // flex-fill (min-h-svh/flex-1) sem altura FIXA, e o chrome real (sidebar p-8 +
+  // border-t-8 + header + toolbar + dica + TabsList) varia — o calc fixo
+  // subestimava e a página rolava. Medimos o topo do container montado e
+  // descontamos innerHeight − top − folga inferior; só a aba ATIVA monta (Radix
+  // desmonta as inativas), então o mesmo callback ref só registra a montada.
+  const BOTTOM = 32 // ≈ p-8 inferior do layout + pequena folga
+  const MIN_GRID_HEIGHT = 320 // piso pra telas curtas
+  const gridContainerRef = React.useRef<HTMLDivElement | null>(null)
+  const [gridHeight, setGridHeight] = React.useState<number | null>(null)
+
+  const measure = React.useCallback(() => {
+    const el = gridContainerRef.current
+    if (!el) return
+    const top = el.getBoundingClientRect().top
+    const next = Math.max(MIN_GRID_HEIGHT, window.innerHeight - top - BOTTOM)
+    setGridHeight(next)
+  }, [])
+
+  React.useEffect(() => {
+    // Mede após o primeiro paint (rAF) e sempre que a aba/semana/cursor mudar
+    // (deps abaixo) — o topo do container pode deslocar ao trocar de conteúdo.
+    const raf = requestAnimationFrame(measure)
+    window.addEventListener("resize", measure)
+    // ResizeObserver no documentElement para robustez (mudanças de layout que
+    // não disparam resize da janela — ex.: quebra da toolbar em telas estreitas).
+    const observer = new ResizeObserver(measure)
+    observer.observe(document.documentElement)
+    return () => {
+      cancelAnimationFrame(raf)
+      window.removeEventListener("resize", measure)
+      observer.disconnect()
+    }
+  }, [measure, activeTab, dayCursor, selectedRailDate, monthCursor])
+
+  // Fallback pré-medida (primeiro paint/SSR) sobrescrito pelo inline height.
+  const gridContainerClassName =
+    "flex h-[calc(100svh-16rem)] min-h-0 flex-col"
+  const gridContainerStyle = { height: gridHeight ?? undefined }
+
   return (
     <Tabs
       value={activeTab}
@@ -1085,7 +1126,11 @@ export function CalendarEditor({
           (header + toolbar + dica) é o valor a confirmar no checkpoint visual.
           E-5: sem fila separada de pedidos abaixo da grade. */}
       <TabsContent value="dia" className="flex flex-col gap-4">
-        <div className="flex h-[calc(100svh-16rem)] min-h-0 flex-col">
+        <div
+          ref={gridContainerRef}
+          className={gridContainerClassName}
+          style={gridContainerStyle}
+        >
           <div className="min-h-0 min-w-0 flex-1">
             <CalendarTimeGrid
               days={dayColumns([selectedRailDateObj])}
@@ -1107,7 +1152,11 @@ export function CalendarEditor({
 
       {/* ---------- SEMANA ---------- */}
       <TabsContent value="semana" className="flex flex-col gap-4">
-        <div className="flex h-[calc(100svh-16rem)] min-h-0 flex-col">
+        <div
+          ref={gridContainerRef}
+          className={gridContainerClassName}
+          style={gridContainerStyle}
+        >
           <div className="min-h-0 min-w-0 flex-1">
             <CalendarTimeGrid
               days={dayColumns(weekDays)}
@@ -1130,7 +1179,11 @@ export function CalendarEditor({
       {/* ---------- MÊS (indicador, D-18) ---------- */}
       {/* C-1: o Mês também preenche a altura da viewport, sem scroll vertical. */}
       <TabsContent value="mes" className="flex flex-col gap-4">
-        <div className="flex h-[calc(100svh-16rem)] min-h-0 flex-col">
+        <div
+          ref={gridContainerRef}
+          className={gridContainerClassName}
+          style={gridContainerStyle}
+        >
           <CalendarMonthIndicator
             monthCursor={monthCursor}
             byDay={monthByDay}

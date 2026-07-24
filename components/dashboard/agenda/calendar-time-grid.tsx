@@ -177,7 +177,7 @@ export function CalendarTimeGrid({
   const gridTemplateColumns = `3.25rem repeat(${days.length}, minmax(3.5rem, 1fr))`
 
   return (
-    <div className="flex h-full flex-col overflow-x-auto">
+    <div className="flex h-full flex-col overflow-x-auto overflow-y-hidden">
       <div className="flex min-h-0 min-w-[20rem] flex-1 flex-col select-none">
         {/* Cabeçalho: gutter vazio + uma célula por dia (dow + dnum). */}
         <div
