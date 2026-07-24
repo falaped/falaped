@@ -31,7 +31,7 @@ See: .planning/PROJECT.md (updated 2026-07-20)
 Phase: 07 (consultas-ciclo-de-status) — EXECUTING
 Plan: 3 of 3
 Status: Plans complete (all 3 have SUMMARYs) — phase verification pending
-Last activity: 2026-07-24 — 07-03 fechado retroativamente via safe-resume (UI de consultas já commitada em 2026-07-23; SUMMARY escrito)
+Last activity: 2026-07-24 — Quick 260724-ojm: agenda reflete criação/transição de consulta na hora (router.refresh no client)
 
 ## Roadmap (milestone v1.1)
 
@@ -121,6 +121,7 @@ Recent decisions affecting current work (milestone v1.1):
 | 260720-qsj | Redesenho das faixas etárias do calendário vacinal (faixas canônicas fixas + regra "faixa anterior") e correção da idade em meses (calendário, não dias/30.4375; cronológica para posição de vacina) | 2026-07-20 | 405282e | [260720-qsj-redesenhar-o-posicionamento-por-idade-do](./quick/260720-qsj-redesenhar-o-posicionamento-por-idade-do/) |
 | 260723-du8 | Redesign da Agenda: layout híbrido Google Agenda × Calendly (grade de tempo Dia/Semana, trilho de agendamento fixo, 5 status em tokens Falaped, Dia/Semana/Mês) — branch redesign/agenda-hibrida | 2026-07-23 | 7711344 | [260723-du8-redesign-da-agenda-layout-hibrido-google](./quick/260723-du8-redesign-da-agenda-layout-hibrido-google/) |
 | 260724-jka | Detalhe da consulta na agenda: modal centralizado (paciente/responsável/motivo/tipo/data-hora/badge) + ações icon-only com tooltip; colunas reason/type em appointments (migration não aplicada) + captura Tipo/Motivo no create-dialog e booking-rail | 2026-07-24 | 396ed67 | [260724-jka-detalhe-da-consulta-na-agenda-modal-cent](./quick/260724-jka-detalhe-da-consulta-na-agenda-modal-cent/) |
+| 260724-ojm | Corrigir agenda não atualizar após criar consulta / mudar status: router.refresh() no client após createAppointmentAction e transitionAppointmentStatusAction (revalidatePath sozinho não re-renderiza o RSC em action chamada via await) | 2026-07-24 | b686a81 | [260724-ojm-corrigir-agenda-n-o-atualizar-ap-s-criar](./quick/260724-ojm-corrigir-agenda-n-o-atualizar-ap-s-criar/) |
 
 ## Deferred Items
 
