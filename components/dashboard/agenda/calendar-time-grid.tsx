@@ -198,9 +198,12 @@ export function CalendarTimeGrid({
                 )}
               </>
             )
-            // Destaque do dia SELECIONADO (M-2): anel token-only, distinto do
-            // círculo de "hoje" (que continua no número). Os dois coexistem.
-            const selectedRing = isSelected && "ring-2 ring-primary rounded-md"
+            // Destaque do dia SELECIONADO (C-2): aparência de ABA ATIVA
+            // (fundo primary/10 + texto primary + barra inferior grossa),
+            // token-only e DISTINTA do "hoje" (número em bolinha).
+            const selectedTab =
+              isSelected &&
+              "bg-primary/10 text-primary border-b-2 border-primary"
             if (onSelectDay) {
               return (
                 <button
@@ -212,7 +215,7 @@ export function CalendarTimeGrid({
                   className={cn(
                     "flex flex-col items-center justify-center gap-1 bg-muted py-2 text-muted-foreground transition-colors hover:bg-muted/70",
                     day.isToday && "text-primary",
-                    selectedRing,
+                    selectedTab,
                   )}
                 >
                   {headerContent}
@@ -225,7 +228,7 @@ export function CalendarTimeGrid({
                 className={cn(
                   "flex flex-col items-center justify-center gap-1 bg-muted py-2 text-muted-foreground",
                   day.isToday && "text-primary",
-                  selectedRing,
+                  selectedTab,
                 )}
               >
                 {headerContent}

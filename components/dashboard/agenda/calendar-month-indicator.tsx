@@ -93,9 +93,11 @@ export function CalendarMonthIndicator({
               className={cn(
                 "flex min-h-0 flex-col gap-1 overflow-hidden bg-background p-2 text-left transition-colors hover:bg-muted/50",
                 !inMonth && "bg-muted/40 text-muted-foreground",
-                // Célula do dia SELECIONADO (M-2): anel token-only, distinto do
-                // círculo de "hoje".
-                isSelected && "ring-2 ring-inset ring-primary",
+                // Célula do dia SELECIONADO (C-2): aparência de ABA ATIVA
+                // token-only (fundo primary/10 + texto primary + barra inferior),
+                // distinta do "hoje" (número em bolinha).
+                isSelected &&
+                  "bg-primary/10 text-primary border-b-2 border-primary",
               )}
             >
               <div className="flex items-center justify-between">
