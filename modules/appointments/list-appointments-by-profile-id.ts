@@ -1,11 +1,13 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
-import type { AppointmentStatus } from "./types"
+import type { AppointmentStatus, AppointmentType } from "./types"
 
 /** Projeção enxuta de uma consulta para a agenda (subset de AppointmentRow). */
 export type AppointmentListRow = {
   id: string
   patient_id: string
   status: AppointmentStatus
+  reason: string | null
+  type: AppointmentType
   starts_at: string
   ends_at: string
 }
@@ -32,7 +34,7 @@ export async function listAppointmentsByProfileId(
 ): Promise<AppointmentListRow[]> {
   const { data, error } = await supabase
     .from("appointments")
-    .select("id, patient_id, status, starts_at, ends_at")
+    .select("id, patient_id, status, reason, type, starts_at, ends_at")
     .eq("profile_id", profileId)
     .gte("starts_at", from.toISOString())
     .lt("starts_at", to.toISOString())

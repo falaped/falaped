@@ -67,7 +67,7 @@ export async function createAppointmentAction(
     return { ok: false, error: zodErrorToUserMessage(parsed.error) }
   }
 
-  const { patient_id, starts_at, ends_at } = parsed.data
+  const { patient_id, type, reason, starts_at, ends_at } = parsed.data
   const startsAt = new Date(starts_at)
   const endsAt = new Date(ends_at)
 
@@ -154,6 +154,8 @@ export async function createAppointmentAction(
     const created = await createAppointment(supabase, profile.id, {
       patient_id,
       status: "confirmed",
+      type,
+      reason: reason ?? null,
       starts_at,
       ends_at,
     })

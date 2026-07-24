@@ -20,13 +20,24 @@ export const appointmentStatusSchema = z.enum([
 
 export type AppointmentStatusInput = z.infer<typeof appointmentStatusSchema>
 
+/** Os 4 valores do tipo de consulta, espelhando o pg enum appointment_type. */
+export const appointmentTypeSchema = z.enum(
+  ["puericultura", "urgencia", "retorno", "primeira_consulta"],
+  { message: "Tipo de consulta inválido." },
+)
+
+export type AppointmentTypeInput = z.infer<typeof appointmentTypeSchema>
+
 /**
  * Criação de consulta (APPT-01): paciente já cadastrado + intervalo do slot livre
  * (D-01/D-02). O profile_id é estampado server-side no action (nunca do cliente).
+ * `type` é obrigatório e `reason` opcional (260724-jka).
  */
 export const createAppointmentSchema = z
   .object({
     patient_id: z.string().uuid("Paciente inválido."),
+    type: appointmentTypeSchema,
+    reason: z.string().trim().max(500, "Motivo muito longo.").optional(),
     starts_at: z
       .string()
       .datetime({ message: "Horário inicial inválido." }),

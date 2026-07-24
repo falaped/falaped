@@ -20,12 +20,28 @@ export type AppointmentStatus =
   | "no_show"
   | "canceled"
 
-/** Linha espelhando `public.appointments` (snake_case). */
+/**
+ * Tipo da consulta (260724-jka), espelhando o pg enum `public.appointment_type`.
+ * Valores em inglês; os rótulos PT-BR vivem na UI (APPOINTMENT_TYPE_LABEL).
+ */
+export type AppointmentType =
+  | "puericultura"
+  | "urgencia"
+  | "retorno"
+  | "primeira_consulta"
+
+/**
+ * Linha espelhando `public.appointments` (snake_case). Inclui `reason` (motivo,
+ * opcional) e `type` (tipo da consulta, obrigatório) — colunas adicionadas em
+ * 20260724210000_appointment_reason_type.
+ */
 export type AppointmentRow = {
   id: string
   profile_id: string
   patient_id: string
   status: AppointmentStatus
+  reason: string | null
+  type: AppointmentType
   starts_at: string
   ends_at: string
   created_at: string
