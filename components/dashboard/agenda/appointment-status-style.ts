@@ -1,7 +1,10 @@
 import * as React from "react"
 import { CalendarCheck, CalendarX, Check, Clock, UserX } from "lucide-react"
 
-import type { AppointmentStatus } from "@/modules/appointments/types"
+import type {
+  AppointmentStatus,
+  AppointmentType,
+} from "@/modules/appointments/types"
 
 /**
  * Consulta que ocupa uma ou mais células/blocos (D-01/D-07). O pai resolve o
@@ -18,6 +21,10 @@ export type CellAppointment = {
   /** id da consulta (para a transição de status). */
   id: string
   status: AppointmentStatus
+  /** Motivo da consulta (opcional) — exibido no detalhe (260724-jka). */
+  reason: string | null
+  /** Tipo da consulta — exibido no detalhe via APPOINTMENT_TYPE_LABEL (260724-jka). */
+  type: AppointmentType
   /** Nome do paciente (para o rótulo curto in-grid e o detalhe). */
   patientName: string
   responsible: string | null
@@ -31,6 +38,17 @@ export type CellAppointment = {
    * de início (`isStart`), dando a leitura de um bloco contíguo.
    */
   isStart: boolean
+}
+
+/**
+ * Mapa de rótulos PT-BR do tipo da consulta (260724-jka). Espelha as opções de
+ * captura (APPOINTMENT_TYPE_OPTIONS do create-dialog); usado no detalhe.
+ */
+export const APPOINTMENT_TYPE_LABEL: Record<AppointmentType, string> = {
+  puericultura: "Puericultura",
+  urgencia: "Urgência",
+  retorno: "Retorno",
+  primeira_consulta: "Primeira consulta",
 }
 
 /**
