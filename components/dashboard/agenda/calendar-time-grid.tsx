@@ -191,7 +191,7 @@ export function CalendarTimeGrid({
               <>
                 <span className="text-xs uppercase">{day.weekdayLabel}</span>
                 {day.isToday ? (
-                  <span className="flex size-7 items-center justify-center rounded-full bg-primary text-sm font-semibold text-primary-foreground tabular-nums">
+                  <span className="flex size-6 items-center justify-center rounded-full bg-primary text-xs font-semibold text-primary-foreground tabular-nums">
                     {day.dayNumber}
                   </span>
                 ) : (
@@ -200,7 +200,7 @@ export function CalendarTimeGrid({
                 {/* E-3: tag "Selecionado" SÓ no header do dia escolhido,
                     visualmente distinta do "hoje" (número em bolinha). */}
                 {isSelected ? (
-                  <Badge variant="outline" className="border-primary text-primary">
+                  <Badge variant="outline" className="border-primary text-primary px-1.5 py-0 text-[10px] leading-tight">
                     Selecionado
                   </Badge>
                 ) : null}
@@ -221,7 +221,7 @@ export function CalendarTimeGrid({
                   aria-label={`Selecionar dia ${day.weekdayLabel} ${day.dayNumber}`}
                   onClick={() => onSelectDay(day.localDate)}
                   className={cn(
-                    "flex flex-col items-center justify-center gap-1 bg-muted py-2 text-muted-foreground transition-colors hover:bg-muted/70",
+                    "flex flex-col items-center justify-center gap-0.5 bg-muted py-1 text-muted-foreground transition-colors hover:bg-muted/70",
                     day.isToday && "text-primary",
                     selectedTab,
                   )}
@@ -234,7 +234,7 @@ export function CalendarTimeGrid({
               <div
                 key={`head-${day.localDate}`}
                 className={cn(
-                  "flex flex-col items-center justify-center gap-1 bg-muted py-2 text-muted-foreground",
+                  "flex flex-col items-center justify-center gap-0.5 bg-muted py-1 text-muted-foreground",
                   day.isToday && "text-primary",
                   selectedTab,
                 )}
