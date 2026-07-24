@@ -86,9 +86,12 @@ type TransitionSnapshot = {
 export function AppointmentDetailMenu({
   appointment,
   onOpenChange,
+  onChanged,
 }: {
   appointment: CellAppointment | null
   onOpenChange: (open: boolean) => void
+  /** Chamado após uma transição bem-sucedida (o pai re-renderiza a grade). */
+  onChanged?: () => void
 }) {
   const [busy, setBusy] = React.useState(false)
   // Cancelar: snapshot que abre o AlertDialog destrutivo (null = fechado).
@@ -113,11 +116,12 @@ export function AppointmentDetailMenu({
       if (result.ok) {
         toast.success(snapshot.successMsg)
         onOpenChange(false)
+        onChanged?.()
       } else {
         toast.error(result.error)
       }
     },
-    [onOpenChange],
+    [onOpenChange, onChanged],
   )
 
   // AlertDialog de cancelar dirigido SÓ pelo snapshot `confirmCancel`. Precisa

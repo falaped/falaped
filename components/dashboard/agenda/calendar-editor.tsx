@@ -10,6 +10,7 @@ import {
   startOfWeek,
 } from "date-fns"
 import { ptBR } from "date-fns/locale"
+import { useRouter } from "next/navigation"
 import { ChevronLeft, ChevronRight } from "lucide-react"
 import { toast } from "sonner"
 
@@ -255,6 +256,10 @@ export function CalendarEditor({
   timeZone: string
 }) {
   const context = React.useMemo(() => ({ in: tz(timeZone) }), [timeZone])
+
+  // Roteador para re-renderizar o RSC da página após criar consulta ou transição
+  // de status (as actions já invalidam o cache; o refresh reflete na grade sem reload).
+  const router = useRouter()
 
   const initialDraftRef = React.useRef<Draft>(buildInitialDraft(rules, overrides))
   const [draft, setDraft] = React.useState<Draft>(() =>
@@ -1235,7 +1240,10 @@ export function CalendarEditor({
               initialMode={drawerMode}
               preselectedMinute={preselectedMinute}
               onApply={applyAvailabilityIntent}
-              onCreated={() => setDrawerOpen(false)}
+              onCreated={() => {
+                setDrawerOpen(false)
+                router.refresh()
+              }}
               savingAvailability={savingAvailability}
             />
           </div>
@@ -1248,6 +1256,7 @@ export function CalendarEditor({
         onOpenChange={(open) => {
           if (!open) setDetail(null)
         }}
+        onChanged={() => router.refresh()}
       />
     </Tabs>
   )
