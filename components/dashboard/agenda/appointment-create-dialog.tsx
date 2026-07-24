@@ -6,6 +6,7 @@ import { toast } from "sonner"
 
 import { createAppointmentAction } from "@/actions"
 import type { Patient } from "@/modules/patients/types"
+import type { AppointmentType } from "@/modules/appointments/types"
 import {
   Command,
   CommandEmpty,
@@ -33,6 +34,7 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { Skeleton } from "@/components/ui/skeleton"
+import { Textarea } from "@/components/ui/textarea"
 import { cn } from "@/lib/utils"
 
 /**
@@ -54,6 +56,21 @@ export type CreateTarget = {
 
 /** Presets de duração da consulta (Issue C). Compartilhado com o trilho (booking-rail). */
 export const DURATION_PRESETS = [15, 30, 45, 60, 90] as const
+
+/**
+ * Opções de tipo da consulta (260724-jka). Pares valor(enum)→rótulo PT-BR,
+ * compartilhados entre o create-dialog e o trilho (booking-rail) para a captura
+ * ficar consistente nos dois caminhos de criação.
+ */
+export const APPOINTMENT_TYPE_OPTIONS: {
+  value: AppointmentType
+  label: string
+}[] = [
+  { value: "puericultura", label: "Puericultura" },
+  { value: "urgencia", label: "Urgência" },
+  { value: "retorno", label: "Retorno" },
+  { value: "primeira_consulta", label: "Primeira consulta" },
+]
 
 /**
  * Iniciais do paciente para o avatar de fallback (sem foto no fluxo de busca).
@@ -94,6 +111,9 @@ export function AppointmentCreateDialog({
   const [fieldError, setFieldError] = React.useState<string | null>(null)
   // Duração escolhida (min). Default = slot_minutes da faixa clicada (Issue C).
   const [duration, setDuration] = React.useState<number>(30)
+  // Tipo (obrigatório) e motivo (opcional) da consulta (260724-jka).
+  const [type, setType] = React.useState<AppointmentType | "">("")
+  const [reason, setReason] = React.useState("")
 
   const open = target !== null
 
@@ -113,6 +133,8 @@ export function AppointmentCreateDialog({
       setInlineError(null)
       setFieldError(null)
       setDuration(target?.defaultDuration ?? 30)
+      setType("")
+      setReason("")
     }
   }, [open, target?.startsAt, target?.defaultDuration])
 
@@ -135,6 +157,10 @@ export function AppointmentCreateDialog({
       setFieldError("Selecione um paciente para agendar.")
       return
     }
+    if (!type) {
+      setFieldError("Selecione o tipo da consulta.")
+      return
+    }
     setSaving(true)
     setInlineError(null)
     // ends_at = starts_at + duração escolhida (Issue C): pode cobrir várias
@@ -144,6 +170,8 @@ export function AppointmentCreateDialog({
     ).toISOString()
     const result = await createAppointmentAction({
       patient_id: selected.id,
+      type,
+      reason: reason.trim() ? reason.trim() : undefined,
       starts_at: target.startsAt,
       ends_at: endsAt,
     })
@@ -281,6 +309,38 @@ export function AppointmentCreateDialog({
                 ))}
               </SelectContent>
             </Select>
+          </div>
+
+          <div className="flex flex-col gap-2">
+            <Label htmlFor="appointment-type">Tipo</Label>
+            <Select
+              value={type}
+              onValueChange={(value) => {
+                setType(value as AppointmentType)
+                setFieldError(null)
+              }}
+            >
+              <SelectTrigger id="appointment-type" className="w-full">
+                <SelectValue placeholder="Selecione o tipo" />
+              </SelectTrigger>
+              <SelectContent>
+                {APPOINTMENT_TYPE_OPTIONS.map((option) => (
+                  <SelectItem key={option.value} value={option.value}>
+                    {option.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="flex flex-col gap-2">
+            <Label htmlFor="appointment-reason">Motivo (opcional)</Label>
+            <Textarea
+              id="appointment-reason"
+              value={reason}
+              onChange={(event) => setReason(event.target.value)}
+              placeholder="Ex.: consulta de rotina, febre há 2 dias…"
+            />
           </div>
 
           {fieldError ? (

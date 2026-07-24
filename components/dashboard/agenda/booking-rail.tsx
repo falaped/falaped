@@ -6,6 +6,7 @@ import { toast } from "sonner"
 
 import { createAppointmentAction } from "@/actions"
 import type { Patient } from "@/modules/patients/types"
+import type { AppointmentType } from "@/modules/appointments/types"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
@@ -17,8 +18,20 @@ import {
   CommandItem,
   CommandList,
 } from "@/components/ui/command"
+import { Label } from "@/components/ui/label"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
+import { Textarea } from "@/components/ui/textarea"
 import { cn } from "@/lib/utils"
-import { DURATION_PRESETS } from "./appointment-create-dialog"
+import {
+  APPOINTMENT_TYPE_OPTIONS,
+  DURATION_PRESETS,
+} from "./appointment-create-dialog"
 
 /** Horário LIVRE do dia selecionado (derivado pelo pai: disponibilidade − ocupados). */
 export type FreeSlot = {
@@ -80,6 +93,9 @@ export function BookingRail({
   const [query, setQuery] = React.useState("")
   const [selected, setSelected] = React.useState<Patient | null>(null)
   const [duration, setDuration] = React.useState<number>(30)
+  // Tipo (obrigatório) e motivo (opcional) da consulta (260724-jka).
+  const [type, setType] = React.useState<AppointmentType | "">("")
+  const [reason, setReason] = React.useState("")
   const [slotMinute, setSlotMinute] = React.useState<number | null>(null)
   const [saving, setSaving] = React.useState(false)
   const [inlineError, setInlineError] = React.useState<string | null>(null)
@@ -105,6 +121,8 @@ export function BookingRail({
   React.useEffect(() => {
     setSlotMinute(null)
     setInlineError(null)
+    setType("")
+    setReason("")
   }, [selectedDate])
 
   // C-4: horário PRÉ-SELECIONADO (clique num slot livre → drawer). Prevalece
@@ -118,7 +136,7 @@ export function BookingRail({
   }, [preselectedMinute, selectedDate, freeSlots])
 
   async function handleSubmit() {
-    if (!selected || !selectedSlot) return
+    if (!selected || !selectedSlot || !type) return
     setSaving(true)
     setInlineError(null)
     const endsAt = new Date(
@@ -126,6 +144,8 @@ export function BookingRail({
     ).toISOString()
     const result = await createAppointmentAction({
       patient_id: selected.id,
+      type,
+      reason: reason.trim() ? reason.trim() : undefined,
       starts_at: selectedSlot.startsAt,
       ends_at: endsAt,
     })
@@ -135,6 +155,8 @@ export function BookingRail({
       setSelected(null)
       setQuery("")
       setSlotMinute(null)
+      setType("")
+      setReason("")
       onCreated?.()
       return
     }
@@ -142,7 +164,8 @@ export function BookingRail({
     setInlineError(result.error)
   }
 
-  const canBook = selected !== null && selectedSlot !== null && !saving
+  const canBook =
+    selected !== null && selectedSlot !== null && type !== "" && !saving
 
   return (
     <Card className="flex flex-col gap-4 p-4">
@@ -272,6 +295,39 @@ export function BookingRail({
             )
           })}
         </div>
+      </div>
+
+      {/* Tipo (obrigatório) + Motivo (opcional). */}
+      <div className="flex flex-col gap-2">
+        <Label htmlFor="booking-rail-type">Tipo</Label>
+        <Select
+          value={type}
+          onValueChange={(value) => {
+            setType(value as AppointmentType)
+            setInlineError(null)
+          }}
+        >
+          <SelectTrigger id="booking-rail-type" className="w-full">
+            <SelectValue placeholder="Selecione o tipo" />
+          </SelectTrigger>
+          <SelectContent>
+            {APPOINTMENT_TYPE_OPTIONS.map((option) => (
+              <SelectItem key={option.value} value={option.value}>
+                {option.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+
+      <div className="flex flex-col gap-2">
+        <Label htmlFor="booking-rail-reason">Motivo (opcional)</Label>
+        <Textarea
+          id="booking-rail-reason"
+          value={reason}
+          onChange={(event) => setReason(event.target.value)}
+          placeholder="Ex.: consulta de rotina, febre há 2 dias…"
+        />
       </div>
 
       {/* Dia longo + horários livres. */}
