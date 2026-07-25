@@ -15,7 +15,7 @@ import {
 } from "@/components/ui/select"
 import { cn } from "@/lib/utils"
 import { STEP, minutesToLabel } from "./calendar-day-week-grid"
-import { DEFAULT_SLOT, SLOT_PRESETS } from "./availability-cell-menu"
+import { SLOT_PRESETS } from "./availability-cell-menu"
 
 /** Tipo da marcação: disponibilidade (add/rule) ou folga (subtract). */
 export type AvailabilityKind = "available" | "off"
@@ -171,7 +171,10 @@ export function AvailabilityPanel({
   const [scope, setScope] = React.useState<AvailabilityScopeKind>("recurring")
   const [startMinute, setStartMinute] = React.useState<number>(DEFAULT_DAY_START)
   const [endMinute, setEndMinute] = React.useState<number>(DEFAULT_DAY_END)
-  const [slotMinutes, setSlotMinutes] = React.useState<number>(DEFAULT_SLOT)
+  // Duração default da disponibilidade = 60 min (260725-dvv): 60 já está em
+  // SLOT_PRESETS e é múltiplo de 30 → válido no banco, sem migration. NÃO usa
+  // DEFAULT_SLOT (compartilhado com o menu antigo e o computeDiff do editor).
+  const [slotMinutes, setSlotMinutes] = React.useState<number>(60)
   const [weekdays, setWeekdays] = React.useState<Set<number>>(new Set())
 
   const isAvailable = type === "available"
@@ -183,7 +186,7 @@ export function AvailabilityPanel({
     if (isWholeAvail && !prevWholeAvailRef.current) {
       setStartMinute(DEFAULT_DAY_START)
       setEndMinute(DEFAULT_DAY_END)
-      setSlotMinutes(DEFAULT_SLOT)
+      setSlotMinutes(60)
     }
     prevWholeAvailRef.current = isWholeAvail
   }, [isAvailable, scope])

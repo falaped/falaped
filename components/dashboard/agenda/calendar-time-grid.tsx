@@ -18,6 +18,15 @@ import {
 } from "./calendar-day-week-grid"
 
 /**
+ * Passo VISUAL da grade: 1 linha por HORA (decisão do usuário, 260725-dvv).
+ * DESACOPLADO do STEP=30 (granularidade do DADO: rules/overrides em múltiplos de
+ * 30, migration % 30). A grade RENDERIZA por hora; a disponibilidade de 30 min
+ * já existente permanece representável no dado — só o FUNDO perde a distinção
+ * visual dos 30 min. NÃO confundir com STEP nem alterar STEP por causa disto.
+ */
+const GRID_STEP = 60
+
+/**
  * Um bloco de consulta JÁ POSICIONADO pelo pai (grade "burra"/testável): o pai
  * converte `starts_at`/`ends_at` (fuso da clínica) em `startMinute`/`endMinute`
  * ancorados na MESMA janela que a grade renderiza, e resolve a precedência
@@ -138,6 +147,22 @@ export function CalendarTimeGrid({
     const firstHour = Math.ceil(windowStart / 60) * 60
     for (let m = firstHour; m <= windowEnd; m += 60) labels.push(m)
     return labels
+  }, [windowStart, windowEnd])
+
+  // Faixas de FUNDO por HORA (render, GRID_STEP=60): começa na hora que contém
+  // windowStart (floor) e cobre até windowEnd. Cada hora é UM <button> clicável
+  // (numa hora livre+futura → Nova consulta). O estado/bookability da hora é
+  // avaliado no minuto de INÍCIO da hora (m). Distinto de minuteRows (dado, 30).
+  const hourRows = React.useMemo(() => {
+    const rows: number[] = []
+    for (
+      let m = Math.floor(windowStart / 60) * 60;
+      m < windowEnd;
+      m += GRID_STEP
+    ) {
+      rows.push(m)
+    }
+    return rows
   }, [windowStart, windowEnd])
 
   // Porcentagem do topo de um minuto-do-dia (relativo à janela) — C-1: sem px.
@@ -286,8 +311,9 @@ export function CalendarTimeGrid({
                 // HEADER fica marcado (Badge "Selecionado"). Mantido só o "hoje".
               )}
             >
-              {/* Camada de fundo READ-ONLY: faixas de 30 min (clique = agendar). */}
-              {minuteRows.map((minute) => {
+              {/* Camada de fundo READ-ONLY: 1 faixa por HORA (clique = agendar).
+                  Estado avaliado no minuto de início da hora (GRID_STEP=60). */}
+              {hourRows.map((minute) => {
                 const state = cellStateOf(day.localDate, minute)
                 return (
                   <button
@@ -315,7 +341,7 @@ export function CalendarTimeGrid({
                     )}
                     style={{
                       top: `${topPct(minute)}%`,
-                      height: `${heightPct(minute, minute + STEP)}%`,
+                      height: `${heightPct(minute, minute + GRID_STEP)}%`,
                     }}
                   />
                 )
@@ -338,11 +364,13 @@ export function CalendarTimeGrid({
                 .filter((p) => p.columnIndex === columnIndex)
                 .map((p) => {
                   const style = APPOINTMENT_STATUS_STYLE[p.appointment.status]
-                  // Altura em % da janela, com mínimo tolerante (~meia célula)
-                  // para blocos muito curtos ainda serem clicáveis (C-1: sem px).
+                  // Altura ESTRITAMENTE proporcional à duração (linha = hora):
+                  // 30min ≈ ½ linha, 60min = linha inteira, 90min = 1,5 linha.
+                  // Piso MÍNIMO fixo pequeno (0,5 p.p.) só para blocos degenerados
+                  // continuarem clicáveis — NÃO depende mais de STEP (260725-dvv).
                   const height = Math.max(
                     heightPct(p.startMinute, p.endMinute),
-                    heightPct(p.startMinute, p.startMinute + STEP / 2),
+                    0.5,
                   )
                   return (
                     <button
