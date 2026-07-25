@@ -311,20 +311,26 @@ export function CalendarEditor({
     [patientById],
   )
 
-  // Guarda de stale: token da última requisição. Uma resposta antiga (rede lenta)
-  // NUNCA pode sobrescrever os dados de uma navegação mais recente.
-  const latestRangeTokenRef = React.useRef<string>("")
+  // Guarda de stale keyed por um id MONOTÔNICO crescente (não pela janela). Duas
+  // buscas da MESMA janela — StrictMode em dev (efeito dispara 2×) ou o refetch
+  // pós-criação correndo com uma busca anterior ainda em voo — teriam o mesmo
+  // intervalo e, com token-por-janela, a que RESOLVE por último venceria. Se a
+  // busca antiga (feita ANTES do INSERT, sem a consulta nova) resolve depois, ela
+  // sobrescrevia o estado e a consulta recém-criada "sumia" da tela. Um contador
+  // crescente garante que só a resposta da requisição MAIS RECENTE atualize o
+  // estado, independente da ordem de resolução.
+  const reloadReqIdRef = React.useRef<number>(0)
 
   const reloadAppointments = React.useCallback(
     async (from: Date, to: Date) => {
-      const token = `${from.getTime()}:${to.getTime()}`
-      latestRangeTokenRef.current = token
+      const reqId = ++reloadReqIdRef.current
       const result = await listAppointmentsByRangeAction(
         from.toISOString(),
         to.toISOString(),
       )
-      // Resposta obsoleta (o usuário já navegou para outra janela) → ignorar.
-      if (latestRangeTokenRef.current !== token) return
+      // Uma requisição mais nova já começou → descartar esta resposta (mesmo que
+      // seja da mesma janela) para não sobrescrever dados mais recentes.
+      if (reqId !== reloadReqIdRef.current) return
       if (result.ok) {
         setAppointments(mapRowsToAppointments(result.appointments))
       }
