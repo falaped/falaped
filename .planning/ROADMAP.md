@@ -16,7 +16,7 @@ Este milestone dá ao pediatra solo uma agenda de consultas de primeira classe: 
 Decimal phases appear between their surrounding integers in numeric order.
 
 - [x] **Phase 6: Disponibilidade & Calendário do Médico** - Calendário único editável (pintura clique/arraste/dia-inteiro, toggle disponibilidade|folga, salvar em lote) sobre modelo híbrido (template recorrente + overrides por data aditivos/subtrativos); slots expandidos na leitura _(v2 redesign — v1 entregue e arquivada; replanejada 2026-07-21)_ (completed 2026-07-22)
-- [ ] **Phase 7: Consultas & Ciclo de Status** - Consultas criadas pelo médico, ligadas a um paciente, com ciclo solicitada→confirmada→realizada/falta/cancelada e garantia de não-double-booking no banco (exclusion constraint sobre pendente+confirmada)
+- [x] **Phase 7: Consultas & Ciclo de Status** - Consultas criadas pelo médico, ligadas a um paciente, com ciclo solicitada→confirmada→realizada/falta/cancelada e garantia de não-double-booking no banco (exclusion constraint sobre pendente+confirmada) (completed 2026-07-25)
 - [ ] **Phase 8: Assentos & Convite — Fundação de Acesso Delegado (FUNDAÇÃO DE SEGURANÇA)** - Identidade real: tabela de membership (dono ↔ membro, role 'assistant_agenda', status ativo/revogado), fluxo de convite/aceite sobre Supabase Auth, e enforcement de escopo (RLS + verificação de membership) — a assistente logada só alcança agenda + busca/criação mínima de paciente do médico convidante, nunca módulos clínicos nem outro médico; construída e testada cross-tenant/cross-scope em isolamento, com UI mínima
 - [ ] **Phase 9: UI de Agendamento da Assistente** - Sobre a sessão autenticada do assento: a assistente loga, vê só a agenda, busca/cria paciente mínimo (dedupe) e marca uma consulta que entra como "pedido a confirmar" e segura o horário
 - [ ] **Phase 10: Livro-caixa de Ganhos & Painel** - Lançamentos financeiros em centavos inteiros (ligados a consulta ou avulsos), agregação em SQL por dia/semana/mês na data local da clínica, valor médio por consulta e anulação sem apagar
@@ -60,7 +60,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 
 - [x] 07-01-PLAN.md — Migração appointments (enum + tabela owner-scoped + RLS + btree_gist + exclusion constraint parcial) + máquina de transições pura + schemas Zod (checkpoint [BLOCKING] de push da migração)
 - [x] 07-02-PLAN.md — Módulos (create com preservação de error.code, list por janela, update-status compare-and-set) + actions (createAppointmentAction Confirmada + 23P01→amigável, transitionAppointmentStatusAction) + barrels
-- [ ] 07-03-PLAN.md — UI: dialog de criação em slot livre + painel "Pedidos a confirmar" + render dos 5 status na agenda + menu de transições + RSC carregando consultas (checkpoint visual)
+- [x] 07-03-PLAN.md — UI: dialog de criação em slot livre + painel "Pedidos a confirmar" + render dos 5 status na agenda + menu de transições + RSC carregando consultas (checkpoint visual)
 
 **UI hint**: yes
 
@@ -114,7 +114,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 6. Disponibilidade & Calendário do Médico | 3/3 | Complete    | 2026-07-22 |
-| 7. Consultas & Ciclo de Status | 2/3 | In Progress|  |
+| 7. Consultas & Ciclo de Status | 3/3 | Complete    | 2026-07-25 |
 | 8. Assentos & Convite — Fundação de Acesso Delegado | 0/? | Not started | - |
 | 9. UI de Agendamento da Assistente | 0/? | Not started | - |
 | 10. Livro-caixa de Ganhos & Painel | 0/? | Not started | - |

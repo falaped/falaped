@@ -1,5 +1,5 @@
 ---
-status: testing
+status: passed
 phase: 07-consultas-ciclo-de-status
 source: [07-VERIFICATION.md]
 started: 2026-07-25T00:00:00Z
@@ -8,13 +8,7 @@ updated: 2026-07-25T00:00:00Z
 
 ## Current Test
 
-number: 3
-name: Distinção visual dos 5 status na grade viva (tamanho de célula real)
-expected: |
-  Na grade live (calendar-time-grid.tsx), em tamanho de célula real, as distinções são inconfundíveis
-  a olho — SC-2: falta (UserX) ≠ cancelada (hachura + nome riscado); SC-3: pendente (borda tracejada/menta)
-  ≠ confirmada (sólida); realizada em tom muted.
-awaiting: user response
+(none — all tests passed)
 
 ## Tests
 
@@ -28,14 +22,14 @@ result: [passed] — Smoke transacional (rollback total, 0 linhas persistidas) v
 
 ### 3. Distinção visual dos 5 status na grade viva (tamanho de célula real)
 expected: Na grade live (calendar-time-grid.tsx), em tamanho de célula real, as distinções são inconfundíveis a olho — SC-2: falta (UserX) ≠ cancelada (hachura + nome riscado); SC-3: pendente (borda tracejada/menta) ≠ confirmada (sólida); realizada em tom muted.
-result: [pending]
+result: [passed] — Confirmado visualmente pelo usuário (2026-07-25): as distinções falta≠cancelada e pendente≠confirmada estão claras na grade viva.
 
 ## Summary
 
 total: 3
-passed: 2
+passed: 3
 issues: 0
-pending: 1
+pending: 0
 skipped: 0
 blocked: 0
 

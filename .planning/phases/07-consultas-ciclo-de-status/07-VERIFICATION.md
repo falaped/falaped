@@ -1,8 +1,9 @@
 ---
 phase: 07-consultas-ciclo-de-status
 verified: 2026-07-25T00:00:00Z
-status: human_needed
-score: 4/4 must-have truths verified (código) + guarantia de banco pende confirmação humana
+status: passed
+score: 4/4 must-have truths verified — banco live confirmado via Supabase MCP (constraint aplicada + smoke 23P01) e distinção visual confirmada pelo usuário (ver 07-UAT.md)
+human_verification_resolved: "Itens 1-2 verificados no banco live via Supabase MCP em 2026-07-25 (exclusion constraint parcial pending+confirmed ativa; smoke transacional disparou SQLSTATE=23P01 com rollback total). Item 3 (distinção visual) confirmado pelo usuário."
 behavior_unverified: 0
 overrides_applied: 0
 requirements_verified: [APPT-01, APPT-02, APPT-03, APPT-04]

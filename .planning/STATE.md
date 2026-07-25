@@ -2,19 +2,19 @@
 gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: Agenda & Ganhos
-current_phase: 07
-current_phase_name: consultas-ciclo-de-status
-status: executing
-stopped_at: Phase 7 plans complete (07-03 closed out); verification pending
-last_updated: "2026-07-24T00:00:00.000Z"
-last_activity: 2026-07-24
-last_activity_desc: "07-03 fechado retroativamente (safe-resume): UI de consultas já commitada em 2026-07-23; SUMMARY escrito. Falta verificação da fase 7."
+current_phase: 8
+current_phase_name: FUNDAÇÃO DE SEGURANÇA — construir e testar em isolamento, UI mínima
+status: planning
+stopped_at: Phase 7 UI-SPEC approved
+last_updated: "2026-07-25T22:09:21.402Z"
+last_activity: 2026-07-25
+last_activity_desc: Phase 07 complete, transitioned to Phase 8
 progress:
   total_phases: 5
-  completed_phases: 1
+  completed_phases: 2
   total_plans: 6
   completed_plans: 6
-  percent: 20
+  percent: 40
 ---
 
 # Project State
@@ -28,10 +28,10 @@ See: .planning/PROJECT.md (updated 2026-07-20)
 
 ## Current Position
 
-Phase: 07 (consultas-ciclo-de-status) — EXECUTING
-Plan: 3 of 3
-Status: Plans complete (all 3 have SUMMARYs) — phase verification pending
-Last activity: 2026-07-24 — Quick 260724-pui: agenda busca consultas da janela visível ao navegar (dia/semana/mês) + refetch após criar/transição (verificado)
+Phase: 8 — Assentos & Convite — Fundação de Acesso Delegado (FUNDAÇÃO DE SEGURANÇA — construir e testar em isolamento, UI mínima)
+Plan: Not started
+Status: Ready to plan
+Last activity: 2026-07-25 — Phase 07 complete, transitioned to Phase 8
 
 ## Roadmap (milestone v1.1)
 
@@ -47,7 +47,7 @@ Last activity: 2026-07-24 — Quick 260724-pui: agenda busca consultas da janela
 
 **Velocity:**
 
-- Total plans completed: 3 (milestone v1.0, arquivado)
+- Total plans completed: 6 (milestone v1.0, arquivado)
 - Average duration: — min
 - Total execution time: 0 hours
 
@@ -56,6 +56,7 @@ Last activity: 2026-07-24 — Quick 260724-pui: agenda busca consultas da janela
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
 | 06 | 3 | - | - |
+| 07 | 3 | - | - |
 
 **Recent Trend:**
 
