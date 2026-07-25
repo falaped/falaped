@@ -16,13 +16,21 @@ export type ListAppointmentsByRangeResult =
 
 /**
  * Schema inline do boundary: janela `[fromIso, toIso)` meio-aberta em ISO
- * datetime (UTC), espelhando o estilo de lib/schemas/appointment.ts. O `.refine`
- * garante que o fim é posterior ao início.
+ * datetime. `offset: true` é OBRIGATÓRIO aqui: o cliente deriva a janela de
+ * `TZDate` (@date-fns/tz), cujo `.toISOString()` emite o offset da clínica
+ * (ex.: `2026-07-27T00:00:00.000-03:00`), não `Z`. Sem `offset: true`, o Zod
+ * rejeita o offset, a action retorna `ok:false` e as consultas da janela nunca
+ * carregam. `new Date(...)` interpreta ambos os formatos no MESMO instante. O
+ * `.refine` garante que o fim é posterior ao início.
  */
 const listAppointmentsByRangeSchema = z
   .object({
-    fromIso: z.string().datetime({ message: "Início da janela inválido." }),
-    toIso: z.string().datetime({ message: "Fim da janela inválido." }),
+    fromIso: z
+      .string()
+      .datetime({ offset: true, message: "Início da janela inválido." }),
+    toIso: z
+      .string()
+      .datetime({ offset: true, message: "Fim da janela inválido." }),
   })
   .refine((input) => new Date(input.fromIso) < new Date(input.toIso), {
     message: "O fim da janela deve ser posterior ao início.",
