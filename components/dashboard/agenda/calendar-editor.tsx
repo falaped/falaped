@@ -18,6 +18,16 @@ import {
   listAppointmentsByRangeAction,
   saveAvailabilityAction,
 } from "@/actions"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
 import { Button } from "@/components/ui/button"
 import {
   Sheet,
@@ -612,6 +622,12 @@ export function CalendarEditor({
     appointment: CellAppointment
   } | null>(null)
 
+  // Confirmação de limpeza em lote (salvar-na-hora): título + ação a aplicar.
+  const [pendingClear, setPendingClear] = React.useState<null | {
+    title: string
+    apply: () => void
+  }>(null)
+
   // ---------- mutações ADITIVAS do draft (puras: recebem e devolvem draft) ----------
 
   /** Disponibilidade RECORRENTE (template do dia da semana) para [start, end). */
@@ -909,6 +925,91 @@ export function CalendarEditor({
     ],
   )
 
+  // ---------- limpeza em lote (salvar-na-hora, restaurada de 11ecfdf) ----------
+
+  /**
+   * Remove a DISPONIBILIDADE das datas visíveis (função PURA sobre o draft atual):
+   * apaga de `rulePainted`/`ruleDurations` todos os weekdays das datas e de
+   * `addCells` as chaves dessas datas. O template recorrente é global por weekday
+   * (limpar uma terça esvazia todas as terças — consequência intencional de 11ecfdf).
+   * Devolve o `next` para poder passar a `persistDraft`.
+   */
+  const clearAvailabilityForDates = React.useCallback(
+    (localDates: string[]): Draft => {
+      const weekdays = new Set(
+        localDates.map((localDate) => weekdayOf(localDate, timeZone)),
+      )
+      const next = cloneDraft(draft)
+      for (const key of [...next.rulePainted]) {
+        const weekday = Number(key.slice(0, key.indexOf(":")))
+        if (weekdays.has(weekday)) next.rulePainted.delete(key)
+      }
+      for (const key of Object.keys(next.ruleDurations)) {
+        const weekday = Number(key.slice(0, key.indexOf(":")))
+        if (weekdays.has(weekday)) delete next.ruleDurations[key]
+      }
+      for (const localDate of localDates) {
+        for (const key of [...next.addCells]) {
+          if (key.slice(0, key.lastIndexOf(":")) === localDate) {
+            next.addCells.delete(key)
+          }
+        }
+      }
+      return next
+    },
+    [draft, timeZone],
+  )
+
+  /**
+   * Remove as FOLGAS (`subtractCells`) das datas visíveis (função PURA sobre o
+   * draft atual). Não toca o template recorrente nem os overrides aditivos.
+   */
+  const clearFolgasForDates = React.useCallback(
+    (localDates: string[]): Draft => {
+      const dateSet = new Set(localDates)
+      const next = cloneDraft(draft)
+      for (const key of [...next.subtractCells]) {
+        if (dateSet.has(key.slice(0, key.lastIndexOf(":")))) {
+          next.subtractCells.delete(key)
+        }
+      }
+      return next
+    },
+    [draft],
+  )
+
+  /**
+   * Persiste um draft limpo NA HORA (espelha o final de `applyAvailabilityIntent`):
+   * captura o snapshot anterior, salva `next` e mostra um toast com "Desfazer" que
+   * re-salva o snapshot. Em erro, faz rollback do estado em memória.
+   */
+  const clearAndPersist = React.useCallback(
+    async (next: Draft) => {
+      const before = cloneDraft(draft)
+      const result = await persistDraft(next)
+      if (result.ok) {
+        toast.success("Disponibilidade atualizada.", {
+          action: {
+            label: "Desfazer",
+            onClick: async () => {
+              const undoResult = await persistDraft(before)
+              if (undoResult.ok) {
+                toast.success("Mudança desfeita.")
+              } else {
+                setDraft(next)
+                toast.error(undoResult.error)
+              }
+            },
+          },
+        })
+      } else {
+        setDraft(before)
+        toast.error(result.error)
+      }
+    },
+    [draft, persistDraft],
+  )
+
   // ---------- re-expansão client-side para o resumo do Mês (D-18) ----------
   const monthByDay: ByDay = React.useMemo(() => {
     const monthStart = startOfMonth(monthCursor, context)
@@ -1025,6 +1126,40 @@ export function CalendarEditor({
     const [y, m, d] = selectedRailDate.split("-").map(Number)
     return new TZDate(y, m - 1, d, timeZone)
   }, [selectedRailDate, timeZone])
+
+  // Datas visíveis do escopo de limpeza: Dia = o dia SELECIONADO (a visão Dia
+  // renderiza selectedRailDateObj); Semana = as 5 (Seg–Sex); Mês = nenhuma
+  // (não pinta faixas), então os botões de limpeza ficam desabilitados.
+  const clearScopeDates = React.useMemo(() => {
+    if (activeTab === "dia") return [localDateOf(selectedRailDateObj)]
+    if (activeTab === "semana") return weekDays.map(localDateOf)
+    return []
+  }, [activeTab, selectedRailDateObj, weekDays, localDateOf])
+
+  const clearDisabled = activeTab === "mes" || clearScopeDates.length === 0
+  const clearScopeNoun = activeTab === "semana" ? "da semana" : "do dia"
+
+  function requestClearAvailability() {
+    if (clearDisabled) return
+    setPendingClear({
+      title: `Limpar toda a disponibilidade ${clearScopeNoun}?`,
+      apply: () => clearAndPersist(clearAvailabilityForDates(clearScopeDates)),
+    })
+  }
+
+  function requestClearFolgas() {
+    if (clearDisabled) return
+    setPendingClear({
+      title: `Limpar todas as folgas ${clearScopeNoun}?`,
+      apply: () => clearAndPersist(clearFolgasForDates(clearScopeDates)),
+    })
+  }
+
+  function confirmClear() {
+    const pending = pendingClear
+    setPendingClear(null)
+    if (pending) pending.apply()
+  }
 
   // ---------- janela VISÍVEL [visibleFrom, visibleTo) por aba ----------
   // Meio-aberta, no fuso da clínica (context). A busca de consultas casa a
@@ -1202,6 +1337,31 @@ export function CalendarEditor({
           </span>
         </div>
 
+        {/* Limpar disponibilidade | folgas do escopo da aba (desabilitado no Mês).
+            Salvar-na-hora: confirma no AlertDialog, persiste e oferece "Desfazer". */}
+        <div className="flex items-center gap-1">
+          <Button
+            variant="outline"
+            size="sm"
+            className="h-7 px-2 text-xs"
+            onClick={requestClearAvailability}
+            disabled={clearDisabled}
+            aria-disabled={clearDisabled}
+          >
+            Limpar disponibilidade
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            className="h-7 px-2 text-xs"
+            onClick={requestClearFolgas}
+            disabled={clearDisabled}
+            aria-disabled={clearDisabled}
+          >
+            Limpar folgas
+          </Button>
+        </div>
+
         {/* Trigger ÚNICO do drawer (E-4): abre em Consulta; o toggle de 3 opções
             (Consulta | Disponibilidade | Folga) vive dentro do drawer. */}
         <div className="flex items-center gap-2 lg:ml-auto">
@@ -1352,6 +1512,31 @@ export function CalendarEditor({
         }}
         onChanged={() => reloadAppointments(visibleFrom, visibleTo)}
       />
+
+      {/* Confirmação da limpeza em lote (salvar-na-hora). A ação é imediata e
+          pode ser desfeita pelo toast "Desfazer" que aparece em seguida. */}
+      <AlertDialog
+        open={pendingClear !== null}
+        onOpenChange={(open) => {
+          if (!open) setPendingClear(null)
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{pendingClear?.title}</AlertDialogTitle>
+            <AlertDialogDescription>
+              Esta ação é aplicada imediatamente. Você pode desfazer pelo aviso
+              que aparece em seguida.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setPendingClear(null)}>
+              Cancelar
+            </AlertDialogCancel>
+            <AlertDialogAction onClick={confirmClear}>Limpar</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Tabs>
   )
 }
