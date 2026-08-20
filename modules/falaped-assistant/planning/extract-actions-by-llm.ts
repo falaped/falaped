@@ -1,8 +1,9 @@
 import { groq } from "@/modules/groq/groq-client"
+import { env } from "@/lib/env"
 import type { TurnActionKind } from "@/modules/falaped-assistant/planning/turn-action-types"
 import { cleanupRawContent, parseActionsFromPayload } from "@/modules/falaped-assistant/planning/llm-action-parsers"
 
-const MODEL = process.env.GROQ_ASSISTANT_MODEL?.trim() || "qwen/qwen3-32b"
+const MODEL = env.GROQ_ASSISTANT_MODEL
 const MAX_COMPLETION_TOKENS = 220
 
 const ALLOWED_ACTIONS: TurnActionKind[] = [
