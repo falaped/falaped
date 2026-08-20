@@ -1,6 +1,7 @@
 import { groq } from "@/modules/groq/groq-client"
+import { env } from "@/lib/env"
 
-const REPORT_IMPROVEMENT_MODEL = "llama-3.1-8b-instant"
+const REPORT_IMPROVEMENT_MODEL = env.GROQ_ASSISTANT_MODEL
 
 export type ImproveSectionInput = {
   sectionName: string
