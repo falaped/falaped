@@ -41,6 +41,16 @@ export type FreeSlot = {
   label: string
   /** Instante de início ISO UTC (o que a action grava). */
   startsAt: string
+  /**
+   * Duração MÁXIMA (minutos) que cabe a partir deste slot sem invadir uma
+   * consulta ATIVA nem sair da disponibilidade. Derivada pelo pai.
+   *
+   * Um slot ficar livre não significa que qualquer duração cabe: com 15:00 livre
+   * e 15:30 confirmada, só 15/30 min entram — 45+ sobrepõem e o INSERT morre na
+   * exclusion constraint (23P01) com copy de corrida. Os chips maiores que este
+   * teto ficam desabilitados, então o erro não acontece em vez de ser explicado.
+   */
+  maxDuration: number
 }
 
 /** Iniciais do paciente para o avatar de fallback. */
@@ -116,6 +126,24 @@ export function BookingRail({
     () => freeSlots.find((s) => s.minute === slotMinute) ?? null,
     [freeSlots, slotMinute],
   )
+
+  /**
+   * Teto de duração do slot escolhido (sem slot escolhido, nada é desabilitado —
+   * o teto real só é conhecido depois de escolher o horário).
+   */
+  const maxDuration = selectedSlot?.maxDuration ?? Infinity
+
+  /**
+   * A duração escolhida pode não caber no slot recém-escolhido (ex.: 60 min
+   * selecionado e o slot só aceita 30 porque a consulta seguinte está a meia
+   * hora). Rebaixa para o maior preset que cabe, em vez de deixar o CTA armado
+   * para um INSERT que a exclusion constraint recusaria.
+   */
+  React.useEffect(() => {
+    if (duration <= maxDuration) return
+    const fits = DURATION_PRESETS.filter((m) => m <= maxDuration)
+    if (fits.length > 0) setDuration(Math.max(...fits))
+  }, [duration, maxDuration])
 
   // Ao trocar de dia, some a seleção de slot (o horário pode não existir mais).
   React.useEffect(() => {
@@ -277,17 +305,28 @@ export function BookingRail({
         <div className="flex flex-wrap gap-1.5" role="group" aria-label="Duração">
           {DURATION_PRESETS.map((minutes) => {
             const active = minutes === duration
+            // Não cabe no slot escolhido → desabilitado. Sem isso o chip parece
+            // válido e o erro só aparece depois de submeter (23P01).
+            const tooLong = minutes > maxDuration
             return (
               <button
                 key={minutes}
                 type="button"
                 aria-pressed={active}
+                disabled={tooLong}
+                title={
+                  tooLong
+                    ? `Não cabe às ${selectedSlot?.label}: só ${maxDuration} min livres até a próxima consulta.`
+                    : undefined
+                }
                 onClick={() => setDuration(minutes)}
                 className={cn(
                   "rounded-full border px-3 py-1.5 text-xs font-medium tabular-nums transition-colors",
-                  active
-                    ? "border-primary bg-primary/10 text-primary"
-                    : "border-border text-muted-foreground hover:border-foreground/40",
+                  tooLong
+                    ? "cursor-not-allowed border-border/50 text-muted-foreground/40"
+                    : active
+                      ? "border-primary bg-primary/10 text-primary"
+                      : "border-border text-muted-foreground hover:border-foreground/40",
                 )}
               >
                 {minutes === 30 ? "30 min" : minutes}

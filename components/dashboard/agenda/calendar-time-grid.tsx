@@ -149,17 +149,23 @@ export function CalendarTimeGrid({
     return labels
   }, [windowStart, windowEnd])
 
-  // Faixas de FUNDO por HORA (render, GRID_STEP=60): começa na hora que contém
-  // windowStart (floor) e cobre até windowEnd. Cada hora é UM <button> clicável
-  // (numa hora livre+futura → Nova consulta). O estado/bookability da hora é
-  // avaliado no minuto de INÍCIO da hora (m). Distinto de minuteRows (dado, 30).
-  const hourRows = React.useMemo(() => {
+  // Faixas de FUNDO por STEP (30): começa na hora que contém windowStart
+  // (floor) e cobre até windowEnd. Cada faixa é UM <button> clicável (slot
+  // livre+futuro → Nova consulta).
+  //
+  // Antes eram faixas de UMA HORA (GRID_STEP) cujo estado era avaliado só no
+  // minuto de INÍCIO da hora — então uma consulta às 15:30 era invisível para a
+  // célula das 15h (a chave `:930` nunca era consultada), a hora inteira parecia
+  // livre e o agendamento só falhava no banco (23P01). Uma faixa por STEP dá a
+  // cada meia hora o seu próprio estado — e o seu próprio tabstop, então a
+  // segunda metade também é alcançável por teclado.
+  //
+  // O VISUAL por hora (260725-dvv) é preservado em `isHourEdge`: só a faixa que
+  // termina em hora cheia desenha a borda inferior, então duas metades de mesmo
+  // estado continuam lendo como um bloco de uma hora.
+  const stepRows = React.useMemo(() => {
     const rows: number[] = []
-    for (
-      let m = Math.floor(windowStart / 60) * 60;
-      m < windowEnd;
-      m += GRID_STEP
-    ) {
+    for (let m = Math.floor(windowStart / 60) * 60; m < windowEnd; m += STEP) {
       rows.push(m)
     }
     return rows
@@ -311,10 +317,12 @@ export function CalendarTimeGrid({
                 // HEADER fica marcado (Badge "Selecionado"). Mantido só o "hoje".
               )}
             >
-              {/* Camada de fundo READ-ONLY: 1 faixa por HORA (clique = agendar).
-                  Estado avaliado no minuto de início da hora (GRID_STEP=60). */}
-              {hourRows.map((minute) => {
+              {/* Camada de fundo READ-ONLY: 1 faixa por STEP (clique = agendar).
+                  Cada meia hora tem estado próprio; a borda inferior só na hora
+                  cheia mantém a leitura visual por hora (GRID_STEP). */}
+              {stepRows.map((minute) => {
                 const state = cellStateOf(day.localDate, minute)
+                const isHourEdge = (minute + STEP) % GRID_STEP === 0
                 return (
                   <button
                     key={dateCellKey(day.localDate, minute)}
@@ -331,7 +339,8 @@ export function CalendarTimeGrid({
                       handleBackgroundClick(event, day.localDate, minute)
                     }
                     className={cn(
-                      "absolute left-0 right-0 border-b border-b-border/60 transition-colors",
+                      "absolute left-0 right-0 transition-colors",
+                      isHourEdge && "border-b border-b-border/60",
                       // Paleta pastel (260724-gyi): disponível = menta clara com
                       // degradê; folga = areia clara com degradê + hachura; vazio =
                       // branco. Classes utilitárias oklch centralizadas em globals.css.
@@ -341,7 +350,7 @@ export function CalendarTimeGrid({
                     )}
                     style={{
                       top: `${topPct(minute)}%`,
-                      height: `${heightPct(minute, minute + GRID_STEP)}%`,
+                      height: `${heightPct(minute, minute + STEP)}%`,
                     }}
                   />
                 )

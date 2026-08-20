@@ -37,6 +37,7 @@ import {
 } from "@/components/ui/sheet"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { expandAvailability } from "@/lib/expand-availability"
+import { maxSlotDuration } from "@/lib/max-slot-duration"
 import { DEFAULT_SLOT } from "./availability-cell-menu"
 import {
   DAY_END,
@@ -53,6 +54,7 @@ import {
   type PositionedAppointment,
 } from "./calendar-time-grid"
 import { type FreeSlot } from "./booking-rail"
+import { DURATION_PRESETS } from "./appointment-create-dialog"
 import { AgendaSidePanel } from "./agenda-side-panel"
 import type { AvailabilityIntent } from "./availability-panel"
 import { CalendarMonthIndicator } from "./calendar-month-indicator"
@@ -105,6 +107,9 @@ const DAY_LABELS_MON_FIRST = ["Seg", "Ter", "Qua", "Qui", "Sex", "Sáb", "Dom"]
 
 /** Horizonte de expansão da folga recorrente: ~6 meses à frente (D-2). */
 const FOLGA_RECURRING_HORIZON_MONTHS = 6
+
+/** Maior preset de duração — teto do encadeamento em `railFreeSlots`. */
+const MAX_DURATION_PRESET = Math.max(...DURATION_PRESETS)
 
 /** Precedência de exibição num horário re-marcado (D-07): ativo vence histórico. */
 const STATUS_PRECEDENCE: Record<AppointmentStatus, number> = {
@@ -1092,10 +1097,24 @@ export function CalendarEditor({
       if (!isCellBookable(selectedRailDate, minute)) continue
       const appt = appointmentByCell.get(`${selectedRailDate}:${minute}`)
       if (appt && isActiveAppointmentStatus(appt.status)) continue
+      // Teto de duração do slot: células de STEP contíguas ainda disponíveis e
+      // sem consulta ATIVA (os status finais não seguram o horário — a exclusion
+      // constraint só considera pending/confirmed).
+      const maxDuration = maxSlotDuration(
+        minute,
+        STEP,
+        MAX_DURATION_PRESET,
+        (m) => {
+          if (cellStateOf(selectedRailDate, m) !== "available") return false
+          const blocking = appointmentByCell.get(`${selectedRailDate}:${m}`)
+          return !(blocking && isActiveAppointmentStatus(blocking.status))
+        },
+      )
       slots.push({
         minute,
         label: minutesToLabel(minute),
         startsAt: new Date(slotStartMs(selectedRailDate, minute)).toISOString(),
+        maxDuration,
       })
     }
     return slots
