@@ -19,13 +19,16 @@ export function CalendarMonthIndicator({
   byDay,
   timeZone,
   todayLocal,
+  selectedLocalDate,
   onSelectDay,
 }: {
   monthCursor: Date
   byDay: ByDay
   timeZone: string
   todayLocal: string
-  /** Navega para o Dia clicado (D-18: navega, não pinta). */
+  /** Data local (YYYY-MM-DD) do dia SELECIONADO — destaque token-only (M-2). */
+  selectedLocalDate?: string
+  /** Seleciona o dia clicado (M-1: o dia global vira o clicado). */
   onSelectDay: (day: Date) => void
 }) {
   const context = { in: tz(timeZone) }
@@ -53,9 +56,9 @@ export function CalendarMonthIndicator({
   })
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex h-full min-h-0 flex-col gap-4">
       {!hasAny ? (
-        <div className="rounded-xl border border-dashed p-8 text-center">
+        <div className="shrink-0 rounded-xl border border-dashed p-8 text-center">
           <p className="text-sm font-medium">Sem atendimento neste mês.</p>
           <p className="mt-1 text-sm text-muted-foreground">
             Configure sua disponibilidade nas abas Dia ou Semana para ver os
@@ -64,7 +67,9 @@ export function CalendarMonthIndicator({
         </div>
       ) : null}
 
-      <div className="grid grid-cols-7 gap-px overflow-hidden rounded-lg border bg-border">
+      {/* C-1: o grid preenche a altura (flex-1 min-h-0 + grid-rows-6) em vez de
+          somar min-h-20 por célula — nenhuma scrollbar vertical própria. */}
+      <div className="grid min-h-0 flex-1 grid-cols-7 grid-rows-[auto_repeat(6,1fr)] gap-px overflow-hidden rounded-lg border bg-border">
         {DAY_LABELS.map((label) => (
           <div
             key={`mh-${label}`}
@@ -78,14 +83,21 @@ export function CalendarMonthIndicator({
           const inMonth = day >= monthStart && day <= monthEnd
           const summary = byDay[localDate]
           const isToday = localDate === todayLocal
+          const isSelected = localDate === selectedLocalDate
           return (
             <button
               key={localDate}
               type="button"
+              aria-pressed={isSelected}
               onClick={() => onSelectDay(day)}
               className={cn(
-                "flex min-h-20 flex-col gap-1 bg-background p-2 text-left transition-colors hover:bg-muted/50",
+                "flex min-h-0 flex-col gap-1 overflow-hidden bg-background p-2 text-left transition-colors hover:bg-muted/50",
                 !inMonth && "bg-muted/40 text-muted-foreground",
+                // Célula do dia SELECIONADO (C-2): aparência de ABA ATIVA
+                // token-only (fundo primary/10 + texto primary + barra inferior),
+                // distinta do "hoje" (número em bolinha).
+                isSelected &&
+                  "bg-primary/10 text-primary border-b-2 border-primary",
               )}
             >
               <div className="flex items-center justify-between">
@@ -99,7 +111,9 @@ export function CalendarMonthIndicator({
                   {format(day, "d", context)}
                 </span>
                 {inMonth && summary?.hasAvailability ? (
-                  <span className="h-2 w-2 rounded-full bg-primary" />
+                  // 260724-gyi: indicador de disponibilidade = menta da paleta pastel
+                  // (a linha mais saturada, boa p/ um ponto pequeno legível).
+                  <span className="h-2 w-2 rounded-full [background-color:var(--agenda-avail-line)]" />
                 ) : null}
               </div>
               {inMonth && summary?.hasAvailability ? (
@@ -112,8 +126,8 @@ export function CalendarMonthIndicator({
         })}
       </div>
 
-      <p className="text-xs text-muted-foreground">
-        O mês é só um resumo. Clique num dia para editar a disponibilidade dele.
+      <p className="shrink-0 text-xs text-muted-foreground">
+        O mês é só um resumo. Clique num dia para selecioná-lo.
       </p>
     </div>
   )

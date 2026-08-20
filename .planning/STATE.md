@@ -2,19 +2,19 @@
 gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: Agenda & Ganhos
-current_phase: 07
-current_phase_name: consultas-ciclo-de-status
-status: executing
+current_phase: 8
+current_phase_name: FUNDAÇÃO DE SEGURANÇA — construir e testar em isolamento, UI mínima
+status: planning
 stopped_at: Phase 7 UI-SPEC approved
 last_updated: "2026-08-20T23:23:59.922Z"
-last_activity: 2026-07-23
-last_activity_desc: Phase 07 execution started
+last_activity: 2026-07-25
+last_activity_desc: Phase 07 complete, transitioned to Phase 8
 progress:
   total_phases: 5
-  completed_phases: 1
+  completed_phases: 2
   total_plans: 6
-  completed_plans: 5
-  percent: 20
+  completed_plans: 6
+  percent: 40
 ---
 
 # Project State
@@ -28,10 +28,10 @@ See: .planning/PROJECT.md (updated 2026-07-20)
 
 ## Current Position
 
-Phase: 07 (consultas-ciclo-de-status) — EXECUTING
-Plan: 3 of 3
-Status: Ready to execute
-Last activity: 2026-07-23 — Phase 07 execution started
+Phase: 8 — Assentos & Convite — Fundação de Acesso Delegado (FUNDAÇÃO DE SEGURANÇA — construir e testar em isolamento, UI mínima)
+Plan: Not started
+Status: Ready to plan
+Last activity: 2026-07-25 — Phase 07 complete, transitioned to Phase 8
 
 ## Roadmap (milestone v1.1)
 
@@ -47,7 +47,7 @@ Last activity: 2026-07-23 — Phase 07 execution started
 
 **Velocity:**
 
-- Total plans completed: 3 (milestone v1.0, arquivado)
+- Total plans completed: 6 (milestone v1.0, arquivado)
 - Average duration: — min
 - Total execution time: 0 hours
 
@@ -56,6 +56,7 @@ Last activity: 2026-07-23 — Phase 07 execution started
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
 | 06 | 3 | - | - |
+| 07 | 3 | - | - |
 
 **Recent Trend:**
 
@@ -114,12 +115,16 @@ Recent decisions affecting current work (milestone v1.1):
 
 ### Quick Tasks Completed
 
-| # | Description | Date | Commit | Directory |
-|---|-------------|------|--------|-----------|
-| 260629-egq | Corrigir 3 pontos da foto do paciente (avatar persiste no refresh; foto na lista; upload em modal) | 2026-06-29 | 87468f8 | [260629-egq-corrigir-3-pontos-da-foto-do-paciente-1-](./quick/260629-egq-corrigir-3-pontos-da-foto-do-paciente-1-/) |
-| 260701-ctf | Corrigir erro "Invalid input: expected string, received number" no campo idade gestacional ao criar/editar paciente (double-parse) | 2026-07-09 | beb8ce7 (PR #2) | [260701-ctf-fix-gestational-age-double-parse](./quick/260701-ctf-fix-gestational-age-double-parse/) |
-| 260720-qsj | Redesenho das faixas etárias do calendário vacinal (faixas canônicas fixas + regra "faixa anterior") e correção da idade em meses (calendário, não dias/30.4375; cronológica para posição de vacina) | 2026-07-20 | 405282e | [260720-qsj-redesenhar-o-posicionamento-por-idade-do](./quick/260720-qsj-redesenhar-o-posicionamento-por-idade-do/) |
-| 4 | remover item Agenda do menu lateral | 2026-08-20 | 4475d4d | — |
+| # | Description | Date | Commit | Status | Directory |
+|---|-------------|------|--------|--------|-----------|
+| 260629-egq | Corrigir 3 pontos da foto do paciente (avatar persiste no refresh; foto na lista; upload em modal) | 2026-06-29 | 87468f8 |  | [260629-egq-corrigir-3-pontos-da-foto-do-paciente-1-](./quick/260629-egq-corrigir-3-pontos-da-foto-do-paciente-1-/) |
+| 260701-ctf | Corrigir erro "Invalid input: expected string, received number" no campo idade gestacional ao criar/editar paciente (double-parse) | 2026-07-09 | beb8ce7 (PR #2) |  | [260701-ctf-fix-gestational-age-double-parse](./quick/260701-ctf-fix-gestational-age-double-parse/) |
+| 260720-qsj | Redesenho das faixas etárias do calendário vacinal (faixas canônicas fixas + regra "faixa anterior") e correção da idade em meses (calendário, não dias/30.4375; cronológica para posição de vacina) | 2026-07-20 | 405282e |  | [260720-qsj-redesenhar-o-posicionamento-por-idade-do](./quick/260720-qsj-redesenhar-o-posicionamento-por-idade-do/) |
+| 260723-du8 | Redesign da Agenda: layout híbrido Google Agenda × Calendly (grade de tempo Dia/Semana, trilho de agendamento fixo, 5 status em tokens Falaped, Dia/Semana/Mês) — branch redesign/agenda-hibrida | 2026-07-23 | 7711344 |  | [260723-du8-redesign-da-agenda-layout-hibrido-google](./quick/260723-du8-redesign-da-agenda-layout-hibrido-google/) |
+| 260724-jka | Detalhe da consulta na agenda: modal centralizado (paciente/responsável/motivo/tipo/data-hora/badge) + ações icon-only com tooltip; colunas reason/type em appointments (migration não aplicada) + captura Tipo/Motivo no create-dialog e booking-rail | 2026-07-24 | 396ed67 |  | [260724-jka-detalhe-da-consulta-na-agenda-modal-cent](./quick/260724-jka-detalhe-da-consulta-na-agenda-modal-cent/) |
+| 260724-ojm | Corrigir agenda não atualizar após criar consulta / mudar status: router.refresh() no client após createAppointmentAction e transitionAppointmentStatusAction (revalidatePath sozinho não re-renderiza o RSC em action chamada via await) | 2026-07-24 | b686a81 |  | [260724-ojm-corrigir-agenda-n-o-atualizar-ap-s-criar](./quick/260724-ojm-corrigir-agenda-n-o-atualizar-ap-s-criar/) |
+| 260724-pui | Agenda busca consultas da janela visível ao navegar (dia/semana/mês), não só a semana atual do servidor — nova action listAppointmentsByRangeAction + CalendarEditor com estado + fetch por janela + refetch após criar/transição | 2026-07-24 | 9811053 | Verified | [260724-pui-agenda-buscar-consultas-ao-navegar-dia-s](./quick/260724-pui-agenda-buscar-consultas-ao-navegar-dia-s/) |
+| 260820-agn | remover item Agenda do menu lateral | 2026-08-20 | 4475d4d |  | — |
 
 ## Deferred Items
 

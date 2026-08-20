@@ -1,10 +1,12 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
-import type { AppointmentRow, AppointmentStatus } from "./types"
+import type { AppointmentRow, AppointmentStatus, AppointmentType } from "./types"
 
 /** Dados de uma consulta a criar (sem profile_id — stampado server-side). */
 export type CreateAppointmentData = {
   patient_id: string
   status: AppointmentStatus
+  type: AppointmentType
+  reason?: string | null
   starts_at: string
   ends_at: string
 }
@@ -39,11 +41,13 @@ export async function createAppointment(
       profile_id: profileId,
       patient_id: input.patient_id,
       status: input.status,
+      type: input.type,
+      reason: input.reason ?? null,
       starts_at: input.starts_at,
       ends_at: input.ends_at,
     })
     .select(
-      "id, profile_id, patient_id, status, starts_at, ends_at, created_at, updated_at",
+      "id, profile_id, patient_id, status, reason, type, starts_at, ends_at, created_at, updated_at",
     )
     .single()
 

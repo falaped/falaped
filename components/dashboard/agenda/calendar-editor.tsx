@@ -6,14 +6,18 @@ import {
   addDays,
   addMonths,
   format,
+  startOfDay,
   startOfMonth,
   startOfWeek,
 } from "date-fns"
 import { ptBR } from "date-fns/locale"
-import { ChevronLeft, ChevronRight, Loader2 } from "lucide-react"
+import { ChevronLeft, ChevronRight } from "lucide-react"
 import { toast } from "sonner"
 
-import { saveAvailabilityAction } from "@/actions"
+import {
+  listAppointmentsByRangeAction,
+  saveAvailabilityAction,
+} from "@/actions"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -25,36 +29,41 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
 import { Button } from "@/components/ui/button"
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { expandAvailability } from "@/lib/expand-availability"
+import { maxSlotDuration } from "@/lib/max-slot-duration"
+import { DEFAULT_SLOT } from "./availability-cell-menu"
 import {
-  AvailabilityCellMenu,
-  DEFAULT_SLOT,
-  type AvailabilityScope,
-  type MenuTarget,
-  type PeriodDraft,
-} from "./availability-cell-menu"
-import {
-  CalendarDayWeekGrid,
   DAY_END,
   STEP,
+  isActiveAppointmentStatus,
   minutesToLabel,
-  type CellAppointment,
   type CellState,
   type DayColumn,
   type MenuAnchor,
 } from "./calendar-day-week-grid"
+import type { CellAppointment } from "./appointment-status-style"
+import {
+  CalendarTimeGrid,
+  type PositionedAppointment,
+} from "./calendar-time-grid"
+import { type FreeSlot } from "./booking-rail"
+import { DURATION_PRESETS } from "./appointment-create-dialog"
+import { AgendaSidePanel } from "./agenda-side-panel"
+import type { AvailabilityIntent } from "./availability-panel"
 import { CalendarMonthIndicator } from "./calendar-month-indicator"
-import {
-  AppointmentCreateDialog,
-  type CreateTarget,
-} from "./appointment-create-dialog"
-import {
-  PendingRequestsPanel,
-  type PendingRequest,
-} from "./pending-requests-panel"
 import { AppointmentDetailMenu } from "./appointment-detail-menu"
-import type { AppointmentStatus } from "@/modules/appointments/types"
+import type {
+  AppointmentStatus,
+  AppointmentType,
+} from "@/modules/appointments/types"
+import type { AppointmentListRow } from "@/modules/appointments/list-appointments-by-profile-id"
 import type { Patient } from "@/modules/patients/types"
 
 /** Linha crua de rule (snake_case, espelha o DB / Plano 01). */
@@ -86,6 +95,8 @@ export type AppointmentRow = {
   id: string
   patient_id: string
   status: AppointmentStatus
+  reason: string | null
+  type: AppointmentType
   starts_at: string
   ends_at: string
   patient_name: string
@@ -93,6 +104,12 @@ export type AppointmentRow = {
 }
 
 const DAY_LABELS_MON_FIRST = ["Seg", "Ter", "Qua", "Qui", "Sex", "Sáb", "Dom"]
+
+/** Horizonte de expansão da folga recorrente: ~6 meses à frente (D-2). */
+const FOLGA_RECURRING_HORIZON_MONTHS = 6
+
+/** Maior preset de duração — teto do encadeamento em `railFreeSlots`. */
+const MAX_DURATION_PRESET = Math.max(...DURATION_PRESETS)
 
 /** Precedência de exibição num horário re-marcado (D-07): ativo vence histórico. */
 const STATUS_PRECEDENCE: Record<AppointmentStatus, number> = {
@@ -208,23 +225,6 @@ function cloneDraft(draft: Draft): Draft {
   }
 }
 
-function setsEqual(a: Set<string>, b: Set<string>): boolean {
-  if (a.size !== b.size) return false
-  for (const value of a) if (!b.has(value)) return false
-  return true
-}
-
-function draftsEqual(a: Draft, b: Draft): boolean {
-  if (!setsEqual(a.rulePainted, b.rulePainted)) return false
-  if (!setsEqual(a.subtractCells, b.subtractCells)) return false
-  if (!setsEqual(a.addCells, b.addCells)) return false
-  const aKeys = Object.keys(a.ruleDurations)
-  const bKeys = Object.keys(b.ruleDurations)
-  if (aKeys.length !== bKeys.length) return false
-  for (const key of aKeys) if (a.ruleDurations[key] !== b.ruleDurations[key]) return false
-  return true
-}
-
 /**
  * Weekday (0=domingo..6=sábado) de uma data local `YYYY-MM-DD` ANCORADA no fuso da
  * CLÍNICA — casa com o servidor (`expandAvailability` faz `new TZDate(day, tz).getDay()`
@@ -243,29 +243,26 @@ function weekdayOf(localDate: string, timeZone: string): number {
 }
 
 /**
- * Calendário único editável (D-14..D-18) — rework v2 da interação.
+ * Calendário único (rework 260723-kej): a grade Dia/Semana/Mês é SOMENTE
+ * visualização + marcação de consultas. A edição de disponibilidade/folga migrou
+ * 100% para o painel lateral (`AgendaSidePanel` → `AvailabilityPanel`, D-1), que
+ * emite uma intenção declarativa aplicada aqui e SALVA NA HORA (D-3) com Desfazer.
  *
- * LAYOUT (rework): abas Dia/Semana/Mês MENORES e à ESQUERDA no topo, alinhadas
- * a uma barra fina que também traz a navegação (Anterior/Hoje/Próximo + rótulo
- * do período) e o botão Salvar com o indicador "não salvo". O painel de ações
- * lateral da v2-anterior foi REMOVIDO; o toggle Disponibilidade|Folga sumiu — o
- * BOTÃO do mouse agora escolhe o modo.
+ * INTERAÇÃO:
+ * - Grade: clique num slot LIVRE+futuro → "Nova consulta"; clique numa consulta →
+ *   detalhe/transição. A grade NÃO pinta nem abre menu de disponibilidade/folga.
+ * - Painel: toggle Consulta ↔ Disponibilidade/Folga; o modo Disponibilidade edita
+ *   disponibilidade E folga por Período/Dia inteiro/Recorrência (D-4..D-6).
  *
- * INTERAÇÃO (rework):
- * - Clique ESQUERDO numa célula → menu "Disponibilidade" (Dia inteiro | Período;
- *   escopo Recorrente/padrão vs. Só nesta data/AGENDA-05).
- * - ARRASTE com o botão esquerdo → cria disponibilidade para o período contíguo
- *   (escopo default = recorrente, template do dia da semana).
- * - Clique DIREITO numa célula → menu "Folga" (Dia inteiro | Período), por data.
- * - Toda ação é ADITIVA: nunca limpa faixas existentes → multi-band por dia.
- *
- * RE-EXPANSÃO CLIENT-SIDE, BATCH SAVE, GUARDA DE DESCARTE, PRECEDÊNCIA HÍBRIDA
- * (folga vence) e JANELA 06–18 (folgas não alargam) — preservados da v2.
+ * SALVAR-NA-HORA (D-3): cada "Aplicar" muta o draft (reusando as mutações
+ * existentes) e chama `saveAvailabilityAction` com o payload completo recomputado;
+ * toast de sucesso com "Desfazer", rollback em erro. Sem rascunho acumulado, sem
+ * toolbar Salvar/Descartar, sem guarda de descarte ao sair da página.
  */
 export function CalendarEditor({
   rules,
   overrides,
-  appointments = [],
+  appointments: appointmentsProp = [],
   patients = [],
   timeZone,
 }: {
@@ -280,15 +277,11 @@ export function CalendarEditor({
   const context = React.useMemo(() => ({ in: tz(timeZone) }), [timeZone])
 
   const initialDraftRef = React.useRef<Draft>(buildInitialDraft(rules, overrides))
-  const removedOverrideIds = React.useRef<Set<string>>(new Set())
   const [draft, setDraft] = React.useState<Draft>(() =>
     cloneDraft(initialDraftRef.current),
   )
-  const [savedDraft, setSavedDraft] = React.useState<Draft>(() =>
-    cloneDraft(initialDraftRef.current),
-  )
 
-  // Duração default aplicada a faixas recorrentes criadas por arraste.
+  // Duração default aplicada quando o payload não tem override de faixa.
   const [slotMinutes] = React.useState<number>(DEFAULT_SLOT)
   // Dia inicial = dia útil mais próximo (a grade Dia oculta Sáb/Dom).
   const [dayCursor, setDayCursor] = React.useState<Date>(() =>
@@ -296,43 +289,77 @@ export function CalendarEditor({
   )
   const [monthCursor, setMonthCursor] = React.useState<Date>(() => new Date())
   const [activeTab, setActiveTab] = React.useState<string>("semana")
-  const [saving, setSaving] = React.useState(false)
+  const [savingAvailability, setSavingAvailability] = React.useState(false)
 
-  // Escopo default da disponibilidade: template recorrente (D-19).
-  const [scope, setScope] = React.useState<AvailabilityScope>("recurring")
+  // Consultas como ESTADO do cliente (D-07): semeadas pela prop (load inicial da
+  // semana no RSC) e re-buscadas por JANELA VISÍVEL ao navegar (dia/semana/mês) e
+  // após criar/transitar. A re-expansão da disponibilidade (rules/overrides via
+  // prop) fica INALTERADA — só as consultas viram estado buscado.
+  const [appointments, setAppointments] =
+    React.useState<AppointmentRow[]>(appointmentsProp)
 
-  // Menu de contexto aberto (kind = disponibilidade|folga) + alvo.
-  const [menu, setMenu] = React.useState<{
-    kind: "available" | "off"
-    target: MenuTarget
-  } | null>(null)
-
-  // Guarda de descarte: intenção pendente aguardando confirmação.
-  const [pendingAction, setPendingAction] = React.useState<null | (() => void)>(
-    null,
+  // Mapa id → paciente para enriquecer as rows CRUAS do action (nome/responsável),
+  // espelhando o join client-side do RSC (page.tsx ~72-86).
+  const patientById = React.useMemo(
+    () => new Map(patients.map((p) => [p.id, p])),
+    [patients],
   )
 
-  // Confirmação antes de limpar em lote (disponibilidade|folga do escopo visível).
-  const [pendingClear, setPendingClear] = React.useState<null | {
-    title: string
-    apply: () => void
-  }>(null)
-
-  const isDirty = React.useMemo(
-    () => !draftsEqual(draft, savedDraft),
-    [draft, savedDraft],
+  // Enriquece AppointmentListRow[] (forma crua do action) → AppointmentRow[] (forma
+  // local com patient_name/patient_responsible), EXATAMENTE como o RSC.
+  const mapRowsToAppointments = React.useCallback(
+    (rows: AppointmentListRow[]): AppointmentRow[] =>
+      rows.map((row) => {
+        const patient = patientById.get(row.patient_id)
+        return {
+          id: row.id,
+          patient_id: row.patient_id,
+          status: row.status,
+          reason: row.reason,
+          type: row.type,
+          starts_at: row.starts_at,
+          ends_at: row.ends_at,
+          patient_name: patient?.name ?? "Paciente",
+          patient_responsible: patient?.responsible ?? null,
+        }
+      }),
+    [patientById],
   )
 
-  // beforeunload (D-17): cobre refresh/fechar aba com mudanças não salvas.
-  React.useEffect(() => {
-    if (!isDirty) return
-    function handler(event: BeforeUnloadEvent) {
-      event.preventDefault()
-      event.returnValue = ""
-    }
-    window.addEventListener("beforeunload", handler)
-    return () => window.removeEventListener("beforeunload", handler)
-  }, [isDirty])
+  // Guarda de stale keyed por um id MONOTÔNICO crescente (não pela janela). Duas
+  // buscas da MESMA janela — StrictMode em dev (efeito dispara 2×) ou o refetch
+  // pós-criação correndo com uma busca anterior ainda em voo — teriam o mesmo
+  // intervalo e, com token-por-janela, a que RESOLVE por último venceria. Se a
+  // busca antiga (feita ANTES do INSERT, sem a consulta nova) resolve depois, ela
+  // sobrescrevia o estado e a consulta recém-criada "sumia" da tela. Um contador
+  // crescente garante que só a resposta da requisição MAIS RECENTE atualize o
+  // estado, independente da ordem de resolução.
+  const reloadReqIdRef = React.useRef<number>(0)
+
+  const reloadAppointments = React.useCallback(
+    async (from: Date, to: Date) => {
+      const reqId = ++reloadReqIdRef.current
+      const result = await listAppointmentsByRangeAction(
+        from.toISOString(),
+        to.toISOString(),
+      )
+      // Uma requisição mais nova já começou → descartar esta resposta (mesmo que
+      // seja da mesma janela) para não sobrescrever dados mais recentes.
+      if (reqId !== reloadReqIdRef.current) return
+      if (result.ok) {
+        setAppointments(mapRowsToAppointments(result.appointments))
+      }
+      // Em erro, mantemos os dados atuais (sem toast obrigatório).
+    },
+    [mapRowsToAppointments],
+  )
+
+  // Dia selecionado no PAINEL lateral (default = dia útil mais próximo).
+  const [selectedRailDate, setSelectedRailDate] = React.useState<string>(() =>
+    format(skipWeekend(new Date(), 1, { in: tz(timeZone) }), "yyyy-MM-dd", {
+      in: tz(timeZone),
+    }),
+  )
 
   const localDateOf = React.useCallback(
     (date: Date) => format(date, "yyyy-MM-dd", context),
@@ -450,6 +477,8 @@ export function CalendarEditor({
         const candidate: CellAppointment = {
           id: appt.id,
           status: appt.status,
+          reason: appt.reason,
+          type: appt.type,
           patientName: appt.patient_name,
           responsible: appt.patient_responsible,
           dateLabel: labels.dateLabel,
@@ -511,402 +540,480 @@ export function CalendarEditor({
     [nowMs, slotStartMs],
   )
 
-  /** Fila de pedidos pendentes (APPT-03) — ordenada por horário. */
-  const pendingRequests = React.useMemo<PendingRequest[]>(() => {
-    return appointments
-      .filter((a) => a.status === "pending")
-      .sort((a, b) => a.starts_at.localeCompare(b.starts_at))
-      .map((a) => {
-        const labels = labelsOfInstant(a.starts_at)
-        return {
-          id: a.id,
-          patientName: a.patient_name,
-          responsible: a.patient_responsible,
-          dateLabel: labels.dateLabel,
-          timeLabel: labels.timeLabel,
-        }
-      })
-  }, [appointments, labelsOfInstant])
+  /**
+   * Minuto-do-dia (wall-clock, fuso da clínica) de "agora" — para a LINHA DE AGORA
+   * da grade de tempo. Congela na montagem (mesmo `nowMs`), imune ao TZ do host.
+   */
+  const nowMinuteOfToday = React.useMemo(() => {
+    const hh = Number(format(new Date(nowMs), "HH", context))
+    const mm = Number(format(new Date(nowMs), "mm", context))
+    return hh * 60 + mm
+  }, [nowMs, context])
 
-  // Dialog de criação: slot alvo (null = fechado).
-  const [createTarget, setCreateTarget] = React.useState<CreateTarget | null>(
-    null,
+  /**
+   * Deriva os BLOCOS posicionados da grade de tempo para um conjunto de colunas-dia
+   * (D-07: ativo vence histórico por horário; a grade só multiplica por HOUR_H).
+   * Ancora o início/fim ao wall-clock da clínica na MESMA janela que a grade
+   * renderiza; a precedência de exibição num horário re-marcado usa o mesmo
+   * STATUS_PRECEDENCE do mapa por célula.
+   */
+  const positionedFor = React.useCallback(
+    (days: DayColumn[]): PositionedAppointment[] => {
+      const indexByDate = new Map(days.map((d, i) => [d.localDate, i]))
+      // Agrupa por (coluna, horário de início) resolvendo a precedência D-07.
+      const byKey = new Map<string, PositionedAppointment>()
+      for (const appt of appointments) {
+        const { localDate, minute: startMinute } = cellKeyOfInstant(
+          appt.starts_at,
+        )
+        const columnIndex = indexByDate.get(localDate)
+        if (columnIndex === undefined) continue
+        const rawEnd = minuteFromRef(appt.ends_at, localDate)
+        const endMinute = Math.max(startMinute + STEP, rawEnd)
+        const labels = labelsOfInstant(appt.starts_at)
+        const candidate: PositionedAppointment = {
+          appointment: {
+            id: appt.id,
+            status: appt.status,
+            reason: appt.reason,
+            type: appt.type,
+            patientName: appt.patient_name,
+            responsible: appt.patient_responsible,
+            dateLabel: labels.dateLabel,
+            timeLabel: labels.timeLabel,
+            isStart: true,
+          },
+          columnIndex,
+          startMinute,
+          endMinute,
+          isActive: isActiveAppointmentStatus(appt.status),
+        }
+        const key = `${columnIndex}:${startMinute}`
+        const existing = byKey.get(key)
+        if (
+          !existing ||
+          STATUS_PRECEDENCE[candidate.appointment.status] >
+            STATUS_PRECEDENCE[existing.appointment.status]
+        ) {
+          byKey.set(key, candidate)
+        }
+      }
+      return [...byKey.values()]
+    },
+    [
+      appointments,
+      cellKeyOfInstant,
+      minuteFromRef,
+      labelsOfInstant,
+    ],
   )
-  // Detalhe/menu de transição: consulta selecionada + âncora do clique.
+
+  // E-5: os pedidos pendentes JÁ aparecem como blocos "pendente" na grade
+  // (tracejado azul + Clock) e são confirmados/recusados pelo menu de detalhe —
+  // a seção "Pedidos a confirmar" foi removida (sem fila separada).
+
+  // Drawer lateral único (C-3): abre/fecha, modo inicial (Consulta/Disponibilidade)
+  // e minuto pré-selecionado (C-4) quando vem de um clique num slot livre.
+  const [drawerOpen, setDrawerOpen] = React.useState(false)
+  const [drawerMode, setDrawerMode] = React.useState<
+    "consulta" | "disponibilidade" | "folga"
+  >("consulta")
+  const [preselectedMinute, setPreselectedMinute] = React.useState<
+    number | null
+  >(null)
+  // Detalhe/menu de transição: consulta selecionada (modal centralizado — o
+  // detalhe deixou de ser ancorado, então a âncora não é mais necessária).
   const [detail, setDetail] = React.useState<{
     appointment: CellAppointment
-    anchor: MenuAnchor
   } | null>(null)
 
-  /**
-   * Duração do slot (min) da faixa recorrente que contém `minute` no `weekday`,
-   * senão o default. Usado para derivar o endsAt do slot clicado (D-01: 1 célula).
-   */
-  const slotMinutesFor = React.useCallback(
-    (weekday: number, minute: number): number => {
-      let slot = slotMinutes
-      for (const key of Object.keys(draft.ruleDurations)) {
-        const [wd, bandStart] = key.split(":").map(Number)
-        if (wd === weekday && bandStart <= minute) slot = draft.ruleDurations[key]
-      }
-      return slot
-    },
-    [draft.ruleDurations, slotMinutes],
-  )
+  // Confirmação de limpeza em lote (salvar-na-hora): título + ação a aplicar.
+  const [pendingClear, setPendingClear] = React.useState<null | {
+    title: string
+    apply: () => void
+  }>(null)
 
-  /**
-   * Constrói o alvo de criação (instante de início ISO UTC + rótulos + duração
-   * default) a partir de uma célula LIVRE clicada. A meia-noite local é ancorada
-   * no fuso da clínica via TZDate a partir dos componentes (correção CR-01) e o
-   * wall-clock do minuto é somado; espelha como o servidor expande o FreeSlot.
-   * A duração default = slot_minutes da faixa clicada (Issue C); o médico pode
-   * escolher outra no dialog, e o `ends_at` é derivado lá.
-   */
-  const buildCreateTarget = React.useCallback(
-    (localDate: string, minute: number): CreateTarget => {
-      const [year, month, day] = localDate.split("-").map(Number)
-      const hours = Math.floor(minute / 60)
-      const minutes = minute % 60
-      const startDate = new TZDate(
-        year,
-        month - 1,
-        day,
-        hours,
-        minutes,
-        0,
-        0,
-        timeZone,
-      )
-      const weekday = weekdayOf(localDate, timeZone)
-      const slot = slotMinutesFor(weekday, minute)
-      const startIso = new Date(startDate.getTime()).toISOString()
-      const labels = labelsOfInstant(startIso)
-      return {
-        startsAt: startIso,
-        dateLabel: labels.dateLongLabel,
-        timeLabel: labels.timeLabel,
-        defaultDuration: slot,
-      }
-    },
-    [labelsOfInstant, slotMinutesFor, timeZone],
-  )
-
-  // ---------- mutações ADITIVAS do draft ----------
+  // ---------- mutações ADITIVAS do draft (puras: recebem e devolvem draft) ----------
 
   /** Disponibilidade RECORRENTE (template do dia da semana) para [start, end). */
   const addRecurringPeriod = React.useCallback(
-    (localDate: string, start: number, end: number, slot: number) => {
+    (base: Draft, localDate: string, start: number, end: number, slot: number) => {
       const weekday = weekdayOf(localDate, timeZone)
-      setDraft((prev) => {
-        const next = cloneDraft(prev)
-        for (let m = start; m < end; m += STEP) {
-          const dk = dateKey(localDate, m)
-          // Reabrir horário que estava em folga naquele minuto (só nesta data).
-          next.subtractCells.delete(dk)
-          next.rulePainted.add(ruleCellKey(weekday, m))
-        }
-        next.ruleDurations[`${weekday}:${start}`] = slot
-        return next
-      })
+      const next = cloneDraft(base)
+      for (let m = start; m < end; m += STEP) {
+        const dk = dateKey(localDate, m)
+        // Reabrir horário que estava em folga naquele minuto (só nesta data).
+        next.subtractCells.delete(dk)
+        next.rulePainted.add(ruleCellKey(weekday, m))
+      }
+      next.ruleDurations[`${weekday}:${start}`] = slot
+      return next
     },
     [timeZone],
   )
 
+  /**
+   * Disponibilidade RECORRENTE direta num `weekday` específico (independente da
+   * data escolhida) — usada quando o painel pede recorrência por dia da semana
+   * (D-4). Muta os Sets `rulePainted`/`ruleDurations` na mesma forma que
+   * `buildInitialDraft`.
+   */
+  const addRecurringWeekday = React.useCallback(
+    (base: Draft, weekday: number, start: number, end: number, slot: number) => {
+      const next = cloneDraft(base)
+      for (let m = start; m < end; m += STEP) {
+        next.rulePainted.add(ruleCellKey(weekday, m))
+      }
+      next.ruleDurations[`${weekday}:${start}`] = slot
+      return next
+    },
+    [],
+  )
+
   /** Disponibilidade extra POR DATA (aditivo, AGENDA-05) para [start, end). */
   const addDatePeriod = React.useCallback(
-    (localDate: string, start: number, end: number) => {
-      setDraft((prev) => {
-        const next = cloneDraft(prev)
-        for (let m = start; m < end; m += STEP) {
-          const dk = dateKey(localDate, m)
-          next.subtractCells.delete(dk)
-          next.addCells.add(dk)
-        }
-        return next
-      })
+    (base: Draft, localDate: string, start: number, end: number) => {
+      const next = cloneDraft(base)
+      for (let m = start; m < end; m += STEP) {
+        const dk = dateKey(localDate, m)
+        next.subtractCells.delete(dk)
+        next.addCells.add(dk)
+      }
+      return next
     },
     [],
   )
 
   /** Folga (subtrativo) POR DATA para [start, end). */
   const addFolgaPeriod = React.useCallback(
-    (localDate: string, start: number, end: number) => {
-      setDraft((prev) => {
-        const next = cloneDraft(prev)
-        for (let m = start; m < end; m += STEP) {
-          const dk = dateKey(localDate, m)
-          next.addCells.delete(dk)
-          next.subtractCells.add(dk)
-        }
-        return next
-      })
+    (base: Draft, localDate: string, start: number, end: number) => {
+      const next = cloneDraft(base)
+      for (let m = start; m < end; m += STEP) {
+        const dk = dateKey(localDate, m)
+        next.addCells.delete(dk)
+        next.subtractCells.add(dk)
+      }
+      return next
+    },
+    [],
+  )
+
+  // ---------- callbacks da grade ----------
+
+  /**
+   * Clique num slot LIVRE (C-4) → abre o DRAWER em modo Consulta com o horário
+   * pré-selecionado no BookingRail. O drawer opera sobre o dia selecionado
+   * global, então o clique também sincroniza `selectedRailDate` com a coluna.
+   */
+  const handleAppointmentCreate = React.useCallback(
+    (localDate: string, minute: number) => {
+      setSelectedRailDate(localDate)
+      setPreselectedMinute(minute)
+      setDrawerMode("consulta")
+      setDrawerOpen(true)
     },
     [],
   )
 
   /**
-   * Limpa a DISPONIBILIDADE do escopo visível (mutação no draft, não persiste).
-   * Remove o template recorrente (`rulePainted`) dos dias da semana visíveis E
-   * os overrides aditivos (`addCells`) das datas visíveis. Como o template é
-   * recorrente, limpar uma terça esvazia todas as terças (consequência intencional).
+   * Clique num slot COM consulta → abre o detalhe/menu de transição. A assinatura
+   * recebida da grade ainda inclui `anchor` (contrato de calendar-time-grid), mas o
+   * modal é centralizado — ignoramos a âncora.
    */
-  const clearAvailabilityForDates = React.useCallback(
-    (localDates: string[]) => {
-      const weekdays = new Set(
-        localDates.map((localDate) => weekdayOf(localDate, timeZone)),
-      )
-      setDraft((prev) => {
-        const next = cloneDraft(prev)
-        for (const key of [...next.rulePainted]) {
-          const weekday = Number(key.slice(0, key.indexOf(":")))
-          if (weekdays.has(weekday)) next.rulePainted.delete(key)
+  const handleAppointmentSelect = React.useCallback(
+    (appointment: CellAppointment, _anchor: MenuAnchor) => {
+      setDetail({ appointment })
+    },
+    [],
+  )
+
+  // ---------- salvar-na-hora (D-3) ----------
+
+  /**
+   * Recompõe o payload completo (`{ rules, overridesAdd, overridesRemove }`) a
+   * partir de um draft — o mesmo contrato que `saveAvailabilityAction` reconcilia
+   * atomicamente. Aceita um draft como argumento (default = state `draft`) para
+   * evitar a corrida do setState assíncrono ao salvar-na-hora.
+   */
+  const computeDiff = React.useCallback(
+    (source: Draft = draft) => {
+      // Faixa de varredura das regras: 06–18 estendida pela disponibilidade do source.
+      let scanStart = 6 * 60
+      let scanEnd = 18 * 60
+      const scanMinuteFromKey = (key: string) => {
+        const minute = Number(key.slice(key.lastIndexOf(":") + 1))
+        scanStart = Math.min(scanStart, minute)
+        scanEnd = Math.max(scanEnd, minute + STEP)
+      }
+      source.rulePainted.forEach(scanMinuteFromKey)
+      source.addCells.forEach(scanMinuteFromKey)
+      scanStart = Math.max(0, scanStart)
+      scanEnd = Math.min(DAY_END, scanEnd)
+      const scanRows: number[] = []
+      for (let m = scanStart; m < scanEnd; m += STEP) scanRows.push(m)
+
+      const rulesPayload: {
+        weekday: number
+        start_minute: number
+        end_minute: number
+        slot_minutes: number
+      }[] = []
+      for (let weekday = 0; weekday <= 6; weekday++) {
+        const bands = bandsFromMinutes(
+          (minute) => source.rulePainted.has(ruleCellKey(weekday, minute)),
+          scanRows,
+        )
+        for (const band of bands) {
+          const slot =
+            source.ruleDurations[`${weekday}:${band.start}`] ?? slotMinutes
+          rulesPayload.push({
+            weekday,
+            start_minute: band.start,
+            end_minute: band.end,
+            slot_minutes: slot,
+          })
         }
-        for (const key of Object.keys(next.ruleDurations)) {
-          const weekday = Number(key.slice(0, key.indexOf(":")))
-          if (weekdays.has(weekday)) delete next.ruleDurations[key]
+      }
+
+      const overridesAdd: {
+        override_type: "add" | "subtract"
+        exception_date: string
+        start_minute: number | null
+        end_minute: number | null
+        slot_minutes: number | null
+      }[] = []
+
+      const groupByDate = (cells: Set<string>, type: "add" | "subtract") => {
+        const byDate = new Map<string, Set<number>>()
+        for (const key of cells) {
+          const idx = key.lastIndexOf(":")
+          const date = key.slice(0, idx)
+          const minute = Number(key.slice(idx + 1))
+          const bucket = byDate.get(date) ?? new Set<number>()
+          bucket.add(minute)
+          byDate.set(date, bucket)
         }
-        for (const localDate of localDates) {
-          for (const key of [...next.addCells]) {
-            if (key.slice(0, key.lastIndexOf(":")) === localDate) {
-              next.addCells.delete(key)
-            }
+        for (const [date, minutes] of byDate) {
+          const sorted = [...minutes].sort((a, b) => a - b)
+          const groupRows: number[] = []
+          for (let m = sorted[0]; m <= sorted[sorted.length - 1]; m += STEP) {
+            groupRows.push(m)
+          }
+          const bands = bandsFromMinutes((minute) => minutes.has(minute), groupRows)
+          for (const band of bands) {
+            overridesAdd.push({
+              override_type: type,
+              exception_date: date,
+              start_minute: band.start,
+              end_minute: band.end,
+              slot_minutes: type === "add" ? slotMinutes : null,
+            })
           }
         }
-        return next
-      })
+      }
+      groupByDate(source.subtractCells, "subtract")
+      groupByDate(source.addCells, "add")
+
+      const overridesRemove = overrides.map((ov) => ({ id: ov.id }))
+
+      return { rules: rulesPayload, overridesAdd, overridesRemove }
     },
-    [timeZone],
+    [draft, overrides, slotMinutes],
+  )
+
+  /** Salva o draft `next` na hora e reflete no estado; devolve o resultado. */
+  const persistDraft = React.useCallback(
+    async (next: Draft) => {
+      const diff = computeDiff(next)
+      setDraft(next)
+      setSavingAvailability(true)
+      const result = await saveAvailabilityAction(diff)
+      setSavingAvailability(false)
+      return result
+    },
+    [computeDiff],
   )
 
   /**
-   * Limpa as FOLGAS (`subtractCells`) das datas visíveis (mutação no draft).
-   * Não toca o template recorrente nem os overrides aditivos.
+   * Aplica a intenção declarativa do painel (D-4..D-6), reusando as mutações
+   * puras do draft, e SALVA NA HORA (D-3). Em sucesso: toast com "Desfazer" que
+   * reverte para o snapshot anterior (re-salvando). Em erro: rollback do estado
+   * em memória + toast amigável.
    */
-  const clearFolgasForDates = React.useCallback((localDates: string[]) => {
-    const dateSet = new Set(localDates)
-    setDraft((prev) => {
-      const next = cloneDraft(prev)
+  const applyAvailabilityIntent = React.useCallback(
+    async (intent: AvailabilityIntent) => {
+      const before = cloneDraft(draft)
+      let next = cloneDraft(draft)
+
+      const start = intent.startMinute
+      const end = intent.endMinute
+      const hasRange = start !== null && end !== null
+
+      if (intent.type === "available") {
+        if (intent.scope === "recurring") {
+          if (!hasRange) return
+          for (const weekday of intent.weekdays) {
+            next = addRecurringWeekday(next, weekday, start!, end!, intent.slotMinutes)
+          }
+        } else {
+          // period OU whole-day (D-5: whole-day usa a janela prefillada → add).
+          if (!hasRange) return
+          next = addDatePeriod(next, intent.date, start!, end!)
+        }
+      } else {
+        // Folga (subtract).
+        if (intent.scope === "recurring") {
+          // Expande em folgas por data no horizonte de ~6 meses (D-2).
+          const [y, m, d] = todayLocal.split("-").map(Number)
+          const horizonStart = new TZDate(y, m - 1, d, timeZone)
+          const horizonEnd = addMonths(
+            horizonStart,
+            FOLGA_RECURRING_HORIZON_MONTHS,
+            context,
+          )
+          const weekdaySet = new Set(intent.weekdays)
+          let cursor = horizonStart
+          while (cursor.getTime() <= horizonEnd.getTime()) {
+            const localDate = format(cursor, "yyyy-MM-dd", context)
+            if (weekdaySet.has(weekdayOf(localDate, timeZone))) {
+              if (hasRange) {
+                next = addFolgaPeriod(next, localDate, start!, end!)
+              } else {
+                next = addFolgaPeriod(next, localDate, 0, DAY_END)
+              }
+            }
+            cursor = addDays(cursor, 1, context)
+          }
+        } else if (intent.scope === "whole-day") {
+          // Folga dia inteiro numa data → cobre a janela do dia (0..1440).
+          next = addFolgaPeriod(next, intent.date, 0, DAY_END)
+        } else {
+          // Folga por período numa data.
+          if (!hasRange) return
+          next = addFolgaPeriod(next, intent.date, start!, end!)
+        }
+      }
+
+      const result = await persistDraft(next)
+      if (result.ok) {
+        // E-2: sucesso (disponibilidade OU folga) → fecha o drawer; o toast com
+        // "Desfazer" permanece. Em erro (else) o drawer NÃO fecha.
+        setDrawerOpen(false)
+        toast.success("Disponibilidade salva.", {
+          action: {
+            label: "Desfazer",
+            onClick: async () => {
+              const undoResult = await persistDraft(before)
+              if (undoResult.ok) {
+                toast.success("Mudança desfeita.")
+              } else {
+                setDraft(next)
+                toast.error(undoResult.error)
+              }
+            },
+          },
+        })
+      } else {
+        setDraft(before)
+        toast.error(result.error)
+      }
+    },
+    [
+      draft,
+      todayLocal,
+      timeZone,
+      context,
+      addRecurringWeekday,
+      addDatePeriod,
+      addFolgaPeriod,
+      persistDraft,
+    ],
+  )
+
+  // ---------- limpeza em lote (salvar-na-hora, restaurada de 11ecfdf) ----------
+
+  /**
+   * Remove a DISPONIBILIDADE das datas visíveis (função PURA sobre o draft atual):
+   * apaga de `rulePainted`/`ruleDurations` todos os weekdays das datas e de
+   * `addCells` as chaves dessas datas. O template recorrente é global por weekday
+   * (limpar uma terça esvazia todas as terças — consequência intencional de 11ecfdf).
+   * Devolve o `next` para poder passar a `persistDraft`.
+   */
+  const clearAvailabilityForDates = React.useCallback(
+    (localDates: string[]): Draft => {
+      const weekdays = new Set(
+        localDates.map((localDate) => weekdayOf(localDate, timeZone)),
+      )
+      const next = cloneDraft(draft)
+      for (const key of [...next.rulePainted]) {
+        const weekday = Number(key.slice(0, key.indexOf(":")))
+        if (weekdays.has(weekday)) next.rulePainted.delete(key)
+      }
+      for (const key of Object.keys(next.ruleDurations)) {
+        const weekday = Number(key.slice(0, key.indexOf(":")))
+        if (weekdays.has(weekday)) delete next.ruleDurations[key]
+      }
+      for (const localDate of localDates) {
+        for (const key of [...next.addCells]) {
+          if (key.slice(0, key.lastIndexOf(":")) === localDate) {
+            next.addCells.delete(key)
+          }
+        }
+      }
+      return next
+    },
+    [draft, timeZone],
+  )
+
+  /**
+   * Remove as FOLGAS (`subtractCells`) das datas visíveis (função PURA sobre o
+   * draft atual). Não toca o template recorrente nem os overrides aditivos.
+   */
+  const clearFolgasForDates = React.useCallback(
+    (localDates: string[]): Draft => {
+      const dateSet = new Set(localDates)
+      const next = cloneDraft(draft)
       for (const key of [...next.subtractCells]) {
         if (dateSet.has(key.slice(0, key.lastIndexOf(":")))) {
           next.subtractCells.delete(key)
         }
       }
       return next
-    })
-  }, [])
-
-  /** Faixa de disponibilidade (respeita o escopo atual). */
-  const addAvailabilityPeriod = React.useCallback(
-    (
-      localDate: string,
-      start: number,
-      end: number,
-      slot: number,
-      periodScope: AvailabilityScope,
-    ) => {
-      if (periodScope === "date") addDatePeriod(localDate, start, end)
-      else addRecurringPeriod(localDate, start, end, slot)
     },
-    [addDatePeriod, addRecurringPeriod],
+    [draft],
   )
 
-  // ---------- callbacks da grade ----------
-
-  /** Arraste esquerdo concluído → disponibilidade no período (escopo atual). */
-  const handleDragSelect = React.useCallback(
-    (localDate: string, start: number, end: number) => {
-      addAvailabilityPeriod(localDate, start, end, slotMinutes, scope)
-    },
-    [addAvailabilityPeriod, scope, slotMinutes],
-  )
-
-  /** Clique numa célula → abre o menu (esquerdo=disponibilidade, direito=folga). */
-  const handleCellMenu = React.useCallback(
-    (
-      localDate: string,
-      minute: number,
-      button: "left" | "right",
-      anchor: MenuAnchor,
-    ) => {
-      // Mesma correção zone-aware do `weekdayOf` (CR-01): ancorar a data no fuso da
-      // clínica a partir dos componentes, nunca via `new Date(\`...T00:00:00\`)` (que
-      // parseia no TZ do host e recua um dia num host UTC).
-      const [year, month, day] = localDate.split("-").map(Number)
-      const weekdayLabel = format(
-        new TZDate(year, month - 1, day, timeZone),
-        "EEEE",
-        { locale: ptBR },
-      )
-      const target: MenuTarget = { localDate, minute, weekdayLabel, anchor }
-      setMenu({ kind: button === "left" ? "available" : "off", target })
-    },
-    [timeZone],
-  )
-
-  /** Clique num slot LIVRE → abre "Nova consulta" direto (sem desvio de modo). */
-  const handleAppointmentCreate = React.useCallback(
-    (localDate: string, minute: number) => {
-      setCreateTarget(buildCreateTarget(localDate, minute))
-    },
-    [buildCreateTarget],
-  )
-
-  /** Clique num slot COM consulta → abre o detalhe/menu de transição. */
-  const handleAppointmentSelect = React.useCallback(
-    (appointment: CellAppointment, anchor: MenuAnchor) => {
-      setDetail({ appointment, anchor })
-    },
-    [],
-  )
-
-  // ---------- ações do menu ----------
-
-  /** Janela de dia inteiro = faixa visível corrente (06–18 ou o que estiver aberto). */
-  const dayWindow = React.useMemo(() => {
-    if (minuteRows.length === 0) return { start: 6 * 60, end: 18 * 60 }
-    return {
-      start: minuteRows[0],
-      end: minuteRows[minuteRows.length - 1] + STEP,
-    }
-  }, [minuteRows])
-
-  const handleMenuWholeDay = React.useCallback(() => {
-    if (!menu) return
-    const { localDate } = menu.target
-    if (menu.kind === "off") {
-      addFolgaPeriod(localDate, dayWindow.start, dayWindow.end)
-    } else {
-      addAvailabilityPeriod(
-        localDate,
-        dayWindow.start,
-        dayWindow.end,
-        slotMinutes,
-        scope,
-      )
-    }
-  }, [menu, dayWindow, addFolgaPeriod, addAvailabilityPeriod, scope, slotMinutes])
-
-  const handleMenuPeriod = React.useCallback(
-    (period: PeriodDraft) => {
-      if (!menu) return
-      const { localDate } = menu.target
-      if (menu.kind === "off") {
-        addFolgaPeriod(localDate, period.startMinute, period.endMinute)
-      } else {
-        addAvailabilityPeriod(
-          localDate,
-          period.startMinute,
-          period.endMinute,
-          period.slotMinutes,
-          scope,
-        )
-      }
-    },
-    [menu, addFolgaPeriod, addAvailabilityPeriod, scope],
-  )
-
-  // ---------- navegação com guarda de descarte ----------
-  function runGuarded(action: () => void) {
-    if (isDirty) {
-      setPendingAction(() => action)
-      return
-    }
-    action()
-  }
-
-  function confirmDiscard() {
-    setDraft(cloneDraft(savedDraft))
-    const action = pendingAction
-    setPendingAction(null)
-    if (action) action()
-  }
-
-  function handleTabChange(next: string) {
-    runGuarded(() => setActiveTab(next))
-  }
-
-  // ---------- batch save (D-17) ----------
-  function computeDiff() {
-    const rulesPayload: {
-      weekday: number
-      start_minute: number
-      end_minute: number
-      slot_minutes: number
-    }[] = []
-    for (let weekday = 0; weekday <= 6; weekday++) {
-      const bands = bandsFromMinutes(
-        (minute) => draft.rulePainted.has(ruleCellKey(weekday, minute)),
-        minuteRows,
-      )
-      for (const band of bands) {
-        const slot = draft.ruleDurations[`${weekday}:${band.start}`] ?? slotMinutes
-        rulesPayload.push({
-          weekday,
-          start_minute: band.start,
-          end_minute: band.end,
-          slot_minutes: slot,
+  /**
+   * Persiste um draft limpo NA HORA (espelha o final de `applyAvailabilityIntent`):
+   * captura o snapshot anterior, salva `next` e mostra um toast com "Desfazer" que
+   * re-salva o snapshot. Em erro, faz rollback do estado em memória.
+   */
+  const clearAndPersist = React.useCallback(
+    async (next: Draft) => {
+      const before = cloneDraft(draft)
+      const result = await persistDraft(next)
+      if (result.ok) {
+        toast.success("Disponibilidade atualizada.", {
+          action: {
+            label: "Desfazer",
+            onClick: async () => {
+              const undoResult = await persistDraft(before)
+              if (undoResult.ok) {
+                toast.success("Mudança desfeita.")
+              } else {
+                setDraft(next)
+                toast.error(undoResult.error)
+              }
+            },
+          },
         })
+      } else {
+        setDraft(before)
+        toast.error(result.error)
       }
-    }
-
-    const overridesAdd: {
-      override_type: "add" | "subtract"
-      exception_date: string
-      start_minute: number | null
-      end_minute: number | null
-      slot_minutes: number | null
-    }[] = []
-
-    const groupByDate = (cells: Set<string>, type: "add" | "subtract") => {
-      const byDate = new Map<string, Set<number>>()
-      for (const key of cells) {
-        const idx = key.lastIndexOf(":")
-        const date = key.slice(0, idx)
-        const minute = Number(key.slice(idx + 1))
-        const bucket = byDate.get(date) ?? new Set<number>()
-        bucket.add(minute)
-        byDate.set(date, bucket)
-      }
-      for (const [date, minutes] of byDate) {
-        const sorted = [...minutes].sort((a, b) => a - b)
-        const scanRows: number[] = []
-        for (let m = sorted[0]; m <= sorted[sorted.length - 1]; m += STEP) {
-          scanRows.push(m)
-        }
-        const bands = bandsFromMinutes((minute) => minutes.has(minute), scanRows)
-        for (const band of bands) {
-          overridesAdd.push({
-            override_type: type,
-            exception_date: date,
-            start_minute: band.start,
-            end_minute: band.end,
-            slot_minutes: type === "add" ? slotMinutes : null,
-          })
-        }
-      }
-    }
-    groupByDate(draft.subtractCells, "subtract")
-    groupByDate(draft.addCells, "add")
-
-    const overridesRemove = overrides.map((ov) => ({ id: ov.id }))
-
-    return { rules: rulesPayload, overridesAdd, overridesRemove }
-  }
-
-  async function handleSave() {
-    const diff = computeDiff()
-    setSaving(true)
-    const result = await saveAvailabilityAction(diff)
-    setSaving(false)
-    if (result.ok) {
-      toast.success("Disponibilidade salva.")
-      const snapshot = cloneDraft(draft)
-      setSavedDraft(snapshot)
-      removedOverrideIds.current.clear()
-    } else {
-      toast.error(result.error)
-    }
-  }
+    },
+    [draft, persistDraft],
+  )
 
   // ---------- re-expansão client-side para o resumo do Mês (D-18) ----------
   const monthByDay: ByDay = React.useMemo(() => {
@@ -937,7 +1044,7 @@ export function CalendarEditor({
       }
     }
 
-    const diff = computeDiff()
+    const diff = computeDiff(draft)
     const overridesForExpand = diff.overridesAdd.map((ov) => ({
       date: ov.exception_date,
       type: ov.override_type,
@@ -976,13 +1083,77 @@ export function CalendarEditor({
     return Array.from({ length: 5 }, (_, i) => addDays(weekStart, i, context))
   }, [dayCursor, context])
 
-  // Datas visíveis do escopo de limpeza: Dia = 1 data; Semana = as 5 (Seg–Sex).
-  // Mês não pinta faixas, então os botões de limpeza ficam desabilitados.
+  /**
+   * Horários LIVRES do dia selecionado no painel: minutos DISPONÍVEIS
+   * (`cellStateOf === "available"`), no FUTURO (`isCellBookable`) e SEM consulta
+   * ATIVA (pendente/confirmada) ocupando a célula (D-07). Os instantes ISO UTC são
+   * ancorados no fuso da clínica via `slotStartMs` → `new Date(ms).toISOString()`,
+   * espelhando como o servidor expande o FreeSlot. Alimenta o `AgendaSidePanel`.
+   */
+  const railFreeSlots = React.useMemo<FreeSlot[]>(() => {
+    const slots: FreeSlot[] = []
+    for (const minute of minuteRows) {
+      if (cellStateOf(selectedRailDate, minute) !== "available") continue
+      if (!isCellBookable(selectedRailDate, minute)) continue
+      const appt = appointmentByCell.get(`${selectedRailDate}:${minute}`)
+      if (appt && isActiveAppointmentStatus(appt.status)) continue
+      // Teto de duração do slot: células de STEP contíguas ainda disponíveis e
+      // sem consulta ATIVA (os status finais não seguram o horário — a exclusion
+      // constraint só considera pending/confirmed).
+      const maxDuration = maxSlotDuration(
+        minute,
+        STEP,
+        MAX_DURATION_PRESET,
+        (m) => {
+          if (cellStateOf(selectedRailDate, m) !== "available") return false
+          const blocking = appointmentByCell.get(`${selectedRailDate}:${m}`)
+          return !(blocking && isActiveAppointmentStatus(blocking.status))
+        },
+      )
+      slots.push({
+        minute,
+        label: minutesToLabel(minute),
+        startsAt: new Date(slotStartMs(selectedRailDate, minute)).toISOString(),
+        maxDuration,
+      })
+    }
+    return slots
+  }, [
+    minuteRows,
+    selectedRailDate,
+    cellStateOf,
+    isCellBookable,
+    appointmentByCell,
+    slotStartMs,
+  ])
+
+  /** Rótulo longo PT-BR do dia selecionado no painel (ex.: "quinta-feira, 23 de julho"). */
+  const selectedRailDayLongLabel = React.useMemo(() => {
+    const [y, m, d] = selectedRailDate.split("-").map(Number)
+    return format(new TZDate(y, m - 1, d, timeZone), "EEEE, dd 'de' MMMM", {
+      locale: ptBR,
+    })
+  }, [selectedRailDate, timeZone])
+
+  /**
+   * `Date` ancorada no fuso da clínica a partir de `selectedRailDate` (M-1): a
+   * visão Dia renderiza ESTA coluna, mantendo-a coerente com o dia global do
+   * painel. Ancoramos a meia-noite direto no zone via TZDate a partir dos
+   * componentes (mesmo padrão de `selectedRailDayLongLabel`), imune ao TZ do host.
+   */
+  const selectedRailDateObj = React.useMemo(() => {
+    const [y, m, d] = selectedRailDate.split("-").map(Number)
+    return new TZDate(y, m - 1, d, timeZone)
+  }, [selectedRailDate, timeZone])
+
+  // Datas visíveis do escopo de limpeza: Dia = o dia SELECIONADO (a visão Dia
+  // renderiza selectedRailDateObj); Semana = as 5 (Seg–Sex); Mês = nenhuma
+  // (não pinta faixas), então os botões de limpeza ficam desabilitados.
   const clearScopeDates = React.useMemo(() => {
-    if (activeTab === "dia") return [localDateOf(dayCursor)]
+    if (activeTab === "dia") return [localDateOf(selectedRailDateObj)]
     if (activeTab === "semana") return weekDays.map(localDateOf)
     return []
-  }, [activeTab, dayCursor, weekDays, localDateOf])
+  }, [activeTab, selectedRailDateObj, weekDays, localDateOf])
 
   const clearDisabled = activeTab === "mes" || clearScopeDates.length === 0
   const clearScopeNoun = activeTab === "semana" ? "da semana" : "do dia"
@@ -991,7 +1162,7 @@ export function CalendarEditor({
     if (clearDisabled) return
     setPendingClear({
       title: `Limpar toda a disponibilidade ${clearScopeNoun}?`,
-      apply: () => clearAvailabilityForDates(clearScopeDates),
+      apply: () => clearAndPersist(clearAvailabilityForDates(clearScopeDates)),
     })
   }
 
@@ -999,7 +1170,7 @@ export function CalendarEditor({
     if (clearDisabled) return
     setPendingClear({
       title: `Limpar todas as folgas ${clearScopeNoun}?`,
-      apply: () => clearFolgasForDates(clearScopeDates),
+      apply: () => clearAndPersist(clearFolgasForDates(clearScopeDates)),
     })
   }
 
@@ -1009,19 +1180,62 @@ export function CalendarEditor({
     if (pending) pending.apply()
   }
 
+  // ---------- janela VISÍVEL [visibleFrom, visibleTo) por aba ----------
+  // Meio-aberta, no fuso da clínica (context). A busca de consultas casa a
+  // faixa RENDERIZADA em cada visão:
+  //  - semana: [weekStart, weekStart + 7d) — segunda→domingo (D-11).
+  //  - mes: [gridStart, gridStart + 42d) — MESMA origem do grid do mês (monthByDay).
+  //  - dia: [startOfDay(sel), +1d) — o dia selecionado no painel.
+  const { visibleFrom, visibleTo } = React.useMemo(() => {
+    if (activeTab === "dia") {
+      const from = startOfDay(selectedRailDateObj, context)
+      return { visibleFrom: from, visibleTo: addDays(from, 1, context) }
+    }
+    if (activeTab === "mes") {
+      const from = startOfWeek(startOfMonth(monthCursor, context), {
+        ...context,
+        weekStartsOn: 1,
+      })
+      return { visibleFrom: from, visibleTo: addDays(from, 42, context) }
+    }
+    // "semana" (default)
+    const weekStart = startOfWeek(dayCursor, { ...context, weekStartsOn: 1 })
+    return { visibleFrom: weekStart, visibleTo: addDays(weekStart, 7, context) }
+  }, [activeTab, dayCursor, monthCursor, selectedRailDateObj, context])
+
+  // Busca as consultas da janela visível ao navegar (dia/semana/mês). Deps são
+  // APENAS primitivos (getTime()/activeTab) — passar objetos Date dispararia em
+  // todo render, criando um loop de refetch.
+  React.useEffect(() => {
+    reloadAppointments(visibleFrom, visibleTo)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [visibleFrom.getTime(), visibleTo.getTime(), activeTab])
+
   // Navegação por aba (rótulo + prev/hoje/next).
   const nav = React.useMemo(() => {
     if (activeTab === "dia") {
+      // A visão Dia opera sobre o DIA SELECIONADO global (M-1): prev/hoje/next
+      // atualizam `selectedRailDate` (mantendo skipWeekend) para permanecer
+      // coerente com o painel e o destaque.
+      const stepSelected = (step: 1 | -1) => {
+        const next = skipWeekend(
+          addDays(selectedRailDateObj, step, context),
+          step,
+          context,
+        )
+        setSelectedRailDate(format(next, "yyyy-MM-dd", context))
+      }
       return {
-        label: format(dayCursor, "EEEE, dd 'de' MMMM", {
+        label: format(selectedRailDateObj, "EEEE, dd 'de' MMMM", {
           ...context,
           locale: ptBR,
         }),
-        onPrev: () =>
-          setDayCursor((d) => skipWeekend(addDays(d, -1, context), -1, context)),
-        onToday: () => setDayCursor(skipWeekend(new Date(), 1, context)),
-        onNext: () =>
-          setDayCursor((d) => skipWeekend(addDays(d, 1, context), 1, context)),
+        onPrev: () => stepSelected(-1),
+        onToday: () =>
+          setSelectedRailDate(
+            format(skipWeekend(new Date(), 1, context), "yyyy-MM-dd", context),
+          ),
+        onNext: () => stepSelected(1),
       }
     }
     if (activeTab === "semana") {
@@ -1041,15 +1255,57 @@ export function CalendarEditor({
       onToday: () => setMonthCursor(new Date()),
       onNext: () => setMonthCursor((d) => addMonths(d, 1, context)),
     }
-  }, [activeTab, dayCursor, weekDays, monthCursor, context])
+  }, [activeTab, dayCursor, selectedRailDateObj, weekDays, monthCursor, context])
+
+  // ---------- altura MEDIDA da grade (fix scroll vertical 260724-hdr) ----------
+  // PORQUÊ medir em vez de calc(100svh-16rem): a cadeia de layout acima é toda
+  // flex-fill (min-h-svh/flex-1) sem altura FIXA, e o chrome real (sidebar p-8 +
+  // border-t-8 + header + toolbar + dica + TabsList) varia — o calc fixo
+  // subestimava e a página rolava. Medimos o topo do container montado e
+  // descontamos innerHeight − top − folga inferior; só a aba ATIVA monta (Radix
+  // desmonta as inativas), então o mesmo callback ref só registra a montada.
+  const BOTTOM = 32 // ≈ p-8 inferior do layout + pequena folga
+  const MIN_GRID_HEIGHT = 320 // piso pra telas curtas
+  const gridContainerRef = React.useRef<HTMLDivElement | null>(null)
+  const [gridHeight, setGridHeight] = React.useState<number | null>(null)
+
+  const measure = React.useCallback(() => {
+    const el = gridContainerRef.current
+    if (!el) return
+    const top = el.getBoundingClientRect().top
+    const next = Math.max(MIN_GRID_HEIGHT, window.innerHeight - top - BOTTOM)
+    setGridHeight(next)
+  }, [])
+
+  React.useEffect(() => {
+    // Mede após o primeiro paint (rAF) e sempre que a aba/semana/cursor mudar
+    // (deps abaixo) — o topo do container pode deslocar ao trocar de conteúdo.
+    const raf = requestAnimationFrame(measure)
+    window.addEventListener("resize", measure)
+    // ResizeObserver no documentElement para robustez (mudanças de layout que
+    // não disparam resize da janela — ex.: quebra da toolbar em telas estreitas).
+    const observer = new ResizeObserver(measure)
+    observer.observe(document.documentElement)
+    return () => {
+      cancelAnimationFrame(raf)
+      window.removeEventListener("resize", measure)
+      observer.disconnect()
+    }
+  }, [measure, activeTab, dayCursor, selectedRailDate, monthCursor])
+
+  // Fallback pré-medida (primeiro paint/SSR) sobrescrito pelo inline height.
+  const gridContainerClassName =
+    "flex h-[calc(100svh-16rem)] min-h-0 flex-col"
+  const gridContainerStyle = { height: gridHeight ?? undefined }
 
   return (
     <Tabs
       value={activeTab}
-      onValueChange={handleTabChange}
+      onValueChange={setActiveTab}
       className="flex flex-col gap-4"
     >
-      {/* Barra fina: abas menores à esquerda + navegação + salvar (rework). */}
+      {/* Barra fina: abas menores à esquerda + navegação (rework 260723-kej: sem
+          toolbar de salvar — a edição de disponibilidade salva na hora no painel). */}
       <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
         <TabsList className="h-8 p-0.5">
           {[
@@ -1100,7 +1356,8 @@ export function CalendarEditor({
           </span>
         </div>
 
-        {/* Limpar disponibilidade | folgas do escopo visível (desabilitado no Mês). */}
+        {/* Limpar disponibilidade | folgas do escopo da aba (desabilitado no Mês).
+            Salvar-na-hora: confirma no AlertDialog, persiste e oferece "Desfazer". */}
         <div className="flex items-center gap-1">
           <Button
             variant="outline"
@@ -1124,163 +1381,159 @@ export function CalendarEditor({
           </Button>
         </div>
 
-        {/* Salvar + indicador de mudanças não salvas (rework: no toolbar). */}
-        <div className="ml-auto flex items-center gap-2">
-          {isDirty ? (
-            <span className="flex items-center gap-1.5 text-xs font-medium text-amber-600 dark:text-amber-500">
-              <span className="size-2 rounded-full bg-amber-500" />
-              Mudanças não salvas
-            </span>
-          ) : (
-            <span className="text-xs text-muted-foreground">Tudo salvo.</span>
-          )}
+        {/* Trigger ÚNICO do drawer (E-4): abre em Consulta; o toggle de 3 opções
+            (Consulta | Disponibilidade | Folga) vive dentro do drawer. */}
+        <div className="flex items-center gap-2 lg:ml-auto">
           <Button
+            type="button"
             size="sm"
             className="h-7"
-            onClick={handleSave}
-            disabled={saving || !isDirty}
+            onClick={() => {
+              setPreselectedMinute(null)
+              setDrawerMode("consulta")
+              setDrawerOpen(true)
+            }}
           >
-            {saving ? (
-              <>
-                <Loader2 className="size-4 animate-spin" />
-                Salvando...
-              </>
-            ) : (
-              "Salvar"
-            )}
+            + Nova marcação
           </Button>
         </div>
       </div>
 
-      {/* Dica de interação (substitui o antigo painel de instruções). */}
+      {/* Dica de interação: a grade só agenda; disponibilidade/folga vão no painel. */}
       <p className="text-xs text-muted-foreground">
         Clique num horário livre (azul) para{" "}
-        <span className="font-medium text-foreground">agendar uma consulta</span>{" "}
-        ou arraste numa célula vazia para marcar{" "}
-        <span className="font-medium text-foreground">disponibilidade</span>;
-        botão direito para{" "}
-        <span className="font-medium text-foreground">folga</span>.
+        <span className="font-medium text-foreground">agendar uma consulta</span>.
+        Para editar{" "}
+        <span className="font-medium text-foreground">
+          disponibilidade e folga
+        </span>
+        , use o painel ao lado.
       </p>
 
       {/* ---------- DIA ---------- */}
+      {/* C-1/C-3: grade full-width que preenche a altura da viewport (sem scroll
+          vertical); o painel lateral virou drawer (fora dos TabsContent). A
+          altura é ancorada aqui via h-[calc(100svh-16rem)] — o chrome subtraído
+          (header + toolbar + dica) é o valor a confirmar no checkpoint visual.
+          E-5: sem fila separada de pedidos abaixo da grade. */}
       <TabsContent value="dia" className="flex flex-col gap-4">
-        <div className="flex flex-col gap-6 lg:flex-row">
-          <div className="min-w-0 flex-1">
-            <CalendarDayWeekGrid
-              days={dayColumns([dayCursor])}
+        <div
+          ref={gridContainerRef}
+          className={gridContainerClassName}
+          style={gridContainerStyle}
+        >
+          <div className="min-h-0 min-w-0 flex-1">
+            <CalendarTimeGrid
+              days={dayColumns([selectedRailDateObj])}
               minuteRows={minuteRows}
+              positioned={positionedFor(dayColumns([selectedRailDateObj]))}
               cellStateOf={cellStateOf}
               appointmentOf={appointmentOf}
               isCellBookable={isCellBookable}
-              onDragSelect={handleDragSelect}
-              onCellMenu={handleCellMenu}
+              nowMinuteOfToday={nowMinuteOfToday}
+              todayLocalDate={todayLocal}
+              selectedLocalDate={selectedRailDate}
+              onSelectDay={setSelectedRailDate}
               onAppointmentCreate={handleAppointmentCreate}
               onAppointmentSelect={handleAppointmentSelect}
             />
-          </div>
-          <div className="w-full lg:w-80 lg:shrink-0">
-            <PendingRequestsPanel requests={pendingRequests} />
           </div>
         </div>
       </TabsContent>
 
       {/* ---------- SEMANA ---------- */}
       <TabsContent value="semana" className="flex flex-col gap-4">
-        <div className="flex flex-col gap-6 lg:flex-row">
-          <div className="min-w-0 flex-1">
-            <CalendarDayWeekGrid
+        <div
+          ref={gridContainerRef}
+          className={gridContainerClassName}
+          style={gridContainerStyle}
+        >
+          <div className="min-h-0 min-w-0 flex-1">
+            <CalendarTimeGrid
               days={dayColumns(weekDays)}
               minuteRows={minuteRows}
+              positioned={positionedFor(dayColumns(weekDays))}
               cellStateOf={cellStateOf}
               appointmentOf={appointmentOf}
               isCellBookable={isCellBookable}
-              onDragSelect={handleDragSelect}
-              onCellMenu={handleCellMenu}
+              nowMinuteOfToday={nowMinuteOfToday}
+              todayLocalDate={todayLocal}
+              selectedLocalDate={selectedRailDate}
+              onSelectDay={setSelectedRailDate}
               onAppointmentCreate={handleAppointmentCreate}
               onAppointmentSelect={handleAppointmentSelect}
             />
-          </div>
-          <div className="w-full lg:w-80 lg:shrink-0">
-            <PendingRequestsPanel requests={pendingRequests} />
           </div>
         </div>
       </TabsContent>
 
       {/* ---------- MÊS (indicador, D-18) ---------- */}
+      {/* C-1: o Mês também preenche a altura da viewport, sem scroll vertical. */}
       <TabsContent value="mes" className="flex flex-col gap-4">
-        <CalendarMonthIndicator
-          monthCursor={monthCursor}
-          byDay={monthByDay}
-          timeZone={timeZone}
-          todayLocal={todayLocal}
-          onSelectDay={(day) => {
-            runGuarded(() => {
-              setDayCursor(skipWeekend(day, 1, context))
+        <div
+          ref={gridContainerRef}
+          className={gridContainerClassName}
+          style={gridContainerStyle}
+        >
+          <CalendarMonthIndicator
+            monthCursor={monthCursor}
+            byDay={monthByDay}
+            timeZone={timeZone}
+            todayLocal={todayLocal}
+            selectedLocalDate={selectedRailDate}
+            onSelectDay={(day) => {
+              // M-1: o dia clicado no Mês vira o dia global; a visão Dia mostra-o.
+              const picked = skipWeekend(day, 1, context)
+              setSelectedRailDate(format(picked, "yyyy-MM-dd", context))
               setActiveTab("dia")
-            })
-          }}
-        />
+            }}
+          />
+        </div>
       </TabsContent>
 
-      {/* Menu de contexto da célula (disponibilidade|folga). */}
-      <AvailabilityCellMenu
-        kind={menu?.kind ?? "available"}
-        target={menu?.target ?? null}
-        open={menu !== null}
-        onOpenChange={(open) => {
-          if (!open) setMenu(null)
-        }}
-        scope={scope}
-        onScopeChange={setScope}
-        onWholeDay={handleMenuWholeDay}
-        onPeriod={handleMenuPeriod}
-      />
-
-      {/* Dialog de criação de consulta (clique num slot livre). */}
-      <AppointmentCreateDialog
-        target={createTarget}
-        patients={patients}
-        onOpenChange={(open) => {
-          if (!open) setCreateTarget(null)
-        }}
-      />
+      {/* Drawer lateral único (C-3/E-4): hospeda o AgendaSidePanel com o toggle
+          de 3 opções (Consulta | Disponibilidade | Folga). Aberto pelo botão
+          único da toolbar ou por um clique num slot livre (C-4, modo Consulta
+          com horário pré-marcado). */}
+      <Sheet open={drawerOpen} onOpenChange={setDrawerOpen}>
+        <SheetContent
+          side="right"
+          className="w-full overflow-y-auto sm:max-w-md"
+        >
+          <SheetHeader>
+            <SheetTitle>Agenda do dia</SheetTitle>
+          </SheetHeader>
+          <div className="px-4 pb-4">
+            <AgendaSidePanel
+              patients={patients}
+              selectedDate={selectedRailDate}
+              selectedDayLongLabel={selectedRailDayLongLabel}
+              selectedWeekday={weekdayOf(selectedRailDate, timeZone)}
+              freeSlots={railFreeSlots}
+              initialMode={drawerMode}
+              preselectedMinute={preselectedMinute}
+              onApply={applyAvailabilityIntent}
+              onCreated={() => {
+                setDrawerOpen(false)
+                reloadAppointments(visibleFrom, visibleTo)
+              }}
+              savingAvailability={savingAvailability}
+            />
+          </div>
+        </SheetContent>
+      </Sheet>
 
       {/* Detalhe + menu de transição de status (clique numa consulta). */}
       <AppointmentDetailMenu
         appointment={detail?.appointment ?? null}
-        anchor={detail?.anchor ?? null}
         onOpenChange={(open) => {
           if (!open) setDetail(null)
         }}
+        onChanged={() => reloadAppointments(visibleFrom, visibleTo)}
       />
 
-      {/* Guarda de descarte (D-17). */}
-      <AlertDialog
-        open={pendingAction !== null}
-        onOpenChange={(open) => {
-          if (!open) setPendingAction(null)
-        }}
-      >
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Você tem mudanças não salvas</AlertDialogTitle>
-            <AlertDialogDescription>
-              Se continuar sem salvar, as alterações de disponibilidade serão
-              descartadas. Deseja descartar?
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel onClick={() => setPendingAction(null)}>
-              Voltar e salvar
-            </AlertDialogCancel>
-            <AlertDialogAction onClick={confirmDiscard}>
-              Descartar mudanças
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-
-      {/* Confirmação antes de limpar em lote (disponibilidade|folga do escopo). */}
+      {/* Confirmação da limpeza em lote (salvar-na-hora). A ação é imediata e
+          pode ser desfeita pelo toast "Desfazer" que aparece em seguida. */}
       <AlertDialog
         open={pendingClear !== null}
         onOpenChange={(open) => {
@@ -1291,8 +1544,8 @@ export function CalendarEditor({
           <AlertDialogHeader>
             <AlertDialogTitle>{pendingClear?.title}</AlertDialogTitle>
             <AlertDialogDescription>
-              Esta ação altera o rascunho e ainda não salva nada. Clique em
-              Salvar depois para confirmar as mudanças.
+              Esta ação é aplicada imediatamente. Você pode desfazer pelo aviso
+              que aparece em seguida.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
