@@ -58,6 +58,28 @@ describe("parseBrlToCents", () => {
   it("devolve null para espaço não-separável sozinho", () => {
     assert.equal(parseBrlToCents(" "), null)
   })
+
+  // Antes destes casos o parser APAGAVA o que não reconhecia e parseava o resto:
+  // "1e3" era aceito como R$ 13,00 e "1,5e3" como R$ 1,53 — um valor diferente do
+  // digitado, sem erro nenhum. Reprovar é a única resposta honesta.
+  it("devolve null para notação científica em vez de reinterpretá-la", () => {
+    assert.equal(parseBrlToCents("1e3"), null)
+    assert.equal(parseBrlToCents("1,5e3"), null)
+  })
+
+  it("devolve null para sinal de mais (não é um valor digitado válido)", () => {
+    assert.equal(parseBrlToCents("+250"), null)
+  })
+
+  // "2,999" arredondava para R$ 3,00 em silêncio e "0,004" virava zero — a linha era
+  // descartada pelo filtro de valor zero e o médico lia "Caso encerrado sem lançamento."
+  // depois de ter digitado um valor.
+  it("devolve null para mais de duas casas decimais em vez de arredondar", () => {
+    assert.equal(parseBrlToCents("2,999"), null)
+    assert.equal(parseBrlToCents("0,004"), null)
+    assert.equal(parseBrlToCents("1.234.567,891"), null)
+    assert.equal(parseBrlToCents("1500.505"), null)
+  })
 })
 
 describe("formatCentsToBRL", () => {
