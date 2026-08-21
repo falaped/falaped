@@ -160,3 +160,11 @@ export {
   createStandaloneFinancialEntryAction,
   type CreateStandaloneFinancialEntryResult,
 } from "./financial-entries"
+export {
+  createProcedureCatalogItemAction,
+  type CreateProcedureCatalogItemResult,
+  updateProcedureCatalogItemAction,
+  type UpdateProcedureCatalogItemResult,
+  deleteProcedureCatalogItemAction,
+  type DeleteProcedureCatalogItemResult,
+} from "./procedure-catalog"

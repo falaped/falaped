@@ -3,6 +3,7 @@ import { UserIcon } from "lucide-react"
 import { createClient } from "@/lib/supabase/server"
 import { getAuthenticatedUser } from "@/modules/supabase/get-authenticated-user"
 import { getReportTemplatesByProfileId } from "@/modules/report-templates/get-report-templates-by-profile-id"
+import { listProcedureCatalogItems } from "@/modules/procedure-catalog/list-procedure-catalog-items"
 import { ProfileContent } from "./profile-content"
 import { ProfileLoading } from "@/components/dashboard/profile/profile-loading"
 import { Suspense } from "react"
@@ -13,6 +14,11 @@ export default async function ProfilePage() {
   if (!profile) redirect("/auth/login")
 
   const reportTemplateOptions = await getReportTemplatesByProfileId(
+    supabase,
+    profile.id
+  )
+
+  const procedureCatalogItems = await listProcedureCatalogItems(
     supabase,
     profile.id
   )
@@ -33,6 +39,7 @@ export default async function ProfilePage() {
         <ProfileContent
           profile={profile}
           reportTemplateOptions={reportTemplateOptions}
+          procedureCatalogItems={procedureCatalogItems}
         />
       </Suspense>
     </div>

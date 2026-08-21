@@ -35,6 +35,7 @@ import {
   FieldError,
   FieldGroup,
   FieldLabel,
+  FieldSeparator,
 } from "@/components/ui/field"
 import {
   AlertDialog,
@@ -56,6 +57,8 @@ import {
   type UpdateProfileFormValues,
 } from "@/lib/schemas/profile"
 import { formatCentsToInputValue } from "@/lib/money"
+import { ProcedureCatalogCard } from "@/components/dashboard/profile/procedure-catalog-card"
+import type { ProcedureCatalogItemOption } from "@/modules/procedure-catalog/list-procedure-catalog-items"
 
 const STATUS_OPTIONS: { value: AuthenticatedUserStatus; label: string }[] = [
   { value: "paid", label: "Pago" },
@@ -74,9 +77,14 @@ const REPORT_TEMPLATE_NONE_VALUE = "__none__"
 
 type ProfileContentProps = AuthenticatedUserResult & {
   reportTemplateOptions: ReportTemplateOption[]
+  procedureCatalogItems: ProcedureCatalogItemOption[]
 }
 
-export function ProfileContent({ profile, reportTemplateOptions }: ProfileContentProps) {
+export function ProfileContent({
+  profile,
+  reportTemplateOptions,
+  procedureCatalogItems,
+}: ProfileContentProps) {
   const router = useRouter()
   const { theme, setTheme } = useTheme()
   const [mounted, setMounted] = useState(false)
@@ -608,6 +616,15 @@ export function ProfileContent({ profile, reportTemplateOptions }: ProfileConten
           >
             {form.formState.isSubmitting ? "Salvando…" : "Salvar"}
           </Button>
+
+          <FieldSeparator />
+
+          <div className="flex flex-col gap-2">
+            <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+              Procedimentos
+            </span>
+            <ProcedureCatalogCard items={procedureCatalogItems} />
+          </div>
         </CardContent>
       </Card>
 
