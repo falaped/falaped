@@ -2,18 +2,18 @@
 gsd_state_version: 1.0
 milestone: v1.1
 milestone_name: Agenda & Ganhos
-current_phase: 8
-current_phase_name: FUNDAÇÃO DE SEGURANÇA — construir e testar em isolamento, UI mínima
+current_phase: 10
+current_phase_name: livro-caixa-de-ganhos-painel
 status: executing
-stopped_at: Phase 10 UI-SPEC approved
-last_updated: "2026-08-21T16:26:52.627Z"
-last_activity: 2026-07-25
-last_activity_desc: Phase 07 complete, transitioned to Phase 8
+stopped_at: Completed 10-01-PLAN.md
+last_updated: "2026-08-21T20:33:04.661Z"
+last_activity: 2026-08-21
+last_activity_desc: Phase 10 execution started
 progress:
   total_phases: 5
   completed_phases: 2
   total_plans: 11
-  completed_plans: 6
+  completed_plans: 7
   percent: 40
 ---
 
@@ -24,14 +24,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-07-20)
 
 **Core value:** A consulta pediátrica flui sem fricção — abrir o paciente, conduzir a consulta e gerar os documentos certos (impressos corretamente) em poucos cliques.
-**Current focus:** Phase 07 — consultas-ciclo-de-status
+**Current focus:** Phase 10 — livro-caixa-de-ganhos-painel
 
 ## Current Position
 
-Phase: 8 — Assentos & Convite — Fundação de Acesso Delegado (FUNDAÇÃO DE SEGURANÇA — construir e testar em isolamento, UI mínima)
-Plan: Not started
+Phase: 10 (livro-caixa-de-ganhos-painel) — EXECUTING
+Plan: 2 of 5
 Status: Ready to execute
-Last activity: 2026-07-25 — Phase 07 complete, transitioned to Phase 8
+Last activity: 2026-08-21 — Phase 10 execution started
 
 ## Roadmap (milestone v1.1)
 
@@ -71,6 +71,11 @@ Last activity: 2026-07-25 — Phase 07 complete, transitioned to Phase 8
 | Phase 06 P03 | ~2h | 3 tasks | 9 files |
 | Phase 07 P01 | 2min | 3 tasks | 5 files |
 | Phase 07 P02 | ~3 min | 2 tasks | 7 files |
+**Per-Plan Metrics:**
+
+| Plan | Duration | Tasks | Files |
+|------|----------|-------|-------|
+| Phase 10 P01 | 34min | 4 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -97,6 +102,9 @@ Recent decisions affecting current work (milestone v1.1):
 - [Phase ?]: [Phase 06-03] Calendário único editável entregue; interação D-15/D-16 (toggle+click/drag) supersedida com aprovação do usuário por menu de contexto cursor-anchored (esq=disponibilidade, dir=folga), toolbar slim no topo, janela 06-18 dias úteis, folga cinza-claro, batch save + guarda de descarte, botões limpar por view
 - [Phase 07-01]: Fundacao DB de appointments viva: enum appointment_status (5 valores), tabela owner-scoped + RLS/4 policies, btree_gist, exclusion constraint parcial (pending+confirmed segura o horario, 23P01), patient_id ON DELETE RESTRICT; maquina de transicoes pura + schemas Zod
 - [Phase ?]: 07-02: createAppointmentAction stamps status confirmed (D-05); slot-free check maps snake to camel before expandAvailability (WARNING 1); 23P01 caught in both actions returns friendly PT-BR result union
+- [Phase ?]: D-26 revisada: financial_entries.case_id usa on delete restrict (não cascade) — o banco é a barreira contra apagar faturamento, alinhado ao precedente de appointments.sql e a D-19
+- [Phase ?]: financial_entries nasce SEM policy de DELETE: a ausência de policy é a garantia (RLS nega por default). RLS de âncora simples por profile_id, contraste deliberado com a âncora dupla de public.cases
+- [Phase ?]: Agregação do painel numa única função SQL stable/security invoker (get_earnings_summary) devolvendo jsonb; received_on é date, então zero conversão de fuso e zero DST na agregação
 
 ### Pending Todos
 
@@ -113,6 +121,7 @@ Recent decisions affecting current work (milestone v1.1):
 - [Cross-cutting] Todo slice novo precisa filtro `profile_id` em read/write/delete + gate `paid` + teste de ownership (Pitfall 17); o assento usa sessão autenticada normal (não pula auth), mas seu escopo é enforced por membership ativo + RLS, nunca só por convenção de código
 - [Phase 8] Risco central = vazamento de ESCOPO do membership: uma política RLS frouxa ou uma action sem verificação de membership expõe prontuário/outro médico. Verificar com testes cross-tenant (médico X ≠ médico Y) E cross-scope (assento não alcança tabela clínica alguma) antes de expor a UI (Phase 9). Reads clínicos diretos (PostgREST) do assento devem ser negados por RLS
 - [Phase 7] `btree_gist` exclusion constraint precisa da extensão criada na migration; violação (23P01) deve virar result union amigável, nunca erro cru
+- Fase 10: restrict em financial_entries.case_id cria 2 follow-ups para 10-04 — traduzir Postgres 23503 em actions/cases/delete-case.ts, e o diálogo de excluir caso passa a BLOQUEAR em vez de avisar (ver deferred-items.md)
 
 ### Quick Tasks Completed
 
@@ -140,7 +149,7 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-08-21T15:05:11.411Z
-Stopped at: Phase 10 UI-SPEC approved
-Resume file: .planning/phases/10-livro-caixa-de-ganhos-painel/10-UI-SPEC.md
+Last session: 2026-08-21T20:32:51.504Z
+Stopped at: Completed 10-01-PLAN.md
+Resume file: None
 Next: executar 06-02-PLAN.md (expandAvailability puro + suite .spec)

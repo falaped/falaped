@@ -255,3 +255,7 @@ Resolvido durante a execução: o checkpoint `[BLOCKING]` de aplicação ao banc
 ---
 *Phase: 10-livro-caixa-de-ganhos-painel*
 *Completed: 2026-08-21*
+
+## Self-Check: PASSED
+
+Todos os 4 arquivos existem em disco e todos os 4 commits existem no histórico (`e094e21`, `f2e01a4`, `4227d6d`, `09e1081`). Nenhum arquivo rastreado foi apagado pelos commits deste plano.

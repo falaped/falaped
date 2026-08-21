@@ -34,11 +34,11 @@ Cada requisito mapeia para exatamente uma fase do roadmap.
 
 ### Ganhos (EARN)
 
-- [ ] **EARN-01**: O médico registra o valor recebido por um atendimento (em R$, guardado em centavos inteiros), ligado ao **caso encerrado** (`cases.id`) — não ao agendamento _(emendado 2026-08-21 pela discussão da Phase 10, DV-1)_
-- [ ] **EARN-02**: O médico registra lançamentos financeiros avulsos, não ligados a uma consulta
-- [ ] **EARN-03**: O médico vê um painel de ganhos com totais por dia, semana e mês (agregação em SQL, buckets pela data local da clínica)
-- [ ] **EARN-04**: O painel mostra o valor médio por atendimento, calculado como total ÷ (**casos distintos** com lançamento não-anulado + avulsos não-anulados) no período, com arredondamento único _(emendado 2026-08-21 pela discussão da Phase 10, DV-2 — um atendimento com N procedimentos conta 1 no denominador)_
-- [ ] **EARN-05**: O médico anula/estorna um lançamento sem apagá-lo (totais auditáveis); leitura/escrita/anulação escopadas por `profile_id` + gate `paid`
+- [x] **EARN-01**: O médico registra o valor recebido por um atendimento (em R$, guardado em centavos inteiros), ligado ao **caso encerrado** (`cases.id`) — não ao agendamento _(emendado 2026-08-21 pela discussão da Phase 10, DV-1)_
+- [x] **EARN-02**: O médico registra lançamentos financeiros avulsos, não ligados a uma consulta
+- [x] **EARN-03**: O médico vê um painel de ganhos com totais por dia, semana e mês (agregação em SQL, buckets pela data local da clínica)
+- [x] **EARN-04**: O painel mostra o valor médio por atendimento, calculado como total ÷ (**casos distintos** com lançamento não-anulado + avulsos não-anulados) no período, com arredondamento único _(emendado 2026-08-21 pela discussão da Phase 10, DV-2 — um atendimento com N procedimentos conta 1 no denominador)_
+- [x] **EARN-05**: O médico anula/estorna um lançamento sem apagá-lo (totais auditáveis); leitura/escrita/anulação escopadas por `profile_id` + gate `paid`
 
 ## Deferred (carry-over do ciclo v1.0)
 
@@ -83,11 +83,11 @@ Cada requisito mapeia para exatamente uma fase do roadmap. Preenchido na criaç�
 | SEAT-02 | Phase 9 | Pending |
 | SEAT-03 | Phase 9 | Pending |
 | SEAT-04 | Phase 9 | Pending |
-| EARN-01 | Phase 10 | Pending |
-| EARN-02 | Phase 10 | Pending |
-| EARN-03 | Phase 10 | Pending |
-| EARN-04 | Phase 10 | Pending |
-| EARN-05 | Phase 10 | Pending |
+| EARN-01 | Phase 10 | Complete |
+| EARN-02 | Phase 10 | Complete |
+| EARN-03 | Phase 10 | Complete |
+| EARN-04 | Phase 10 | Complete |
+| EARN-05 | Phase 10 | Complete |
 
 **Coverage:**
 
