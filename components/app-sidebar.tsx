@@ -10,6 +10,7 @@ import {
   HomeIcon,
   LayoutTemplateIcon,
   MessagesSquareIcon,
+  WalletIcon,
 } from "lucide-react"
 
 import {
@@ -75,6 +76,14 @@ const navMain = [
       { title: "Pedidos de exames", url: "/dashboard/exam-requests" },
       { title: "Orientações", url: "/dashboard/guidance" },
       { title: "Receituário em branco", url: "/dashboard/prescriptions/new?mode=blank" },
+    ],
+  },
+  {
+    title: "Financeiro",
+    icon: WalletIcon,
+    isActive: false,
+    items: [
+      { title: "Ganhos", url: "/dashboard/earnings" },
     ],
   },
 ]
