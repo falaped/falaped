@@ -15,6 +15,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
 import { updateCaseStatusAction, deleteCaseAction } from "@/actions"
+import { formatCentsToBRL } from "@/lib/formatters"
 import { cn } from "@/lib/utils"
 import { LockIcon, UnlockIcon, Trash2Icon } from "lucide-react"
 
@@ -28,6 +29,12 @@ type CaseDetailActionsProps = {
    * popover, porque `PopoverContent` desmonta ao fechar e levaria o form com ele.
    */
   onRequestCloseCase?: () => void
+  /**
+   * Lançamentos NÃO-anulados do caso e quanto somam. `null` = a leitura falhou, e a
+   * exclusão é BLOQUEADA — jamais prosseguir sem poder verificar (S7 partial).
+   */
+  earningsCount?: number | null
+  earningsTotalCents?: number | null
 }
 
 export function CaseDetailActions({
@@ -35,6 +42,8 @@ export function CaseDetailActions({
   status,
   layout = "inline",
   onRequestCloseCase,
+  earningsCount = 0,
+  earningsTotalCents = 0,
 }: CaseDetailActionsProps) {
   const router = useRouter()
   const [isPendingStatus, startTransitionStatus] = useTransition()
@@ -64,6 +73,14 @@ export function CaseDetailActions({
   }
 
   const menu = layout === "menu"
+
+  // `financial_entries.case_id` é `on delete restrict` (D-26 revisada): o BANCO recusa
+  // apagar um caso que tenha lançamento, então este bloco informa e BLOQUEIA — não
+  // promete uma exclusão que o Postgres vai negar. `null` (leitura falhou) também
+  // bloqueia: prosseguir sem poder verificar seria decidir no escuro.
+  const earningsUnknown = earningsCount === null
+  const hasEarnings = earningsCount !== null && earningsCount > 0
+  const deleteBlocked = earningsUnknown || hasEarnings
 
   return (
     <div
@@ -136,6 +153,35 @@ export function CaseDetailActions({
               removidas.
             </AlertDialogDescription>
           </AlertDialogHeader>
+          {deleteBlocked && (
+            <div className="rounded-lg border border-destructive/50 bg-destructive/5 p-3 text-sm">
+              {earningsUnknown ? (
+                <p className="font-semibold text-destructive">
+                  Não foi possível verificar os lançamentos deste caso. Tente novamente.
+                </p>
+              ) : (
+                <>
+                  <p className="font-semibold text-destructive">
+                    {earningsCount === 1
+                      ? "Este caso tem 1 lançamento no livro-caixa."
+                      : `Este caso tem ${earningsCount} lançamentos no livro-caixa.`}
+                  </p>
+                  <p className="mt-1 text-muted-foreground">
+                    Somam{" "}
+                    <span className="font-medium tabular-nums text-foreground">
+                      {formatCentsToBRL(earningsTotalCents ?? 0)}
+                    </span>{" "}
+                    e o faturamento fica registrado para auditoria — inclusive de meses já
+                    fechados. Por isso este caso não pode ser excluído.
+                  </p>
+                  <p className="mt-1 text-muted-foreground">
+                    Se você só quer corrigir um valor, anule o lançamento em Ganhos em vez
+                    de excluir o caso.
+                  </p>
+                </>
+              )}
+            </div>
+          )}
           {deleteError && (
             <p className="text-sm text-destructive">{deleteError}</p>
           )}
@@ -143,7 +189,7 @@ export function CaseDetailActions({
             <AlertDialogCancel disabled={isPendingDelete}>Cancelar</AlertDialogCancel>
             <Button
               variant="destructive"
-              disabled={isPendingDelete}
+              disabled={isPendingDelete || deleteBlocked}
               onClick={handleDeleteCase}
             >
               {isPendingDelete ? "Excluindo…" : "Excluir"}

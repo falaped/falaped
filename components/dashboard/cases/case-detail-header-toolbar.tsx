@@ -16,6 +16,9 @@ import { CloseCaseWithEarningsDialog } from "@/components/dashboard/cases/close-
 type CaseDetailHeaderToolbarProps = {
   caseId: string
   status: "active" | "closed"
+  /** Lançamentos não-anulados do caso; `null` = a leitura falhou (S7 bloqueia). */
+  earningsCount: number | null
+  earningsTotalCents: number | null
   /** Hoje no fuso da clínica, formatado no RSC — o cliente nunca deriva datas. */
   todayLabel: string
 }
@@ -23,6 +26,8 @@ type CaseDetailHeaderToolbarProps = {
 export function CaseDetailHeaderToolbar({
   caseId,
   status,
+  earningsCount,
+  earningsTotalCents,
   todayLabel,
 }: CaseDetailHeaderToolbarProps) {
   const [actionsOpen, setActionsOpen] = useState(false)
@@ -50,6 +55,8 @@ export function CaseDetailHeaderToolbar({
             caseId={caseId}
             status={status}
             layout="menu"
+            earningsCount={earningsCount}
+            earningsTotalCents={earningsTotalCents}
             onRequestCloseCase={() => {
               setActionsOpen(false)
               setCloseFlowOpen(true)

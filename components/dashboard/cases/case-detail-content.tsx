@@ -14,6 +14,7 @@ import { normalizeReportTemplateSections } from "@/modules/report-templates/fixe
 import { formatDashboardChatContextSummaryForDisplay } from "@/modules/dashboard/format-dashboard-chat-context-summary-for-display"
 import { getMedicalCertificatesByCaseId } from "@/modules/medical-certificates/get-medical-certificates-by-case-id"
 import { getPrescriptionsByCaseId } from "@/modules/prescriptions/get-prescriptions-by-case-id"
+import { getCaseEarningsTotals } from "@/modules/financial-entries/get-case-earnings-totals"
 import { Separator } from "@/components/ui/separator"
 import { CaseDetailCommandStrip } from "@/components/dashboard/cases/case-detail-command-strip"
 import { CaseDetailHeader } from "@/components/dashboard/cases/case-detail-header"
@@ -36,6 +37,7 @@ export async function CaseDetailContent({ id }: { id: string }) {
     caseReports,
     caseCertificates,
     casePrescriptions,
+    earningsTotals,
   ] = await Promise.all([
     getCaseById(supabase, id, profile.id),
     profile.report_template_id
@@ -44,6 +46,9 @@ export async function CaseDetailContent({ id }: { id: string }) {
     getCaseReports(supabase, id, profile.id),
     getMedicalCertificatesByCaseId(supabase, profile.id, id),
     getPrescriptionsByCaseId(supabase, profile.id, id),
+    // `null` em falha, nunca throw: `null` é o que faz o diálogo de exclusão BLOQUEAR
+    // (S7 partial), e derrubar a página inteira por causa de uma contagem seria pior.
+    getCaseEarningsTotals(supabase, profile.id, id).catch(() => null),
   ])
 
   if (!caseDetail) {
@@ -108,7 +113,12 @@ export async function CaseDetailContent({ id }: { id: string }) {
 
   return (
     <div className={caseDetailMainStackClassName}>
-      <CaseDetailHeader detail={caseDetail} todayLabel={todayLabel} />
+      <CaseDetailHeader
+        detail={caseDetail}
+        earningsCount={earningsTotals?.count ?? null}
+        earningsTotalCents={earningsTotals?.totalCents ?? null}
+        todayLabel={todayLabel}
+      />
       <CasePatientBlock patient={caseDetail.patient} photoUrl={casePhotoUrl} />
       <Separator />
       <CaseDetailCommandStrip

@@ -40,11 +40,19 @@ function getCaseTitle(detail: CaseDetail): string {
 
 type CaseDetailHeaderProps = {
   detail: CaseDetail
+  /** Lançamentos não-anulados do caso; `null` = a leitura falhou (S7 bloqueia). */
+  earningsCount: number | null
+  earningsTotalCents: number | null
   /** Hoje no fuso da clínica, formatado no RSC — o cliente nunca deriva datas. */
   todayLabel: string
 }
 
-export function CaseDetailHeader({ detail, todayLabel }: CaseDetailHeaderProps) {
+export function CaseDetailHeader({
+  detail,
+  earningsCount,
+  earningsTotalCents,
+  todayLabel,
+}: CaseDetailHeaderProps) {
   const title = getCaseTitle(detail)
 
   const patient = detail.patient
@@ -130,6 +138,8 @@ export function CaseDetailHeader({ detail, todayLabel }: CaseDetailHeaderProps) 
         <CaseDetailHeaderToolbar
           caseId={detail.id}
           status={detail.status}
+          earningsCount={earningsCount}
+          earningsTotalCents={earningsTotalCents}
           todayLabel={todayLabel}
         />
       </div>
