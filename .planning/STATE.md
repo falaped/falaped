@@ -41,7 +41,7 @@ Last activity: 2026-07-25 — Phase 07 complete, transitioned to Phase 8
 | 7 | Consultas & Ciclo de Status | APPT-01..04 | exclusion constraint btree_gist (pendente+confirmada segura o horário) |
 | 8 | Assentos & Convite — Fundação de Acesso Delegado | SEAT-01, SEAT-05 | **FUNDAÇÃO DE SEGURANÇA** — membership + convite/aceite sobre Supabase Auth + enforcement de escopo (RLS + verificação nas actions); construir/testar cross-tenant E cross-scope em isolamento, UI mínima; flag de security review |
 | 9 | UI de Agendamento da Assistente | SEAT-02, SEAT-03, SEAT-04 | UI sobre a SESSÃO AUTENTICADA do assento (não link) — provada na Phase 8 |
-| 10 | Livro-caixa de Ganhos & Painel | EARN-01..05 | ortogonal; depende só da FK de consulta (Phase 7) |
+| 10 | Livro-caixa de Ganhos & Painel | EARN-01..05 | ortogonal; ancorado no domínio `cases` (v1.0) — dependência da Phase 7 removida (DV-1, 2026-08-21) |
 
 ## Performance Metrics
 
@@ -84,7 +84,8 @@ Recent decisions affecting current work (milestone v1.1):
 - [Decisão travada v1.1 — SEGURANÇA]: Acesso da assistente = **assento leve por membership** (login real + RLS/escopo), NÃO link/token session-less. Identidade nominal é mais segura/auditável sobre base de menores (LGPD); evita a 1ª superfície não autenticada do app. Proposta de token superada. Path C (org completa, refatorar profile_id→org_id) descartado para este ciclo
 - [Roadmap v1.1]: Phase 8 (assentos) construída e testada cross-tenant E cross-scope com UI mínima antes da Phase 9; o risco central agora é vazamento de ESCOPO do membership (não link vazável) — flag de security review obrigatório
 - [Decisão travada v1.1]: Pendente SEGURA o horário — exclusion constraint cobre status em pending+confirmed (Phase 7)
-- [Decisão travada v1.1]: Média de ganhos = total ÷ TODOS os lançamentos do período (avulsos incluídos no denominador), arredondamento único (Phase 10)
+- [Decisão travada v1.1]: Média de ganhos = total ÷ (casos distintos com lançamento não-anulado + avulsos não-anulados) no período, arredondamento único (Phase 10) — _emendado 2026-08-21 por DV-2; a formulação anterior (÷ TODOS os lançamentos) está superada_
+- [Decisão travada v1.1]: Ganho ancora em `cases(id)` (caso encerrado) ou em nada (avulso) — zero coluna de agendamento (Phase 10, DV-1/D-01)
 - [Decisão travada v1.1]: Painel-only, SEM notificações neste ciclo
 - [Decisão travada v1.1]: Fuso fixo único da clínica (America/Sao_Paulo) para expansão de slots (Phase 6) e buckets de ganhos (Phase 10)
 
