@@ -1,5 +1,6 @@
 "use client"
 
+import { useState } from "react"
 import Link from "next/link"
 import { MoreHorizontal } from "lucide-react"
 
@@ -10,22 +11,29 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover"
 import { CaseDetailActions } from "@/components/dashboard/cases/case-detail-actions"
+import { CloseCaseWithEarningsDialog } from "@/components/dashboard/cases/close-case-with-earnings-dialog"
 
 type CaseDetailHeaderToolbarProps = {
   caseId: string
   status: "active" | "closed"
+  /** Hoje no fuso da clínica, formatado no RSC — o cliente nunca deriva datas. */
+  todayLabel: string
 }
 
 export function CaseDetailHeaderToolbar({
   caseId,
   status,
+  todayLabel,
 }: CaseDetailHeaderToolbarProps) {
+  const [actionsOpen, setActionsOpen] = useState(false)
+  const [closeFlowOpen, setCloseFlowOpen] = useState(false)
+
   return (
     <div className="flex shrink-0 flex-wrap items-center gap-2">
       <Button variant="outline" asChild>
         <Link href="/dashboard/cases">Voltar</Link>
       </Button>
-      <Popover>
+      <Popover open={actionsOpen} onOpenChange={setActionsOpen}>
         <PopoverTrigger asChild>
           <Button
             type="button"
@@ -38,9 +46,25 @@ export function CaseDetailHeaderToolbar({
           </Button>
         </PopoverTrigger>
         <PopoverContent align="end" className="w-64 p-2">
-          <CaseDetailActions caseId={caseId} status={status} layout="menu" />
+          <CaseDetailActions
+            caseId={caseId}
+            status={status}
+            layout="menu"
+            onRequestCloseCase={() => {
+              setActionsOpen(false)
+              setCloseFlowOpen(true)
+            }}
+          />
         </PopoverContent>
       </Popover>
+      {/* IRMÃO do popover, nunca descendente: `PopoverContent` desmonta ao fechar e
+          levaria os valores digitados na etapa 2 com ele. */}
+      <CloseCaseWithEarningsDialog
+        caseId={caseId}
+        open={closeFlowOpen}
+        onOpenChange={setCloseFlowOpen}
+        todayLabel={todayLabel}
+      />
     </div>
   )
 }

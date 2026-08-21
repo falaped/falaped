@@ -1,5 +1,8 @@
 import { notFound, redirect } from "next/navigation"
+import { format } from "date-fns"
+import { tz } from "@date-fns/tz"
 
+import { CLINIC_TIME_ZONE } from "@/lib/clinic-timezone"
 import { createClient } from "@/lib/supabase/server"
 import { getAuthenticatedUser } from "@/modules/supabase/get-authenticated-user"
 import { getCaseById } from "@/modules/cases/get-case-by-id"
@@ -46,6 +49,12 @@ export async function CaseDetailContent({ id }: { id: string }) {
   if (!caseDetail) {
     notFound()
   }
+
+  // Hoje no fuso da CLÍNICA, derivado aqui e descido como prop até o campo
+  // `Recebido em`. Um componente cliente num host em UTC derivaria o dia SEGUINTE
+  // depois das 21h de Brasília, e o lançamento cairia no bucket errado — em silêncio,
+  // sem erro de tipo e sem falha de build. Mesma derivação de app/dashboard/earnings/page.tsx.
+  const todayLabel = format(new Date(), "dd/MM/yyyy", { in: tz(CLINIC_TIME_ZONE) })
 
   // Signed URL singular resolvida server-side para o avatar do cabeçalho do caso
   // (helper SINGULAR — não o de lote). Null cai para iniciais (Pitfall 1).
@@ -99,7 +108,7 @@ export async function CaseDetailContent({ id }: { id: string }) {
 
   return (
     <div className={caseDetailMainStackClassName}>
-      <CaseDetailHeader detail={caseDetail} />
+      <CaseDetailHeader detail={caseDetail} todayLabel={todayLabel} />
       <CasePatientBlock patient={caseDetail.patient} photoUrl={casePhotoUrl} />
       <Separator />
       <CaseDetailCommandStrip

@@ -23,12 +23,18 @@ type CaseDetailActionsProps = {
   status: "active" | "closed"
   /** Vertical stack for popover / narrow menus. */
   layout?: "inline" | "menu"
+  /**
+   * Abre o fluxo de encerramento, que vive FORA deste componente: o diálogo é irmão do
+   * popover, porque `PopoverContent` desmonta ao fechar e levaria o form com ele.
+   */
+  onRequestCloseCase?: () => void
 }
 
 export function CaseDetailActions({
   caseId,
   status,
   layout = "inline",
+  onRequestCloseCase,
 }: CaseDetailActionsProps) {
   const router = useRouter()
   const [isPendingStatus, startTransitionStatus] = useTransition()
@@ -36,12 +42,6 @@ export function CaseDetailActions({
   const [reopenOpen, setReopenOpen] = useState(false)
   const [deleteOpen, setDeleteOpen] = useState(false)
   const [deleteError, setDeleteError] = useState<string | null>(null)
-
-  function handleCloseCase() {
-    startTransitionStatus(async () => {
-      await updateCaseStatusAction(caseId, "closed")
-    })
-  }
 
   function handleReopenCase() {
     startTransitionStatus(async () => {
@@ -72,33 +72,16 @@ export function CaseDetailActions({
       )}
     >
       {status === "active" ? (
-        <AlertDialog>
-          <AlertDialogTrigger asChild>
-            <Button
-              variant="outline"
-              size="sm"
-              className={cn("gap-2", menu && "w-full justify-start")}
-              disabled={isPendingStatus}
-            >
-              <LockIcon className="h-4 w-4" />
-              Encerrar caso
-            </Button>
-          </AlertDialogTrigger>
-          <AlertDialogContent>
-            <AlertDialogHeader>
-              <AlertDialogTitle>Encerrar caso?</AlertDialogTitle>
-              <AlertDialogDescription>
-                O caso será marcado como encerrado. Você poderá reabri-lo depois.
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel>Cancelar</AlertDialogCancel>
-              <AlertDialogAction onClick={handleCloseCase}>
-                Encerrar
-              </AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
+        <Button
+          variant="outline"
+          size="sm"
+          className={cn("gap-2", menu && "w-full justify-start")}
+          disabled={isPendingStatus}
+          onClick={onRequestCloseCase}
+        >
+          <LockIcon className="h-4 w-4" />
+          Encerrar caso
+        </Button>
       ) : (
         <AlertDialog open={reopenOpen} onOpenChange={setReopenOpen}>
           <AlertDialogTrigger asChild>

@@ -40,9 +40,11 @@ function getCaseTitle(detail: CaseDetail): string {
 
 type CaseDetailHeaderProps = {
   detail: CaseDetail
+  /** Hoje no fuso da clínica, formatado no RSC — o cliente nunca deriva datas. */
+  todayLabel: string
 }
 
-export function CaseDetailHeader({ detail }: CaseDetailHeaderProps) {
+export function CaseDetailHeader({ detail, todayLabel }: CaseDetailHeaderProps) {
   const title = getCaseTitle(detail)
 
   const patient = detail.patient
@@ -125,7 +127,11 @@ export function CaseDetailHeader({ detail }: CaseDetailHeaderProps) {
             ) : null}
           </div>
         </div>
-        <CaseDetailHeaderToolbar caseId={detail.id} status={detail.status} />
+        <CaseDetailHeaderToolbar
+          caseId={detail.id}
+          status={detail.status}
+          todayLabel={todayLabel}
+        />
       </div>
 
       {(detail.awaiting_patient_choice || detail.awaiting_intent) && (
