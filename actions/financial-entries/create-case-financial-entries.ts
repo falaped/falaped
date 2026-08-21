@@ -9,6 +9,7 @@ import {
 } from "@/lib/schemas/financial-entry"
 import { getAuthenticatedUser } from "@/modules/supabase/get-authenticated-user"
 import { findOwnedCaseId } from "@/modules/cases/find-owned-case-id"
+import { countNonVoidedEntriesForCase } from "@/modules/financial-entries/count-non-voided-entries-for-case"
 import {
   createFinancialEntries,
   type NewFinancialEntryRow,
@@ -23,8 +24,9 @@ export type CreateCaseFinancialEntriesResult =
  * Grava os lançamentos do encerramento de um caso (EARN-01, D-07): 1 linha da consulta +
  * 1 por procedimento marcado, num ÚNICO insert.
  *
- * Ordem obrigatória: gate de assinatura → validação Zod → posse do caso → posse e rótulo
- * dos procedimentos → montagem → descarte das linhas de valor zero → insert.
+ * Ordem obrigatória: gate de assinatura → validação Zod → posse do caso → guarda D-10
+ * (caso já faturado) → posse e rótulo dos procedimentos → montagem → descarte das linhas
+ * de valor zero → insert.
  */
 export async function createCaseFinancialEntriesAction(
   data: CaseFinancialEntriesFormValues,
@@ -51,6 +53,21 @@ export async function createCaseFinancialEntriesAction(
     // (T-10-23). Mensagem neutra única para caso inexistente e caso alheio (T-10-24).
     const ownedCaseId = await findOwnedCaseId(supabase, caseId, profile.id)
     if (!ownedCaseId) return { ok: false, error: "Caso inválido para este perfil." }
+
+    // (1-bis) Guarda D-10 no caminho de ESCRITA. O `ask: false` de
+    // prepareCaseEarningsAction é conselho de UI e não protege nada: um duplo clique
+    // (o `isSaving` do diálogo só vale depois do re-render), uma aba velha ou um
+    // Server Action reexecutado chegam aqui sem passar pelo prepare e lançariam a
+    // consulta + todos os procedimentos DE NOVO — numa tabela sem policy de DELETE
+    // (D-19), onde desfazer é anular linha por linha, para sempre.
+    const alreadyBilled = await countNonVoidedEntriesForCase(
+      supabase,
+      profile.id,
+      ownedCaseId,
+    )
+    if (alreadyBilled > 0) {
+      return { ok: false, error: "Este caso já tem lançamentos." }
+    }
 
     // (2) Posse e RÓTULO dos procedimentos: o `description` sai do catálogo do próprio
     // perfil, no servidor, nunca de um texto do cliente (T-10-25). Um id fora do
