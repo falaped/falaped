@@ -845,30 +845,80 @@ no jargon ("estorno", "livro-caixa", "DRE" never appear on screen — the doctor
 
 ## UI Considerations
 
-Applicable state considerations resolved: **11 covered, 3 backstop, 0 unresolved**
+Produced by the `ui-consideration-probe` engine at ui-phase step 9.5, after checker approval.
+Element kinds were confirmed with the user, not taken from the heuristic alone: **S3** was
+re-run as `form` + `list-collection` (the prose tripped only the form cue, missing the scrolling
+procedure list) and **S7** was re-run as `static-content` + `interactive-control` +
+`list-collection` (it came back `unclassified`). Those two overrides raised 10 further
+considerations that a single-cue classification would have silently dropped.
 
-| Category | Element(s) | Status | Resolution / Reason |
-|----------|------------|--------|---------------------|
-| empty | S1 entry list + chart (period has no entries) | ✅ covered | The whole of Band B's body is replaced by the dashed empty-state block using the `Nenhum lançamento neste período.` row from the Copywriting Contract; the chart is **not** rendered (an axis with no bars reads as broken); Band A cards still render their today-relative figures |
-| empty | S1 with "mostrar anulados" on and nothing voided | ✅ covered | Renders the `Nenhum lançamento anulado neste período.` row from the Copywriting Contract, no CTA |
-| empty | S5 procedure catalog (zero items) | ✅ covered | Renders the `Nenhum procedimento cadastrado.` row from the Copywriting Contract inside the list border; the add row stays visible so the empty state is self-resolving |
-| empty | S3 closing dialog with zero catalog items | ✅ covered | The `Procedimentos realizados` block renders the S3 empty row plus a `Link` to Perfil; the consultation field alone still submits |
-| empty | S1 average with `attendances === 0` | ✅ covered | Value renders `—` (not `R$ 0,00`) with the `Nenhum atendimento cobrado no período.` sub-line from the Copywriting Contract |
-| empty | S5 `consultation_price_cents` is `NULL` | ✅ covered | Field opens empty (placeholder only) with the "Defina o valor da consulta em Perfil" hint + `Link`; nothing pre-fills, nothing defaults to zero |
-| empty | S4 case with no entries | ✅ covered | The "Ganhos deste atendimento" Card is not rendered at all — no empty state for a case that was never billed |
-| loading | S1 page (RSC) | ✅ covered | `app/dashboard/earnings/loading.tsx` with `Skeleton` blocks matching the two-band layout (3 card skeletons + one framed block), mirroring `components/dashboard/profile/profile-loading.tsx` |
-| loading | S2/S3/S5 submits | ✅ covered | Primary button `disabled` + label swaps to `Salvando…` / `Adicionando…` / `Excluindo…` (repo pattern); `useTransition` pending state, never a full-screen blocker |
-| error | every field in every form | ✅ covered | `FieldError` under the field, `text-destructive text-sm`; exact strings in the currency-contract error table |
-| error | server action failure | ✅ covered | `toast.error(getFriendlyToastMessage(result.error))`; on S3 step 1 failure the dialog closes and step 2 is never entered — the case is simply not closed |
-| overflow | S3 procedure list with many catalog items | 🧪 backstop | `max-h-56 overflow-y-auto` on the list and `max-h-[85vh] overflow-y-auto sm:max-w-lg` on `AlertDialogContent`; the footer must stay reachable with ~20 catalog items. Verified in the S3 visual checkpoint |
-| long-text | S1 `Descrição` cell (long avulso text or long procedure name) | 🧪 backstop | Cell `truncate max-w-[28ch]` with a `Tooltip` carrying the full string; the `Valor` column must never be pushed off-screen. Verified visually |
-| overflow | large amounts in Band A/B cards and the chart Y axis | 🧪 backstop | No abbreviation by contract (SC-3): `text-2xl tabular-nums` at `sm:grid-cols-3`, chart `YAxis width={88}`. A six-figure month (`R$ 145.320,00`) must not wrap mid-number or clip the axis. Verified visually |
-| zero-one-many | average denominator, entry counts, delete warning | ✅ covered | Explicit singular/plural strings for all three: `1 atendimento` / `N atendimentos`; `1 lançamento financeiro será apagado.` / `N lançamentos financeiros serão apagados.`; `Excluir caso e 1 lançamento` / `Excluir caso e N lançamentos` |
-| partial | S1 navigated period ≠ current month | ✅ covered | The four dual-scope mechanisms (worded headings, per-card concrete sub-lines, single-Card containment, `Sempre o mês atual` badge) — Band A never changes, Band B always does |
-| populated | voided entries shown | ✅ covered | `text-muted-foreground line-through` + `Badge variant="secondary">Anulado`, no void button on the row, and they never enter the cards/average/chart (filtered in SQL, never in a component) |
+**53 applicable — 32 covered, 11 backstop, 10 dismissed, 0 unresolved.**
 
----
+`covered` = a concrete criterion below. `backstop` = verified by the visual checkpoint, not by
+typecheck — at verify time a backstop with no wired evidence routes to `human_needed`, never a
+silent pass. `dismissed` carries its reason. Empty/error **copy** lives in
+`## Copywriting Contract`; rows here reference it rather than restating it.
 
+| Surface | Category | Status | Resolution / Reason |
+|---------|----------|--------|---------------------|
+| S1 | empty | ✅ covered | Zero lançamentos no período: o corpo da Faixa B é substituído pelo bloco tracejado (`Nenhum lançamento neste período.` — ver Copywriting Contract); o gráfico **não** é renderizado (eixo sem barras lê como quebrado); os cards da Faixa A continuam mostrando os valores relativos a hoje. |
+| S1 | loading | ✅ covered | `app/dashboard/earnings/loading.tsx` com `Skeleton` espelhando as duas faixas (3 skeletons de card + 1 bloco emoldurado), no molde de `components/dashboard/profile/profile-loading.tsx`. |
+| S1 | error | ✅ covered | Falha de action → `toast.error(getFriendlyToastMessage(result.error))`. A RSC não renderiza estado de erro parcial. |
+| S1 | populated | ✅ covered | Anulados renderizam `text-muted-foreground line-through` + `Badge variant="secondary">Anulado`, sem botão de anular na linha, e **nunca** entram em cards/média/gráfico (filtrados no SQL, jamais no componente). |
+| S1 | partial | ✅ covered | Período navegado ≠ mês atual: os quatro mecanismos de escopo duplo (títulos redigidos, sub-linha concreta por card, contenção num `Card` único cujo header é o navegador, badge `Sempre o mês atual`). Faixa A nunca muda; Faixa B sempre muda. |
+| S1 | overflow | 🧪 backstop | Valor de seis dígitos (`R$ 145.320,00`) não pode quebrar no meio do número nem cortar o eixo: `text-2xl tabular-nums` em `sm:grid-cols-3`, `YAxis width={88}`, sem abreviação por contrato (SC-3). |
+| S1 | zero-one-many | ✅ covered | Plural explícito no denominador da média: `1 atendimento` / `N atendimentos`. Com `attendances === 0` o valor renderiza `—`, nunca `R$ 0,00`. |
+| S1 | long-text | 🧪 backstop | Célula `Descrição` com `truncate max-w-[28ch]` + `Tooltip` com a string completa; a coluna `Valor` não pode ser empurrada para fora da tela. |
+| S2 | empty | ✅ covered | Abre com campos vazios, `Recebido em` pré-preenchido com hoje, forma de pagamento sem default (D-12). Primário `disabled` até o form validar. |
+| S2 | loading | ✅ covered | Primário `disabled` + label vira `Salvando…` sob `useTransition`; nunca bloqueio de tela inteira. |
+| S2 | error | ✅ covered | `FieldError` sob o campo (`text-destructive text-sm`) com as strings exatas da tabela de erros do contrato de moeda; falha de servidor → `toast.error`. |
+| S2 | partial | ✅ covered | Form parcialmente preenchido + Esc ou clique-fora: `onEscapeKeyDown` / `onPointerDownOutside` com `preventDefault` enquanto `dirty` — os dados digitados sobrevivem. |
+| S2 | overflow | ⊘ dismissed | Diálogo de quatro campos com altura efetivamente fixa: não há coleção nem conteúdo variável que possa transbordar, e `Dialog` do shadcn já traz o `max-h` do primitivo. |
+| S2 | long-text | 🧪 backstop | Descrição livre longa: o `Input` faz scroll horizontal nativo, mas o rótulo e o `FieldError` não podem ser deslocados. |
+| S3 | empty | ✅ covered | Catálogo vazio: o bloco `Procedimentos realizados` renderiza a linha vazia + `Link` para o Perfil; o campo de consulta sozinho ainda submete. |
+| S3 | loading | ✅ covered | Etapa 1 commita `updateCaseStatusAction`; etapa 2 tem primário `disabled` + `Salvando…`. Falha na etapa 1 fecha o diálogo e a etapa 2 nunca é atingida — o caso simplesmente não é encerrado. |
+| S3 | error | ✅ covered | `FieldError` por campo; falha de servidor → `toast.error`. A etapa de lançamento **não pode** bloquear nem reverter o encerramento: duas chamadas sequenciais, e nada no fluxo chama `"active"`. |
+| S3 | populated | ✅ covered | Valor divergente do catálogo exibe `Ajustado — catálogo: …` em muted; o marcador é **ausente** quando o pré-preenchimento veio `NULL`. |
+| S3 | partial | ✅ covered | Esc com form sujo preserva os dados digitados (item enumerado do checkpoint S3). Abandonar a etapa 2 é exatamente cortesia (D-09) — o caso já está encerrado. |
+| S3 | overflow | 🧪 backstop | ~20 itens de catálogo: `max-h-56 overflow-y-auto` na lista e `max-h-[85vh] overflow-y-auto sm:max-w-lg` no `AlertDialogContent`; o rodapé (`Sem cobrança` + primário) tem de continuar alcançável. |
+| S3 | zero-one-many | 🧪 backstop | Um procedimento selecionado vs vários: o bloco não pode mudar de layout entre 1 e N linhas, e o resumo de total precisa concordar em número. |
+| S3 | long-text | 🧪 backstop | Nome de procedimento longo na linha com checkbox + preço editável: o campo de preço não pode ser empurrado para fora da linha. |
+| S4 | empty | ✅ covered | Caso sem lançamento: o `Card` "Ganhos deste atendimento" **não é renderizado** — não existe empty state para um caso que nunca foi faturado. |
+| S4 | loading | ✅ covered | Anulação sob `useTransition` com a linha em estado pendente; em seguida o toast com `Desfazer` (`duration: 8000` — desvio declarado de D-22, ver o quadro no contrato do toast). |
+| S4 | error | ✅ covered | Falha da anulação → `toast.error`; a linha volta ao estado anterior. |
+| S4 | populated | ✅ covered | Linhas anuladas `line-through` + `Badge Anulado`, sem botão de anular. |
+| S4 | partial | ⊘ dismissed | O `Card` é todo-ou-nada — existe com ≥1 lançamento, não existe com zero. Não há recorte parcial possível do conjunto. |
+| S4 | overflow | 🧪 backstop | Caso com muitos lançamentos (consulta + vários procedimentos, mais re-lançamentos após anulação): o `Card` não pode crescer sem limite dentro da página de detalhe do caso. |
+| S4 | zero-one-many | ✅ covered | Plural explícito: `1 lançamento` / `N lançamentos`. |
+| S5 | empty | ✅ covered | Catálogo vazio: `Nenhum procedimento cadastrado.` dentro da borda da lista, com a linha de adicionar ainda visível (empty state auto-resolvível). `consultation_price_cents` `NULL`: campo abre vazio com placeholder + hint e `Link` — nada pré-preenche, nada faz default para zero. |
+| S5 | loading | ✅ covered | Submit com primário `disabled` + `Adicionando…` / `Salvando procedimento`. |
+| S5 | error | ✅ covered | `FieldError` por campo, com as strings do contrato de moeda. |
+| S5 | populated | ✅ covered | Lista com borda; linha editável no lugar com `Salvar procedimento` / `Descartar edição`; remoção atrás de `AlertDialog` cuja cópia tranquiliza que o snapshot protege o histórico. |
+| S5 | partial | ✅ covered | Edição no lugar aberta em uma linha enquanto as outras seguem em repouso; `Descartar edição` existe justamente porque toque não tem tecla Esc. |
+| S5 | overflow | 🧪 backstop | Catálogo com muitos procedimentos dentro do `Card` do Perfil: decidir no checkpoint se precisa de cap de altura com scroll. |
+| S5 | zero-one-many | 🧪 backstop | Contagem de procedimentos onde ela aparecer precisa concordar em número (`1 procedimento` / `N procedimentos`). |
+| S5 | long-text | 🧪 backstop | Nome de procedimento longo, na lista e na linha em edição: preço e botões não podem ser empurrados para fora. |
+| S6 | empty | ⊘ dismissed | Grupo hardcoded com exatamente um item (`Ganhos`) — não há coleção que possa vir vazia. |
+| S6 | loading | ⊘ dismissed | Parte do shell do sidebar; sem busca assíncrona. |
+| S6 | error | ⊘ dismissed | Sem fetch de dados, portanto sem estado de erro. |
+| S6 | populated | ✅ covered | Item `Ganhos` com ícone de carteira do `lucide-react`, `isActive` quando a rota casa `/dashboard/earnings`. O grupo `Agenda` **não** é reintroduzido (removido em `4475d4d`), e nenhum `CalendarIcon` entra aqui. |
+| S6 | partial | ⊘ dismissed | Grupo estático — não existe estado parcial. |
+| S6 | overflow | ⊘ dismissed | Rótulo de uma palavra num sidebar que já acomoda rótulos mais longos. |
+| S6 | zero-one-many | ⊘ dismissed | Contagem fixa de um item, travada por D-18. |
+| S6 | long-text | ⊘ dismissed | Rótulo fixo `Ganhos` — não vem de dado do usuário. |
+| S7 | empty | ✅ covered | Caso sem lançamento não-anulado: o `AlertDialog` mantém a cópia original de exclusão, **sem** o bloco de aviso financeiro. |
+| S7 | loading | ✅ covered | Confirmação com primário `disabled` + `Excluindo…`. |
+| S7 | error | ✅ covered | Falha → `toast.error`; o diálogo permanece aberto para nova tentativa. |
+| S7 | populated | ✅ covered | Com lançamentos não-anulados, o corpo informa a contagem e o valor total que serão apagados junto, e o botão repete a contagem (`Excluir caso e N lançamentos`). |
+| S7 | partial | ✅ covered | **Lacuna fechada pelo probe (nova exigência, não estava no spec):** se a contagem/soma de lançamentos do caso não puder ser carregada, o diálogo **bloqueia a exclusão** e mostra `Não foi possível verificar os lançamentos deste caso. Tente novamente.` — jamais prossegue sem aviso. Com `on delete cascade` (D-26), prosseguir sem a contagem apagaria dinheiro silenciosamente, e este aviso é a única barreira restante. |
+| S7 | overflow | 🧪 backstop | Valor total grande no aviso (`R$ 145.320,00`) dentro do corpo estreito do `AlertDialog`, sem abreviação por contrato. |
+| S7 | zero-one-many | ✅ covered | `1 lançamento financeiro será apagado.` / `N lançamentos financeiros serão apagados.`, e `Excluir caso e 1 lançamento` / `Excluir caso e N lançamentos`. |
+| S7 | long-text | ⊘ dismissed | A cópia do aviso é fixa; as únicas partes variáveis são contagem e valor, ambas numéricas. |
+
+**Planner lift rule:** every `covered` row becomes a `must_haves.truths` string; every
+`backstop` row becomes `{ statement, verification: backstop }`; `dismissed` rows are not
+lifted but must not be re-opened without a reason. The S3 `checkpoint:human-verify`
+**[BLOCKING]** covers the S1/S3/S5 backstops that share its surface.
 ## Registry Safety
 
 | Registry | Blocks Used | Safety Gate |
