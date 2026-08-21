@@ -38,7 +38,16 @@ export async function deleteCase(
     .select("id")
     .single()
 
-  if (deleteCaseError) throw new Error(`[CASES] Failed to delete case: ${deleteCaseError.message}`)
+  if (deleteCaseError) {
+    // `financial_entries.case_id` é `on delete restrict` (D-26 revisada): um caso que
+    // tem lançamento — ANULADO OU NÃO, a FK não olha para `voided_at` — não pode ser
+    // apagado. O Postgres devolve 23503 (foreign_key_violation); o sentinela deixa o
+    // action montar a mensagem PT-BR em vez de vazar o erro cru do banco para o médico.
+    if (deleteCaseError.code === "23503") {
+      throw new Error("[CASES] CASE_HAS_FINANCIAL_ENTRIES")
+    }
+    throw new Error(`[CASES] Failed to delete case: ${deleteCaseError.message}`)
+  }
 
   const { error: deleteWebhookError } = await supabase
     .from("incoming_webhook_events")
