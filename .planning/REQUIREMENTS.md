@@ -34,10 +34,10 @@ Cada requisito mapeia para exatamente uma fase do roadmap.
 
 ### Ganhos (EARN)
 
-- [ ] **EARN-01**: O médico registra o valor recebido por uma consulta (em R$, guardado em centavos inteiros), ligado ao agendamento
+- [ ] **EARN-01**: O médico registra o valor recebido por um atendimento (em R$, guardado em centavos inteiros), ligado ao **caso encerrado** (`cases.id`) — não ao agendamento _(emendado 2026-08-21 pela discussão da Phase 10, DV-1)_
 - [ ] **EARN-02**: O médico registra lançamentos financeiros avulsos, não ligados a uma consulta
 - [ ] **EARN-03**: O médico vê um painel de ganhos com totais por dia, semana e mês (agregação em SQL, buckets pela data local da clínica)
-- [ ] **EARN-04**: O painel mostra o valor médio por consulta, calculado como total ÷ número de lançamentos do período (lançamentos avulsos incluídos no denominador), com arredondamento único
+- [ ] **EARN-04**: O painel mostra o valor médio por atendimento, calculado como total ÷ (**casos distintos** com lançamento não-anulado + avulsos não-anulados) no período, com arredondamento único _(emendado 2026-08-21 pela discussão da Phase 10, DV-2 — um atendimento com N procedimentos conta 1 no denominador)_
 - [ ] **EARN-05**: O médico anula/estorna um lançamento sem apagá-lo (totais auditáveis); leitura/escrita/anulação escopadas por `profile_id` + gate `paid`
 
 ## Deferred (carry-over do ciclo v1.0)
