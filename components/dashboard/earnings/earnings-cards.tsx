@@ -18,6 +18,18 @@ type EarningsCardsProps = {
   periodLabel: string
   /** Falso quando o período navegado não é o mês atual: aí a Faixa A ganha o badge de deriva. */
   isCurrentPeriod: boolean
+  /**
+   * Header da Faixa B — o navegador de período e o filtro de anulados (10-05). Ausente,
+   * cai no rótulo inline com que a faixa nasceu.
+   */
+  periodHeader?: React.ReactNode
+  /**
+   * Quando vem, SUBSTITUI o corpo inteiro da Faixa B: total, média, gráfico e tabela. O
+   * header fica, porque é por ele que se navega para fora de um período vazio.
+   */
+  emptyState?: React.ReactNode
+  /** Gráfico e tabela do período, dentro do mesmo Card, abaixo das duas métricas. */
+  children?: React.ReactNode
 }
 
 const AVERAGE_TOOLTIP =
@@ -39,6 +51,9 @@ export function EarningsCards({
   monthLabel,
   periodLabel,
   isCurrentPeriod,
+  periodHeader,
+  emptyState,
+  children,
 }: EarningsCardsProps) {
   const hasAttendances = summary.attendances > 0
 
@@ -90,11 +105,17 @@ export function EarningsCards({
 
       <Card>
         <CardHeader className="border-b">
-          <div className="flex flex-wrap items-center gap-2">
-            <h2 className="text-sm font-medium text-muted-foreground">Período</h2>
-            <span className="text-sm font-medium text-foreground">{periodLabel}</span>
-          </div>
+          {periodHeader ?? (
+            <div className="flex flex-wrap items-center gap-2">
+              <h2 className="text-sm font-medium text-muted-foreground">Período</h2>
+              <span className="text-sm font-medium text-foreground">{periodLabel}</span>
+            </div>
+          )}
         </CardHeader>
+        {emptyState ? (
+          <CardContent>{emptyState}</CardContent>
+        ) : (
+          <>
         <CardContent className="grid gap-4 sm:grid-cols-2">
           <div>
             <p className="text-xs uppercase tracking-wide text-muted-foreground">
@@ -128,6 +149,9 @@ export function EarningsCards({
             </p>
           </div>
         </CardContent>
+        {children}
+          </>
+        )}
       </Card>
     </div>
   )

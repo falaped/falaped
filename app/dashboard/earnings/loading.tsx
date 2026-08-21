@@ -34,7 +34,10 @@ export default function EarningsLoading() {
 
         <Card>
           <CardHeader className="border-b">
-            <Skeleton className="h-4 w-48" />
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <Skeleton className="h-7 w-64" />
+              <Skeleton className="h-4 w-36" />
+            </div>
           </CardHeader>
           <CardContent className="grid gap-4 sm:grid-cols-2">
             {[1, 2].map((i) => (
@@ -45,6 +48,14 @@ export default function EarningsLoading() {
               </div>
             ))}
           </CardContent>
+          <div className="px-4 py-4 border-b border-border">
+            <Skeleton className="h-[240px] w-full" />
+          </div>
+          <div className="space-y-3 px-4">
+            {[1, 2, 3, 4].map((i) => (
+              <Skeleton key={i} className="h-6 w-full" />
+            ))}
+          </div>
         </Card>
       </div>
     </div>
