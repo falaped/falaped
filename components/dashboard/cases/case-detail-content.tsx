@@ -15,6 +15,7 @@ import { formatDashboardChatContextSummaryForDisplay } from "@/modules/dashboard
 import { getMedicalCertificatesByCaseId } from "@/modules/medical-certificates/get-medical-certificates-by-case-id"
 import { getPrescriptionsByCaseId } from "@/modules/prescriptions/get-prescriptions-by-case-id"
 import { getCaseEarningsTotals } from "@/modules/financial-entries/get-case-earnings-totals"
+import { listFinancialEntries } from "@/modules/financial-entries/list-financial-entries"
 import { Separator } from "@/components/ui/separator"
 import { CaseDetailCommandStrip } from "@/components/dashboard/cases/case-detail-command-strip"
 import { CaseDetailHeader } from "@/components/dashboard/cases/case-detail-header"
@@ -22,6 +23,7 @@ import { CaseDetailQuickActions } from "@/components/dashboard/cases/case-detail
 import { CaseDetailDocuments } from "@/components/dashboard/cases/case-detail-documents"
 import { CasePatientBlock } from "@/components/dashboard/cases/case-patient-block"
 import { CaseDetailStateCard } from "@/components/dashboard/cases/case-detail-state-card"
+import { CaseEarningsCard } from "@/components/dashboard/cases/case-earnings-card"
 import { caseDetailMainStackClassName } from "@/components/dashboard/cases/case-detail-workspace"
 import { CaseReport } from "@/components/dashboard/cases/case-report"
 import { ConsultationTimerWidget } from "@/components/dashboard/cases/consultation-timer-widget"
@@ -38,6 +40,7 @@ export async function CaseDetailContent({ id }: { id: string }) {
     caseCertificates,
     casePrescriptions,
     earningsTotals,
+    caseEntries,
   ] = await Promise.all([
     getCaseById(supabase, id, profile.id),
     profile.report_template_id
@@ -49,6 +52,12 @@ export async function CaseDetailContent({ id }: { id: string }) {
     // `null` em falha, nunca throw: `null` é o que faz o diálogo de exclusão BLOQUEAR
     // (S7 partial), e derrubar a página inteira por causa de uma contagem seria pior.
     getCaseEarningsTotals(supabase, profile.id, id).catch(() => null),
+    // Aqui os anulados VÊM: o card do caso os mostra riscados, sem filtro próprio. Em
+    // falha, lista vazia — o card simplesmente não renderiza, sem derrubar a página.
+    listFinancialEntries(supabase, profile.id, {
+      caseId: id,
+      includeVoided: true,
+    }).catch(() => []),
   ])
 
   if (!caseDetail) {
@@ -145,6 +154,13 @@ export async function CaseDetailContent({ id }: { id: string }) {
           contextSummaryDisplay={contextSummaryDisplay}
           clinicalSummaryDisplayUnavailable={clinicalSummaryDisplayUnavailable}
         />
+        {caseEntries.length > 0 && earningsTotals != null ? (
+          <CaseEarningsCard
+            entries={caseEntries}
+            count={earningsTotals.count}
+            totalCents={earningsTotals.totalCents}
+          />
+        ) : null}
         {reportBlock}
         <CaseDetailDocuments
           certificates={caseCertificates}

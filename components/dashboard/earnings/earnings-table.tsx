@@ -40,7 +40,14 @@ function toDayMonth(receivedOn: string): string {
  * Nenhuma afordância de edição existe em nenhuma linha (D-19): sem lápis, sem duplo clique,
  * sem edição no lugar, sem menu de contexto. Corrigir um valor é anular e lançar de novo.
  */
-export function EarningsTable({ entries }: { entries: FinancialEntryListRow[] }) {
+export function EarningsTable({
+  entries,
+  hideCaseLink = false,
+}: {
+  entries: FinancialEntryListRow[]
+  /** Dentro da página do próprio caso o link para o caso seria um link para a tela atual. */
+  hideCaseLink?: boolean
+}) {
   return (
     <Table>
       <TableHeader>
@@ -78,7 +85,7 @@ export function EarningsTable({ entries }: { entries: FinancialEntryListRow[] })
                     </Tooltip>
                   </TooltipProvider>
                   <div className="flex items-center gap-2">
-                    {entry.case_id && entry.case_label ? (
+                    {!hideCaseLink && entry.case_id && entry.case_label ? (
                       <Link
                         href={`/dashboard/cases/${entry.case_id}`}
                         className="truncate max-w-[28ch] text-xs text-muted-foreground hover:underline"
