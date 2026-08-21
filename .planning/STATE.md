@@ -5,8 +5,8 @@ milestone_name: Agenda & Ganhos
 current_phase: 8
 current_phase_name: FUNDAÇÃO DE SEGURANÇA — construir e testar em isolamento, UI mínima
 status: planning
-stopped_at: Phase 7 UI-SPEC approved
-last_updated: "2026-08-20T23:23:59.922Z"
+stopped_at: Phase 10 context gathered
+last_updated: "2026-08-21T11:04:22.993Z"
 last_activity: 2026-07-25
 last_activity_desc: Phase 07 complete, transitioned to Phase 8
 progress:
@@ -139,7 +139,7 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-07-23T03:14:40.819Z
-Stopped at: Phase 7 UI-SPEC approved
-Resume file: .planning/phases/07-consultas-ciclo-de-status/07-UI-SPEC.md
+Last session: 2026-08-21T11:04:22.948Z
+Stopped at: Phase 10 context gathered
+Resume file: .planning/phases/10-livro-caixa-de-ganhos-painel/10-CONTEXT.md
 Next: executar 06-02-PLAN.md (expandAvailability puro + suite .spec)
