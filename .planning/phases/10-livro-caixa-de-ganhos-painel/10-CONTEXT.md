@@ -74,6 +74,11 @@ O médico cadastra seus preços no perfil (valor da consulta + catálogo de proc
 - **D-24:** Três camadas `app/ → actions/ → modules/`, uma fn por arquivo em `modules/`, `SupabaseClient` injetado, error tag `[EARNINGS]` (ou tag do domínio), Zod `safeParse` no boundary, result union no action. Strings de UI em PT-BR.
 - **D-25:** Fuso **America/Sao_Paulo** (`lib/clinic-timezone.ts`), semana começando na segunda — herdado das fases 6/7.
 
+### Exclusão do caso âncora (decidido 2026-08-21, pós-research)
+- **D-26:** A FK `case_id` usa **`on delete cascade`** — excluir um caso apaga os lançamentos gerados por ele. Escolhido pelo usuário sobre `restrict` e `set null`. — **Reversibility:** one-way — dado apagado não volta.
+  - **Consequência aceita, que a verificação DEVE cobrir:** contraria a letra de D-19 ("`delete` nunca"). `actions/cases/delete-case.ts` passa a ser um caminho que destrói trilha de auditoria financeira, e o total/média de um período já fechado pode **mudar depois** se um caso antigo for excluído. Nenhum erro `23503` a traduzir (é o custo que `cascade` evita).
+  - **Mitigação mínima esperada no plano:** o `AlertDialog` de "Excluir caso" deve avisar em PT-BR quando o caso tem lançamento não-anulado, dizendo quantos lançamentos e qual valor serão apagados junto. O aviso é a única barreira restante — a constraint não protege mais.
+
 ### Claude's Discretion
 - **Onde nasce o avulso** (usuário respondeu "você decide"): botão **"Novo lançamento" na página de Ganhos**, e só ali — o avulso não tem horário, não faz sentido na agenda.
 - Nomes exatos de tabelas/colunas (`earnings`? `earning_entries`? `procedure_catalog_items`?) e forma da forma-de-pagamento (pg enum vs text+CHECK — o repo usa ambos; enum é o padrão recente).
