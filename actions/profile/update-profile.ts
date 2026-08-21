@@ -31,7 +31,11 @@ export async function updateProfileAction(
 ): Promise<UpdateProfileResult> {
   const supabase = await createClient()
   const { profile } = await getAuthenticatedUser(supabase)
-  if (!profile) return { ok: false, error: "Sessão não encontrada." }
+  // `!profile` nunca dispara: getAuthenticatedUser devolve `{}` (truthy) sem sessão.
+  // Aqui isso importa mais que nos irmãos porque esta action NÃO tem gate `paid` —
+  // por decisão (um perfil sem assinatura precisa poder ser completado) — então não
+  // existe a segunda checagem que salva os outros call sites (WR-08).
+  if (!profile?.id) return { ok: false, error: "Sessão não encontrada." }
 
   const parsed = updateProfileSchema.safeParse(data)
   if (!parsed.success) {
