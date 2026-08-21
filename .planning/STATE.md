@@ -4,15 +4,15 @@ milestone: v1.1
 milestone_name: Agenda & Ganhos
 current_phase: 8
 current_phase_name: FUNDAÇÃO DE SEGURANÇA — construir e testar em isolamento, UI mínima
-status: planning
-stopped_at: Phase 10 context gathered
-last_updated: "2026-08-21T11:04:22.993Z"
+status: executing
+stopped_at: Phase 10 UI-SPEC approved
+last_updated: "2026-08-21T16:26:52.627Z"
 last_activity: 2026-07-25
 last_activity_desc: Phase 07 complete, transitioned to Phase 8
 progress:
   total_phases: 5
   completed_phases: 2
-  total_plans: 6
+  total_plans: 11
   completed_plans: 6
   percent: 40
 ---
@@ -30,7 +30,7 @@ See: .planning/PROJECT.md (updated 2026-07-20)
 
 Phase: 8 — Assentos & Convite — Fundação de Acesso Delegado (FUNDAÇÃO DE SEGURANÇA — construir e testar em isolamento, UI mínima)
 Plan: Not started
-Status: Ready to plan
+Status: Ready to execute
 Last activity: 2026-07-25 — Phase 07 complete, transitioned to Phase 8
 
 ## Roadmap (milestone v1.1)
@@ -140,7 +140,7 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-08-21T11:04:22.948Z
-Stopped at: Phase 10 context gathered
-Resume file: .planning/phases/10-livro-caixa-de-ganhos-painel/10-CONTEXT.md
+Last session: 2026-08-21T15:05:11.411Z
+Stopped at: Phase 10 UI-SPEC approved
+Resume file: .planning/phases/10-livro-caixa-de-ganhos-painel/10-UI-SPEC.md
 Next: executar 06-02-PLAN.md (expandAvailability puro + suite .spec)

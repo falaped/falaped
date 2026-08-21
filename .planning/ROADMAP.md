@@ -103,16 +103,30 @@ Decimal phases appear between their surrounding integers in numeric order.
 
   1. O médico cadastra o valor da consulta e um catálogo de procedimentos com preço no perfil e, ao encerrar um caso, o app pergunta o que foi realizado além da consulta e grava 1 lançamento da consulta + 1 por procedimento (em R$, centavos inteiros, nunca float), ligados ao caso (`case_id`) com o preço congelado por snapshot; encerrar sem gerar lançamento (cortesia) é permitido e re-encerrar não relança.
   2. O médico registra lançamentos financeiros avulsos pela página de Ganhos, não ligados a caso nenhum (`case_id` nullable), com descrição livre obrigatória.
-  3. O médico vê um painel com totais por dia, semana e mês, agregados em SQL (date_trunc/sum) com buckets pela data local da clínica (AT TIME ZONE 'America/Sao_Paulo'), e o valor médio por atendimento = total ÷ (casos distintos com lançamento não-anulado + avulsos não-anulados) no período, com arredondamento único que reconcilia ao centavo.
+  3. O médico vê um painel com totais por dia, semana e mês, agregados em SQL (date_trunc/sum) com buckets pela **data local da clínica**, garantidos por `received_on date` — a data de recebimento é um dia de calendário escolhido pelo médico, então `date_trunc` já devolve o bucket local e nenhuma expressão `AT TIME ZONE` é necessária (sem risco de DST nem dependência do `TimeZone` da sessão) _(emendado 2026-08-21: o critério pede o resultado, não a expressão literal — ver 10-01-PLAN.md § Desvios Declarados #1)_. O valor médio por atendimento = total ÷ (casos distintos com lançamento não-anulado + avulsos não-anulados) no período, com arredondamento único que reconcilia ao centavo.
   4. O médico anula/estorna um lançamento sem apagá-lo (voided_at, não delete); totais e média filtram anulados (voided_at IS NULL) e a leitura/escrita/anulação é escopada por profile_id + gate `paid`, com teste de ownership.
 
 **Plans**: 5 plans
 
 Plans:
+**Wave 1**
+
 - [ ] 10-01-PLAN.md — Migrações: catálogo de procedimentos com preço + `profiles.consultation_price_cents` + enum de forma de pagamento + `financial_entries` (RLS âncora simples, sem policy de DELETE) + função `get_earnings_summary` (checkpoint:decision das 4 decisões one-way; checkpoint [BLOCKING] de push da migração)
+
+**Wave 2** *(blocked on Wave 1 completion)*
+
 - [ ] 10-02-PLAN.md — **TRACER** ponta-a-ponta: contrato de moeda (`parseBrlToCents` + `formatCentsToBRL` + spec), painel lendo `get_earnings_summary` (Faixas A/B), diálogo de lançamento avulso e grupo "Financeiro" no menu (checkpoint visual)
+
+**Wave 3** *(blocked on Wave 2 completion)*
+
 - [ ] 10-03-PLAN.md — Perfil: card "Preços" com valor da consulta (travessia das 5 camadas, incluindo o `.select()` hardcoded de `get-authenticated-user.ts`) + editor CRUD do catálogo de procedimentos owner-scoped (checkpoint visual)
+
+**Wave 4** *(blocked on Wave 3 completion)*
+
 - [ ] 10-04-PLAN.md — Encerramento do caso: guarda de re-encerramento + validação de posse do caso (IDOR) + insert único de consulta+N procedimentos, hoist do popover e diálogo de duas etapas, aviso destrutivo em "Excluir caso" (checkpoint visual [BLOCKING], 7 itens)
+
+**Wave 5** *(blocked on Wave 4 completion)*
+
 - [ ] 10-05-PLAN.md — Anulação com "Desfazer" (owner-scoped + specs) + resto do painel: navegação de período, filtro de anulados, gráfico diário, tabela e card de ganhos dentro do caso (checkpoint visual)
 
 **UI hint**: yes
