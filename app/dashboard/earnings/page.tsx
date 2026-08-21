@@ -8,6 +8,7 @@ import { getAuthenticatedUser } from "@/modules/supabase/get-authenticated-user"
 import { getEarningsSummary } from "@/modules/financial-entries/get-earnings-summary"
 import { CLINIC_TIME_ZONE } from "@/lib/clinic-timezone"
 import { EarningsCards } from "@/components/dashboard/earnings/earnings-cards"
+import { StandaloneEntryDialog } from "@/components/dashboard/earnings/standalone-entry-dialog"
 import { Separator } from "@/components/ui/separator"
 
 /**
@@ -67,6 +68,7 @@ export default async function EarningsPage() {
             Acompanhe o que você recebeu por atendimento.
           </p>
         </div>
+        <StandaloneEntryDialog todayLabel={todayLabel} />
       </div>
 
       <Separator />
