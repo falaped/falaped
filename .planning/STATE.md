@@ -4,17 +4,17 @@ milestone: v1.1
 milestone_name: Agenda & Ganhos
 current_phase: 10
 current_phase_name: livro-caixa-de-ganhos-painel
-status: executing
-stopped_at: Completed 10-04-PLAN.md (checkpoint visual [BLOCKING] de 21 itens PENDENTE)
-last_updated: "2026-08-21T22:07:10.424Z"
+status: verifying
+stopped_at: Completed 10-05-PLAN.md (fase 10 completa em codigo; 2 checkpoints visuais DEFERIDOS — windows 2 e 3)
+last_updated: "2026-08-21T22:52:53.529Z"
 last_activity: 2026-08-21
 last_activity_desc: Phase 10 execution started
 progress:
   total_phases: 5
-  completed_phases: 2
+  completed_phases: 3
   total_plans: 11
-  completed_plans: 10
-  percent: 40
+  completed_plans: 11
+  percent: 60
 ---
 
 # Project State
@@ -30,7 +30,7 @@ See: .planning/PROJECT.md (updated 2026-07-20)
 
 Phase: 10 (livro-caixa-de-ganhos-painel) — EXECUTING
 Plan: 5 of 5
-Status: Ready to execute
+Status: Phase complete — ready for verification
 Last activity: 2026-08-21 — Phase 10 execution started
 
 ## Roadmap (milestone v1.1)
@@ -79,6 +79,7 @@ Last activity: 2026-08-21 — Phase 10 execution started
 | Phase 10 P02 | 43min | 3 tasks + 1 checkpoint tasks | 18 files files |
 | Phase 10 P03 | 25min | 3 tasks | 23 files |
 | Phase 10 P04 | 40min | 3 tasks | 16 files |
+| Phase 10 P05 | 15min | 3 tasks + 1 checkpoint deferido tasks | 19 files files |
 
 ## Accumulated Context
 
@@ -119,6 +120,9 @@ Recent decisions affecting current work (milestone v1.1):
 - [Phase ?]: Anular NAO desbloqueia a exclusao (FK ignora voided_at) — a copia diz a verdade: faturamento fica para auditoria, anular serve para corrigir valor
 - [Phase ?]: findOwnedCaseId como modulo compartilhado: nenhum action do repo faz .from(); posse de caso reusavel em vez de 4a copia do bloco de resolucao por telefone
 - [Phase ?]: Postgres 23503 detectado no modulo (sentinela) e traduzido para PT-BR no action — codigo pg onde o erro existe, copia na camada de resultado
+- [Phase ?]: 10-05: o card de ganhos do caso REUSA EarningsTable em vez de recriar as linhas — dois criterios de aceite (grep de Anulado e VoidEntryButton dentro de case-earnings-card.tsx) ficam com 0 de proposito; VoidEntryButton tem 1 definicao e 1 call site no repo
+- [Phase ?]: 10-05: componente aprovado em checkpoint recebe SLOT, nunca reescrita — earnings-cards.tsx ganhou periodHeader/emptyState/children com o markup original como fallback, preservando o visual de 10-02
+- [Phase ?]: 10-05: datas de exibicao por fatia de string (yyyy-MM-dd -> dd/MM) e meses vizinhos resolvidos no RSC — zero construcao de data em componente cliente
 
 ### Pending Todos
 
@@ -138,6 +142,7 @@ Recent decisions affecting current work (milestone v1.1):
 - Fase 10: restrict em financial_entries.case_id cria 2 follow-ups para 10-04 — traduzir Postgres 23503 em actions/cases/delete-case.ts, e o diálogo de excluir caso passa a BLOQUEAR em vez de avisar (ver deferred-items.md)
 - [Cross-cutting] **Double-parse cliente→action: 2ª ocorrência.** O cliente roda o schema Zod e envia `parsed.data` para um action que re-parseia com o MESMO schema; qualquer transform (`"" → undefined`, string → número) reprova no segundo passe e o usuário vê só `Dados inválidos.`. Casos: `aacc896` (idade gestacional, quick `260701-ctf`) e `10-03` (`updateProfileAction`, corrigido em `b6507db`). Convenção correta: o cliente valida para feedback, mas o que **sobe é sempre o valor cru** — o action é a fonte única da verdade (padrão de `standalone-entry-dialog.tsx`). **Uma 3ª ocorrência deve receber conserto ESTRUTURAL, não outro patch pontual:** um helper de submit compartilhado ou uma regra de lint que torne o pré-parse no cliente impossível.
 - 10-04: checkpoint visual [BLOCKING] de 21 itens nao executado (human_verify_mode=end-of-phase). Itens 15/16/18 mudaram por causa do restrict: esperar BLOQUEIO com confirmar desabilitado, nao aviso com 'Excluir caso e N lancamentos'. EARN-01 nao esta verificado ate passar.
+- Fase 10: DOIS checkpoints visuais [BLOCKING] deferidos e abertos no ledger — window 2 (21 itens, 10-04: S3+S7) e window 3 (18 itens, 10-05: S1+S4). Nenhum requisito EARN pode ser considerado verificado antes da passada de UAT de fim de fase. Item 13 da window 3 (reconciliacao ao centavo) e o mais critico.
 
 ### Quick Tasks Completed
 
@@ -165,7 +170,7 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-08-21T22:07:10.072Z
-Stopped at: Completed 10-04-PLAN.md (checkpoint visual [BLOCKING] de 21 itens PENDENTE)
+Last session: 2026-08-21T22:52:40.485Z
+Stopped at: Completed 10-05-PLAN.md (fase 10 completa em codigo; 2 checkpoints visuais DEFERIDOS — windows 2 e 3)
 Resume file: None
 Next: executar 10-04-PLAN.md (diálogo de encerramento de caso — pré-preenche com consultation_price_cents + catálogo de procedimentos)

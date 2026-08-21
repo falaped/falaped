@@ -422,3 +422,9 @@ O servidor de desenvolvimento já está rodando na porta 3000 — reusar, não s
 ---
 *Phase: 10-livro-caixa-de-ganhos-painel*
 *Completed: 2026-08-21*
+
+## Self-Check: PASSED
+
+Os 12 arquivos de código criados existem em disco, mais o próprio SUMMARY. Os 5 commits existem no
+histórico (`c877af0`, `558d680`, `b3f7fd0`, `e5325ce`, `f00d99e`). Nenhum arquivo rastreado foi apagado
+por nenhum commit deste plano (`git diff --diff-filter=D` vazio nos cinco).
