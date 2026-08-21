@@ -1,7 +1,7 @@
 ---
 phase: 10
 slug: livro-caixa-de-ganhos-painel
-status: draft
+status: approved
 shadcn_initialized: true
 preset: "radix-nova / baseColor neutral / cssVariables (components.json, pre-existing)"
 created: 2026-08-21
@@ -32,8 +32,15 @@ created: 2026-08-21
 | Language | **All user-facing strings PT-BR.** DB/enum values stay English (`pix`/`cash`/`card`/`insurance`) |
 
 **No new dependency and no new shadcn block is installed in this phase.** Every primitive needed
-already lives in `components/ui/`: `alert-dialog`, `badge`, `button`, `card`, `checkbox`, `field`,
-`input`, `label`, `popover`, `separator`, `skeleton`, `sonner`, `table`, `tooltip`.
+already lives in `components/ui/`: `alert-dialog`, `badge`, `button`, `card`, `checkbox`, `dialog`,
+`field`, `input`, `label`, `popover`, `separator`, `skeleton`, `sonner`, `table`, `tooltip`.
+
+**`Dialog` vs `AlertDialog` — the rule for this phase.** `AlertDialog` is Radix's *confirmation*
+semantic (no dismiss-on-outside-click by default, `role="alertdialog"`). `Dialog` is the
+*form/content* semantic. So: **S2 (Novo lançamento) uses `Dialog`**; the three confirmations
+(anular / remover procedimento / excluir caso) use `AlertDialog`; **S3 is the one deliberate
+exception** — a form living in an `AlertDialog` because the locked decision folds it into the
+existing "Encerrar caso" confirmation, which is why S3 carries the extra dismissal contract in (d).
 
 ---
 
@@ -68,14 +75,22 @@ Tailwind v4 default scale (every step is a multiple of 4px). Declared values use
 | xl | 24px (`p-6`, `gap-6`) | Page container `flex flex-col gap-6`; `CardContent` on Perfil cards |
 | 2xl | 32px (`p-8`) | Empty-state block padding (`rounded-xl border border-dashed p-8`) |
 
-**Exceptions (documented, inherited — not authored by this phase):**
-- `gap-1.5` / `py-1.5` = **6px** — the `Segment` toggle markup copied verbatim from
-  `components/dashboard/agenda/availability-panel.tsx:98-122`. Deviating from the source would make
-  the payment-method toggle look different from the agenda's identical control. Keep 6px.
-- `size-7` / `h-7` = **28px** — period-nav icon buttons, copied verbatim from
-  `calendar-editor.tsx:1327-1352`. Below the 44px touch ideal but identical to the shipped agenda nav;
-  changing it here would create two different period navigators in one app.
-- `max-h-56` (224px) on the scrollable procedure list inside the closing dialog.
+**Exceptions — inherited from shipped code. DO NOT "round" these to the 4px scale.**
+
+> **Executor instruction, explicit:** the two values below look like scale violations and are not.
+> They are copied byte-for-byte from controls already shipped in the agenda. **Do not change
+> `gap-1.5`/`py-1.5` to `gap-2`/`py-2`, and do not change `size-7` to `size-8`.** "Correcting" them
+> produces two visually different versions of the *same control* in one app — the exact
+> inconsistency the spacing scale exists to prevent. A reviewer who flags these should be pointed at
+> this box and the source lines.
+
+| Value | Source (verified) | Used for | Rule |
+|-------|-------------------|----------|------|
+| `gap-1.5` / `py-1.5` = **6px** | `components/dashboard/agenda/availability-panel.tsx` ~97-121 (the `Segment` helper + its `role="group"` wrappers) | The payment-method `Segment` group (S2, S3) | **Keep 6px.** Rounding to 8px makes the payment toggle visibly unlike the agenda's identical "Tipo de marcação" toggle. |
+| `size-7` / `h-7` = **28px** | `components/dashboard/agenda/calendar-editor.tsx:1327-1352` (the ‹ / Hoje / › cluster) | S1 period navigation | **Keep 28px.** Below the 44px touch ideal, but identical to the shipped agenda navigator; enlarging it here yields two different period navigators. |
+
+Third, non-inherited exception (authored here, no conflict): `max-h-56` (224px) on the scrollable
+procedure list inside the closing dialog — a scroll cap, not a spacing token.
 
 ---
 
@@ -371,6 +386,37 @@ When `consultation_price_cents` is `NULL`, the field opens empty with the hint
 
 ---
 
+## S2 — Novo lançamento (avulso)
+
+**Primitive: `Dialog`** (`components/ui/dialog.tsx`), not `AlertDialog` — this is a form with no
+confirmation semantics, and it is not folded into anything. Triggered only by the "Novo lançamento"
+button on the Ganhos page (locked: the avulso exists nowhere else).
+
+- `DialogContent className="sm:max-w-lg"`. Title `Novo lançamento`, description
+  `Registre um valor recebido que não veio de um caso.`
+- Fields, in tab order: `Descrição` (text, **obrigatória**, D-13) → `Valor (R$)` (currency contract)
+  → `Recebido em` (masked `dd/mm/aaaa`, defaults to today in `CLINIC_TIME_ZONE`) →
+  `Forma de pagamento` (`Segment` group, no default).
+- Footer: `DialogClose` `Button variant="outline"` **`Cancelar`** · `Button` (primary)
+  **`Salvar lançamento`** / `Salvando…`.
+- **Dismissal: S2 inherits S3's dirty guard.** While the form is dirty, Esc and outside-click are
+  blocked so typed money is never silently discarded:
+
+```tsx
+<DialogContent
+  onEscapeKeyDown={(e) => { if (isDirty) e.preventDefault() }}
+  onPointerDownOutside={(e) => { if (isDirty) e.preventDefault() }}
+>
+```
+
+  Pristine → both dismiss normally. The explicit exit is the footer `Cancelar`, which **does** discard
+  (it is an unambiguous choice, unlike a stray backdrop click). Unlike S3, S2 keeps a `Cancelar`
+  button because nothing has been committed yet — cancelling here cancels the whole thing, which is
+  exactly what the word means.
+- On success: close, `toast.success("Lançamento registrado.")`, `router.refresh()`.
+
+---
+
 ## S3 — The earnings step inside "Encerrar caso" (the hard one)
 
 **Locked:** the form is a **step inside the existing `AlertDialog`**, not a following `Dialog`.
@@ -566,10 +612,11 @@ renders **step 1 only** and closes after `updateCaseStatusAction` succeeds, with
 `toast.success("Caso encerrado.")`. Step 2 is never reached; nothing is asked. No extra UI, no
 "already billed" banner — silence is the requirement.
 
-### ⚠️ Visual checkpoint — REQUIRED, BLOCKING
+### ⚠️ Visual checkpoint — `checkpoint:human-verify` **[BLOCKING]**
 
-RESEARCH states this surface is **not verifiable by typecheck**. The plan must end S3 with a
-`checkpoint:human-verify` covering:
+RESEARCH states this surface is **not verifiable by typecheck**. The plan **must** end S3 with a
+`checkpoint:human-verify` marked **[BLOCKING]** — this survives into the plan as such, it is not
+advisory — covering all seven items:
 
 1. The dialog renders at `sm:max-w-lg`, **not 256px wide** (the Pitfall 8 alert-signal).
 2. The popover is visibly closed behind the dialog; closing the dialog returns focus to "Ações" and
@@ -620,9 +667,19 @@ toast.success("Lançamento anulado.", {
 router.refresh()
 ```
 
-- `duration: 8000` explicit. The repo passes no `duration` anywhere; 4s is too short to decide about
-  money, and an explicit number is auditable. **The window is the toast's lifetime — nothing
-  server-side expires** (D-22: past the window the void is final because the button is gone).
+- `duration: 8000` explicit — see the declared deviation box immediately below.
+- **The window is the toast's lifetime — nothing server-side expires** (D-22: past the window the
+  void is final because the button is gone). Do **not** build a server-side expiry.
+
+> ### ⚠️ DECLARED DEVIATION — the undo window is the ONE place this phase does not mirror the agenda
+>
+> | | |
+> |---|---|
+> | **What the agenda actually does** | `calendar-editor.tsx:996-1010` passes **no `duration`** to `toast(...)`. Neither does any other `toast` call in the repo, and `components/ui/sonner.tsx` sets only `classNames` in `toastOptions`. The agenda's real window is therefore **sonner's default (~4000 ms)** — it was never a chosen number. |
+> | **What this phase does** | `duration: 8000`, passed explicitly at the void call site. |
+> | **Why** | 4 s is not enough time to notice a wrong amount, read it, and decide — this is a financial correction, not a calendar repaint. An explicit literal is also auditable; an inherited framework default is not. |
+> | **Status** | A **deliberate deviation** from CONTEXT.md `Claude's Discretion` → *"Janela exata do 'Desfazer' (segundos) — alinhar com o que a agenda já usa."* This is the single item in the phase where "align with the agenda" is knowingly not followed. Everything else about the toast (shape, `action.label`, real server round-trip on undo, `router.refresh()`) mirrors the agenda exactly. |
+> | **For the reader** | **8000 ms is NOT an established repo pattern.** It is introduced here. Do not cite it as precedent, and do not "align" other toasts to it without a reason of their own. |
 - `Desfazer` is a **real server round-trip** (`restoreFinancialEntryAction`), not a client rollback.
 - `router.refresh()` after both the void and the undo (Pitfall 5).
 - **No "editar valor" affordance exists anywhere in this phase** (D-19). No pencil icon, no
@@ -663,7 +720,7 @@ item, then a persistent add row at the bottom.
 | Row state | Contents |
 |-----------|----------|
 | **Read** (default) | `px-4 py-3 flex items-center justify-between gap-3` — name (`text-sm`) · price (`text-sm tabular-nums font-medium`) · `Button ghost icon` `PencilIcon` (`aria-label="Editar procedimento"`) · `Button ghost icon` `Trash2Icon` (`aria-label="Remover procedimento"`, `text-destructive`) |
-| **Edit** (in place) | the same row swaps to `Input` (name, flex-1) + `Input` (currency, `w-32`) + `Button size="sm"` "Salvar" + `Button size="sm" variant="ghost"` "Cancelar". Only one row is editable at a time. Esc cancels. |
+| **Edit** (in place) | the same row swaps to `Input` (name, flex-1) + `Input` (currency, `w-32`) + `Button size="sm"` **`Salvar procedimento`** + `Button size="sm" variant="ghost"` **`Descartar edição`**. Only one row is editable at a time; Esc also discards. The ghost button is **kept** (not dropped in favour of Esc alone) because a touch user has no Esc key and would otherwise be stranded in the edit row — and it is labelled `Descartar edição`, not `Cancelar`, so it says what it discards. `Cancelar` stays reserved for the three `AlertDialog`s, where it is the shipped Radix confirmation wording. |
 | **Add** (always visible, last row) | `bg-muted/30` — `Input placeholder="Nome do procedimento"` + currency `Input placeholder="ex.: 120,00"` + `Button size="sm"` "Adicionar". Clears on success and keeps focus in the name input for a fast second entry. |
 
 - Remove → `AlertDialog`: title `Remover procedimento?` · description
@@ -772,6 +829,7 @@ that names what it destroys is read at the moment of the click. Only non-voided 
 | Closing step 2 cortesia | `Sem cobrança` (ghost) |
 | Closing step 2 submit | `Salvar lançamento` / `Salvando…` |
 | Success toasts | `Lançamento registrado.` · `Caso encerrado sem lançamento.` · `Caso encerrado.` · `Lançamento anulado.` (+`Desfazer`) · `Anulação desfeita.` · `Procedimento adicionado.` / `atualizado.` / `removido.` |
+| Perfil catalog row (S5) | `Salvar procedimento` · `Descartar edição` · `Adicionar` (add row) — **not** bare `Salvar`/`Cancelar`; `Cancelar` is reserved for `AlertDialog` confirmations |
 | Perfil card (S5) | title `Preços` · description `Valores usados ao encerrar um caso. Você pode ajustar cada valor na hora do lançamento.` |
 | Perfil field (S5) | `Valor da consulta (R$)` + hint `Valor padrão usado ao encerrar um caso. Você pode ajustar na hora.` |
 | Sidebar (S6) | group `Financeiro` · item `Ganhos` |
@@ -842,19 +900,23 @@ No `npx shadcn add` runs in this phase. No new npm dependency. `components/ui/ch
 12. `await action()` without a following `router.refresh()` in any client component (Pitfall 5).
 13. A default-selected payment method.
 14. `font-bold` (700) or a fourth authored font size.
+15. "Rounding" the inherited `gap-1.5`/`py-1.5` (6px) or `size-7` (28px) to the 4px scale — see the
+    Spacing Scale exceptions box.
 
 ---
 
 ## Checker Sign-Off
 
-- [ ] Dimension 1 Copywriting: PASS
-- [ ] Dimension 2 Visuals: PASS
-- [ ] Dimension 3 Color: PASS
-- [ ] Dimension 4 Typography: PASS
-- [ ] Dimension 5 Spacing: PASS
-- [ ] Dimension 6 Registry Safety: PASS
+- [x] Dimension 1 Copywriting: PASS — was FLAG (bare `Salvar`/`Cancelar` in the S5 catalog row); resolved to `Salvar procedimento` / `Descartar edição`
+- [x] Dimension 2 Visuals: PASS
+- [x] Dimension 3 Color: PASS
+- [x] Dimension 4 Typography: PASS
+- [x] Dimension 5 Spacing: PASS — was FLAG (6px / 28px off-scale); resolved by the "DO NOT round" exceptions box with verified source references
+- [x] Dimension 6 Registry Safety: PASS
 
-**Approval:** pending
+**Approval:** approved 2026-08-21 (gsd-ui-checker: 4 PASS / 2 FLAG, no blockers; all four non-blocking
+recommendations applied — S2 primitive pinned, D-22 undo window declared as a deviation, S5 button
+labels fixed, inherited spacing exceptions protected)
 
 ---
 
