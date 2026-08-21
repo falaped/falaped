@@ -5,15 +5,15 @@ milestone_name: Agenda & Ganhos
 current_phase: 10
 current_phase_name: livro-caixa-de-ganhos-painel
 status: executing
-stopped_at: Completed 10-02-PLAN.md
-last_updated: "2026-08-21T21:26:21.796Z"
+stopped_at: Completed 10-03-PLAN.md
+last_updated: "2026-08-21T21:45:20.169Z"
 last_activity: 2026-08-21
 last_activity_desc: Phase 10 execution started
 progress:
   total_phases: 5
   completed_phases: 2
   total_plans: 11
-  completed_plans: 8
+  completed_plans: 9
   percent: 40
 ---
 
@@ -29,7 +29,7 @@ See: .planning/PROJECT.md (updated 2026-07-20)
 ## Current Position
 
 Phase: 10 (livro-caixa-de-ganhos-painel) — EXECUTING
-Plan: 3 of 5
+Plan: 4 of 5
 Status: Ready to execute
 Last activity: 2026-08-21 — Phase 10 execution started
 
@@ -77,6 +77,7 @@ Last activity: 2026-08-21 — Phase 10 execution started
 |------|----------|-------|-------|
 | Phase 10 P01 | 34min | 4 tasks | 3 files |
 | Phase 10 P02 | 43min | 3 tasks + 1 checkpoint tasks | 18 files files |
+| Phase 10 P03 | 25min | 3 tasks | 23 files |
 
 ## Accumulated Context
 
@@ -110,6 +111,9 @@ Recent decisions affecting current work (milestone v1.1):
 - [Phase ?]: [Phase 10-02] O diálogo submete o valor CRU do form e o action re-valida: mandar o valor transformado pelo resolver parsearia centavos como reais e ISO como dd/mm/aaaa (double-parse de 260701-ctf)
 - [Phase ?]: [Phase 10-02] Fuso derivado UMA vez no RSC (tz(CLINIC_TIME_ZONE), janela meio-aberta) e descendo como date/rótulo pronto — nenhum componente cliente constrói data
 - [Phase ?]: [Phase 10-02] yarn lint está vermelho no baseline do repo (13 arquivos, 5 em scaffolding gitignored); o gate foi lido como 'nenhum erro novo nos arquivos da fase' e verificado com npx eslint
+- [Phase 10]: 10-03: o botao Salvar dentro do card Precos fica (outline, mesmo submit do form de perfil) — um campo de dinheiro cujo unico controle de salvar esta em outro card e a confusao 'salvar e sumir' que a fase existe para matar
+- [Phase 10]: 10-03: sem cap de altura na lista de procedimentos — nao necessario na escala atual; acima de ~20 itens o conserto e um max-h-* overflow-y-auto de uma linha
+- [Phase 10]: 10-03: contrato de moeda agora bidirecional — parseBrlToCents na entrada, formatCentsToInputValue no pre-preenchimento (sem prefixo R$, nulo vira string vazia). Waves 4 e 5 reusam, nao re-adicionam
 
 ### Pending Todos
 
@@ -127,6 +131,7 @@ Recent decisions affecting current work (milestone v1.1):
 - [Phase 8] Risco central = vazamento de ESCOPO do membership: uma política RLS frouxa ou uma action sem verificação de membership expõe prontuário/outro médico. Verificar com testes cross-tenant (médico X ≠ médico Y) E cross-scope (assento não alcança tabela clínica alguma) antes de expor a UI (Phase 9). Reads clínicos diretos (PostgREST) do assento devem ser negados por RLS
 - [Phase 7] `btree_gist` exclusion constraint precisa da extensão criada na migration; violação (23P01) deve virar result union amigável, nunca erro cru
 - Fase 10: restrict em financial_entries.case_id cria 2 follow-ups para 10-04 — traduzir Postgres 23503 em actions/cases/delete-case.ts, e o diálogo de excluir caso passa a BLOQUEAR em vez de avisar (ver deferred-items.md)
+- [Cross-cutting] **Double-parse cliente→action: 2ª ocorrência.** O cliente roda o schema Zod e envia `parsed.data` para um action que re-parseia com o MESMO schema; qualquer transform (`"" → undefined`, string → número) reprova no segundo passe e o usuário vê só `Dados inválidos.`. Casos: `aacc896` (idade gestacional, quick `260701-ctf`) e `10-03` (`updateProfileAction`, corrigido em `b6507db`). Convenção correta: o cliente valida para feedback, mas o que **sobe é sempre o valor cru** — o action é a fonte única da verdade (padrão de `standalone-entry-dialog.tsx`). **Uma 3ª ocorrência deve receber conserto ESTRUTURAL, não outro patch pontual:** um helper de submit compartilhado ou uma regra de lint que torne o pré-parse no cliente impossível.
 
 ### Quick Tasks Completed
 
@@ -154,7 +159,7 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-08-21T21:26:09.820Z
-Stopped at: Completed 10-02-PLAN.md
+Last session: 2026-08-21T21:45:20.115Z
+Stopped at: Completed 10-03-PLAN.md
 Resume file: None
-Next: executar 06-02-PLAN.md (expandAvailability puro + suite .spec)
+Next: executar 10-04-PLAN.md (diálogo de encerramento de caso — pré-preenche com consultation_price_cents + catálogo de procedimentos)
