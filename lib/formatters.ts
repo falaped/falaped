@@ -160,3 +160,14 @@ export function formatLinkedPhone(digits: string): string {
     : `(${local.slice(0, 2)}) ${local.slice(2, 6)}-${local.slice(6)}`
   return withCountry ? `+55 ${part}` : part
 }
+
+/** Instância única em escopo de módulo — construir um `Intl.NumberFormat` por chamada é caro. */
+const BRL = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" })
+
+/**
+ * Formata centavos inteiros como moeda brasileira (15000 → cento e cinquenta reais).
+ * A divisão por 100 é só apresentação: o resultado nunca volta ao banco, que guarda centavos.
+ */
+export function formatCentsToBRL(cents: number): string {
+  return BRL.format(cents / 100)
+}
