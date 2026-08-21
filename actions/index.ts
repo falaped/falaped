@@ -163,6 +163,10 @@ export {
   type PrepareCaseEarningsResult,
   createCaseFinancialEntriesAction,
   type CreateCaseFinancialEntriesResult,
+  voidFinancialEntryAction,
+  type VoidFinancialEntryResult,
+  restoreFinancialEntryAction,
+  type RestoreFinancialEntryResult,
 } from "./financial-entries"
 export {
   createProcedureCatalogItemAction,

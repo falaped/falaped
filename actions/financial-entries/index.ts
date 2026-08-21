@@ -10,3 +10,11 @@ export {
   createCaseFinancialEntriesAction,
   type CreateCaseFinancialEntriesResult,
 } from "./create-case-financial-entries"
+export {
+  voidFinancialEntryAction,
+  type VoidFinancialEntryResult,
+} from "./void-financial-entry"
+export {
+  restoreFinancialEntryAction,
+  type RestoreFinancialEntryResult,
+} from "./restore-financial-entry"

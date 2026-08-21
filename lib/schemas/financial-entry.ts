@@ -192,3 +192,12 @@ export const caseFinancialEntriesSchema = z.object({
 export type CaseFinancialEntriesFormData = z.infer<typeof caseFinancialEntriesSchema>
 
 export type CaseFinancialEntriesFormValues = z.input<typeof caseFinancialEntriesSchema>
+
+/**
+ * Id de um lançamento chegando do browser (EARN-05). É a única coisa que a anulação e o
+ * desfazer aceitam do cliente — a AUTORIZAÇÃO não está aqui, e sim no duplo filtro
+ * (id + perfil) do módulo. Este schema só barra lixo antes de virar consulta.
+ */
+export const financialEntryIdSchema = z
+  .string({ message: "Lançamento inválido." })
+  .uuid("Lançamento inválido.")
