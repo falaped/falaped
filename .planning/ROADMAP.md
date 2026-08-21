@@ -106,7 +106,15 @@ Decimal phases appear between their surrounding integers in numeric order.
   3. O médico vê um painel com totais por dia, semana e mês, agregados em SQL (date_trunc/sum) com buckets pela data local da clínica (AT TIME ZONE 'America/Sao_Paulo'), e o valor médio por atendimento = total ÷ (casos distintos com lançamento não-anulado + avulsos não-anulados) no período, com arredondamento único que reconcilia ao centavo.
   4. O médico anula/estorna um lançamento sem apagá-lo (voided_at, não delete); totais e média filtram anulados (voided_at IS NULL) e a leitura/escrita/anulação é escopada por profile_id + gate `paid`, com teste de ownership.
 
-**Plans**: TBD
+**Plans**: 5 plans
+
+Plans:
+- [ ] 10-01-PLAN.md — Migrações: catálogo de procedimentos com preço + `profiles.consultation_price_cents` + enum de forma de pagamento + `financial_entries` (RLS âncora simples, sem policy de DELETE) + função `get_earnings_summary` (checkpoint:decision das 4 decisões one-way; checkpoint [BLOCKING] de push da migração)
+- [ ] 10-02-PLAN.md — **TRACER** ponta-a-ponta: contrato de moeda (`parseBrlToCents` + `formatCentsToBRL` + spec), painel lendo `get_earnings_summary` (Faixas A/B), diálogo de lançamento avulso e grupo "Financeiro" no menu (checkpoint visual)
+- [ ] 10-03-PLAN.md — Perfil: card "Preços" com valor da consulta (travessia das 5 camadas, incluindo o `.select()` hardcoded de `get-authenticated-user.ts`) + editor CRUD do catálogo de procedimentos owner-scoped (checkpoint visual)
+- [ ] 10-04-PLAN.md — Encerramento do caso: guarda de re-encerramento + validação de posse do caso (IDOR) + insert único de consulta+N procedimentos, hoist do popover e diálogo de duas etapas, aviso destrutivo em "Excluir caso" (checkpoint visual [BLOCKING], 7 itens)
+- [ ] 10-05-PLAN.md — Anulação com "Desfazer" (owner-scoped + specs) + resto do painel: navegação de período, filtro de anulados, gráfico diário, tabela e card de ganhos dentro do caso (checkpoint visual)
+
 **UI hint**: yes
 
 ## Progress
@@ -117,7 +125,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 | 7. Consultas & Ciclo de Status | 3/3 | Complete    | 2026-07-25 |
 | 8. Assentos & Convite — Fundação de Acesso Delegado | 0/? | Not started | - |
 | 9. UI de Agendamento da Assistente | 0/? | Not started | - |
-| 10. Livro-caixa de Ganhos & Painel | 0/? | Not started | - |
+| 10. Livro-caixa de Ganhos & Painel | 0/5 | Planned     | - |
 
 ## Coverage
 
