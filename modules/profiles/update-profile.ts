@@ -13,6 +13,7 @@ export type UpdateProfilePayload = {
   report_template_id?: string | null
   default_location_state?: string | null
   default_location_city?: string | null
+  consultation_price_cents?: number | null
 }
 
 /**

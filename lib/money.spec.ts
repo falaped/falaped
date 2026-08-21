@@ -1,6 +1,6 @@
 import { describe, it } from "node:test"
 import assert from "node:assert/strict"
-import { parseBrlToCents } from "./money"
+import { formatCentsToInputValue, parseBrlToCents } from "./money"
 import { formatCentsToBRL } from "./formatters"
 
 /** Normaliza espaços exóticos (o Intl usa espaço não-separável entre R$ e o número). */
@@ -72,4 +72,21 @@ describe("formatCentsToBRL", () => {
   it("usa separador de milhar e nunca abrevia", () => {
     assert.equal(norm(formatCentsToBRL(14532000)), "R$ 145.320,00")
   })
+})
+
+it("formatCentsToInputValue: centavos viram o decimal PT-BR do input, sem prefixo", () => {
+  assert.equal(formatCentsToInputValue(25000), "250,00")
+  assert.equal(formatCentsToInputValue(150050), "1.500,50")
+  assert.equal(formatCentsToInputValue(0), "0,00")
+})
+
+it("formatCentsToInputValue: nulo abre o campo VAZIO, nunca com zero", () => {
+  assert.equal(formatCentsToInputValue(null), "")
+  assert.equal(formatCentsToInputValue(undefined), "")
+})
+
+it("formatCentsToInputValue -> parseBrlToCents é ida e volta", () => {
+  for (const cents of [0, 1, 25000, 150050, 1234567]) {
+    assert.equal(parseBrlToCents(formatCentsToInputValue(cents)), cents)
+  }
 })

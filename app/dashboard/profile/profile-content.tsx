@@ -16,6 +16,7 @@ import {
   Laptop,
   Trash2Icon,
   MapPin,
+  BanknoteIcon,
 } from "lucide-react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -30,6 +31,7 @@ import {
 import {
   Field,
   FieldContent,
+  FieldDescription,
   FieldError,
   FieldGroup,
   FieldLabel,
@@ -53,6 +55,7 @@ import {
   updateProfileSchema,
   type UpdateProfileFormValues,
 } from "@/lib/schemas/profile"
+import { formatCentsToInputValue } from "@/lib/money"
 
 const STATUS_OPTIONS: { value: AuthenticatedUserStatus; label: string }[] = [
   { value: "paid", label: "Pago" },
@@ -109,6 +112,10 @@ export function ProfileContent({ profile, reportTemplateOptions }: ProfileConten
       report_template_id: profile.report_template_id ?? "",
       default_location_state: profile.default_location_state ?? "",
       default_location_city: profile.default_location_city ?? "",
+      // Nulo abre o campo VAZIO — nunca com zero, que seria submetido por inércia.
+      consultation_price_cents: formatCentsToInputValue(
+        profile.consultation_price_cents
+      ),
     },
   })
 
@@ -190,7 +197,10 @@ export function ProfileContent({ profile, reportTemplateOptions }: ProfileConten
         )
       return
     }
-    const result = await updateProfileAction(parsed.data)
+    // Sobe o valor CRU do form: o action re-valida e é a fonte da verdade. Enviar
+    // `parsed.data` parseava duas vezes e qualquer campo em branco (transformado em
+    // `undefined`) fazia o action reprovar com "Dados inválidos.".
+    const result = await updateProfileAction(data)
     if (result.ok) {
       toast.success("Perfil atualizado.")
       router.refresh()
@@ -545,6 +555,62 @@ export function ProfileContent({ profile, reportTemplateOptions }: ProfileConten
           </form>
         </CardContent>
       </Card>
+      {/* Preços */}
+      <Card>
+        <CardHeader>
+          <div className="flex items-center gap-2">
+            <BanknoteIcon className="h-5 w-5 text-muted-foreground" />
+            <CardTitle>Preços</CardTitle>
+          </div>
+          <CardDescription>
+            Valores usados ao encerrar um caso. Você pode ajustar cada valor na hora do
+            lançamento.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="flex flex-col gap-6">
+          <Field
+            className="max-w-xs"
+            data-invalid={!!form.formState.errors.consultation_price_cents}
+          >
+            <FieldLabel htmlFor="consultation_price_cents">
+              Valor da consulta (R$)
+            </FieldLabel>
+            <FieldContent>
+              <Input
+                id="consultation_price_cents"
+                type="text"
+                inputMode="decimal"
+                autoComplete="off"
+                placeholder="ex.: 250,00"
+                className="tabular-nums"
+                aria-invalid={!!form.formState.errors.consultation_price_cents}
+                {...form.register("consultation_price_cents")}
+              />
+              <FieldDescription>
+                Valor padrão usado ao encerrar um caso. Você pode ajustar na hora.
+              </FieldDescription>
+              <FieldError
+                errors={
+                  form.formState.errors.consultation_price_cents
+                    ? [form.formState.errors.consultation_price_cents]
+                    : undefined
+                }
+              />
+            </FieldContent>
+          </Field>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className="w-fit"
+            disabled={form.formState.isSubmitting}
+            onClick={form.handleSubmit(handleProfileSubmit)}
+          >
+            {form.formState.isSubmitting ? "Salvando…" : "Salvar"}
+          </Button>
+        </CardContent>
+      </Card>
+
       {/* Logos */}
       <Card>
         <CardHeader>

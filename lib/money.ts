@@ -1,3 +1,9 @@
+/** Instância única em escopo de módulo — construir um `Intl.NumberFormat` por chamada é caro. */
+const DECIMAL_PT_BR = new Intl.NumberFormat("pt-BR", {
+  minimumFractionDigits: 2,
+  maximumFractionDigits: 2,
+})
+
 /**
  * Converte um valor em reais digitado (ou colado) pelo médico em centavos inteiros.
  *
@@ -28,4 +34,17 @@ export function parseBrlToCents(value: string): number | null {
   if (!Number.isFinite(parsed) || parsed < 0) return null
 
   return Math.round(parsed * 100)
+}
+
+/**
+ * Centavos inteiros → o texto que vai DENTRO de um input de moeda: decimal PT-BR sem
+ * prefixo (`25000` → `"250,00"`). O `R$` vive no rótulo do campo, nunca no valor — um
+ * prefixo dentro do valor teria de ser parseado de volta a cada tecla.
+ *
+ * `null` (valor não configurado) devolve string vazia: o campo abre só com o placeholder,
+ * nunca com um zero que seria submetido por inércia.
+ */
+export function formatCentsToInputValue(cents: number | null | undefined): string {
+  if (cents === null || cents === undefined) return ""
+  return DECIMAL_PT_BR.format(cents / 100)
 }
