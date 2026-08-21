@@ -325,3 +325,7 @@ status: complete
 ---
 *Phase: 10-livro-caixa-de-ganhos-painel*
 *Completed: 2026-08-21*
+
+## Self-Check: PASSED
+
+Todos os 15 arquivos de código criados existem em disco, mais o próprio SUMMARY. Todos os 7 commits existem no histórico (`60d946c`, `efd3875`, `128ff18`, `f3d270d`, `4021e17`, `775441d`, `1020fc4`). Nenhum arquivo rastreado foi apagado por nenhum commit deste plano (`git diff --diff-filter=D` vazio em todos).

@@ -5,15 +5,15 @@ milestone_name: Agenda & Ganhos
 current_phase: 10
 current_phase_name: livro-caixa-de-ganhos-painel
 status: executing
-stopped_at: Completed 10-01-PLAN.md
-last_updated: "2026-08-21T20:33:04.661Z"
+stopped_at: Completed 10-02-PLAN.md
+last_updated: "2026-08-21T21:26:21.796Z"
 last_activity: 2026-08-21
 last_activity_desc: Phase 10 execution started
 progress:
   total_phases: 5
   completed_phases: 2
   total_plans: 11
-  completed_plans: 7
+  completed_plans: 8
   percent: 40
 ---
 
@@ -29,7 +29,7 @@ See: .planning/PROJECT.md (updated 2026-07-20)
 ## Current Position
 
 Phase: 10 (livro-caixa-de-ganhos-painel) — EXECUTING
-Plan: 2 of 5
+Plan: 3 of 5
 Status: Ready to execute
 Last activity: 2026-08-21 — Phase 10 execution started
 
@@ -76,6 +76,7 @@ Last activity: 2026-08-21 — Phase 10 execution started
 | Plan | Duration | Tasks | Files |
 |------|----------|-------|-------|
 | Phase 10 P01 | 34min | 4 tasks | 3 files |
+| Phase 10 P02 | 43min | 3 tasks + 1 checkpoint tasks | 18 files files |
 
 ## Accumulated Context
 
@@ -105,6 +106,10 @@ Recent decisions affecting current work (milestone v1.1):
 - [Phase ?]: D-26 revisada: financial_entries.case_id usa on delete restrict (não cascade) — o banco é a barreira contra apagar faturamento, alinhado ao precedente de appointments.sql e a D-19
 - [Phase ?]: financial_entries nasce SEM policy de DELETE: a ausência de policy é a garantia (RLS nega por default). RLS de âncora simples por profile_id, contraste deliberado com a âncora dupla de public.cases
 - [Phase ?]: Agregação do painel numa única função SQL stable/security invoker (get_earnings_summary) devolvendo jsonb; received_on é date, então zero conversão de fuso e zero DST na agregação
+- [Phase ?]: [Phase 10-02] parseBrlToCents é o único parse de dinheiro: com vírgula o ponto é milhar, sem vírgula o ponto é decimal (exceto o padrão puro de milhar 1.500) — a ordem literal do plano quebrava o caso obrigatório "150.05"
+- [Phase ?]: [Phase 10-02] O diálogo submete o valor CRU do form e o action re-valida: mandar o valor transformado pelo resolver parsearia centavos como reais e ISO como dd/mm/aaaa (double-parse de 260701-ctf)
+- [Phase ?]: [Phase 10-02] Fuso derivado UMA vez no RSC (tz(CLINIC_TIME_ZONE), janela meio-aberta) e descendo como date/rótulo pronto — nenhum componente cliente constrói data
+- [Phase ?]: [Phase 10-02] yarn lint está vermelho no baseline do repo (13 arquivos, 5 em scaffolding gitignored); o gate foi lido como 'nenhum erro novo nos arquivos da fase' e verificado com npx eslint
 
 ### Pending Todos
 
@@ -149,7 +154,7 @@ Items acknowledged and carried forward from previous milestone close:
 
 ## Session Continuity
 
-Last session: 2026-08-21T20:32:51.504Z
-Stopped at: Completed 10-01-PLAN.md
+Last session: 2026-08-21T21:26:09.820Z
+Stopped at: Completed 10-02-PLAN.md
 Resume file: None
 Next: executar 06-02-PLAN.md (expandAvailability puro + suite .spec)

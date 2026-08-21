@@ -106,7 +106,7 @@ Decimal phases appear between their surrounding integers in numeric order.
   3. O médico vê um painel com totais por dia, semana e mês, agregados em SQL (date_trunc/sum) com buckets pela **data local da clínica**, garantidos por `received_on date` — a data de recebimento é um dia de calendário escolhido pelo médico, então `date_trunc` já devolve o bucket local e nenhuma expressão `AT TIME ZONE` é necessária (sem risco de DST nem dependência do `TimeZone` da sessão) _(emendado 2026-08-21: o critério pede o resultado, não a expressão literal — ver 10-01-PLAN.md § Desvios Declarados #1)_. O valor médio por atendimento = total ÷ (casos distintos com lançamento não-anulado + avulsos não-anulados) no período, com arredondamento único que reconcilia ao centavo.
   4. O médico anula/estorna um lançamento sem apagá-lo (voided_at, não delete); totais e média filtram anulados (voided_at IS NULL) e a leitura/escrita/anulação é escopada por profile_id + gate `paid`, com teste de ownership.
 
-**Plans**: 1/5 plans executed
+**Plans**: 2/5 plans executed
 
 Plans:
 **Wave 1**
@@ -115,7 +115,7 @@ Plans:
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
-- [ ] 10-02-PLAN.md — **TRACER** ponta-a-ponta: contrato de moeda (`parseBrlToCents` + `formatCentsToBRL` + spec), painel lendo `get_earnings_summary` (Faixas A/B), diálogo de lançamento avulso e grupo "Financeiro" no menu (checkpoint visual)
+- [x] 10-02-PLAN.md — **TRACER** ponta-a-ponta: contrato de moeda (`parseBrlToCents` + `formatCentsToBRL` + spec), painel lendo `get_earnings_summary` (Faixas A/B), diálogo de lançamento avulso e grupo "Financeiro" no menu (checkpoint visual)
 
 **Wave 3** *(blocked on Wave 2 completion)*
 
@@ -139,7 +139,7 @@ Plans:
 | 7. Consultas & Ciclo de Status | 3/3 | Complete    | 2026-07-25 |
 | 8. Assentos & Convite — Fundação de Acesso Delegado | 0/? | Not started | - |
 | 9. UI de Agendamento da Assistente | 0/? | Not started | - |
-| 10. Livro-caixa de Ganhos & Painel | 1/5 | In Progress|  |
+| 10. Livro-caixa de Ganhos & Painel | 2/5 | In Progress|  |
 
 ## Coverage
 
