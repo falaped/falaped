@@ -24,7 +24,17 @@ export type AuthenticatedUserRow = {
 
 /**
  * Returns the current authenticated user's profile (merged with authenticated_users row).
- * Always returns { profile }; use `const { profile } = await getAuthenticatedUser(supabase)` then check `if (!profile)`.
+ *
+ * Always returns `{ profile }` — and when there is no session (or no profile row) that
+ * `profile` is an EMPTY OBJECT cast to the profile type, never `undefined`. So:
+ *
+ * ```ts
+ * const { profile } = await getAuthenticatedUser(supabase)
+ * if (!profile?.id) return { ok: false, error: "Sessão não encontrada." } // correto
+ * ```
+ *
+ * `if (!profile)` NÃO funciona: `{}` é truthy, o branch nunca dispara e o único gate que
+ * sobra é o `status !== "paid"` da linha seguinte, por acidente. Sempre checar `profile?.id`.
  */
 export async function getAuthenticatedUser(
   supabase: SupabaseClient

@@ -23,7 +23,7 @@ export async function voidFinancialEntryAction(
 ): Promise<VoidFinancialEntryResult> {
   const supabase = await createClient()
   const { profile } = await getAuthenticatedUser(supabase)
-  if (!profile) return { ok: false, error: "Sessão não encontrada." }
+  if (!profile?.id) return { ok: false, error: "Sessão não encontrada." }
   if (profile.status !== "paid")
     return {
       ok: false,
