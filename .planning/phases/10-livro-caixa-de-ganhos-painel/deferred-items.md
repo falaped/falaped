@@ -39,3 +39,26 @@ Nada disto foi tocado em `10-01` (fora de `files_modified`).
    apenas por uma string de UI. Com `restrict` **o banco é a barreira** — a
    mitigação é estrutural, não cosmética. O threat model de `10-01-PLAN.md` não
    foi reescrito; esta é a disposição vigente.
+
+## `yarn lint` está vermelho no baseline (registrado em 10-02, NÃO corrigido)
+
+`yarn lint` sai com código 1 **antes** de qualquer arquivo desta fase existir: 1493 erros
+distribuídos por 13 arquivos, nenhum deles de `10-02`.
+
+- 5 em diretórios de scaffolding **gitignored** que o `eslint.config.mjs` não ignora
+  (`.design-sync/`, `.ds-sync/`, `ds-bundle/`) — a correção certa é um `ignores` no
+  config do ESLint, não editar arquivo gerado.
+- 8 em arquivos de app pré-existentes: `app/dashboard/profile/profile-content.tsx`,
+  `components/dashboard/agenda/appointment-create-dialog.tsx`,
+  `components/dashboard/agenda/calendar-editor.tsx`,
+  `components/dashboard/cases/case-report.tsx`, `components/nav-user.tsx`,
+  e 3 de `ds-bundle/`.
+
+Os critérios de aceite de `10-02` pedem `yarn lint` com código 0. Isso é impossível sem sair
+do escopo do plano (SCOPE BOUNDARY: só se auto-corrige o que a task causou). O critério foi
+lido como **"nenhum erro novo de lint nos arquivos desta fase"** — verificado arquivo por
+arquivo. `yarn typecheck`, `yarn test` e `yarn build` continuam sendo exigidos com código 0.
+
+**Follow-up sugerido (fora da Fase 10):** adicionar `ignores` para `.design-sync/`, `.ds-sync/`
+e `ds-bundle/` no `eslint.config.mjs` e limpar os 8 arquivos de app — depois disso `yarn lint`
+volta a ser um gate útil.
