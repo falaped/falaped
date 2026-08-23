@@ -25,7 +25,6 @@ import type { ProcedureCatalogItemOption } from "@/modules/procedure-catalog/lis
 import { Button } from "@/components/ui/button"
 import {
   AlertDialog,
-  AlertDialogAction,
   AlertDialogCancel,
   AlertDialogContent,
   AlertDialogDescription,
@@ -124,7 +123,13 @@ export function CloseCaseWithEarningsDialog({
 
   function handleOpenChange(next: boolean) {
     if (isPending) return
-    if (!next) resetForm()
+    if (!next) {
+      resetForm()
+      // Fechar sem salvar (Esc, Cancelar) ainda precisa refletir o encerramento no
+      // cabeçalho: `revalidatePath` no action não re-renderiza o RSC de uma action
+      // chamada via await — só o refresh no cliente faz isso.
+      router.refresh()
+    }
     onOpenChange(next)
   }
 
@@ -191,7 +196,9 @@ export function CloseCaseWithEarningsDialog({
         router.refresh()
         return
       }
-      router.refresh()
+      // Sem refresh aqui de propósito: a etapa 2 está aberta, e re-renderizar o RSC da
+      // página do caso (que vive dentro de um `Suspense`, com `cacheComponents`) pode
+      // remontar o boundary e levar o diálogo embora. O refresh acontece ao FECHAR.
     })
   }
 
@@ -323,9 +330,16 @@ export function CloseCaseWithEarningsDialog({
             </AlertDialogHeader>
             <AlertDialogFooter>
               <AlertDialogCancel disabled={isClosing}>Cancelar</AlertDialogCancel>
-              <AlertDialogAction disabled={isClosing} onClick={handleConfirmClose}>
+              {/* `Button` puro, NUNCA `AlertDialogAction`: no Radix, `AlertDialogAction` É
+                  o `DialogPrimitive.Close` (`<DialogPrimitive.Close …actionProps />`), então
+                  o clique dispara `onOpenChange(false)` no MESMO evento — o diálogo fecha e
+                  `resetForm()` devolve o `step` para `"confirm"` antes do `loadEarningsStep()`
+                  assíncrono terminar, e a etapa 2 nunca tem onde aparecer. `if (isPending)
+                  return` não protege: `isClosing` no closure ainda é `false` no clique.
+                  Mesmo padrão do rodapé da etapa 2 abaixo. */}
+              <Button type="button" disabled={isClosing} onClick={handleConfirmClose}>
                 Encerrar
-              </AlertDialogAction>
+              </Button>
             </AlertDialogFooter>
           </>
         ) : (
