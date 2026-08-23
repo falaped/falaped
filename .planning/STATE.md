@@ -156,6 +156,7 @@ Recent decisions affecting current work (milestone v1.1):
 | 260724-ojm | Corrigir agenda não atualizar após criar consulta / mudar status: router.refresh() no client após createAppointmentAction e transitionAppointmentStatusAction (revalidatePath sozinho não re-renderiza o RSC em action chamada via await) | 2026-07-24 | b686a81 |  | [260724-ojm-corrigir-agenda-n-o-atualizar-ap-s-criar](./quick/260724-ojm-corrigir-agenda-n-o-atualizar-ap-s-criar/) |
 | 260724-pui | Agenda busca consultas da janela visível ao navegar (dia/semana/mês), não só a semana atual do servidor — nova action listAppointmentsByRangeAction + CalendarEditor com estado + fetch por janela + refetch após criar/transição | 2026-07-24 | 9811053 | Verified | [260724-pui-agenda-buscar-consultas-ao-navegar-dia-s](./quick/260724-pui-agenda-buscar-consultas-ao-navegar-dia-s/) |
 | 260820-agn | remover item Agenda do menu lateral | 2026-08-20 | 4475d4d |  | — |
+| 260823-r4t | fix: etapa 2 do lançamento (registrar o que foi cobrado) nunca abria pelo botão Encerrar — `AlertDialogAction` do Radix é o `DialogPrimitive.Close` e fechava/resetava o diálogo antes do `loadEarningsStep()` assíncrono terminar | 2026-08-23 | d77227a |  | [260823-r4t-fix-encerrar-caso-nao-abria-a-etapa-2-do-l](./quick/260823-r4t-fix-encerrar-caso-nao-abria-a-etapa-2-do-l/) |
 
 ## Deferred Items
 
