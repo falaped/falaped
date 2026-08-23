@@ -157,6 +157,7 @@ Recent decisions affecting current work (milestone v1.1):
 | 260724-pui | Agenda busca consultas da janela visível ao navegar (dia/semana/mês), não só a semana atual do servidor — nova action listAppointmentsByRangeAction + CalendarEditor com estado + fetch por janela + refetch após criar/transição | 2026-07-24 | 9811053 | Verified | [260724-pui-agenda-buscar-consultas-ao-navegar-dia-s](./quick/260724-pui-agenda-buscar-consultas-ao-navegar-dia-s/) |
 | 260820-agn | remover item Agenda do menu lateral | 2026-08-20 | 4475d4d |  | — |
 | 260823-r4t | fix: etapa 2 do lançamento (registrar o que foi cobrado) nunca abria pelo botão Encerrar — `AlertDialogAction` do Radix é o `DialogPrimitive.Close` e fechava/resetava o diálogo antes do `loadEarningsStep()` assíncrono terminar | 2026-08-23 | d77227a |  | [260823-r4t-fix-encerrar-caso-nao-abria-a-etapa-2-do-l](./quick/260823-r4t-fix-encerrar-caso-nao-abria-a-etapa-2-do-l/) |
+| 260823-w2n | Lançamento financeiro pergunta UMA VEZ por caso (`cases.earnings_prompted_at`, marcada ao responder; reabrir+encerrar não pergunta de novo; backfill dos 106 casos encerrados) + excluir caso passa a excluir os lançamentos dele (FK `on delete cascade`, reverte a D-26 revisada) | 2026-08-23 | 91cedd7, 7c25e80 |  | [260823-w2n-lancamento-uma-vez-por-caso-e-exclusao-que](./quick/260823-w2n-lancamento-uma-vez-por-caso-e-exclusao-que/) |
 
 ## Deferred Items
 
