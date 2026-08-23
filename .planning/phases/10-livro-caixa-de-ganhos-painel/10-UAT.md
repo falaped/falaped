@@ -200,13 +200,70 @@ result: [pending]
 expected: Testar nos dois temas: nenhum verde e nenhum vermelho significando dinheiro em nenhuma das duas superfícies.
 result: [pending]
 
+---
+
+## Itens acrescentados pelo gap 1 (cobertura de encerramento)
+
+### 41. Encerramento pelo assistente oferece lançamento
+expected: Conduzir um caso e encerrá-lo **pelo assistente** (intent `confirm_close_case`), não pelo menu Ações. Depois do encerramento, o detalhe do caso mostra o bloco tracejado `Nenhum lançamento neste atendimento` com o botão `Lançar o que foi cobrado`. Clicar → abre direto a etapa 2 (`Registrar o que foi cobrado`), **sem** passar por `Encerrar caso?`. Salvar → o lançamento aparece no painel de Ganhos e o bloco tracejado é substituído pelo card `Ganhos deste atendimento`.
+result: [pending]
+
+### 42. Novo atendimento encerrando o ativo oferece lançamento
+expected: Com um caso ativo, iniciar um novo atendimento e confirmar `Encerrar atendimento ativo no painel?`. Abrir o caso que foi encerrado por essa via: o bloco de pendência aparece e o fluxo de lançamento funciona igual ao item 41.
+result: [pending]
+
+### 43. Cortesia deixou de ser irreversível — e não vira duplicata
+expected: Encerrar um caso pelo menu Ações e **dispensar** a etapa 2 (cortesia). O caso fica encerrado com zero lançamentos e o bloco de pendência aparece, permitindo lançar depois. Lançar por ali. Confirmar então que o bloco **desaparece** e não é possível lançar de novo — a guarda de re-encerramento recusa com `Este caso já tem lançamentos.` Num caso com **só** lançamentos anulados, o bloco volta a aparecer (é o caminho legítimo de corrigir um valor: anular e relançar).
+result: [pending]
+
 ## Summary
 
-total: 40
+total: 43
 passed: 0
 issues: 0
-pending: 40
+pending: 43
 skipped: 0
 blocked: 0
 
 ## Gaps
+
+### Gap 1 — [CORRIGIDO em `facb4c1`] O lançamento só era oferecido em 1 dos 4 caminhos de encerramento
+
+**Reportado pelo usuário durante o UAT:** "não está oferecendo o modal após encerramento".
+
+**Não era bug do diálogo — era cobertura.** A fase amarrou a pergunta ao EVENTO de
+encerramento e ligou-a a uma única porta:
+
+| Caminho | Onde | Passava pelo diálogo? |
+|---|---|---|
+| `Ações → Encerrar caso` | `case-detail-header-toolbar.tsx:60` | sim — o único |
+| Assistente (intent `confirm_close_case`) | `actions/cases/send-case-assistant-message.ts:438` | **não** |
+| Novo atendimento encerrando o ativo | `select-patient-workspace.tsx` → `create-dashboard-case-with-patient.ts:56` | **não** |
+| `updateCaseStatusAction(id, "closed")` direto | qualquer caller | **não** |
+
+Os três últimos rodam **no servidor**, dentro de pipelines — não existe cliente ali para
+abrir modal. O caminho do assistente é o fluxo central do app, então na prática o
+faturamento quase nunca era perguntado.
+
+Gap real contra o **SC-1**, cuja letra é "**ao encerrar um caso**, o app pergunta o que foi
+realizado" — não "ao clicar em Encerrar caso no menu Ações". Verificado que o servidor
+estava correto (sob RLS, com o perfil do usuário, o telefone resolve, o caso é achado,
+catálogo e preço visíveis, `ask: true`): o modal simplesmente nunca era invocado.
+
+**Correção:** ancorar no ESTADO em vez do evento. Caso encerrado + zero lançamento
+não-anulado → `CasePendingEarningsCard` convida a lançar e abre a MESMA etapa 2 (novo
+`mode="earnings"` no diálogo). Uma superfície cobre os quatro caminhos, sem tocar no
+pipeline do assistente.
+
+**Dois furos fechados de carona:**
+1. Dispensar a etapa 2 é cortesia (D-09) e permitido — mas era **irreversível**: não havia
+   volta para lançar depois. Agora há.
+2. `prepareCaseEarningsAction` falhando caía no mesmo `if` de "já faturado" e virava o toast
+   `Caso encerrado.` — produzindo exatamente o sintoma reportado, sem nenhuma pista. Agora
+   já-faturado segue mudo (requisito D-10 é silêncio) e **erro fala**.
+
+**Fail-closed:** com a leitura dos totais falhando (`earningsTotals == null`) o card não
+aparece, para não arriscar duplicata — mesma postura do bloqueio do S7.
+
+Gates após a correção: `yarn typecheck` 0 · `yarn test` 614 pass / 0 fail · `yarn build` limpo ·
+`npx eslint` limpo nos 3 arquivos.
