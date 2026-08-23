@@ -30,8 +30,9 @@ type CaseDetailActionsProps = {
    */
   onRequestCloseCase?: () => void
   /**
-   * Lançamentos NÃO-anulados do caso e quanto somam. `null` = a leitura falhou, e a
-   * exclusão é BLOQUEADA — jamais prosseguir sem poder verificar (S7 partial).
+   * Lançamentos NÃO-anulados do caso e quanto somam. `> 0` = aviso do que a exclusão vai
+   * APAGAR junto (a FK é `on delete cascade`). `null` = a leitura falhou, e aí a exclusão
+   * é BLOQUEADA: sem poder dizer o que será apagado não há consentimento informado.
    */
   earningsCount?: number | null
   earningsTotalCents?: number | null
@@ -74,13 +75,15 @@ export function CaseDetailActions({
 
   const menu = layout === "menu"
 
-  // `financial_entries.case_id` é `on delete restrict` (D-26 revisada): o BANCO recusa
-  // apagar um caso que tenha lançamento, então este bloco informa e BLOQUEIA — não
-  // promete uma exclusão que o Postgres vai negar. `null` (leitura falhou) também
-  // bloqueia: prosseguir sem poder verificar seria decidir no escuro.
+  // `financial_entries.case_id` é `on delete cascade`: apagar o caso APAGA os lançamentos
+  // dele. Então este bloco não bloqueia mais — ele AVISA o que vai ser destruído, porque
+  // é irreversível e sai dos totais do painel, inclusive de meses já fechados.
+  //
+  // `null` (leitura falhou) continua BLOQUEANDO: sem saber quanto de faturamento está
+  // pendurado no caso, não há consentimento informado possível — o médico clicaria em
+  // "Excluir" sem que ninguém pudesse dizer o que ele está apagando.
   const earningsUnknown = earningsCount === null
   const hasEarnings = earningsCount !== null && earningsCount > 0
-  const deleteBlocked = earningsUnknown || hasEarnings
 
   return (
     <div
@@ -153,7 +156,7 @@ export function CaseDetailActions({
               removidas.
             </AlertDialogDescription>
           </AlertDialogHeader>
-          {deleteBlocked && (
+          {(earningsUnknown || hasEarnings) && (
             <div className="rounded-lg border border-destructive/50 bg-destructive/5 p-3 text-sm">
               {earningsUnknown ? (
                 <p className="font-semibold text-destructive">
@@ -163,16 +166,16 @@ export function CaseDetailActions({
                 <>
                   <p className="font-semibold text-destructive">
                     {earningsCount === 1
-                      ? "Este caso tem 1 lançamento no livro-caixa."
-                      : `Este caso tem ${earningsCount} lançamentos no livro-caixa.`}
+                      ? "1 lançamento no livro-caixa será apagado junto."
+                      : `${earningsCount} lançamentos no livro-caixa serão apagados junto.`}
                   </p>
                   <p className="mt-1 text-muted-foreground">
                     Somam{" "}
                     <span className="font-medium tabular-nums text-foreground">
                       {formatCentsToBRL(earningsTotalCents ?? 0)}
                     </span>{" "}
-                    e o faturamento fica registrado para auditoria — inclusive de meses já
-                    fechados. Por isso este caso não pode ser excluído.
+                    e saem dos totais de Ganhos — inclusive de meses já fechados. Não há
+                    como recuperar.
                   </p>
                   <p className="mt-1 text-muted-foreground">
                     Se você só quer corrigir um valor, anule o lançamento em Ganhos em vez
@@ -189,7 +192,7 @@ export function CaseDetailActions({
             <AlertDialogCancel disabled={isPendingDelete}>Cancelar</AlertDialogCancel>
             <Button
               variant="destructive"
-              disabled={isPendingDelete || deleteBlocked}
+              disabled={isPendingDelete || earningsUnknown}
               onClick={handleDeleteCase}
             >
               {isPendingDelete ? "Excluindo…" : "Excluir"}

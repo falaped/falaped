@@ -4,6 +4,11 @@ import type { SupabaseClient } from "@supabase/supabase-js"
  * Deletes a case and related data: case, case_messages (cascade or explicit),
  * incoming_webhook_events and trigger_buffer_runs for the user's phone.
  * Case ownership is verified via user_phone resolved from profile_id.
+ *
+ * `financial_entries.case_id` é `on delete cascade`: apagar o caso APAGA os lançamentos
+ * dele — anulados ou não, a FK não olha para `voided_at` — e eles saem dos totais do
+ * painel de Ganhos, inclusive de meses já fechados. Sem trilha de auditoria: o cascade
+ * não passa pela anulação (D-19). Quem chama precisa avisar o médico ANTES.
  */
 export async function deleteCase(
   supabase: SupabaseClient,
@@ -39,13 +44,6 @@ export async function deleteCase(
     .single()
 
   if (deleteCaseError) {
-    // `financial_entries.case_id` é `on delete restrict` (D-26 revisada): um caso que
-    // tem lançamento — ANULADO OU NÃO, a FK não olha para `voided_at` — não pode ser
-    // apagado. O Postgres devolve 23503 (foreign_key_violation); o sentinela deixa o
-    // action montar a mensagem PT-BR em vez de vazar o erro cru do banco para o médico.
-    if (deleteCaseError.code === "23503") {
-      throw new Error("[CASES] CASE_HAS_FINANCIAL_ENTRIES")
-    }
     throw new Error(`[CASES] Failed to delete case: ${deleteCaseError.message}`)
   }
 
