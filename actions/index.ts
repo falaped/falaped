@@ -167,6 +167,8 @@ export {
   type VoidFinancialEntryResult,
   restoreFinancialEntryAction,
   type RestoreFinancialEntryResult,
+  markCaseEarningsPromptedAction,
+  type MarkCaseEarningsPromptedResult,
 } from "./financial-entries"
 export {
   createProcedureCatalogItemAction,

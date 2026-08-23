@@ -18,3 +18,7 @@ export {
   restoreFinancialEntryAction,
   type RestoreFinancialEntryResult,
 } from "./restore-financial-entry"
+export {
+  markCaseEarningsPromptedAction,
+  type MarkCaseEarningsPromptedResult,
+} from "./mark-case-earnings-prompted"

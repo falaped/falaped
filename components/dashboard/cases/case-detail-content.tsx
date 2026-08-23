@@ -162,12 +162,18 @@ export async function CaseDetailContent({ id }: { id: string }) {
             totalCents={earningsTotals.totalCents}
           />
         ) : null}
-        {/* Caso encerrado sem lançamento não-anulado: convida a lançar. Ancorado no ESTADO
-            e não no evento de encerramento, porque três dos quatro caminhos que encerram um
-            caso rodam no servidor (assistente, novo atendimento sobre o ativo, chamada
-            direta) e nunca puderam abrir o diálogo. `earningsTotals == null` = leitura
+        {/* Caso encerrado sem lançamento não-anulado E com a pergunta ainda em aberto:
+            convida a lançar. Ancorado no ESTADO e não no evento de encerramento, porque
+            três dos quatro caminhos que encerram um caso rodam no servidor (assistente,
+            novo atendimento sobre o ativo, chamada direta) e nunca puderam abrir o
+            diálogo. `earnings_prompted_at` preenchido = o médico já respondeu (lançou ou
+            dispensou como cortesia) e a pergunta é UMA VEZ por caso — sem essa condição a
+            cortesia deixava o card para sempre na tela. `earningsTotals == null` = leitura
             falhou → não convida, para não arriscar duplicata. */}
-        {!isActive && earningsTotals != null && earningsTotals.count === 0 ? (
+        {!isActive &&
+        earningsTotals != null &&
+        earningsTotals.count === 0 &&
+        caseDetail.earnings_prompted_at == null ? (
           <CasePendingEarningsCard caseId={id} todayLabel={todayLabel} />
         ) : null}
         {reportBlock}

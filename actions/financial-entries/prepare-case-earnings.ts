@@ -3,6 +3,7 @@
 import { createClient } from "@/lib/supabase/server"
 import { getAuthenticatedUser } from "@/modules/supabase/get-authenticated-user"
 import { findOwnedCaseId } from "@/modules/cases/find-owned-case-id"
+import { getCaseEarningsPromptedAt } from "@/modules/cases/get-case-earnings-prompted-at"
 import { countNonVoidedEntriesForCase } from "@/modules/financial-entries/count-non-voided-entries-for-case"
 import {
   listProcedureCatalogItems,
@@ -23,8 +24,10 @@ export type PrepareCaseEarningsResult =
  * Decide se o app deve perguntar o que foi cobrado depois de encerrar um caso, e entrega
  * o pré-preenchimento da etapa 2 no MESMO round-trip (EARN-01).
  *
- * `ask: false` é a guarda D-10: o caso já tem lançamento não-anulado, então nada é
- * perguntado e nenhuma UI extra aparece — silêncio é o requisito.
+ * `ask: false` significa "não pergunte", por dois motivos independentes: o caso já
+ * RESPONDEU a pergunta (`cases.earnings_prompted_at`, uma vez por caso — inclui a
+ * cortesia, que não deixa lançamento) ou já tem lançamento não-anulado (guarda D-10).
+ * Nos dois casos nada é perguntado e nenhuma UI extra aparece — silêncio é o requisito.
  *
  * Existe como action (e não como props do RSC) porque `CaseDetailActions` está três
  * componentes cliente abaixo do RSC: descer o valor da consulta e o catálogo inteiro por
@@ -49,6 +52,13 @@ export async function prepareCaseEarningsAction(
     // nunca olha para public.cases (T-10-23). Mensagem neutra única (T-10-24).
     const ownedCaseId = await findOwnedCaseId(supabase, caseId, profile.id)
     if (!ownedCaseId) return { ok: false, error: "Caso inválido para este perfil." }
+
+    // A pergunta é UMA VEZ por caso. `earnings_prompted_at` preenchido = o médico já
+    // respondeu (salvou ou dispensou com "Sem cobrança"), e reabrir + encerrar o mesmo
+    // caso NÃO pergunta de novo: é o mesmo atendimento. Esta checagem vem antes da
+    // contagem porque cobre o que a contagem não cobre — cortesia deixa zero lançamento.
+    const promptedAt = await getCaseEarningsPromptedAt(supabase, ownedCaseId)
+    if (promptedAt !== null) return { ok: true, ask: false }
 
     const alreadyBilled = await countNonVoidedEntriesForCase(
       supabase,

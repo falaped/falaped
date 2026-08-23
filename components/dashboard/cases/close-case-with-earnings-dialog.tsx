@@ -7,6 +7,7 @@ import { toast } from "sonner"
 
 import {
   createCaseFinancialEntriesAction,
+  markCaseEarningsPromptedAction,
   prepareCaseEarningsAction,
   updateCaseStatusAction,
 } from "@/actions"
@@ -248,6 +249,22 @@ export function CloseCaseWithEarningsDialog({
           amount: amounts[item.id] ?? "",
         })),
     }
+  }
+
+  /**
+   * "Sem cobrança" — cortesia (D-09). Não lança nada, mas É uma resposta: registra
+   * `earnings_prompted_at` para a pergunta não voltar (uma vez por caso, inclusive
+   * reabrindo e encerrando de novo).
+   *
+   * A falha do registro não vira erro na tela: o médico dispensou, o caso está encerrado
+   * e nada foi cobrado — a única consequência é o card de pendência continuar aparecendo
+   * no caso, que é justamente a oferta de tentar outra vez.
+   */
+  function handleDismiss() {
+    startSaving(async () => {
+      await markCaseEarningsPromptedAction(caseId)
+      closeAndRefresh("Caso encerrado sem lançamento.")
+    })
   }
 
   function handleSaveEntries() {
@@ -524,7 +541,7 @@ export function CloseCaseWithEarningsDialog({
                 type="button"
                 variant="ghost"
                 disabled={isSaving}
-                onClick={() => closeAndRefresh("Caso encerrado sem lançamento.")}
+                onClick={handleDismiss}
               >
                 Sem cobrança
               </Button>

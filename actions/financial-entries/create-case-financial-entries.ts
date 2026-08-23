@@ -9,6 +9,7 @@ import {
 } from "@/lib/schemas/financial-entry"
 import { getAuthenticatedUser } from "@/modules/supabase/get-authenticated-user"
 import { findOwnedCaseId } from "@/modules/cases/find-owned-case-id"
+import { markCaseEarningsPrompted } from "@/modules/cases/mark-case-earnings-prompted"
 import { countNonVoidedEntriesForCase } from "@/modules/financial-entries/count-non-voided-entries-for-case"
 import {
   createFinancialEntries,
@@ -109,13 +110,21 @@ export async function createCaseFinancialEntriesAction(
     // conseguiria marcar um procedimento que ele de fato realizou.
     const billableRows = rows.filter((row) => row.amount_cents > 0)
 
-    // (4) Cortesia — inclusive quando TODAS as linhas foram descartadas acima — não é
-    // erro: sucesso sem tocar no banco.
-    if (billableRows.length === 0) return { ok: true, created: 0 }
-
-    // (5) Um único insert é uma transação implícita: consulta + N procedimentos entram
+    // (4) Um único insert é uma transação implícita: consulta + N procedimentos entram
     // juntos ou não entram. Um conjunto parcial nunca pode ser observado.
-    const ids = await createFinancialEntries(supabase, profile.id, billableRows)
+    //
+    // Cortesia — inclusive quando TODAS as linhas foram descartadas acima — não é erro:
+    // sucesso sem tocar na tabela de lançamentos.
+    const ids =
+      billableRows.length > 0
+        ? await createFinancialEntries(supabase, profile.id, billableRows)
+        : []
+
+    // (5) A pergunta do lançamento foi RESPONDIDA, e é uma vez por caso: reabrir e
+    // encerrar este mesmo caso não pergunta de novo. Marcado DEPOIS do insert de
+    // propósito — marcar antes e o insert falhar queimaria a única chance de faturar
+    // este atendimento. Marcado também quando `ids` é vazio: cortesia é resposta.
+    await markCaseEarningsPrompted(supabase, ownedCaseId)
 
     revalidatePath("/dashboard/earnings")
     revalidatePath(`/dashboard/cases/${ownedCaseId}`)
