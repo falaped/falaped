@@ -24,6 +24,7 @@ import { CaseDetailDocuments } from "@/components/dashboard/cases/case-detail-do
 import { CasePatientBlock } from "@/components/dashboard/cases/case-patient-block"
 import { CaseDetailStateCard } from "@/components/dashboard/cases/case-detail-state-card"
 import { CaseEarningsCard } from "@/components/dashboard/cases/case-earnings-card"
+import { CasePendingEarningsCard } from "@/components/dashboard/cases/case-pending-earnings-card"
 import { caseDetailMainStackClassName } from "@/components/dashboard/cases/case-detail-workspace"
 import { CaseReport } from "@/components/dashboard/cases/case-report"
 import { ConsultationTimerWidget } from "@/components/dashboard/cases/consultation-timer-widget"
@@ -160,6 +161,14 @@ export async function CaseDetailContent({ id }: { id: string }) {
             count={earningsTotals.count}
             totalCents={earningsTotals.totalCents}
           />
+        ) : null}
+        {/* Caso encerrado sem lançamento não-anulado: convida a lançar. Ancorado no ESTADO
+            e não no evento de encerramento, porque três dos quatro caminhos que encerram um
+            caso rodam no servidor (assistente, novo atendimento sobre o ativo, chamada
+            direta) e nunca puderam abrir o diálogo. `earningsTotals == null` = leitura
+            falhou → não convida, para não arriscar duplicata. */}
+        {!isActive && earningsTotals != null && earningsTotals.count === 0 ? (
+          <CasePendingEarningsCard caseId={id} todayLabel={todayLabel} />
         ) : null}
         {reportBlock}
         <CaseDetailDocuments

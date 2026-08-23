@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useTransition } from "react"
+import { useEffect, useState, useTransition } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { toast } from "sonner"
@@ -49,6 +49,19 @@ type CloseCaseWithEarningsDialogProps = {
    * silêncio, sem erro de tipo e sem falha de build.
    */
   todayLabel: string
+  /**
+   * `"close"` (default): as duas etapas — encerra o caso, depois pergunta o que foi cobrado.
+   *
+   * `"earnings"`: SÓ a etapa 2, para um caso que JÁ está encerrado. Existe porque encerrar
+   * um caso não acontece só pelo botão `Ações → Encerrar caso`: o assistente encerra dentro
+   * de `sendCaseAssistantMessageAction` (intent `confirm_close_case`) e abrir um novo
+   * atendimento encerra o ativo em `createDashboardCaseWithPatient` — dois caminhos que
+   * rodam no servidor, onde não existe cliente para abrir modal. Amarrar a pergunta ao
+   * EVENTO de encerramento perdia o lançamento nesses caminhos, e também não dava volta
+   * quando o médico dispensava a etapa 2 (que é cortesia, e por isso irreversível hoje).
+   * Ancorar no ESTADO (caso encerrado sem lançamento não-anulado) cobre os quatro caminhos.
+   */
+  mode?: "close" | "earnings"
 }
 
 type FieldErrors = {
@@ -77,6 +90,7 @@ export function CloseCaseWithEarningsDialog({
   open,
   onOpenChange,
   todayLabel,
+  mode = "close",
 }: CloseCaseWithEarningsDialogProps) {
   const router = useRouter()
   const [isClosing, startClosing] = useTransition()
@@ -121,6 +135,36 @@ export function CloseCaseWithEarningsDialog({
     router.refresh()
   }
 
+  /**
+   * Busca o pré-preenchimento e avança para a etapa 2. Devolve o motivo de NÃO ter
+   * avançado, para quem chama decidir o que dizer — nunca engolir.
+   *
+   * `"already-billed"` é a guarda D-10 (`ask: false`) e é MUDA de propósito: o caso já tem
+   * lançamento não-anulado, então nada é perguntado e nenhum banner aparece.
+   * `"error"` é diferente e não pode virar silêncio: um preparo falhado sem mensagem
+   * produz exatamente o sintoma "encerrei o caso e o modal não apareceu" sem nenhuma
+   * pista do porquê.
+   */
+  async function loadEarningsStep(): Promise<"ok" | "already-billed" | "error"> {
+    const prepared = await prepareCaseEarningsAction(caseId)
+    if (!prepared.ok) return "error"
+    if (!prepared.ask) return "already-billed"
+
+    setCatalog(prepared.procedures)
+    setConsultationPriceCents(prepared.consultationPriceCents)
+    setConsultationAmount(formatCentsToInputValue(prepared.consultationPriceCents))
+    setAmounts(
+      Object.fromEntries(
+        prepared.procedures.map((item) => [
+          item.id,
+          formatCentsToInputValue(item.price_cents),
+        ]),
+      ),
+    )
+    setStep("earnings")
+    return "ok"
+  }
+
   function handleConfirmClose() {
     startClosing(async () => {
       const closed = await updateCaseStatusAction(caseId, "closed")
@@ -133,31 +177,43 @@ export function CloseCaseWithEarningsDialog({
         return
       }
 
-      const prepared = await prepareCaseEarningsAction(caseId)
-      // Guarda D-10 (`ask: false`): o caso já tem lançamento não-anulado, então nada é
-      // perguntado — sem etapa 2, sem banner de "já faturado". Silêncio é o requisito.
-      // Uma falha no preparo cai no mesmo caminho: o caso está encerrado de fato, e
-      // travar a tela por causa do pré-preenchimento seria pior.
-      if (!prepared.ok || !prepared.ask) {
+      const outcome = await loadEarningsStep()
+      if (outcome === "already-billed") {
         closeAndRefresh("Caso encerrado.")
         return
       }
-
-      setCatalog(prepared.procedures)
-      setConsultationPriceCents(prepared.consultationPriceCents)
-      setConsultationAmount(formatCentsToInputValue(prepared.consultationPriceCents))
-      setAmounts(
-        Object.fromEntries(
-          prepared.procedures.map((item) => [
-            item.id,
-            formatCentsToInputValue(item.price_cents),
-          ]),
-        ),
-      )
-      setStep("earnings")
+      if (outcome === "error") {
+        // O caso ESTÁ encerrado — dizer isso, e dizer também que o lançamento não abriu.
+        // O caminho do card de pendência (modo `earnings`) continua disponível depois.
+        resetForm()
+        onOpenChange(false)
+        toast.error("Caso encerrado, mas não foi possível abrir o lançamento. Você pode lançar pelo caso.")
+        router.refresh()
+        return
+      }
       router.refresh()
     })
   }
+
+  // Modo `earnings`: o caso já está encerrado, então não há etapa 1 para atravessar —
+  // buscar o pré-preenchimento assim que o diálogo abre.
+  useEffect(() => {
+    if (!open || mode !== "earnings" || step !== "confirm") return
+    startClosing(async () => {
+      const outcome = await loadEarningsStep()
+      if (outcome === "ok") return
+      resetForm()
+      onOpenChange(false)
+      if (outcome === "already-billed") {
+        // Alguém lançou entre a renderização e o clique. Nada a fazer, e nada a esconder.
+        toast.info("Este caso já tem lançamentos.")
+      } else {
+        toast.error("Não foi possível abrir o lançamento. Tente novamente.")
+      }
+      router.refresh()
+    })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, mode, step])
 
   // Só as linhas de valor POSITIVO entram no resumo: a action descarta as de valor zero
   // antes do insert, então contá-las aqui prometeria um lançamento que não vai existir.
@@ -249,7 +305,15 @@ export function CloseCaseWithEarningsDialog({
           if (step === "earnings" && isDirty) e.preventDefault()
         }}
       >
-        {step === "confirm" ? (
+        {step === "confirm" && mode === "earnings" ? (
+          // Modo `earnings` nunca mostra a etapa 1: o caso já está encerrado. Este é o
+          // intervalo entre abrir e o pré-preenchimento chegar — sem ele, a confirmação
+          // de "Encerrar caso?" piscaria na tela de um caso que já está encerrado.
+          <AlertDialogHeader>
+            <AlertDialogTitle>Registrar o que foi cobrado</AlertDialogTitle>
+            <AlertDialogDescription>Carregando os valores…</AlertDialogDescription>
+          </AlertDialogHeader>
+        ) : step === "confirm" ? (
           <>
             <AlertDialogHeader>
               <AlertDialogTitle>Encerrar caso?</AlertDialogTitle>
