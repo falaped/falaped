@@ -635,23 +635,6 @@ export function CalendarEditor({
 
   // ---------- mutações ADITIVAS do draft (puras: recebem e devolvem draft) ----------
 
-  /** Disponibilidade RECORRENTE (template do dia da semana) para [start, end). */
-  const addRecurringPeriod = React.useCallback(
-    (base: Draft, localDate: string, start: number, end: number, slot: number) => {
-      const weekday = weekdayOf(localDate, timeZone)
-      const next = cloneDraft(base)
-      for (let m = start; m < end; m += STEP) {
-        const dk = dateKey(localDate, m)
-        // Reabrir horário que estava em folga naquele minuto (só nesta data).
-        next.subtractCells.delete(dk)
-        next.rulePainted.add(ruleCellKey(weekday, m))
-      }
-      next.ruleDurations[`${weekday}:${start}`] = slot
-      return next
-    },
-    [timeZone],
-  )
-
   /**
    * Disponibilidade RECORRENTE direta num `weekday` específico (independente da
    * data escolhida) — usada quando o painel pede recorrência por dia da semana
