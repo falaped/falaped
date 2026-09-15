@@ -40,3 +40,7 @@ export const GROQ_TRANSCRIPTION_MAX_FILE_BYTES = 25 * 1024 * 1024
 
 export const DASHBOARD_NEW_CASE_GREETING =
   "Prontuário iniciado. Vou te acompanhar neste atendimento. Pode me enviar os achados clínicos que eu organizo tudo por aqui."
+
+// Bucket privado do book.falaped.com.br (foto de referência, ilustrações e PDF).
+// Sem policies: acesso só via service role, identificado por books.access_token.
+export const BOOK_ASSETS_BUCKET = "book-assets"
