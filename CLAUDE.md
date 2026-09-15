@@ -11,6 +11,7 @@ Falaped é um app web para o dia a dia do pediatra: cadastro de pacientes (crian
 
 - **Tech stack**: Next.js 16 (App Router, Server Actions), React 19, TypeScript, Tailwind 4, shadcn/ui — manter o padrão de três camadas `app/ → actions/ → modules/`.
 - **Backend**: Supabase (Postgres + Auth + Storage) — toda query escopada por `profile_id`; manter gate de assinatura nos novos actions.
+- **Supabase via MCP**: toda operação no projeto Supabase (aplicar migration, consultar tabelas/schema, SQL, logs, advisors, storage, edge functions, tipos) passa pelo MCP `supabase` — não pela CLI, dashboard ou scripts ad hoc.
 - **PDF**: geração via `@falaped/falaped-kit/pdf` (pdfkit como `serverExternalPackage`) — a correção de impressão atua aqui.
 - **Privacidade**: fotos de crianças são dado sensível — armazenar com cuidado (acesso escopado ao médico dono).
 - **Sem prazo**: melhoria contínua, sem data limite — priorizar por dor real de uso.
