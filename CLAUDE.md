@@ -1,4 +1,3 @@
-<!-- GSD:project-start source:PROJECT.md -->
 
 ## Project
 
@@ -15,10 +14,6 @@ Falaped é um app web para o dia a dia do pediatra: cadastro de pacientes (crian
 - **PDF**: geração via `@falaped/falaped-kit/pdf` (pdfkit como `serverExternalPackage`) — a correção de impressão atua aqui.
 - **Privacidade**: fotos de crianças são dado sensível — armazenar com cuidado (acesso escopado ao médico dono).
 - **Sem prazo**: melhoria contínua, sem data limite — priorizar por dor real de uso.
-
-<!-- GSD:project-end -->
-
-<!-- GSD:stack-start source:codebase/STACK.md -->
 
 ## Technology Stack
 
@@ -88,10 +83,6 @@ Falaped é um app web para o dia a dia do pediatra: cadastro de pacientes (crian
 - Vercel (target deployment; `VERCEL_URL` referenced, `.vercel` gitignored, README is Supabase + Vercel starter)
 - Supabase (hosted Postgres + Auth + Storage)
 
-<!-- GSD:stack-end -->
-
-<!-- GSD:conventions-start source:CONVENTIONS.md -->
-
 ## Conventions
 
 ## Tooling
@@ -145,17 +136,7 @@ Falaped é um app web para o dia a dia do pediatra: cadastro de pacientes (crian
 - Every action and route handler calls `getAuthenticatedUser(supabase)` and gates on `profile.status === "paid"`
 - All data access scoped by `profile_id` / `user_phone` ownership filters
 
-<!-- GSD:conventions-end -->
-
-<!-- GSD:architecture-start source:ARCHITECTURE.md -->
-
 ## Architecture
-
-## Pattern Overview
-
-```
-
-```
 
 ## Layers
 
@@ -200,45 +181,3 @@ Falaped é um app web para o dia a dia do pediatra: cadastro de pacientes (crian
 - Do not return thrown errors raw to the client — convert to result unions in actions
 - Route handlers only when a Server Action cannot serve the response type
 
-<!-- GSD:architecture-end -->
-
-<!-- GSD:skills-start source:skills/ -->
-
-## Project Skills
-
-| Skill | Description | Path |
-|-------|-------------|------|
-| auth-flow | Fluxo de autenticação Supabase Auth (auth.users → profiles → authenticated_users, user_phone, middleware). Use ao implementar login, proteger rotas, resolver user_phone ou ao falar de autenticação no dashboard. | `.cursor/skills/auth-flow/SKILL.md` |
-| code-refactoring | Analisa domínios, módulos, pastas ou fluxos do FALAPED para identificar oportunidades de refatoração com base nas rules e convenções do projeto. Gera relatório estruturado por categoria e implementa após aprovação. Use quando o usuário pedir refatoração, revisão de código, limpeza, melhoria de qualidade, ou análise de débito técnico em um módulo, pasta ou fluxo. | `.cursor/skills/code-refactoring/SKILL.md` |
-| creative-director-falaped | Guia o agente no papel de Creative Director em novas demandas: obriga rodadas de perguntas de UI/UX ao usuário antes de brief ou recomendações fechadas; alinha à identidade visual do FALAPED (tokens, Shadcn, dashboard). Complementa feature-planning-agile-po. Use quando o usuário pedir direção criativa, UX da feature, layout, estados de tela, acessibilidade ou planejar feature com foco em design. | `.cursor/skills/creative-director-falaped/SKILL.md` |
-| dashboard-falaped |  | `.cursor/skills/dashboard-falaped/SKILL.md` |
-| dependency-stack | Dependências principais do dashboard FALAPED (Next, Supabase, react-query, Zod, Tailwind). Use ao adicionar ou trocar pacotes, ou ao falar de stack e libs do projeto. | `.cursor/skills/dependency-stack/SKILL.md` |
-| feature-planning-agile-po | Guia o agente no papel de Agile Master e Product Owner em discovery e especificação de features. Obriga rodadas de perguntas ao usuário antes de PRD ou user stories; depois produz PRD em Markdown com US, priorização (MoSCoW ou impacto × esforço) e riscos. Use quando o usuário pedir PRD, documento de requisitos, planejar feature, especificação, user stories, refinar backlog, priorizar, levantar riscos, discovery, PO ou Agile Master. | `.cursor/skills/feature-planning-agile-po/SKILL.md` |
-| pediatric-dashboard-design |  | `.cursor/skills/pediatric-dashboard-design/SKILL.md` |
-| prompt-engineering | Validates, refactors, and creates LLM prompts following OpenAI and Groq best practices. Use when writing system/user prompts, reviewing existing prompts, creating new AI instructions, or when the user mentions prompt engineering, prompt quality, prompt validation, or prompt refactoring. | `.cursor/skills/prompt-engineering/SKILL.md` |
-| storage-pdfs | Supabase Storage para PDFs de relatório (bucket report-pdfs, signed URLs, paths). Use ao listar, baixar ou referenciar PDFs de relatório por caso. | `.cursor/skills/storage-pdfs/SKILL.md` |
-| supabase-falaped | Define onde e como criar queries Supabase no dashboard FALAPED (uma query por arquivo em modules/{domain}, client como primeiro argumento). Use ao criar ou alterar queries, adicionar tabelas, migrations ou ao falar de Supabase, authenticated_users, cases, case_messages, patients neste projeto. | `.cursor/skills/supabase-falaped/SKILL.md` |
-<!-- GSD:skills-end -->
-
-<!-- GSD:workflow-start source:GSD defaults -->
-
-## GSD Workflow Enforcement
-
-Before using Edit, Write, or other file-changing tools, start work through a GSD command so planning artifacts and execution context stay in sync.
-
-Use these entry points:
-
-- `/gsd-quick` for small fixes, doc updates, and ad-hoc tasks
-- `/gsd-debug` for investigation and bug fixing
-- `/gsd-execute-phase` for planned phase work
-
-Do not make direct repo edits outside a GSD workflow unless the user explicitly asks to bypass it.
-<!-- GSD:workflow-end -->
-
-<!-- GSD:profile-start -->
-
-## Developer Profile
-
-> Profile not yet configured. Run `/gsd-profile-user` to generate your developer profile.
-> This section is managed by `generate-claude-profile` -- do not edit manually.
-<!-- GSD:profile-end -->
