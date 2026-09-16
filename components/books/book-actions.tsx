@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation"
 import { toast } from "sonner"
 import { Download, FileText, RefreshCw, Sparkles, Trash2 } from "lucide-react"
 
+import type { GeneratePagesActionResult } from "@/actions/books/generate-pages"
 import {
   buildBookPdfAction,
   deleteBookAction,
@@ -49,6 +50,16 @@ export function BookActions({ book }: { book: BookWithPages }) {
     }
   }
 
+  // Uma chamada gera uma ou duas ondas (limite de 300 s da função); repete até não sobrar pendente.
+  async function generateAllPages(): Promise<Result> {
+    let result: GeneratePagesActionResult
+    do {
+      result = await generatePagesAction(book.id)
+      router.refresh()
+    } while (result.ok && result.pending?.length)
+    return result
+  }
+
   async function onDelete() {
     if (!confirm("Excluir este livro e todos os arquivos? Não dá para desfazer.")) return
     setBusy("delete")
@@ -78,7 +89,7 @@ export function BookActions({ book }: { book: BookWithPages }) {
           <Button
             disabled={busy !== null}
             onClick={() =>
-              run("pages", () => generatePagesAction(book.id), "Todas as páginas prontas.")
+              run("pages", generateAllPages, "Todas as páginas prontas.")
             }
           >
             <Sparkles className="mr-2 size-4" aria-hidden />
