@@ -34,7 +34,8 @@ export async function BookDetail({ params }: { params: Promise<{ id: string }> }
 
   return (
     <>
-      <div className="border-b-2 border-ink bg-white px-4 py-[18px] sm:px-10 sm:pb-6 sm:pt-7">
+      <div className="border-b-2 border-ink bg-white">
+      <div className="mx-auto max-w-[1400px] px-4 py-[18px] sm:px-10 sm:pb-6 sm:pt-7">
         <Link
           href="/books"
           className="inline-flex items-center gap-1.5 text-[13px] font-bold text-ink underline decoration-secondary decoration-2 underline-offset-4"
@@ -49,6 +50,7 @@ export async function BookDetail({ params }: { params: Promise<{ id: string }> }
           <BookStatusSticker status={book.status} />
         </div>
         <p className="mt-2.5 text-[12.5px] font-medium leading-relaxed text-[#3f3f46] sm:mt-3 sm:text-sm">{meta}</p>
+      </div>
       </div>
       <BookActions book={book} title={title} />
     </>

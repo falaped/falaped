@@ -19,7 +19,7 @@ export async function BooksList() {
 
   if (!books.length)
     return (
-      <div className="mx-4 mb-8 flex flex-col items-center gap-4 rounded-[20px] border-2 border-dashed border-ink bg-white px-6 py-12 text-center sm:mx-10 sm:mb-14 sm:px-10 sm:py-14">
+      <div className="mx-4 mb-8 flex max-w-[1400px] flex-col xl:mx-auto items-center gap-4 rounded-[20px] border-2 border-dashed border-ink bg-white px-6 py-12 text-center sm:mx-10 sm:mb-14 sm:px-10 sm:py-14">
         <div className="relative grid h-[200px] w-[150px] -rotate-4 place-items-center overflow-hidden rounded-[14px] border-2 border-ink bg-accent shadow-hard-md">
           <BrandBlur className="scale-100 blur-xl" />
           <BookOpen className="relative size-11" strokeWidth={1.8} aria-hidden />
@@ -36,7 +36,7 @@ export async function BooksList() {
     )
 
   return (
-    <div className="grid gap-5 px-4 pb-8 sm:grid-cols-2 sm:gap-7 sm:px-10 sm:pb-14 lg:grid-cols-3">
+    <div className="mx-auto grid max-w-[1400px] gap-5 px-4 pb-8 sm:grid-cols-2 sm:gap-7 sm:px-10 sm:pb-14 lg:grid-cols-3">
       {books.map((b) => (
         <BookCard key={b.id} book={b} />
       ))}

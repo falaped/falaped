@@ -194,12 +194,8 @@ export function BookActions({ book, title }: { book: BookWithPages; title: strin
 
   return (
     <>
-      <section
-        className={cn(
-          "grid gap-3.5 border-b-2 border-ink px-4 py-4 sm:grid-cols-[auto_minmax(0,1fr)_auto] sm:items-center sm:gap-7 sm:px-10 sm:py-5",
-          bannerBg,
-        )}
-      >
+      <section className={cn("border-b-2 border-ink", bannerBg)}>
+        <div className="mx-auto grid max-w-[1400px] gap-3.5 px-4 py-4 sm:grid-cols-[auto_minmax(0,1fr)_auto] sm:items-center sm:gap-7 sm:px-10 sm:py-5">
         <div className="flex items-center gap-3 sm:contents">
           <Sticker className={cn("rounded-[10px] px-3 py-[9px] font-display text-[17px] normal-case tracking-tight shadow-hard-xs sm:rounded-xl sm:px-4 sm:py-3 sm:text-2xl", stickerBg)}>
             Passo {stepNumber}
@@ -273,9 +269,11 @@ export function BookActions({ book, title }: { book: BookWithPages; title: strin
             <Trash2 className="size-4" strokeWidth={2.2} aria-hidden />
           </BkButton>
         </div>
+        </div>
       </section>
 
-      <div className="grid gap-2.5 border-b-2 border-ink bg-white px-4 py-3.5 sm:grid-cols-[auto_minmax(0,1fr)_auto] sm:items-center sm:gap-5 sm:px-10 sm:py-4">
+      <div className="border-b-2 border-ink bg-white">
+      <div className="mx-auto grid max-w-[1400px] gap-2.5 px-4 py-3.5 sm:grid-cols-[auto_minmax(0,1fr)_auto] sm:items-center sm:gap-5 sm:px-10 sm:py-4">
         <span className="whitespace-nowrap font-display text-lg font-extrabold leading-none tracking-tight sm:text-xl">
           {readyCount} de {BOOK_PAGE_COUNT} <span className="font-sans text-[12.5px] font-semibold tracking-normal text-[#3f3f46] sm:text-[13px]">páginas prontas</span>
         </span>
@@ -308,8 +306,9 @@ export function BookActions({ book, title }: { book: BookWithPages; title: strin
           {!busy && allReady && !book.pdf_path && <Chip>PDF ainda não gerado</Chip>}
         </div>
       </div>
+      </div>
 
-      <div className="grid grid-cols-2 gap-4 px-4 pb-8 pt-5 sm:grid-cols-3 sm:gap-[22px] sm:px-10 sm:pb-14 sm:pt-8 lg:grid-cols-5">
+      <div className="mx-auto grid max-w-[1400px] grid-cols-2 gap-4 px-4 pb-8 pt-5 sm:grid-cols-3 sm:gap-[22px] sm:px-10 sm:pb-14 sm:pt-8 lg:grid-cols-5">
         {pages.map((page, index) => {
           let state: PageCardState = "pending"
           if (redoingIndex === index || (busy === "cover" && index === COVER_INDEX)) state = "redoing"
