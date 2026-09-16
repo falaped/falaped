@@ -59,3 +59,4 @@ ds-bundle/
 # Local MCP server config (Supabase MCP endpoint)
 .mcp.json
 # Cached research fetches
+.env*
