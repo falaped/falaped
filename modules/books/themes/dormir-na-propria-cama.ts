@@ -6,8 +6,6 @@ const MOM =
   "the mother, a warm woman with wavy chestnut hair to the shoulders, wearing a soft lilac pajama set"
 const DAD =
   "the father, a tall man with short dark hair, a trimmed beard, a gray t-shirt and navy pajama pants"
-const DRA =
-  "Dra. Lia, a friendly pediatrician with short brown hair, a white coat over teal scrubs, a colorful stethoscope and a warm smile"
 const DINO =
   "Dino, a plush green dinosaur with a cream belly, a stitched smile and small felt spikes, about the size of the child's torso"
 const COUSIN =
@@ -15,11 +13,11 @@ const COUSIN =
 
 /**
  * Roteiro validado no teste "A Cama do Samuel" (15/09/2026), expandido de 10
- * para 17 páginas. Arco: cama dos pais toda noite → dica da Dra. Lia (banho,
+ * para 17 páginas. Arco: cama dos pais toda noite → plano da mamãe (banho,
  * história, luz baixa, amigo de pelúcia) → primeira noite com medo → volta
  * sozinho para a cama → chuva e trovão → recaída acolhida → ensina a prima →
- * dorme na própria cama. A criança fica de pijama em todas as cenas; a
- * consulta aparece como lembrança (balão de pensamento).
+ * dorme na própria cama. A criança fica de pijama em todas as cenas; sem
+ * pediatra na história (só no encerramento).
  * Índices do livro: 0 capa, 1 dedicatória, 2..18 história, 19 final.
  */
 export const dormirNaPropriaCama: BookTheme = {
@@ -48,16 +46,16 @@ export const dormirNaPropriaCama: BookTheme = {
       refs: [2],
     },
     {
-      text: "Foi aí que a mamãe lembrou da consulta. [A|O] {pediatra} tinha dito que {meninos|meninas} grandes conseguem dormir na própria cama. E que {nome} já era grande o bastante para tentar.",
-      scene: `same sunny kitchen; ${MOM} talks gently to the {boy|girl}, one finger raised as she remembers; above her a soft rounded thought bubble shows ${DRA} smiling in a colorful consulting room; the {boy|girl} listens with wide eyes, holding ${DINO}.`,
+      text: "Foi aí que a mamãe teve uma ideia. {Meninos|Meninas} grandes conseguem dormir na própria cama, ela disse. E {nome} já era grande o bastante para tentar. {Ele|Ela} ficou pensando naquilo.",
+      scene: `same sunny kitchen; ${MOM} talks gently to the {boy|girl}, one finger raised with a bright-idea face; the {boy|girl} listens with wide eyes, holding ${DINO}; ${DAD} pours coffee behind them.`,
       panel: "upper",
       refs: [2],
     },
     {
-      text: "{nome} lembrou da dica [da doutora|do doutor], contada nos dedos: um banho quentinho, uma história, a luz bem baixa e um amigo de pelúcia para fazer companhia a noite inteira.",
-      scene: `large soft thought bubble filling most of the image: inside it, ${DRA} crouches at the child's height showing four fingers with a kind smile, and the {boy|girl} in the pajamas holds ${DINO} and nods; the real {boy|girl} sits at the bottom of the image at the kitchen table, eyes up, remembering.`,
+      text: "A mamãe contou o plano nos dedos: um banho quentinho, uma história, a luz bem baixa e um amigo de pelúcia para fazer companhia a noite inteira. O Dino se ofereceu na hora.",
+      scene: `sunny kitchen; ${MOM} crouches at the child's height showing four fingers with a kind smile; the {boy|girl} holds ${DINO} up toward her with both hands and nods eagerly.`,
       panel: "lower",
-      refs: [4],
+      refs: [2],
     },
     {
       text: "Naquela noite começou o plano. Primeiro, o banho quentinho com espuma até as orelhas. Depois, o pijama de estrelas. O Dino esperava sentado no banquinho, todo orgulhoso.",
@@ -126,7 +124,7 @@ export const dormirNaPropriaCama: BookTheme = {
       refs: [],
     },
     {
-      text: "{nome} ensinou a dica [da|do] {pediatra}: respira fundo, abraça o amigo e conta as estrelinhas. Emprestou o Dino e as duas cabeças ficaram olhando para o teto juntas.",
+      text: "{nome} ensinou a dica da mamãe: respira fundo, abraça o amigo e conta as estrelinhas. Emprestou o Dino e as duas cabeças ficaram olhando para o teto juntas.",
       scene: `both children lie side by side on the blue bed looking up; the {boy|girl} points at the glowing ceiling stars; ${COUSIN} hugs ${DINO} against her chest, now smiling softly, her pillow beside her.`,
       panel: "upper",
       refs: [16],

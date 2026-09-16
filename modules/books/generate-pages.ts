@@ -40,7 +40,7 @@ export async function generatePages(
   const child = { name: book.child_name, gender: book.child_gender, pediatricianName: book.pediatrician_name }
   const pending = new Map<number, number[]>()
   for (let index = 1; index < BOOK_PAGE_COUNT; index++) {
-    if (!ready.has(index)) pending.set(index, buildPagePrompt({ theme, child, index }).refIndexes)
+    if (!ready.has(index)) pending.set(index, buildPagePrompt({ theme, child, index, story: book.story }).refIndexes)
   }
 
   await supabase.from("books").update({ status: "generating", updated_at: new Date().toISOString() }).eq("id", book.id)

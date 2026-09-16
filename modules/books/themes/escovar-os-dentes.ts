@@ -18,9 +18,10 @@ const BRUSH =
   "a red toothbrush with a small cartoon dinosaur head on the handle"
 
 /**
- * Arco: foge da escova → na consulta, o pediatra mostra os bichinhos do açúcar
- * e a escova heroína → dica (manhã e noite, 2 minutos com música, adulto termina)
- * → escova nova de dinossauro → escovação vira brincadeira → esquece um dia e
+ * Arco: foge da escova → na consulta (2 páginas), o pediatra mostra os
+ * bichinhos do açúcar e dá a dica (2 minutos com música, manhã e noite, adulto
+ * termina) → a criança imagina a escova heroína e conta ao papai → escova
+ * nova de dinossauro → escovação vira brincadeira → esquece um dia e
  * sente o gosto ruim → calendário → dentista sem medo → ensina a prima →
  * sorriso brilhante. Roupa de dia única em todas as cenas.
  * Índices do livro: 0 capa, 1 dedicatória, 2..18 história, 19 final.
@@ -51,28 +52,28 @@ export const escovarOsDentes: BookTheme = {
       refs: [2],
     },
     {
-      text: "Um dia, na consulta, {nome} abriu a boca bem grande. [A|O] {pediatra} olhou com a lanterninha e disse que tinha visitantes ali dentro. Visitantes pequenininhos, grudentos e muito, muito espertos.",
-      scene: `bright consulting room; the {boy|girl} sits on the exam table with the mouth wide open; ${DRA} shines a small penlight into the child's mouth, leaning close with a playful smile; ${MOM} watches from a chair by the wall.`,
+      text: "Na consulta, {nome} abriu a boca bem grande. [A|O] {pediatra} olhou com a lanterninha e mostrou um desenho: bichinhos grudentos que adoram açúcar e fazem buraquinhos nos dentes. Que nojo, disse {nome}.",
+      scene: `bright consulting room; the {boy|girl} sits on the exam table with the mouth wide open, nose wrinkled; ${DRA} shines a small penlight into the child's mouth with one hand and holds up a drawing of a big cartoon tooth covered with ${BUGS} (a picture only, no letters) with the other; ${MOM} watches from a chair by the wall.`,
       panel: "upper",
       refs: [2],
     },
     {
-      text: "[Ela|Ele] mostrou um desenho: bichinhos redondos e grudentos, felizes da vida, agarrados nos dentes depois do doce. Eles adoram açúcar e fazem buraquinhos onde ficam. Que nojo, disse {nome}.",
-      scene: `${DRA} holds up a large drawing of a big cartoon tooth covered with ${BUGS} clinging to it (a picture only, no letters); the {boy|girl} leans forward on the exam table with a disgusted, fascinated face, nose wrinkled.`,
-      panel: "lower",
-      refs: [4],
-    },
-    {
-      text: "Mas os bichinhos têm uma inimiga: a escova. Ela chega varrendo tudo, de manhã e antes de dormir, e não sobra nenhum. [A|O] {pediatra} chamou a escova de heroína.",
-      scene: `the {boy|girl} holds a second drawing showing a cartoon toothbrush with a tiny cape sweeping ${BUGS} off a shiny tooth (a picture only, no letters); ${DRA} points at it with a proud grin; the {boy|girl} smiles for the first time.`,
-      panel: "upper",
-      refs: [4],
-    },
-    {
-      text: "A dica foi simples: dois minutos, com uma música, na frente do espelho. E no final, a mamãe ou o papai dá a passada final, porque os dentes de trás são teimosos.",
+      text: "Mas os bichinhos têm uma inimiga: a escova. [A|O] {pediatra} ensinou o plano: dois minutos, com música, de manhã e antes de dormir. E um adulto dá a passada final nos dentes de trás.",
       scene: `${DRA} crouches at the child's height holding up two fingers with a kind smile; the {boy|girl} copies the gesture, two fingers up, standing beside ${MOM} near the consulting room door.`,
       panel: "lower",
       refs: [4, 2],
+    },
+    {
+      text: "No caminho de casa, {nome} não parava de pensar nos bichinhos. Imaginou a escova chegando de capa, varrendo todo mundo para fora. Uma escova heroína! Precisava de uma dessas.",
+      scene: `sunny sidewalk; the {boy|girl} walks beside ${MOM} looking up dreamily; above the child's head a soft daydream cloud shows a cartoon toothbrush with a tiny cape sweeping ${BUGS} off a shiny tooth (a picture only, no letters).`,
+      panel: "upper",
+      refs: [2],
+    },
+    {
+      text: "Em casa, {nome} contou tudo para o papai: os visitantes grudentos, a escova heroína, os dois minutos com música. O papai arregalou os olhos e perguntou: e onde a gente acha uma heroína dessas?",
+      scene: `evening living room; the {boy|girl} stands on the rug gesturing with both arms wide, telling a story with an excited face; ${DAD} sits on the sofa leaning forward with raised eyebrows and a playful surprised smile.`,
+      panel: "lower",
+      refs: [],
     },
     {
       text: "Na farmácia, {nome} escolheu uma escova nova, vermelha, com um dinossauro no cabo. E uma pasta de gosto suave, de morango. O dinossauro parecia pronto para a batalha.",
@@ -84,7 +85,7 @@ export const escovarOsDentes: BookTheme = {
       text: "Naquela noite, o papai ligou a música e a batalha começou. {nome} escovou em cima, embaixo, na frente, atrás. No espelho, fez cara de leão, de peixe e de robô.",
       scene: `bathroom at night, warm light; the {boy|girl} stands on the stool brushing with ${BRUSH}, foam around the mouth, pulling a wide roaring lion face at the mirror; ${DAD} stands behind holding a phone with a blank screen, swaying to the music.`,
       panel: "lower",
-      refs: [],
+      refs: [7],
     },
     {
       text: "Quando a música acabou, o papai deu a passada final nos dentes de trás. {nome} passou a língua: tudo liso, tudo fresquinho. Nenhum bichinho tinha sobrado para contar história.",

@@ -4,8 +4,6 @@ import type { BookTheme } from "@/modules/books/themes/types"
 // primeira aparição vira página-âncora (refs) para as seguintes.
 const MOM =
   "the mother, a woman with curly auburn hair in a ponytail, a white linen shirt and olive trousers"
-const DRA =
-  "Dra. Lia, a friendly pediatrician with short brown hair, a white coat over teal scrubs, a colorful stethoscope and a warm smile"
 const TEACHER =
   "the teacher, Tia Bia, a young woman with a short black bob, a yellow apron with big pockets over a striped t-shirt"
 const TEO =
@@ -13,10 +11,10 @@ const TEO =
 const BACKPACK = "a small orange backpack with a white cloud patch"
 
 /**
- * Arco: mochila nova e perguntas na noite anterior → na consulta o pediatra
- * explica o friozinho na barriga (motor que liga antes das coisas novas) e
- * ensina o ritual: beijo, abraço apertado, aceno pela janela, a mamãe sempre
- * volta → manhã sem soltar a mão → portão, professora → ritual → sala com
+ * Arco: mochila nova e perguntas na noite anterior → a mamãe explica o
+ * friozinho na barriga (motor que liga antes das coisas novas) e ensina o
+ * ritual: beijo, abraço apertado, aceno pela janela, a mamãe sempre volta →
+ * manhã sem soltar a mão → portão, professora → ritual → sala com
  * cheiro de giz, lugar da tartaruga → colega chorando ganha o giz e vira amigo
  * → pátio, lanche, hora da história → relógio e espera → a mamãe volta →
  * conta tudo → segundo dia entra sozinho → mochila cheia de desenhos.
@@ -42,16 +40,16 @@ export const primeiroDiaNaEscola: BookTheme = {
       refs: [],
     },
     {
-      text: "Naquela semana teve consulta. {nome} contou do friozinho na barriga. [A|O] {pediatra} sorriu e explicou: é um motor que liga antes das coisas novas. Ele avisa que algo importante vai começar.",
-      scene: `bright consulting room; the {boy|girl} sits on the padded exam table with both hands on the belly; ${DRA} sits in front at the child's height, one hand on her own chest, explaining with a warm smile; ${MOM} stands beside the table.`,
+      text: "A mamãe sentou na cama e explicou o friozinho na barriga: é um motor que liga antes das coisas novas. Ele só avisa que algo importante vai começar. {nome} respirou fundo.",
+      scene: `the {boy|girl}'s bedroom at night, lamp on; ${MOM} sits on the edge of the bed with one hand flat on her own chest, explaining with a warm smile; the {boy|girl} sits up under the blanket with both hands on the belly, listening with wide eyes; ${BACKPACK} on the small wooden chair.`,
       panel: "lower",
       refs: [2],
     },
     {
-      text: "Depois [a|o] {pediatra} ensinou um segredo para a despedida: um beijo, um abraço apertado e um aceno pela janela. E uma promessa que nunca falha: a mamãe sempre volta.",
-      scene: `consulting room; ${DRA} holds up three fingers with a playful face while the {boy|girl} copies her, holding up three fingers too; ${MOM} laughs beside them; a blank poster on the wall.`,
+      text: "Depois a mamãe ensinou um segredo para a despedida: um beijo, um abraço apertado e um aceno pela janela. E uma promessa que nunca falha: a mamãe sempre volta.",
+      scene: `same bedroom at night; ${MOM} holds up three fingers with a playful face while the {boy|girl} copies her, holding up three fingers too, both grinning; ${BACKPACK} on the chair in the background.`,
       panel: "upper",
-      refs: [3, 2],
+      refs: [2, 3],
     },
     {
       text: "A manhã chegou rápido demais. {nome} vestiu a roupa nova, comeu só metade do pão e segurou a mão da mamãe com força. No caminho inteiro, não soltou nem um segundinho.",

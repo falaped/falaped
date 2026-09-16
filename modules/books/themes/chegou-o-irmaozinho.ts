@@ -10,15 +10,13 @@ const GRANDMA =
   "the grandmother, a short woman with silver hair in a bun, round glasses and a purple floral dress"
 const BABY =
   "the newborn baby, tiny, with round cheeks, a few wisps of dark hair and a mint-green onesie"
-const DRA =
-  "Dra. Lia, a friendly pediatrician with short brown hair, a white coat over teal scrubs, a colorful stethoscope and a warm smile"
 
 /**
  * Arco: a barriga da mamãe cresce e a criança sente o chute → a casa muda
  * (berço, visitas só falam do bebê) → o bebê chega, pequeno e barulhento →
- * ciúme e birra → na consulta do bebê o pediatra faz a criança de ajudante
- * oficial (estetoscópio, o choro é pedido de ajuda) e dá a dica do tempo só
- * com a mamãe → primeiras missões: fralda, cantar → primeiro sorriso do bebê
+ * ciúme e birra → a vovó volta, olha o desenho e faz a criança de capitão do
+ * time (ouvir o coração do bebê, o choro é pedido de ajuda) e dá a dica do
+ * tempo só com a mamãe → primeiras missões: fralda, cantar → primeiro sorriso do bebê
  * → dia difícil acolhido (amor multiplica) → foto do time → palminha → os dois
  * lendo na cama. O bebê não tem gênero no texto.
  * Índices do livro: 0 capa, 1 dedicatória, 2..18 história, 19 final.
@@ -73,20 +71,20 @@ export const chegouOIrmaozinho: BookTheme = {
       refs: [2, 5],
     },
     {
-      text: "Chegou o dia da consulta do bebê e {nome} foi junto. Na sala de espera, a porta abriu e [a|o] {pediatra} apareceu. Em vez de chamar o bebê, chamou {nome} primeiro.",
-      scene: `colorful pediatric waiting room with animal murals; ${MOM} sits on a bench holding ${BABY}; ${DRA} stands at the open consulting room door, bending forward and pointing kindly at the {boy|girl}, who looks up in surprise from a small chair.`,
+      text: "A vovó voltou para ajudar e percebeu a cara emburrada de {nome}. Sentou no tapete, olhou o desenho com atenção e disse: um time precisa de {capitão|capitã}. E chamou {nome} para o cargo.",
+      scene: `living room rug; ${GRANDMA} sits on the floor holding the child's crayon drawing (colorful scribbles, no letters) and looking at it with real attention; the {boy|girl} sits beside her with arms still half crossed but a curious face; the brown teddy bear on the rug.`,
       panel: "upper",
-      refs: [2, 5],
+      refs: [4],
     },
     {
-      text: "No consultório, [a|o] {pediatra} colocou o estetoscópio nas orelhas de {nome}. Tum-tum, tum-tum, apressadinho. Era o coração do bebê. {nome} arregalou os olhos e virou ajudante oficial.",
-      scene: `bright consulting room; ${BABY} lies on the padded exam table; the {boy|girl} wears the colorful stethoscope in {his|her} ears and holds the chest piece on the baby's chest, eyes wide and mouth open in amazement; ${DRA} crouches beside them smiling.`,
+      text: "A primeira tarefa foi ouvir. A vovó encostou a orelha de {nome} no peito do bebê. Tum-tum, tum-tum, apressadinho. Era o coração dele, igual ao chute na barriga. {nome} arregalou os olhos.",
+      scene: `sunny living room; ${BABY} lies on a soft blanket on the sofa; the {boy|girl} kneels with one ear pressed gently against the baby's chest, eyes wide and mouth open in amazement; ${GRANDMA} kneels beside them with a hand on the child's back, smiling.`,
       panel: "lower",
       refs: [8, 5],
     },
     {
-      text: "[A|O] {pediatra} explicou que o bebê chora porque ainda não sabe falar. O choro é o jeito dele de pedir ajuda. E deu uma dica para a mamãe: um tempinho só com {nome} todo dia.",
-      scene: `consulting room; ${DRA} sits at the child's height talking to the {boy|girl} with open hands, gentle face; ${MOM} stands behind holding ${BABY}, nodding; a blank poster on the wall.`,
+      text: "A vovó explicou que o bebê chora porque ainda não sabe falar. O choro é o jeito dele de pedir ajuda. E deu uma dica para a mamãe: um tempinho só com {nome} todo dia.",
+      scene: `living room; ${GRANDMA} sits on the sofa at the child's height talking to the {boy|girl} with open hands, gentle face; ${MOM} stands behind holding ${BABY}, nodding; warm afternoon light.`,
       panel: "upper",
       refs: [8, 2, 5],
     },

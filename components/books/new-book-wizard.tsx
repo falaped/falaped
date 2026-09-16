@@ -6,15 +6,18 @@ import { useRouter } from "next/navigation"
 import { toast } from "sonner"
 import { ArrowLeft, Camera, Check, ChevronLeft, ChevronRight, Shield, Sparkles, Upload, X } from "lucide-react"
 
-import { createBookAction } from "@/actions/books"
+import { alignStoryAction, createBookAction, generateStoryAction } from "@/actions/books"
 import { BkButton, Sticker, bkButton } from "@/components/books/books-ui"
+import { describeDetails, draftToDetails, emptyDraft, hasDetails, StoryDetailsFields, type DetailsDraft } from "@/components/books/story-details-fields"
+import { pageTextError, StoryReview } from "@/components/books/story-review"
+import type { BookStory } from "@/lib/schemas/book"
 import { MAX_BOOK_PHOTOS, type BookQuality } from "@/modules/books/constants"
 import { renderBookText, type BookGender } from "@/modules/books/render-book-text"
 import { cn } from "@/lib/utils"
 
 export type WizardTheme = { slug: string; label: string; hint: string; title: string }
 
-const STEPS = ["Criança", "Tema", "Revisão"] as const
+const STEPS = ["Criança", "Tema", "História", "Revisão"] as const
 const ACCEPT = "image/png,image/jpeg,image/webp"
 const MAX_BYTES = 8 * 1024 * 1024
 const TINTS = [
@@ -141,8 +144,20 @@ export function NewBookWizard({ themes }: { themes: WizardTheme[] }) {
   const [dedication, setDedication] = useState("")
   const [pediatricianName, setPediatricianName] = useState("")
   const [logo, setLogo] = useState<File | null>(null)
+  const [draft, setDraft] = useState<DetailsDraft>(emptyDraft)
+  const [story, setStory] = useState<BookStory | null>(null)
+  const [storyLoading, setStoryLoading] = useState(false)
+  /** Textos como saíram do modelo (ou do último alinhamento): a diferença para `story` diz quais cenas refazer. */
+  const [generatedTexts, setGeneratedTexts] = useState<string[]>([])
+  const [alignedPositions, setAlignedPositions] = useState<number[]>([])
+  const [aligning, setAligning] = useState(false)
+  const storyKey = useRef("")
   const [submitting, setSubmitting] = useState(false)
   const logoInput = useRef<HTMLInputElement>(null)
+
+  const details = draftToDetails(draft)
+  const personalized = hasDetails(details)
+  const storyInvalid = story ? story.pages.filter((p) => pageTextError(p.text)).length : 0
 
   const files = photos.filter((f): f is File => !!f)
   const selectedTheme = themes.find((t) => t.slug === theme) ?? themes[0]
@@ -158,12 +173,57 @@ export function NewBookWizard({ themes }: { themes: WizardTheme[] }) {
       if (!gender) return toast.error("Escolha menino ou menina.")
       if (!files.length) return toast.error("Envie pelo menos 1 foto.")
     }
-    if (step === 1 && !theme) return toast.error("Escolha um tema.")
-    setStep((s) => Math.min(s + 1, 2))
+    if (step === 1) {
+      if (!theme) return toast.error("Escolha um tema.")
+      void loadStory()
+    }
+    if (step === 2) {
+      if (storyLoading || aligning || !story) return toast.error("Aguarde a história ficar pronta.")
+      if (storyInvalid) return toast.error(`Ajuste ${storyInvalid === 1 ? "a página marcada" : `as ${storyInvalid} páginas marcadas`} antes de continuar.`)
+      void alignAndContinue(story)
+      return
+    }
+    setStep((s) => Math.min(s + 1, STEPS.length - 1))
+  }
+
+  /** Páginas cujo texto mudou desde a geração: o Groq refaz a cena delas para o desenho acompanhar o roteiro. */
+  async function alignAndContinue(current: BookStory) {
+    const changed = current.pages
+      .map((p, position) => ({ position, previousText: generatedTexts[position] ?? "" }))
+      .filter((c) => current.pages[c.position].text.trim() !== c.previousText.trim())
+    if (!changed.length) return setStep(3)
+    setAligning(true)
+    const result = await alignStoryAction({ story: current, changed })
+    setAligning(false)
+    if (!result.ok) return toast.error(result.error)
+    setStory(result.story)
+    setGeneratedTexts(result.story.pages.map((p) => p.text))
+    setAlignedPositions((prev) => [...new Set([...prev, ...result.aligned])].sort((a, b) => a - b))
+    if (result.aligned.length) toast.success(`${result.aligned.length === 1 ? "1 cena ajustada" : `${result.aligned.length} cenas ajustadas`} ao texto novo.`)
+    setStep(3)
+  }
+
+  /** Gera (ou reaproveita) a história para as entradas atuais; `force` ignora a que já existe. */
+  async function loadStory(force = false) {
+    if (!gender) return
+    const key = JSON.stringify({ name: name.trim(), gender, theme, pediatricianName, details })
+    if (!force && key === storyKey.current && story) return
+    setStoryLoading(true)
+    setStory(null)
+    const result = await generateStoryAction({ childName: name.trim(), childGender: gender, theme, pediatricianName: pediatricianName || null, details })
+    setStoryLoading(false)
+    if (!result.ok) {
+      toast.error(result.error, { action: { label: "Tentar de novo", onClick: () => void loadStory(true) } })
+      return
+    }
+    storyKey.current = key
+    setStory(result.story)
+    setGeneratedTexts(result.story.pages.map((p) => p.text))
+    setAlignedPositions([])
   }
 
   async function submit() {
-    if (!gender) return
+    if (!gender || !story || storyInvalid) return
     setSubmitting(true)
     const fd = new FormData()
     fd.set("childName", name.trim())
@@ -172,6 +232,8 @@ export function NewBookWizard({ themes }: { themes: WizardTheme[] }) {
     fd.set("quality", quality)
     fd.set("dedication", dedication)
     fd.set("pediatricianName", pediatricianName)
+    if (personalized) fd.set("details", JSON.stringify(details))
+    fd.set("story", JSON.stringify({ ...story, pages: story.pages.map((p) => ({ ...p, text: p.text.trim() })) }))
     files.forEach((f) => fd.append("photos", f))
     if (logo) fd.set("pediatricianLogo", logo)
     const result = await createBookAction(fd)
@@ -185,6 +247,36 @@ export function NewBookWizard({ themes }: { themes: WizardTheme[] }) {
   }
 
   const wide = step === 1
+  const pediatricianFields = (
+    <div className="grid gap-4 sm:grid-cols-2">
+      <label className="flex flex-col gap-2">
+        <span className={LABEL}>
+          Pediatra <span className={HELP}>(opcional)</span>
+        </span>
+        <input value={pediatricianName} onChange={(e) => setPediatricianName(e.target.value)} maxLength={80} placeholder="Dra. Marina Duarte" className={FIELD} />
+        <span className={HELP}>Entra na história no lugar da Dra. Lia e na página final. Use Dr. ou Dra. na frente.</span>
+      </label>
+      <div className="flex flex-col gap-2">
+        <span className={LABEL}>
+          Logo <span className={HELP}>(opcional)</span>
+        </span>
+        <button
+          type="button"
+          onClick={() => logoInput.current?.click()}
+          className="flex h-[50px] items-center justify-between rounded-xl border-2 border-dashed border-ink bg-white px-4 text-sm font-semibold hover:bg-accent"
+        >
+          <span className="truncate">{logo ? logo.name : "Escolher imagem"}</span>
+          <Upload className="size-4 shrink-0" strokeWidth={2.2} aria-hidden />
+        </button>
+        <input ref={logoInput} type="file" accept={ACCEPT} className="hidden" onChange={(e) => setLogo(e.target.files?.[0] ?? null)} />
+        {logo && (
+          <button type="button" onClick={() => setLogo(null)} className="self-start text-xs font-bold underline decoration-2 underline-offset-2">
+            Remover logo
+          </button>
+        )}
+      </div>
+    </div>
+  )
   return (
     <div className={cn("mx-auto px-4 pb-8 pt-[18px] sm:px-10 sm:pb-14 sm:pt-7", wide ? "max-w-[1000px]" : "max-w-[800px]")}>
       <Link href="/books" className="inline-flex items-center gap-1.5 text-[13px] font-bold text-ink underline decoration-secondary decoration-2 underline-offset-4">
@@ -264,6 +356,17 @@ export function NewBookWizard({ themes }: { themes: WizardTheme[] }) {
             </p>
           </div>
 
+          {pediatricianFields}
+
+          <div className="flex flex-col gap-3">
+            <div className="flex flex-wrap items-baseline gap-2.5">
+              <span className={LABEL}>Detalhes da história</span>
+              <span className={HELP}>opcional · marque o que a história pode aproveitar</span>
+            </div>
+            <StoryDetailsFields value={draft} onChange={setDraft} />
+            <span className={HELP}>Cada detalhe aparece em até 3 páginas, no texto e no desenho. Você revisa tudo no próximo passo.</span>
+          </div>
+
           <div className="flex items-center justify-between gap-3 border-t-2 border-ink pt-6">
             <Link href="/books" className={bkButton("secondary")}>
               Cancelar
@@ -324,6 +427,33 @@ export function NewBookWizard({ themes }: { themes: WizardTheme[] }) {
       )}
 
       {step === 2 && (
+        <div>
+          <StoryReview
+            story={story}
+            loading={storyLoading}
+            personalized={personalized}
+            generatedTexts={generatedTexts}
+            alignedPositions={alignedPositions}
+            onChangeText={(position, text) => setStory((s) => (s ? { ...s, pages: s.pages.map((p, i) => (i === position ? { ...p, text } : p)) } : s))}
+            onRegenerate={() => void loadStory(true)}
+          />
+          <div className="mt-7 flex flex-col gap-4 border-t-2 border-ink pt-6 sm:flex-row sm:items-center sm:justify-between">
+            <BkButton variant="secondary" disabled={aligning} onClick={() => setStep(1)} className="order-2 sm:order-1">
+              <ChevronLeft className="size-4" strokeWidth={2.6} aria-hidden />
+              Voltar
+            </BkButton>
+            <div className="order-1 flex flex-col items-stretch gap-2 sm:order-2 sm:items-end">
+              <BkButton variant="primary" onClick={next} disabled={storyLoading || !story} busy={aligning} busyLabel="Ajustando as cenas ao texto..." className="px-[22px] text-[15px]">
+                Continuar
+                <ChevronRight className="size-4" strokeWidth={2.6} aria-hidden />
+              </BkButton>
+              <span className="text-xs font-medium text-muted-foreground">Páginas com texto editado têm o desenho refeito para acompanhar.</span>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {step === 3 && (
         <form
           onSubmit={(e) => {
             e.preventDefault()
@@ -374,35 +504,6 @@ export function NewBookWizard({ themes }: { themes: WizardTheme[] }) {
             />
           </label>
 
-          <div className="grid gap-4 sm:grid-cols-2">
-            <label className="flex flex-col gap-2">
-              <span className={LABEL}>
-                Pediatra <span className={HELP}>(opcional)</span>
-              </span>
-              <input value={pediatricianName} onChange={(e) => setPediatricianName(e.target.value)} maxLength={80} placeholder="Dra. Marina Duarte" className={FIELD} />
-              <span className={HELP}>Entra na história no lugar da Dra. Lia e na página final. Use Dr. ou Dra. na frente.</span>
-            </label>
-            <div className="flex flex-col gap-2">
-              <span className={LABEL}>
-                Logo <span className={HELP}>(opcional)</span>
-              </span>
-              <button
-                type="button"
-                onClick={() => logoInput.current?.click()}
-                className="flex h-[50px] items-center justify-between rounded-xl border-2 border-dashed border-ink bg-white px-4 text-sm font-semibold hover:bg-accent"
-              >
-                <span className="truncate">{logo ? logo.name : "Escolher imagem"}</span>
-                <Upload className="size-4 shrink-0" strokeWidth={2.2} aria-hidden />
-              </button>
-              <input ref={logoInput} type="file" accept={ACCEPT} className="hidden" onChange={(e) => setLogo(e.target.files?.[0] ?? null)} />
-              {logo && (
-                <button type="button" onClick={() => setLogo(null)} className="self-start text-xs font-bold underline decoration-2 underline-offset-2">
-                  Remover logo
-                </button>
-              )}
-            </div>
-          </div>
-
           <div className="flex gap-4 rounded-[14px] border-2 border-ink bg-background p-4 sm:gap-[18px] sm:p-[18px]">
             <div className="relative h-32 w-24 shrink-0 overflow-hidden rounded-[10px] border-2 border-ink bg-muted">
               {firstPhotoUrl ? (
@@ -425,11 +526,26 @@ export function NewBookWizard({ themes }: { themes: WizardTheme[] }) {
               <dd className="font-bold">20 (capa, dedicatória, 17 de história, final)</dd>
               <dt className="text-muted-foreground">Fotos</dt>
               <dd className="font-bold">{files.length}</dd>
+              {pediatricianName.trim() && (
+                <>
+                  <dt className="text-muted-foreground">Pediatra</dt>
+                  <dd className="font-bold">{pediatricianName.trim()}</dd>
+                </>
+              )}
+              <dt className="text-muted-foreground">Detalhes</dt>
+              <dd className="font-bold">{personalized ? describeDetails(details) : "Nenhum · história do tema"}</dd>
+              <dt className="text-muted-foreground">Textos</dt>
+              <dd className="font-bold">
+                Revisados{alignedPositions.length > 0 && ` · ${alignedPositions.length === 1 ? "1 cena ajustada" : `${alignedPositions.length} cenas ajustadas`}`} ·{" "}
+                <button type="button" onClick={() => setStep(2)} className="underline decoration-secondary decoration-2 underline-offset-2">
+                  ver de novo
+                </button>
+              </dd>
             </dl>
           </div>
 
           <div className="flex flex-col gap-4 border-t-2 border-ink pt-6 sm:flex-row sm:items-center sm:justify-between">
-            <BkButton variant="secondary" disabled={submitting} onClick={() => setStep(1)} className="order-2 sm:order-1">
+            <BkButton variant="secondary" disabled={submitting} onClick={() => setStep(2)} className="order-2 sm:order-1">
               <ChevronLeft className="size-4" strokeWidth={2.6} aria-hidden />
               Voltar
             </BkButton>

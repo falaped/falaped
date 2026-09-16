@@ -7,6 +7,16 @@ import { zodErrorToUserMessage } from "@/lib/zod-error-message"
 import { createBook } from "@/modules/books/create-book"
 import { getAuthenticatedUser } from "@/modules/supabase/get-authenticated-user"
 
+/** Campos JSON opcionais do wizard; string vazia ou inválida vira null e o Zod decide. */
+function parseJsonField(value: FormDataEntryValue | null): unknown {
+  if (typeof value !== "string" || !value.trim()) return null
+  try {
+    return JSON.parse(value)
+  } catch {
+    return "inválido"
+  }
+}
+
 export type CreateBookResult = { ok: true; bookId: string } | { ok: false; error: string }
 
 /** Cria o livro em draft com fotos e logo. A capa é gerada em seguida, na página do livro. */
@@ -23,6 +33,8 @@ export async function createBookAction(formData: FormData): Promise<CreateBookRe
     quality: formData.get("quality"),
     dedication: formData.get("dedication") ?? undefined,
     pediatricianName: formData.get("pediatricianName") ?? undefined,
+    details: parseJsonField(formData.get("details")),
+    story: parseJsonField(formData.get("story")),
   })
   if (!parsed.success) return { ok: false, error: zodErrorToUserMessage(parsed.error) }
 

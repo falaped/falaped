@@ -180,6 +180,8 @@ export {
 } from "./procedure-catalog"
 export {
   createBookAction,
+  generateStoryAction,
+  alignStoryAction,
   buildBookPdfAction,
   deleteBookAction,
 } from "./books"

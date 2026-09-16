@@ -8,8 +8,6 @@ const GRANDMA =
   "the grandmother, a gentle woman with short silver curly hair, round glasses and a light-green knitted cardigan"
 const MOM =
   "the mother, a warm woman with long straight black hair and a mustard-yellow blouse"
-const DRA =
-  "Dra. Lia, a friendly pediatrician with short brown hair, a white coat over teal scrubs, a colorful stethoscope and a warm smile"
 const FRIEND =
   "a classmate boy with short blond hair, a red t-shirt and a small green backpack"
 const GLOW =
@@ -18,9 +16,9 @@ const GLOW =
 /**
  * Tema "Fé e coragem". Arco: apresentação na escola anunciada → medo, voz
  * que não sai → noite sem dormir → a avó ensina uma oração curta e a imagem
- * da luzinha no peito → de manhã o medo continua → na consulta, o pediatra
- * explica que o coração acelera para se preparar e ensina a respirar devagar
- * → treino em casa → o dia chega, mão da mamãe, oração baixinha → voz
+ * da luzinha no peito → de manhã o medo continua → a mamãe explica que o
+ * coração acelera para se preparar e ensina a respirar devagar (soprar a
+ * velinha) → treino em casa → o dia chega, mão da mamãe, oração baixinha → voz
  * tremida, depois firme → aplausos → ajuda um colega com medo → agradece à
  * noite com a avó. Fé cristã genérica, acolhedora, sem denominação.
  * Índices do livro: 0 capa, 1 dedicatória, 2..18 história, 19 final.
@@ -69,22 +67,22 @@ export const feECoragem: BookTheme = {
       refs: [4],
     },
     {
-      text: "De manhã, o medo ainda estava lá. Mas parecia um pouquinho menor. No café, a mamãe percebeu a carinha de {nome} e lembrou: hoje também era dia da consulta de rotina.",
+      text: "De manhã, o medo ainda estava lá. Mas parecia um pouquinho menor. No café, a mamãe percebeu a carinha de {nome} e sentou do lado. Pode contar, ela disse baixinho.",
       scene: `sunny kitchen at breakfast; the {boy|girl} sits at the table with the chin resting on one hand, cereal untouched; ${MOM} leans down beside {him|her} with a gentle, curious look, a hand on the child's shoulder.`,
       panel: "lower",
       refs: [],
     },
     {
-      text: "No consultório, [a|o] {pediatra} encostou o estetoscópio no peito de {nome} e disse: esse coração está batendo rápido. {nome} contou tudo sobre a apresentação e o nó na barriga.",
-      scene: `bright consulting room; ${DRA} sits beside the {boy|girl} on the exam table holding the stethoscope to the child's chest, listening with a kind face; the {boy|girl} talks with both hands open, worried; ${MOM} stands nearby.`,
+      text: "{nome} contou tudo sobre a apresentação e o nó na barriga. A mamãe pegou a mão {dele|dela} e colocou no peito: sente? Esse coração está batendo rápido de tanto se preparar.",
+      scene: `sunny kitchen; ${MOM} sits beside the {boy|girl} at the table, guiding the child's hand flat onto the child's own chest with a kind, attentive face; the {boy|girl} looks down at the hand with wide eyes; a faint ${GLOW}.`,
       panel: "upper",
       refs: [7],
     },
     {
-      text: "[A|O] {pediatra} explicou: o coração acelera porque está se preparando, como um motor de foguete. E ensinou um truque: respirar devagar, soprando como quem apaga uma velinha.",
-      scene: `${DRA} sits face to face with the {boy|girl}, cheeks puffed, blowing gently toward one raised finger as if it were a candle; the {boy|girl} copies her with puffed cheeks and eyes on the finger.`,
+      text: "A mamãe explicou: o coração acelera porque está se preparando, como um motor de foguete. E ensinou um truque: respirar devagar, soprando como quem apaga uma velinha.",
+      scene: `${MOM} sits face to face with the {boy|girl} at the kitchen table, cheeks puffed, blowing gently toward one raised finger as if it were a candle; the {boy|girl} copies her with puffed cheeks and eyes on the finger.`,
       panel: "lower",
-      refs: [8],
+      refs: [7],
     },
     {
       text: "Em casa, {nome} treinou. Respirou fundo, soprou a velinha imaginária e sentiu a luzinha crescer. Aí cantou baixinho para a vovó. A voz saiu. Fininha, mas saiu!",
