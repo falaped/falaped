@@ -25,7 +25,7 @@ type Prediction = {
 }
 
 /**
- * Gera uma imagem 3:4 no gpt-image-2 via Replicate e devolve o PNG.
+ * Gera uma imagem 3:4 no gpt-image-2 via Replicate e devolve o JPEG (q90).
  * Tenta até 3 vezes: cobre 429 (rate limit), falhas transitórias e a
  * moderação da OpenAI (E005 "flagged as sensitive"), que bloqueia ao acaso
  * fotos de criança e costuma passar na tentativa seguinte.
@@ -42,7 +42,7 @@ export async function generateImage(
       method: "POST",
       headers: { ...headers, Prefer: "wait=60" },
       body: JSON.stringify({
-        input: { prompt, input_images: imageUrls, aspect_ratio: "3:4", quality, output_format: "png" },
+        input: { prompt, input_images: imageUrls, aspect_ratio: "3:4", quality, output_format: "jpeg", output_compression: 90 },
       }),
     })
 

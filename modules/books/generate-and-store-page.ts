@@ -40,10 +40,10 @@ export async function generateAndStorePage(
     if (missing) throw new Error(`[BOOKS] Referência ausente: ${missing.path ?? "?"} (gere a capa e as âncoras antes)`)
     const imageUrls = (signed ?? []).flatMap((s) => (s.signedUrl ? [s.signedUrl] : []))
 
-    const png = await generateImage({ prompt, imageUrls, quality: book.quality }, { token: replicateToken })
+    const jpeg = await generateImage({ prompt, imageUrls, quality: book.quality }, { token: replicateToken })
 
     const path = bookPagePath(book.id, index)
-    const { error: uploadError } = await storage.upload(path, png, { contentType: "image/png", upsert: true })
+    const { error: uploadError } = await storage.upload(path, jpeg, { contentType: "image/jpeg", upsert: true })
     if (uploadError) throw new Error(`[BOOKS] Falha ao salvar imagem: ${uploadError.message}`)
 
     const row = { book_id: book.id, index, image_path: path, status: "ready", error: null, prompt, updated_at: new Date().toISOString() }

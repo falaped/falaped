@@ -19,7 +19,7 @@ function fakeFetch(steps: Step[]) {
 const deps = (impl: typeof fetch) => ({ token: "t", fetchImpl: impl, sleep: async () => {} })
 const png = new Uint8Array([137, 80, 78, 71]).buffer
 
-test("sucesso direto: envia fotos e referências, devolve o PNG", async () => {
+test("sucesso direto: envia fotos e referências, devolve a imagem", async () => {
   const { impl, calls } = fakeFetch([
     { status: 201, body: { status: "succeeded", output: ["https://img/1.png"] } },
     { status: 200, bytes: png },
@@ -30,6 +30,7 @@ test("sucesso direto: envia fotos e referências, devolve o PNG", async () => {
   assert.deepEqual(sent.input.input_images, ["a", "b"])
   assert.equal(sent.input.quality, "high")
   assert.equal(sent.input.aspect_ratio, "3:4")
+  assert.equal(sent.input.output_format, "jpeg")
 })
 
 test("faz polling enquanto processing", async () => {
