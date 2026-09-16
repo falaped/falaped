@@ -61,13 +61,14 @@ test("todo tema tem 17 páginas, textos de 20 a 36 palavras, sem travessão, sem
     for (const child of [samuel, alice]) {
       for (let index = 0; index < BOOK_PAGE_COUNT; index++) {
         const { prompt } = buildPagePrompt({ theme, child, index })
-        assert.doesNotMatch(prompt, /[{}]/, `${theme.slug} p${index}: ${prompt.slice(0, 80)}`)
+        assert.doesNotMatch(prompt, /[{}[\]]/, `${theme.slug} p${index}: ${prompt.slice(0, 80)}`)
       }
     }
     for (const page of theme.pages) {
       const words = page.text.trim().split(/\s+/).length
       assert.ok(words >= 20 && words <= 36, `${theme.slug}: ${words} palavras em "${page.text.slice(0, 40)}"`)
       assert.doesNotMatch(page.text, /[—–"“”]/, `${theme.slug}: ${page.text.slice(0, 40)}`)
+      assert.doesNotMatch(page.text.replace(/\[[^\]]*\]/g, ""), /Dra\. Lia|doutora?\b/i, `${theme.slug}: nome fixo do pediatra em "${page.text.slice(0, 40)}"`)
       for (const r of page.refs) assert.ok(r >= 0 && r <= 18, `${theme.slug}: ref ${r}`)
     }
   }

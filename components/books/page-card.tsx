@@ -1,8 +1,10 @@
 "use client"
 
-import { Loader2, RefreshCw } from "lucide-react"
+import { useState } from "react"
+import { Loader2, RefreshCw, X } from "lucide-react"
 
 import { BrandBlur, Sticker } from "@/components/books/books-ui"
+import { Dialog, DialogClose, DialogContent, DialogTitle } from "@/components/ui/dialog"
 import { cn } from "@/lib/utils"
 
 export type PageCardState = "pending" | "queued" | "generating" | "redoing" | "ready" | "failed"
@@ -23,6 +25,7 @@ function RedoIcon() {
 }
 
 export function PageCard({ label, note, state, imageSrc, error, canRedo, onRedo }: Props) {
+  const [zoom, setZoom] = useState(false)
   const redoButton = (
     <button
       type="button"
@@ -46,9 +49,32 @@ export function PageCard({ label, note, state, imageSrc, error, canRedo, onRedo 
       <div className="relative aspect-[3/4] overflow-hidden rounded-[14px] border-2 border-ink bg-white shadow-hard">
         {state === "ready" && imageSrc && (
           <>
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={imageSrc} alt={label} className="size-full object-cover" />
+            <button
+              type="button"
+              onClick={() => setZoom(true)}
+              title="Ampliar"
+              className="block size-full cursor-zoom-in focus-visible:outline-3 focus-visible:-outline-offset-3 focus-visible:outline-warning"
+            >
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={imageSrc} alt={label} className="size-full object-cover" />
+            </button>
             {redoButton}
+            <Dialog open={zoom} onOpenChange={setZoom}>
+              <DialogContent
+                className="books-theme w-auto max-w-[calc(100vw-2rem)] gap-0 overflow-hidden rounded-[20px] border-2 border-ink bg-white p-0 shadow-hard-xl"
+                style={{ background: "#fff" }}
+              >
+                <DialogTitle className="sr-only">{label}</DialogTitle>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={imageSrc} alt={label} className="block max-h-[calc(100vh-2rem)] w-auto max-w-full object-contain" />
+                <DialogClose
+                  aria-label="Fechar"
+                  className="absolute right-3 top-3 grid size-9 place-items-center rounded-full border-2 border-ink bg-white text-ink shadow-hard-xs hover:bg-warning"
+                >
+                  <X className="size-4" strokeWidth={2.6} aria-hidden />
+                </DialogClose>
+              </DialogContent>
+            </Dialog>
           </>
         )}
         {state === "generating" && (

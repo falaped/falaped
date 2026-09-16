@@ -21,7 +21,7 @@ export async function generateAndStorePage(
   replicateToken: string,
 ): Promise<BookPage> {
   const theme = getBookTheme(book.theme)
-  const child = { name: book.child_name, gender: book.child_gender }
+  const child = { name: book.child_name, gender: book.child_gender, pediatricianName: book.pediatrician_name }
   const { prompt, refIndexes } = buildPagePrompt({ theme, child, index })
   const storage = supabase.storage.from(BOOK_ASSETS_BUCKET)
 

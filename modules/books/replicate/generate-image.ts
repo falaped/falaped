@@ -48,7 +48,7 @@ export async function generateImage(
 
     if (res.status === 429) {
       lastError = "rate limit (429)"
-      await sleep(20_000)
+      await sleep(Number(res.headers.get("retry-after")) * 1000 || 20_000)
       continue
     }
     if (!res.ok) throw new Error(`[BOOKS] Replicate respondeu ${res.status}: ${(await res.text()).slice(0, 300)}`)

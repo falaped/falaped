@@ -5,14 +5,8 @@ import { useRouter, useSearchParams } from "next/navigation"
 import { toast } from "sonner"
 import { Check, Download, FileText, RefreshCw, Sparkles, Trash2, TriangleAlert } from "lucide-react"
 
-import type { GeneratePagesActionResult } from "@/actions/books/generate-pages"
-import {
-  buildBookPdfAction,
-  deleteBookAction,
-  generateCoverAction,
-  generatePagesAction,
-  regeneratePageAction,
-} from "@/actions/books"
+import { buildBookPdfAction, deleteBookAction } from "@/actions/books"
+import type { GenerateResult } from "@/app/api/books/[id]/generate/route"
 import { DeleteBookDialog } from "@/components/books/delete-book-dialog"
 import { PageCard, type PageCardState } from "@/components/books/page-card"
 import { BkButton, Chip, Sticker, bkButton } from "@/components/books/books-ui"
@@ -24,6 +18,20 @@ type Result = { ok: true } | { ok: false; error: string }
 type Busy = "cover" | "pages" | "pdf" | "delete" | `page-${number}` | null
 
 const POLL_MS = 5000
+
+type GenerateBody = { kind: "cover" } | { kind: "pages" } | { kind: "page"; index: number }
+
+// Route handler (não Server Action): uma action em andamento segura o router.refresh() na fila,
+// e a grade só atualizaria quando a geração terminasse.
+async function generate(bookId: string, body: GenerateBody): Promise<GenerateResult> {
+  const res = await fetch(`/api/books/${bookId}/generate`, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify(body),
+  })
+  const json: GenerateResult | null = await res.json().catch(() => null)
+  return json ?? { ok: false, error: `Erro ${res.status} ao gerar.` }
+}
 
 export function pageLabel(index: number) {
   if (index === COVER_INDEX) return "Capa"
@@ -104,18 +112,18 @@ export function BookActions({ book, title }: { book: BookWithPages; title: strin
     }
   }
 
-  // Uma chamada gera uma ou duas ondas (limite de 300 s da função); repete até não sobrar pendente.
+  // Uma chamada gera páginas por 150 s (limite de 300 s da função); repete até não sobrar pendente.
   async function generateAllPages(): Promise<Result> {
-    let result: GeneratePagesActionResult
+    let result: GenerateResult
     do {
-      result = await generatePagesAction(book.id)
+      result = await generate(book.id, { kind: "pages" })
       router.refresh()
     } while (result.ok && result.pending?.length)
     return result
   }
 
   const startCover = () =>
-    run("cover", () => generateCoverAction(book.id), "Capa pronta. Aprove ou refaça.", `Veja se ${book.child_name} ficou parecido.`)
+    run("cover", () => generate(book.id, { kind: "cover" }), "Capa pronta. Aprove ou refaça.", `Veja se ${book.child_name} ficou parecido.`)
 
   // Vindo do wizard ("Criar livro e gerar a capa"): a capa começa na hora.
   useEffect(() => {
@@ -190,16 +198,12 @@ export function BookActions({ book, title }: { book: BookWithPages; title: strin
   // ---- Barra de progresso ---------------------------------------------
   const pct = (n: number) => `${(n / BOOK_PAGE_COUNT) * 100}%`
   const elapsedMin = minutesSince(startedAt)
-  const estimateMin = (book.quality === "high" ? 2 : 1) * 4 * 4 // 4 ondas em paralelo
+  const estimateMin = Math.ceil(((BOOK_PAGE_COUNT - 1) / 2) * (book.quality === "high" ? 100 : 45) / 60) // 2 em paralelo
 
   return (
     <>
-      <section
-        className={cn(
-          "grid gap-3.5 border-b-2 border-ink px-4 py-4 sm:grid-cols-[auto_minmax(0,1fr)_auto] sm:items-center sm:gap-7 sm:px-10 sm:py-5",
-          bannerBg,
-        )}
-      >
+      <section className={cn("border-b-2 border-ink", bannerBg)}>
+        <div className="mx-auto grid max-w-[1400px] gap-3.5 px-4 py-4 sm:grid-cols-[auto_minmax(0,1fr)_auto] sm:items-center sm:gap-7 sm:px-10 sm:py-5">
         <div className="flex items-center gap-3 sm:contents">
           <Sticker className={cn("rounded-[10px] px-3 py-[9px] font-display text-[17px] normal-case tracking-tight shadow-hard-xs sm:rounded-xl sm:px-4 sm:py-3 sm:text-2xl", stickerBg)}>
             Passo {stepNumber}
@@ -273,9 +277,11 @@ export function BookActions({ book, title }: { book: BookWithPages; title: strin
             <Trash2 className="size-4" strokeWidth={2.2} aria-hidden />
           </BkButton>
         </div>
+        </div>
       </section>
 
-      <div className="grid gap-2.5 border-b-2 border-ink bg-white px-4 py-3.5 sm:grid-cols-[auto_minmax(0,1fr)_auto] sm:items-center sm:gap-5 sm:px-10 sm:py-4">
+      <div className="border-b-2 border-ink bg-white">
+      <div className="mx-auto grid max-w-[1400px] gap-2.5 px-4 py-3.5 sm:grid-cols-[auto_minmax(0,1fr)_auto] sm:items-center sm:gap-5 sm:px-10 sm:py-4">
         <span className="whitespace-nowrap font-display text-lg font-extrabold leading-none tracking-tight sm:text-xl">
           {readyCount} de {BOOK_PAGE_COUNT} <span className="font-sans text-[12.5px] font-semibold tracking-normal text-[#3f3f46] sm:text-[13px]">páginas prontas</span>
         </span>
@@ -301,15 +307,16 @@ export function BookActions({ book, title }: { book: BookWithPages; title: strin
           )}
           {!busy && !coverReady && <span className="text-[12.5px] font-semibold text-[#3f3f46]">A capa é a referência visual das outras 19 páginas.</span>}
           {!busy && coverReady && !allReady && failedIdx.length === 0 && (
-            <span className="text-[12.5px] font-semibold text-[#3f3f46]">As 19 páginas saem em lotes · ≈ {estimateMin} min no total</span>
+            <span className="text-[12.5px] font-semibold text-[#3f3f46]">As 19 páginas saem de 2 em 2 · ≈ {estimateMin} min no total</span>
           )}
           {!busy && failedIdx.length > 0 && <Chip className="bg-danger-soft">{failedIdx.length} {failedIdx.length === 1 ? "falhou" : "falharam"}</Chip>}
           {!busy && allReady && book.pdf_path && <Chip className="bg-success">PDF gerado</Chip>}
           {!busy && allReady && !book.pdf_path && <Chip>PDF ainda não gerado</Chip>}
         </div>
       </div>
+      </div>
 
-      <div className="grid grid-cols-2 gap-4 px-4 pb-8 pt-5 sm:grid-cols-3 sm:gap-[22px] sm:px-10 sm:pb-14 sm:pt-8 lg:grid-cols-5">
+      <div className="mx-auto grid max-w-[1400px] grid-cols-2 gap-4 px-4 pb-8 pt-5 sm:grid-cols-3 sm:gap-[22px] sm:px-10 sm:pb-14 sm:pt-8 lg:grid-cols-5">
         {pages.map((page, index) => {
           let state: PageCardState = "pending"
           if (redoingIndex === index || (busy === "cover" && index === COVER_INDEX)) state = "redoing"
@@ -331,7 +338,7 @@ export function BookActions({ book, title }: { book: BookWithPages; title: strin
               onRedo={() =>
                 index === COVER_INDEX && !coverReady
                   ? startCover()
-                  : run(`page-${index}`, () => regeneratePageAction(book.id, index), `${pageLabel(index)} refeita.`)
+                  : run(`page-${index}`, () => generate(book.id, { kind: "page", index }), `${pageLabel(index)} refeita.`)
               }
             />
           )

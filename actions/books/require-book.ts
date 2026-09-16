@@ -6,6 +6,7 @@ import { getAuthenticatedUser } from "@/modules/supabase/get-authenticated-user"
 import type { BookWithPages } from "@/modules/books/types"
 
 export type BookActionError = { ok: false; error: string }
+export type BookActionResult = { ok: true } | BookActionError
 
 export type BookContext = {
   /** Service role: books/book_pages/book-assets não têm policies. Sempre escopar por profile_id. */

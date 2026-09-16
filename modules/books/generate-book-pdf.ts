@@ -31,7 +31,7 @@ export async function generateBookPdf(supabase: SupabaseClient, book: BookWithPa
   const logo = book.pediatrician_logo_path ? await download(book.pediatrician_logo_path) : null
 
   const theme = getBookTheme(book.theme)
-  const child = { name: book.child_name, gender: book.child_gender }
+  const child = { name: book.child_name, gender: book.child_gender, pediatricianName: book.pediatrician_name }
   const dedication = renderBookText(book.dedication?.trim() || theme.defaultDedication, child)
 
   const pdf = await buildBookPdf({
