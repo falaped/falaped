@@ -2,6 +2,7 @@ import type { SupabaseClient } from "@supabase/supabase-js"
 
 import { BOOK_ASSETS_BUCKET } from "@/lib/constants"
 import { bookPhotoPath, MAX_BOOK_PHOTOS, type BookQuality } from "@/modules/books/constants"
+import type { BookDetails, BookStory } from "@/lib/schemas/book"
 import type { BookGender } from "@/modules/books/render-book-text"
 import { getBookTheme } from "@/modules/books/themes"
 import { BOOK_SELECT, type Book } from "@/modules/books/types"
@@ -16,6 +17,9 @@ export type CreateBookPayload = {
   quality: BookQuality
   dedication?: string | null
   pediatricianName?: string | null
+  details?: BookDetails | null
+  /** História revisada no wizard; null usa o texto do tema. Caller valida. */
+  story?: BookStory | null
   /** 1 a 2 fotos da criança. */
   photos: File[]
   pediatricianLogo?: File | null
@@ -50,6 +54,8 @@ export async function createBook(
       quality: payload.quality,
       dedication: payload.dedication?.trim() || null,
       pediatrician_name: payload.pediatricianName?.trim() || null,
+      details: payload.details ?? null,
+      story: payload.story ?? null,
     })
     .select("id")
     .single()

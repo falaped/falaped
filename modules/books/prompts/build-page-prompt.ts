@@ -6,6 +6,7 @@ import {
   FIRST_STORY_INDEX,
   STORY_PAGE_COUNT,
 } from "@/modules/books/constants"
+import type { BookStory } from "@/lib/schemas/book"
 import type { BookTheme } from "@/modules/books/themes/types"
 
 export type BuildPagePromptInput = {
@@ -13,6 +14,8 @@ export type BuildPagePromptInput = {
   child: BookChild
   /** 0..19 */
   index: number
+  /** História personalizada e revisada; quando presente, substitui texto, cena e acrescenta referências nas páginas 2..18. */
+  story?: BookStory | null
 }
 
 export type BuiltPagePrompt = {
@@ -52,7 +55,23 @@ function coverBlock(title: string, subtitle: string) {
  * 0 = capa (título na imagem); 1 = dedicatória e 19 = final (sem texto, o
  * pdfkit escreve por cima); 2..18 = história (texto dentro da imagem).
  */
-export function buildPagePrompt({ theme, child, index }: BuildPagePromptInput): BuiltPagePrompt {
+const CAST_TOKEN = /\{\{([a-z][a-z0-9]*)\}\}/g
+
+/** Troca cada token `{{key}}` da cena pela descrição visual fixa do elenco extra. */
+function applyCast(scene: string, story: BookStory) {
+  return scene.replace(CAST_TOKEN, (m, key: string) => story.cast.find((c) => c.key === key)?.description ?? m)
+}
+
+/** Página-âncora de cada extra = primeira página (2..18) em que o token dele aparece; entra como referência nas seguintes. */
+function storyRefs(story: BookStory, index: number): number[] {
+  const scene = story.pages[index - FIRST_STORY_INDEX]?.scene ?? ""
+  const keys = [...scene.matchAll(CAST_TOKEN)].map((m) => m[1])
+  return keys
+    .map((key) => story.pages.findIndex((p) => p.scene.includes(`{{${key}}}`)) + FIRST_STORY_INDEX)
+    .filter((anchor) => anchor >= FIRST_STORY_INDEX && anchor < index)
+}
+
+export function buildPagePrompt({ theme, child, index, story }: BuildPagePromptInput): BuiltPagePrompt {
   const r = (t: string) => renderBookText(t, child)
   const character = characterBlock(theme, child)
 
@@ -81,9 +100,14 @@ export function buildPagePrompt({ theme, child, index }: BuildPagePromptInput): 
   const page = theme.pages[storyPosition]
   if (!page) throw new Error(`[BOOKS] Tema ${theme.slug} não tem a página ${index}`)
 
-  const refIndexes = [COVER_INDEX, ...page.refs.filter((i) => i !== COVER_INDEX && i < index)]
+  const storyPage = story?.pages[storyPosition]
+  const text = storyPage ? storyPage.text : r(page.text)
+  const scene = storyPage && story ? applyCast(storyPage.scene, story) : r(page.scene)
+  const panel = storyPage?.panel ?? page.panel
+  const extraRefs = storyPage && story ? storyRefs(story, index) : []
+  const refIndexes = [...new Set([COVER_INDEX, ...page.refs.filter((i) => i !== COVER_INDEX && i < index), ...extraRefs])]
   return {
-    prompt: `${STYLE} ${character} ${CONSISTENCY} Scene: ${r(page.scene)} ${textPanel(page.panel, r(page.text))}`,
+    prompt: `${STYLE} ${character} ${CONSISTENCY} Scene: ${scene} ${textPanel(panel, text)}`,
     refIndexes,
   }
 }
