@@ -112,7 +112,7 @@ export function BookActions({ book, title }: { book: BookWithPages; title: strin
     }
   }
 
-  // Uma chamada gera uma ou duas ondas (limite de 300 s da função); repete até não sobrar pendente.
+  // Uma chamada gera páginas por 150 s (limite de 300 s da função); repete até não sobrar pendente.
   async function generateAllPages(): Promise<Result> {
     let result: GenerateResult
     do {
@@ -198,7 +198,7 @@ export function BookActions({ book, title }: { book: BookWithPages; title: strin
   // ---- Barra de progresso ---------------------------------------------
   const pct = (n: number) => `${(n / BOOK_PAGE_COUNT) * 100}%`
   const elapsedMin = minutesSince(startedAt)
-  const estimateMin = (book.quality === "high" ? 2 : 1) * 4 * 4 // 4 ondas em paralelo
+  const estimateMin = Math.ceil(((BOOK_PAGE_COUNT - 1) / 2) * (book.quality === "high" ? 100 : 45) / 60) // 2 em paralelo
 
   return (
     <>
@@ -307,7 +307,7 @@ export function BookActions({ book, title }: { book: BookWithPages; title: strin
           )}
           {!busy && !coverReady && <span className="text-[12.5px] font-semibold text-[#3f3f46]">A capa é a referência visual das outras 19 páginas.</span>}
           {!busy && coverReady && !allReady && failedIdx.length === 0 && (
-            <span className="text-[12.5px] font-semibold text-[#3f3f46]">As 19 páginas saem em lotes · ≈ {estimateMin} min no total</span>
+            <span className="text-[12.5px] font-semibold text-[#3f3f46]">As 19 páginas saem de 2 em 2 · ≈ {estimateMin} min no total</span>
           )}
           {!busy && failedIdx.length > 0 && <Chip className="bg-danger-soft">{failedIdx.length} {failedIdx.length === 1 ? "falhou" : "falharam"}</Chip>}
           {!busy && allReady && book.pdf_path && <Chip className="bg-success">PDF gerado</Chip>}

@@ -9,24 +9,28 @@ import type { Book, BookPage } from "@/modules/books/types"
 export type GeneratePagesResult = { ready: number[]; failed: number[]; pending: number[] }
 
 export type GeneratePagesOptions = {
-  /** Não inicia uma nova onda depois deste tempo; o que sobrar volta em `pending` e o livro fica `generating`. */
+  /** Não inicia página nova depois deste tempo; o que sobrar volta em `pending` e o livro fica `generating`. */
   budgetMs?: number
+  /** Páginas em paralelo. Replicate limita a ~6 pedidos/min com saldo baixo; 2 fica folgado. */
+  concurrency?: number
+  /** Injetável nos testes. */
+  generatePage?: typeof generateAndStorePage
 }
 
 /**
- * Gera todas as páginas 1..19 que ainda não estão `ready`, em ondas: uma
- * página só entra na onda quando todas as suas referências (capa e âncoras)
- * já existem. Páginas da mesma onda rodam em paralelo (allSettled). Marca o
- * livro `generating` → `ready` (todas prontas) ou `failed` (alguma falhou;
- * chamar de novo retoma só as pendentes). Com `budgetMs`, para entre ondas
- * quando o tempo acaba (limite de execução da Vercel) e o chamador repete.
+ * Gera todas as páginas 1..19 que ainda não estão `ready` com no máximo
+ * `concurrency` em paralelo: assim que uma termina, entra a próxima cuja
+ * referências (capa e âncoras) já estejam prontas. Marca o livro
+ * `generating` → `ready` (todas prontas) ou `failed` (alguma falhou; chamar
+ * de novo retoma só as pendentes). Com `budgetMs`, não inicia página nova
+ * depois do tempo (limite de execução da Vercel) e o chamador repete.
  */
 export async function generatePages(
   supabase: SupabaseClient,
   book: Book,
   existingPages: BookPage[],
   replicateToken: string,
-  { budgetMs }: GeneratePagesOptions = {},
+  { budgetMs, concurrency = 2, generatePage = generateAndStorePage }: GeneratePagesOptions = {},
 ): Promise<GeneratePagesResult> {
   const startedAt = Date.now()
   const ready = new Set(existingPages.filter((p) => p.status === "ready").map((p) => p.index))
@@ -43,25 +47,32 @@ export async function generatePages(
   const failed: number[] = []
   const done: number[] = []
 
-  while (pending.size) {
-    if (budgetMs && Date.now() - startedAt > budgetMs) break
-    const wave = [...pending].filter(([, refs]) => refs.every((r) => ready.has(r))).map(([i]) => i)
-    if (!wave.length) {
-      // Referências que falharam bloqueiam as dependentes: marca como failed sem gastar.
-      for (const [index] of pending) failed.push(index)
-      break
-    }
-    const results = await Promise.allSettled(
-      wave.map((index) => generateAndStorePage(supabase, book, index, replicateToken)),
-    )
-    results.forEach((r, i) => {
-      const index = wave[i]
+  const running = new Map<number, Promise<void>>()
+  const overBudget = () => Boolean(budgetMs && Date.now() - startedAt > budgetMs)
+
+  while (pending.size || running.size) {
+    const next = running.size < concurrency && !overBudget()
+      ? [...pending].find(([, refs]) => refs.every((r) => ready.has(r)))
+      : undefined
+    if (next) {
+      const [index] = next
       pending.delete(index)
-      if (r.status === "fulfilled") {
-        ready.add(index)
-        done.push(index)
-      } else failed.push(index)
-    })
+      running.set(
+        index,
+        generatePage(supabase, book, index, replicateToken)
+          .then(() => { ready.add(index); done.push(index) }, () => { failed.push(index) })
+          .finally(() => running.delete(index)),
+      )
+      continue
+    }
+    if (running.size) {
+      await Promise.race(running.values())
+      continue
+    }
+    if (overBudget()) break
+    // Referências que falharam bloqueiam as dependentes: marca como failed sem gastar.
+    for (const [index] of pending) failed.push(index)
+    pending.clear()
   }
 
   const left = [...pending.keys()].sort((a, b) => a - b)
