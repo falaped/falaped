@@ -45,6 +45,36 @@ export async function updateSession(request: NextRequest) {
   const user = data?.user;
 
   const pathname = request.nextUrl.pathname;
+
+  // books.falaped.com.br serve o app de livros na raiz: "/" → /books, "/{id}" → /books/{id}.
+  // Auth e API seguem os mesmos paths; "/dashboard" não existe nesse host e volta à raiz.
+  const isBooksHost = (request.headers.get("host") ?? "").startsWith("books.");
+  const homePath = isBooksHost ? "/" : "/dashboard";
+  if (isBooksHost) {
+    if (pathname.startsWith("/dashboard")) {
+      const url = request.nextUrl.clone();
+      url.pathname = "/";
+      return NextResponse.redirect(url);
+    }
+    if (!pathname.startsWith("/auth") && !pathname.startsWith("/api") && !pathname.startsWith("/books")) {
+      const url = request.nextUrl.clone();
+      url.pathname = `/books${pathname === "/" ? "" : pathname}`;
+      const rewriteResponse = NextResponse.rewrite(url, { request });
+      supabaseResponse.cookies.getAll().forEach((cookie) =>
+        rewriteResponse.cookies.set(cookie.name, cookie.value, {
+          path: cookie.path,
+          domain: cookie.domain,
+          maxAge: cookie.maxAge,
+          expires: cookie.expires,
+          httpOnly: cookie.httpOnly,
+          secure: cookie.secure,
+          sameSite: cookie.sameSite,
+        }),
+      );
+      supabaseResponse = rewriteResponse;
+    }
+  }
+
   const isAuthRoute =
     pathname === "/auth/login" ||
     pathname === "/auth/sign-up" ||
@@ -55,9 +85,9 @@ export async function updateSession(request: NextRequest) {
   const isHomePage = pathname === "/";
 
   // Authenticated user: redirect away from auth screens and home to dashboard
-  if (user && (isHomePage || isAuthRoute)) {
+  if (user && ((isHomePage && !isBooksHost) || isAuthRoute)) {
     const url = request.nextUrl.clone();
-    url.pathname = "/dashboard";
+    url.pathname = homePath;
     const redirectResponse = NextResponse.redirect(url);
     supabaseResponse.cookies.getAll().forEach((cookie) =>
       redirectResponse.cookies.set(cookie.name, cookie.value, {
@@ -74,7 +104,7 @@ export async function updateSession(request: NextRequest) {
   }
 
   // Unauthenticated user: redirect protected routes to login
-  if (!user && !isHomePage && !pathname.startsWith("/auth")) {
+  if (!user && (!isHomePage || isBooksHost) && !pathname.startsWith("/auth")) {
     await supabase.auth.signOut();
     const url = request.nextUrl.clone();
     url.pathname = "/auth/login";
