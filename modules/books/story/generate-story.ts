@@ -140,6 +140,6 @@ export async function generateStory(
   changed.forEach((pos) => { if (!keep.has(pos)) pages[pos] = base[pos] })
 
   const used = new Set(pages.flatMap((p) => tokensIn(p.scene)))
-  const cast = seeds.filter((s) => used.has(s.key)).map((s) => ({ key: s.key, label: s.label, description: descriptions.get(s.key)! }))
+  const cast = seeds.filter((s) => used.has(s.key)).map((s) => ({ key: s.key, label: s.label, name: s.name, description: descriptions.get(s.key)! }))
   return { cast, pages }
 }

@@ -45,7 +45,17 @@ export const bookStoryPageSchema = z.object({
 })
 
 export const bookStorySchema = z.object({
-  cast: z.array(z.object({ key: z.string().regex(/^[a-z][a-z0-9]*$/), label: z.string().trim().min(1).max(80), description: z.string().trim().min(3).max(300) })).max(10),
+  cast: z
+    .array(
+      z.object({
+        key: z.string().regex(/^[a-z][a-z0-9]*$/),
+        label: z.string().trim().min(1).max(80),
+        /** Nome pelo qual o texto cita o extra; usado para alinhar texto e cena. */
+        name: z.string().trim().min(1).max(60).optional(),
+        description: z.string().trim().min(3).max(300),
+      }),
+    )
+    .max(10),
   pages: z.array(bookStoryPageSchema).length(STORY_PAGE_COUNT, `A história tem ${STORY_PAGE_COUNT} páginas.`),
 })
 export type BookStory = z.infer<typeof bookStorySchema>
@@ -73,3 +83,10 @@ export const generateStorySchema = z.object({
   details: bookDetailsSchema,
 })
 export type GenerateStoryInput = z.infer<typeof generateStorySchema>
+
+/** Entrada do alinhamento das cenas após a revisão: a história editada e o texto anterior das páginas alteradas. */
+export const alignStorySchema = z.object({
+  story: bookStorySchema,
+  changed: z.array(z.object({ position: z.number().int().min(0).max(STORY_PAGE_COUNT - 1), previousText: z.string().max(600) })).max(STORY_PAGE_COUNT),
+})
+export type AlignStoryInput = z.infer<typeof alignStorySchema>

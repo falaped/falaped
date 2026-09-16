@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation"
 import { toast } from "sonner"
 import { ArrowLeft, Camera, Check, ChevronLeft, ChevronRight, Shield, Sparkles, Upload, X } from "lucide-react"
 
-import { createBookAction, generateStoryAction } from "@/actions/books"
+import { alignStoryAction, createBookAction, generateStoryAction } from "@/actions/books"
 import { BkButton, Sticker, bkButton } from "@/components/books/books-ui"
 import { describeDetails, draftToDetails, emptyDraft, hasDetails, StoryDetailsFields, type DetailsDraft } from "@/components/books/story-details-fields"
 import { pageTextError, StoryReview } from "@/components/books/story-review"
@@ -147,6 +147,10 @@ export function NewBookWizard({ themes }: { themes: WizardTheme[] }) {
   const [draft, setDraft] = useState<DetailsDraft>(emptyDraft)
   const [story, setStory] = useState<BookStory | null>(null)
   const [storyLoading, setStoryLoading] = useState(false)
+  /** Textos como saíram do modelo (ou do último alinhamento): a diferença para `story` diz quais cenas refazer. */
+  const [generatedTexts, setGeneratedTexts] = useState<string[]>([])
+  const [alignedPositions, setAlignedPositions] = useState<number[]>([])
+  const [aligning, setAligning] = useState(false)
   const storyKey = useRef("")
   const [submitting, setSubmitting] = useState(false)
   const logoInput = useRef<HTMLInputElement>(null)
@@ -174,10 +178,29 @@ export function NewBookWizard({ themes }: { themes: WizardTheme[] }) {
       void loadStory()
     }
     if (step === 2) {
-      if (storyLoading || !story) return toast.error("Aguarde a história ficar pronta.")
+      if (storyLoading || aligning || !story) return toast.error("Aguarde a história ficar pronta.")
       if (storyInvalid) return toast.error(`Ajuste ${storyInvalid === 1 ? "a página marcada" : `as ${storyInvalid} páginas marcadas`} antes de continuar.`)
+      void alignAndContinue(story)
+      return
     }
     setStep((s) => Math.min(s + 1, STEPS.length - 1))
+  }
+
+  /** Páginas cujo texto mudou desde a geração: o Groq refaz a cena delas para o desenho acompanhar o roteiro. */
+  async function alignAndContinue(current: BookStory) {
+    const changed = current.pages
+      .map((p, position) => ({ position, previousText: generatedTexts[position] ?? "" }))
+      .filter((c) => current.pages[c.position].text.trim() !== c.previousText.trim())
+    if (!changed.length) return setStep(3)
+    setAligning(true)
+    const result = await alignStoryAction({ story: current, changed })
+    setAligning(false)
+    if (!result.ok) return toast.error(result.error)
+    setStory(result.story)
+    setGeneratedTexts(result.story.pages.map((p) => p.text))
+    setAlignedPositions((prev) => [...new Set([...prev, ...result.aligned])].sort((a, b) => a - b))
+    if (result.aligned.length) toast.success(`${result.aligned.length === 1 ? "1 cena ajustada" : `${result.aligned.length} cenas ajustadas`} ao texto novo.`)
+    setStep(3)
   }
 
   /** Gera (ou reaproveita) a história para as entradas atuais; `force` ignora a que já existe. */
@@ -195,6 +218,8 @@ export function NewBookWizard({ themes }: { themes: WizardTheme[] }) {
     }
     storyKey.current = key
     setStory(result.story)
+    setGeneratedTexts(result.story.pages.map((p) => p.text))
+    setAlignedPositions([])
   }
 
   async function submit() {
@@ -407,18 +432,23 @@ export function NewBookWizard({ themes }: { themes: WizardTheme[] }) {
             story={story}
             loading={storyLoading}
             personalized={personalized}
+            generatedTexts={generatedTexts}
+            alignedPositions={alignedPositions}
             onChangeText={(position, text) => setStory((s) => (s ? { ...s, pages: s.pages.map((p, i) => (i === position ? { ...p, text } : p)) } : s))}
             onRegenerate={() => void loadStory(true)}
           />
-          <div className="mt-7 flex items-center justify-between gap-3 border-t-2 border-ink pt-6">
-            <BkButton variant="secondary" onClick={() => setStep(1)}>
+          <div className="mt-7 flex flex-col gap-4 border-t-2 border-ink pt-6 sm:flex-row sm:items-center sm:justify-between">
+            <BkButton variant="secondary" disabled={aligning} onClick={() => setStep(1)} className="order-2 sm:order-1">
               <ChevronLeft className="size-4" strokeWidth={2.6} aria-hidden />
               Voltar
             </BkButton>
-            <BkButton variant="primary" onClick={next} disabled={storyLoading || !story} className="px-[22px] text-[15px]">
-              Continuar
-              <ChevronRight className="size-4" strokeWidth={2.6} aria-hidden />
-            </BkButton>
+            <div className="order-1 flex flex-col items-stretch gap-2 sm:order-2 sm:items-end">
+              <BkButton variant="primary" onClick={next} disabled={storyLoading || !story} busy={aligning} busyLabel="Ajustando as cenas ao texto..." className="px-[22px] text-[15px]">
+                Continuar
+                <ChevronRight className="size-4" strokeWidth={2.6} aria-hidden />
+              </BkButton>
+              <span className="text-xs font-medium text-muted-foreground">Páginas com texto editado têm o desenho refeito para acompanhar.</span>
+            </div>
           </div>
         </div>
       )}
@@ -506,7 +536,7 @@ export function NewBookWizard({ themes }: { themes: WizardTheme[] }) {
               <dd className="font-bold">{personalized ? describeDetails(details) : "Nenhum · história do tema"}</dd>
               <dt className="text-muted-foreground">Textos</dt>
               <dd className="font-bold">
-                Revisados ·{" "}
+                Revisados{alignedPositions.length > 0 && ` · ${alignedPositions.length === 1 ? "1 cena ajustada" : `${alignedPositions.length} cenas ajustadas`}`} ·{" "}
                 <button type="button" onClick={() => setStep(2)} className="underline decoration-secondary decoration-2 underline-offset-2">
                   ver de novo
                 </button>

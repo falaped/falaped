@@ -1,6 +1,6 @@
 "use client"
 
-import { Loader2, RefreshCw, Sparkles } from "lucide-react"
+import { Check, Loader2, Pencil, RefreshCw, Sparkles } from "lucide-react"
 
 import { BkButton, Chip, Sticker } from "@/components/books/books-ui"
 import type { BookStory } from "@/lib/schemas/book"
@@ -24,12 +24,16 @@ type Props = {
   story: BookStory | null
   loading: boolean
   personalized: boolean
+  /** Texto de cada página como saiu do modelo; diferente do atual = cena será refeita ao continuar. */
+  generatedTexts: string[]
+  /** Páginas cuja cena já foi refeita para acompanhar uma edição. */
+  alignedPositions: number[]
   onChangeText: (position: number, text: string) => void
   onRegenerate: () => void
 }
 
 /** Passo "História": os 17 textos em blocos editáveis, com contador e os extras de cada página. */
-export function StoryReview({ story, loading, personalized, onChangeText, onRegenerate }: Props) {
+export function StoryReview({ story, loading, personalized, generatedTexts, alignedPositions, onChangeText, onRegenerate }: Props) {
   if (loading || !story) {
     return (
       <div className="mt-6 flex flex-col items-center gap-4 rounded-[20px] border-2 border-dashed border-ink bg-white px-6 py-14 text-center shadow-hard-lg">
@@ -53,7 +57,7 @@ export function StoryReview({ story, loading, personalized, onChangeText, onRege
         <div className="flex flex-col gap-1">
           <h2 className="font-display text-[19px] font-extrabold sm:text-[22px]">Revise os textos das 17 páginas</h2>
           <p className="text-[13px] font-medium text-muted-foreground">
-            Ajuste o que quiser. O texto vai exatamente assim para dentro da ilustração, e não pode mais ser mudado depois de criar o livro.
+            Ajuste o que quiser. O texto vai exatamente assim para dentro da ilustração, e o desenho das páginas editadas é refeito para acompanhar. Depois de criar o livro não dá mais para mudar.
           </p>
           <div className="mt-1 flex flex-wrap gap-1.5">
             <Chip>{STORY_MIN_WORDS} a {STORY_MAX_WORDS} palavras por página</Chip>
@@ -76,6 +80,7 @@ export function StoryReview({ story, loading, personalized, onChangeText, onRege
           const error = pageTextError(page.text)
           const warn = !error && (words < STORY_MIN_WORDS || words > STORY_MAX_WORDS)
           const extras = [...page.scene.matchAll(TOKEN)].map((m) => castLabel(m[1]))
+          const edited = (generatedTexts[position] ?? "").trim() !== page.text.trim()
           const id = `story-page-${position + FIRST_STORY_INDEX}`
           return (
             <li key={position} className={cn("rounded-[14px] border-2 border-ink bg-white p-4 shadow-hard-sm", error && "bg-danger-soft")}>
@@ -84,6 +89,19 @@ export function StoryReview({ story, loading, personalized, onChangeText, onRege
                   Página {position + FIRST_STORY_INDEX}
                 </label>
                 <div className="flex flex-wrap gap-1.5">
+                  {edited ? (
+                    <Chip className="bg-secondary">
+                      <Pencil className="mr-1 inline size-3" strokeWidth={2.4} aria-hidden />
+                      Editado · desenho será refeito
+                    </Chip>
+                  ) : (
+                    alignedPositions.includes(position) && (
+                      <Chip className="bg-success">
+                        <Check className="mr-1 inline size-3" strokeWidth={2.8} aria-hidden />
+                        Desenho ajustado ao texto
+                      </Chip>
+                    )
+                  )}
                   {extras.map((label) => (
                     <Chip key={label} className="bg-warning">
                       <Sparkles className="mr-1 inline size-3" strokeWidth={2.4} aria-hidden />
