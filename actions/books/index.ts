@@ -1,6 +1,3 @@
 export { createBookAction } from "./create-book"
-export { generateCoverAction } from "./generate-cover"
-export { generatePagesAction } from "./generate-pages"
-export { regeneratePageAction } from "./regenerate-page"
 export { buildBookPdfAction } from "./build-book-pdf"
 export { deleteBookAction } from "./delete-book"

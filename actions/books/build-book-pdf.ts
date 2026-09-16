@@ -2,8 +2,7 @@
 
 import { revalidatePath } from "next/cache"
 
-import { requireBook } from "@/actions/books/require-book"
-import type { BookActionResult } from "@/actions/books/generate-cover"
+import { requireBook, type BookActionResult } from "@/actions/books/require-book"
 import { generateBookPdf } from "@/modules/books/generate-book-pdf"
 
 /** Monta o PDF com as 20 páginas prontas e grava em book-assets. */

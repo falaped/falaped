@@ -5,14 +5,8 @@ import { useRouter, useSearchParams } from "next/navigation"
 import { toast } from "sonner"
 import { Check, Download, FileText, RefreshCw, Sparkles, Trash2, TriangleAlert } from "lucide-react"
 
-import type { GeneratePagesActionResult } from "@/actions/books/generate-pages"
-import {
-  buildBookPdfAction,
-  deleteBookAction,
-  generateCoverAction,
-  generatePagesAction,
-  regeneratePageAction,
-} from "@/actions/books"
+import { buildBookPdfAction, deleteBookAction } from "@/actions/books"
+import type { GenerateResult } from "@/app/api/books/[id]/generate/route"
 import { DeleteBookDialog } from "@/components/books/delete-book-dialog"
 import { PageCard, type PageCardState } from "@/components/books/page-card"
 import { BkButton, Chip, Sticker, bkButton } from "@/components/books/books-ui"
@@ -24,6 +18,20 @@ type Result = { ok: true } | { ok: false; error: string }
 type Busy = "cover" | "pages" | "pdf" | "delete" | `page-${number}` | null
 
 const POLL_MS = 5000
+
+type GenerateBody = { kind: "cover" } | { kind: "pages" } | { kind: "page"; index: number }
+
+// Route handler (não Server Action): uma action em andamento segura o router.refresh() na fila,
+// e a grade só atualizaria quando a geração terminasse.
+async function generate(bookId: string, body: GenerateBody): Promise<GenerateResult> {
+  const res = await fetch(`/api/books/${bookId}/generate`, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify(body),
+  })
+  const json: GenerateResult | null = await res.json().catch(() => null)
+  return json ?? { ok: false, error: `Erro ${res.status} ao gerar.` }
+}
 
 export function pageLabel(index: number) {
   if (index === COVER_INDEX) return "Capa"
@@ -106,16 +114,16 @@ export function BookActions({ book, title }: { book: BookWithPages; title: strin
 
   // Uma chamada gera uma ou duas ondas (limite de 300 s da função); repete até não sobrar pendente.
   async function generateAllPages(): Promise<Result> {
-    let result: GeneratePagesActionResult
+    let result: GenerateResult
     do {
-      result = await generatePagesAction(book.id)
+      result = await generate(book.id, { kind: "pages" })
       router.refresh()
     } while (result.ok && result.pending?.length)
     return result
   }
 
   const startCover = () =>
-    run("cover", () => generateCoverAction(book.id), "Capa pronta. Aprove ou refaça.", `Veja se ${book.child_name} ficou parecido.`)
+    run("cover", () => generate(book.id, { kind: "cover" }), "Capa pronta. Aprove ou refaça.", `Veja se ${book.child_name} ficou parecido.`)
 
   // Vindo do wizard ("Criar livro e gerar a capa"): a capa começa na hora.
   useEffect(() => {
@@ -330,7 +338,7 @@ export function BookActions({ book, title }: { book: BookWithPages; title: strin
               onRedo={() =>
                 index === COVER_INDEX && !coverReady
                   ? startCover()
-                  : run(`page-${index}`, () => regeneratePageAction(book.id, index), `${pageLabel(index)} refeita.`)
+                  : run(`page-${index}`, () => generate(book.id, { kind: "page", index }), `${pageLabel(index)} refeita.`)
               }
             />
           )

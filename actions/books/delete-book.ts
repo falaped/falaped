@@ -2,8 +2,7 @@
 
 import { revalidatePath } from "next/cache"
 
-import { requireBook } from "@/actions/books/require-book"
-import type { BookActionResult } from "@/actions/books/generate-cover"
+import { requireBook, type BookActionResult } from "@/actions/books/require-book"
 import { deleteBook } from "@/modules/books/delete-book"
 
 /** Exclui o livro e todos os arquivos (fotos, páginas, PDF). Irreversível. */
