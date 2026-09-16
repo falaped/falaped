@@ -3,25 +3,27 @@ import Link from "next/link"
 import { Plus } from "lucide-react"
 
 import { BooksList } from "@/components/books/books-list"
+import { BooksListSkeleton } from "@/components/books/books-list-skeleton"
+import { bkButton } from "@/components/books/books-ui"
 
 export default function BooksPage() {
   return (
     <>
-      <div className="flex flex-col gap-6 sm:flex-row sm:items-end sm:justify-between">
+      <div className="flex flex-col gap-4 px-4 pb-5 pt-6 sm:flex-row sm:items-end sm:justify-between sm:gap-6 sm:px-10 sm:pb-8 sm:pt-11">
         <div>
-          <h1 className="inline-block border-b-4 border-primary text-4xl font-black uppercase tracking-tighter sm:text-5xl">
-            Livros
+          <h1 className="font-display text-[40px] font-extrabold leading-none tracking-[-.03em] sm:text-[64px]">
+            <span className="bg-[linear-gradient(transparent_58%,#f5c4b8_58%)]">Livros</span>
           </h1>
-          <p className="bk-hand mt-3 text-2xl text-foreground/80">
-            Livros ilustrados personalizados, gerados por IA, para você presentear seus pacientes.
+          <p className="mt-2.5 text-sm font-medium leading-relaxed text-[#3f3f46] sm:mt-3.5 sm:text-base">
+            Livros ilustrados personalizados para presentear seus pacientes.
           </p>
         </div>
-        <Link href="/books/new" className="bk-btn bk-btn-primary bk-btn-lg w-full shrink-0 sm:w-auto">
-          <Plus className="size-5" aria-hidden />
+        <Link href="/books/new" className={bkButton("primary", "h-[52px] w-full px-[22px] text-[15px] sm:h-[50px] sm:w-auto")}>
+          <Plus className="size-4" strokeWidth={2.6} aria-hidden />
           Novo livro
         </Link>
       </div>
-      <Suspense fallback={<div className="bk-card h-40 animate-pulse bg-muted" />}>
+      <Suspense fallback={<BooksListSkeleton />}>
         <BooksList />
       </Suspense>
     </>

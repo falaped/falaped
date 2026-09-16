@@ -3,7 +3,7 @@ import { notFound, redirect } from "next/navigation"
 import { ArrowLeft } from "lucide-react"
 
 import { BookActions } from "@/components/books/book-actions"
-import { BookStatusBadge } from "@/components/books/book-status-badge"
+import { BookStatusSticker } from "@/components/books/book-status-sticker"
 import { createClient } from "@/lib/supabase/server"
 import { createAdminClient } from "@/lib/supabase/server-admin"
 import { getBook } from "@/modules/books/get-book"
@@ -23,26 +23,34 @@ export async function BookDetail({ params }: { params: Promise<{ id: string }> }
 
   const theme = getBookTheme(book.theme)
   const title = renderBookText(theme.title, { name: book.child_name, gender: book.child_gender })
+  const meta = [
+    theme.label,
+    `${book.child_name} (${book.child_gender})`,
+    `Qualidade ${book.quality === "high" ? "Alta" : "Média"}`,
+    book.pediatrician_name,
+  ]
+    .filter(Boolean)
+    .join(" · ")
 
   return (
     <>
-      <div>
-        <Link href="/books" className="mb-4 inline-flex items-center gap-2 text-xs font-black uppercase tracking-widest hover:underline">
-          <ArrowLeft className="size-4" aria-hidden />
+      <div className="border-b-2 border-ink bg-white px-4 py-[18px] sm:px-10 sm:pb-6 sm:pt-7">
+        <Link
+          href="/books"
+          className="inline-flex items-center gap-1.5 text-[13px] font-bold text-ink underline decoration-secondary decoration-2 underline-offset-4"
+        >
+          <ArrowLeft className="size-3.5" strokeWidth={2.2} aria-hidden />
           Todos os livros
         </Link>
-        <div className="flex flex-wrap items-center gap-4">
-          <h1 className="text-4xl font-black uppercase tracking-tighter sm:text-5xl">
-            <span className="border-b-4 border-primary">{title}</span>
+        <div className="mt-3 flex flex-wrap items-center gap-3 sm:mt-3.5 sm:gap-[18px]">
+          <h1 className="font-display text-[30px] font-extrabold leading-[1.05] tracking-tight sm:text-[48px] sm:leading-none sm:tracking-[-.03em]">
+            {title}
           </h1>
-          <BookStatusBadge status={book.status} />
+          <BookStatusSticker status={book.status} />
         </div>
-        <p className="mt-3 text-xs font-black uppercase tracking-widest text-foreground/60">
-          {theme.label} · {book.child_name} ({book.child_gender}) · qualidade {book.quality === "high" ? "alta" : "média"}
-          {book.pediatrician_name ? ` · ${book.pediatrician_name}` : ""}
-        </p>
+        <p className="mt-2.5 text-[12.5px] font-medium leading-relaxed text-[#3f3f46] sm:mt-3 sm:text-sm">{meta}</p>
       </div>
-      <BookActions book={book} />
+      <BookActions book={book} title={title} />
     </>
   )
 }

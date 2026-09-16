@@ -1,9 +1,9 @@
 "use client"
 
-import { useState } from "react"
-import { useRouter } from "next/navigation"
+import { useEffect, useRef, useState } from "react"
+import { useRouter, useSearchParams } from "next/navigation"
 import { toast } from "sonner"
-import { Download, FileText, RefreshCw, Sparkles, Trash2 } from "lucide-react"
+import { Check, Download, FileText, RefreshCw, Sparkles, Trash2, TriangleAlert } from "lucide-react"
 
 import type { GeneratePagesActionResult } from "@/actions/books/generate-pages"
 import {
@@ -13,38 +13,93 @@ import {
   generatePagesAction,
   regeneratePageAction,
 } from "@/actions/books"
+import { DeleteBookDialog } from "@/components/books/delete-book-dialog"
+import { PageCard, type PageCardState } from "@/components/books/page-card"
+import { BkButton, Chip, Sticker, bkButton } from "@/components/books/books-ui"
 import { BOOK_PAGE_COUNT, COVER_INDEX, DEDICATION_INDEX, ENDING_INDEX } from "@/modules/books/constants"
 import type { BookWithPages } from "@/modules/books/types"
+import { cn } from "@/lib/utils"
 
 type Result = { ok: true } | { ok: false; error: string }
+type Busy = "cover" | "pages" | "pdf" | "delete" | `page-${number}` | null
 
-function pageLabel(index: number) {
+const POLL_MS = 5000
+
+export function pageLabel(index: number) {
   if (index === COVER_INDEX) return "Capa"
   if (index === DEDICATION_INDEX) return "Dedicatória"
   if (index === ENDING_INDEX) return "Final"
   return `Página ${index}`
 }
 
-export function BookActions({ book }: { book: BookWithPages }) {
+function pageNote(index: number) {
+  if (index === COVER_INDEX) return "referência"
+  if (index === DEDICATION_INDEX || index === ENDING_INDEX) return "sem texto"
+  return undefined
+}
+
+function listPt(nums: number[]) {
+  if (nums.length <= 1) return nums.join("")
+  return `${nums.slice(0, -1).join(", ")} e ${nums[nums.length - 1]}`
+}
+
+function minutesSince(startedAt: number | null) {
+  if (!startedAt) return 0
+  return Math.floor((Date.now() - startedAt) / 60_000)
+}
+
+export function BookActions({ book, title }: { book: BookWithPages; title: string }) {
   const router = useRouter()
-  const [busy, setBusy] = useState<string | null>(null)
+  const searchParams = useSearchParams()
+  const [busy, setBusy] = useState<Busy>(null)
+  const [startedAt, setStartedAt] = useState<number | null>(null)
+  const [deleteOpen, setDeleteOpen] = useState(false)
+  const [, forceTick] = useState(0)
+  const autoStarted = useRef(false)
 
   const pages = Array.from({ length: BOOK_PAGE_COUNT }, (_, i) => book.pages.find((p) => p.index === i) ?? null)
   const cover = pages[COVER_INDEX]
-  const readyCount = pages.filter((p) => p?.status === "ready").length
+  const coverReady = cover?.status === "ready"
+  const readyIdx = pages.flatMap((p, i) => (p?.status === "ready" ? [i] : []))
+  const failedIdx = pages.flatMap((p, i) => (p?.status === "failed" ? [i] : []))
+  const inProgressIdx = pages.flatMap((p, i) => (p?.status === "pending" ? [i] : []))
+  const missingIdx = pages.flatMap((p, i) => (!p ? [i] : []))
+  const readyCount = readyIdx.length
   const allReady = readyCount === BOOK_PAGE_COUNT
-  const canGeneratePages = cover?.status === "ready" && !allReady
+  const generatingPages = busy === "pages"
+  const redoingIndex = busy?.startsWith("page-") ? Number(busy.slice(5)) : null
+  const canRedo = coverReady && busy === null
+  const stepNumber = !coverReady ? 1 : allReady ? 3 : 2
 
-  async function run(key: string, action: () => Promise<Result>, success: string) {
+  // Enquanto algo roda: atualiza a grade a cada 5 s e avisa antes de fechar a aba.
+  useEffect(() => {
+    if (!busy) return
+    const id = setInterval(() => {
+      router.refresh()
+      forceTick((t) => t + 1)
+    }, POLL_MS)
+    const warn = (e: BeforeUnloadEvent) => {
+      e.preventDefault()
+    }
+    window.addEventListener("beforeunload", warn)
+    return () => {
+      clearInterval(id)
+      window.removeEventListener("beforeunload", warn)
+    }
+  }, [busy, router])
+
+  async function run(key: Busy, action: () => Promise<Result>, success: string, description?: string) {
     setBusy(key)
+    setStartedAt(Date.now())
     try {
       const result = await action()
-      if (result.ok) toast.success(success)
+      if (result.ok) toast.success(success, { description })
       else toast.error(result.error)
     } catch (error: unknown) {
       toast.error(error instanceof Error ? error.message : "Erro inesperado.")
     } finally {
       setBusy(null)
+      setStartedAt(null)
       router.refresh()
     }
   }
@@ -59,8 +114,19 @@ export function BookActions({ book }: { book: BookWithPages }) {
     return result
   }
 
+  const startCover = () =>
+    run("cover", () => generateCoverAction(book.id), "Capa pronta. Aprove ou refaça.", `Veja se ${book.child_name} ficou parecido.`)
+
+  // Vindo do wizard ("Criar livro e gerar a capa"): a capa começa na hora.
+  useEffect(() => {
+    if (autoStarted.current || searchParams.get("start") !== "cover" || coverReady || busy) return
+    autoStarted.current = true
+    router.replace(`/books/${book.id}`)
+    void startCover()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
   async function onDelete() {
-    if (!confirm("Excluir este livro e todos os arquivos? Não dá para desfazer.")) return
     setBusy("delete")
     const result = await deleteBookAction(book.id)
     if (!result.ok) {
@@ -72,122 +138,216 @@ export function BookActions({ book }: { book: BookWithPages }) {
     router.push("/books")
   }
 
-  const step =
-    cover?.status !== "ready"
-      ? "Passo 1 de 3: gere a capa e veja se a criança ficou parecida."
-      : !allReady
-        ? "Passo 2 de 3: aprove a capa para gerar as outras 19 páginas. Não feche a aba."
-        : "Passo 3 de 3: refaça o que quiser e gere o PDF."
+  // ---- Faixa de passo -------------------------------------------------
+  const failedCount = failedIdx.length
+  const hasFailures = failedCount > 0 && !generatingPages
+  const resumable = coverReady && !allReady && !generatingPages && (hasFailures || readyCount > 1)
+
+  let bannerBg = "bg-secondary"
+  let stickerBg = "bg-warning"
+  let headline: string
+  let hint: React.ReactNode = null
+  if (busy === "cover") {
+    headline = "A capa está sendo desenhada. Leva cerca de 2 minutos."
+    hint = <Warn>Não feche a aba.</Warn>
+  } else if (!coverReady) {
+    headline = "Gere a capa e veja se a criança ficou parecida."
+  } else if (generatingPages) {
+    headline = "As 19 páginas estão sendo desenhadas."
+    hint = <Warn>Não feche a aba.</Warn>
+  } else if (hasFailures) {
+    bannerBg = "bg-danger-soft"
+    stickerBg = "bg-destructive"
+    headline = `${failedCount} ${failedCount === 1 ? "página falhou" : "páginas falharam"}. Clique para retomar de onde parou.`
+    hint = <Chip>Falharam as páginas {listPt(failedIdx)} · nada do que já ficou pronto se perde.</Chip>
+  } else if (allReady) {
+    bannerBg = "bg-success"
+    stickerBg = "bg-white"
+    headline = "Refaça o que quiser e gere o PDF."
+    hint =
+      redoingIndex !== null ? (
+        <Chip>Refazendo a {pageLabel(redoingIndex)} · os outros botões voltam quando terminar.</Chip>
+      ) : busy === "pdf" ? (
+        <Chip>Montando o PDF com as 20 páginas.</Chip>
+      ) : book.pdf_path ? (
+        <Chip>PDF pronto para baixar.</Chip>
+      ) : (
+        <Chip>Gere o PDF para baixar o livro completo.</Chip>
+      )
+  } else if (resumable) {
+    headline = "A geração parou no meio. Clique para retomar de onde parou."
+    hint = <Chip>Faltam {missingIdx.length + inProgressIdx.length} páginas · nada do que já ficou pronto se perde.</Chip>
+  } else {
+    headline = "Aprove a capa para gerar as outras 19 páginas."
+    hint =
+      redoingIndex === COVER_INDEX ? (
+        <Chip>Refazendo a capa · aprove quando ficar parecido.</Chip>
+      ) : (
+        <Chip>Não ficou parecido? Refaça a capa no card abaixo antes de aprovar.</Chip>
+      )
+  }
+
+  // ---- Barra de progresso ---------------------------------------------
+  const pct = (n: number) => `${(n / BOOK_PAGE_COUNT) * 100}%`
+  const elapsedMin = minutesSince(startedAt)
+  const estimateMin = (book.quality === "high" ? 2 : 1) * 4 * 4 // 4 ondas em paralelo
 
   return (
-    <div className="flex flex-col gap-8">
-      <div className="bk-card flex flex-col gap-4 bg-accent p-5 sm:p-6">
-        <p className="bk-hand text-2xl">{step}</p>
-        <div className="flex flex-wrap items-center gap-3">
-          {cover?.status !== "ready" && (
-            <button
-              className="bk-btn bk-btn-primary"
+    <>
+      <section
+        className={cn(
+          "grid gap-3.5 border-b-2 border-ink px-4 py-4 sm:grid-cols-[auto_minmax(0,1fr)_auto] sm:items-center sm:gap-7 sm:px-10 sm:py-5",
+          bannerBg,
+        )}
+      >
+        <div className="flex items-center gap-3 sm:contents">
+          <Sticker className={cn("rounded-[10px] px-3 py-[9px] font-display text-[17px] normal-case tracking-tight shadow-hard-xs sm:rounded-xl sm:px-4 sm:py-3 sm:text-2xl", stickerBg)}>
+            Passo {stepNumber}
+            <span className="text-[12px] opacity-75 sm:text-[15px]">/3</span>
+          </Sticker>
+          <div className="flex min-w-0 flex-col gap-2">
+            <p className="font-display text-[19px] font-bold leading-[1.15] tracking-tight text-pretty sm:text-[26px]">{headline}</p>
+            {hint && <div className="hidden sm:block">{hint}</div>}
+          </div>
+        </div>
+        {hint && <div className="sm:hidden">{hint}</div>}
+        <div className="flex flex-wrap items-center gap-2.5">
+          {!coverReady && (
+            <BkButton
+              variant="primary"
+              busy={busy === "cover"}
+              busyLabel="Gerando capa (≈ 2 min)..."
               disabled={busy !== null}
-              onClick={() => run("cover", () => generateCoverAction(book.id), "Capa pronta. Aprove ou refaça.")}
+              onClick={startCover}
+              className="w-full sm:w-auto"
             >
-              <Sparkles className="size-4" aria-hidden />
-              {busy === "cover" ? "Gerando capa (≈ 2 min)..." : "Gerar capa"}
-            </button>
+              <Sparkles className="size-4" strokeWidth={2.4} aria-hidden />
+              Gerar capa
+            </BkButton>
           )}
-          {canGeneratePages && (
-            <button
-              className="bk-btn bk-btn-primary"
+          {coverReady && !allReady && (
+            <BkButton
+              variant={hasFailures ? "warning" : "primary"}
+              busy={generatingPages}
+              busyLabel="Gerando páginas (vários minutos)..."
               disabled={busy !== null}
-              onClick={() => run("pages", generateAllPages, "Todas as páginas prontas.")}
+              onClick={() => run("pages", generateAllPages, "Todas as páginas prontas.", "Agora gere o PDF.")}
+              className="w-full sm:w-auto"
             >
-              <Sparkles className="size-4" aria-hidden />
-              {busy === "pages"
-                ? "Gerando páginas (vários minutos)..."
-                : readyCount > 1
-                  ? "Retomar páginas pendentes"
-                  : "Aprovar capa e gerar as 19 páginas"}
-            </button>
+              {resumable ? <RefreshCw className="size-4" strokeWidth={2.4} aria-hidden /> : <Check className="size-4" strokeWidth={2.6} aria-hidden />}
+              {resumable ? "Retomar páginas pendentes" : "Aprovar capa e gerar as 19 páginas"}
+            </BkButton>
           )}
-          {allReady && (
-            <button
-              className={`bk-btn ${book.pdf_path ? "" : "bk-btn-primary"}`}
-              disabled={busy !== null}
-              onClick={() => run("pdf", () => buildBookPdfAction(book.id), "PDF gerado.")}
+          {coverReady && (
+            <BkButton
+              variant={allReady && !book.pdf_path ? "primary" : "secondary"}
+              busy={busy === "pdf"}
+              busyLabel="Montando PDF..."
+              disabled={busy !== null || !allReady}
+              title={allReady ? undefined : "Disponível quando as 20 páginas estiverem prontas"}
+              onClick={() => run("pdf", () => buildBookPdfAction(book.id), "PDF gerado.", "Clique em Baixar PDF.")}
+              className="flex-1 sm:flex-none"
             >
-              <FileText className="size-4" aria-hidden />
-              {busy === "pdf" ? "Montando PDF..." : book.pdf_path ? "Gerar PDF de novo" : "Gerar PDF"}
-            </button>
+              <FileText className="size-4" strokeWidth={2.4} aria-hidden />
+              {book.pdf_path ? "Gerar PDF de novo" : "Gerar PDF"}
+            </BkButton>
           )}
-          {book.pdf_path && (
-            <a href={`/api/books/${book.id}/pdf`} target="_blank" rel="noreferrer" className="bk-btn bk-btn-secondary">
-              <Download className="size-4" aria-hidden />
+          {book.pdf_path && allReady && (
+            <a
+              href={`/api/books/${book.id}/pdf`}
+              target="_blank"
+              rel="noreferrer"
+              className={bkButton("primary", cn("flex-1 sm:flex-none", busy !== null && "pointer-events-none border-dashed bg-transparent opacity-45 shadow-none"))}
+            >
+              <Download className="size-4" strokeWidth={2.4} aria-hidden />
               Baixar PDF
             </a>
           )}
-          <button className="bk-btn bk-btn-destructive sm:ml-auto" disabled={busy !== null} onClick={onDelete}>
-            <Trash2 className="size-4" aria-hidden />
-            Excluir livro
-          </button>
+          <BkButton
+            variant="icon-destructive"
+            disabled={busy !== null}
+            aria-label="Excluir livro"
+            title="Excluir livro"
+            onClick={() => setDeleteOpen(true)}
+          >
+            <Trash2 className="size-4" strokeWidth={2.2} aria-hidden />
+          </BkButton>
         </div>
-      </div>
+      </section>
 
-      <div className="flex items-center gap-4">
-        <div className="h-6 flex-1 border-3 border-foreground bg-card">
-          <div className="h-full bg-primary transition-all" style={{ width: `${(readyCount / BOOK_PAGE_COUNT) * 100}%` }} />
-        </div>
-        <span className="text-sm font-black uppercase tracking-wider">
-          {readyCount} / {BOOK_PAGE_COUNT} páginas
+      <div className="grid gap-2.5 border-b-2 border-ink bg-white px-4 py-3.5 sm:grid-cols-[auto_minmax(0,1fr)_auto] sm:items-center sm:gap-5 sm:px-10 sm:py-4">
+        <span className="whitespace-nowrap font-display text-lg font-extrabold leading-none tracking-tight sm:text-xl">
+          {readyCount} de {BOOK_PAGE_COUNT} <span className="font-sans text-[12.5px] font-semibold tracking-normal text-[#3f3f46] sm:text-[13px]">páginas prontas</span>
         </span>
+        <div className="flex h-4 overflow-hidden rounded-full border-2 border-ink bg-muted sm:h-[18px]" role="progressbar" aria-valuenow={readyCount} aria-valuemin={0} aria-valuemax={BOOK_PAGE_COUNT}>
+          {readyCount > 0 && <span className="bg-ink" style={{ width: pct(readyCount) }} />}
+          {failedIdx.length > 0 && <span className="border-l-2 border-ink bg-destructive" style={{ width: pct(failedIdx.length) }} />}
+          {(inProgressIdx.length > 0 || busy === "cover") && (
+            <span
+              className="animate-pulse border-l-2 border-ink bg-[repeating-linear-gradient(135deg,#f5c21a_0_6px,#fbe38a_6px_12px)]"
+              style={{ width: pct(Math.max(inProgressIdx.length, busy === "cover" ? 1 : 0)) }}
+            />
+          )}
+        </div>
+        <div className="flex flex-wrap gap-2 text-[12.5px] font-semibold">
+          {busy === "cover" && <Chip className="bg-warning">Capa · {elapsedMin} min decorridos</Chip>}
+          {generatingPages && (
+            <>
+              <Chip>{elapsedMin} min decorridos</Chip>
+              <Chip className="bg-warning">
+                {inProgressIdx.length} gerando · {missingIdx.length} na fila
+              </Chip>
+            </>
+          )}
+          {!busy && !coverReady && <span className="text-[12.5px] font-semibold text-[#3f3f46]">A capa é a referência visual das outras 19 páginas.</span>}
+          {!busy && coverReady && !allReady && failedIdx.length === 0 && (
+            <span className="text-[12.5px] font-semibold text-[#3f3f46]">As 19 páginas saem em lotes · ≈ {estimateMin} min no total</span>
+          )}
+          {!busy && failedIdx.length > 0 && <Chip className="bg-danger-soft">{failedIdx.length} {failedIdx.length === 1 ? "falhou" : "falharam"}</Chip>}
+          {!busy && allReady && book.pdf_path && <Chip className="bg-success">PDF gerado</Chip>}
+          {!busy && allReady && !book.pdf_path && <Chip>PDF ainda não gerado</Chip>}
+        </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-6 sm:grid-cols-3 lg:grid-cols-5">
+      <div className="grid grid-cols-2 gap-4 px-4 pb-8 pt-5 sm:grid-cols-3 sm:gap-[22px] sm:px-10 sm:pb-14 sm:pt-8 lg:grid-cols-5">
         {pages.map((page, index) => {
-          const canRedo =
-            (page?.status === "ready" || page?.status === "failed") && (index === COVER_INDEX || cover?.status === "ready")
+          let state: PageCardState = "pending"
+          if (redoingIndex === index || (busy === "cover" && index === COVER_INDEX)) state = "redoing"
+          else if (page?.status === "ready") state = "ready"
+          else if (page?.status === "failed") state = "failed"
+          else if (page?.status === "pending") state = "generating"
+          else if (generatingPages) state = "queued"
+          if (state === "redoing" && !page?.image_path) state = "generating"
+          const src = page?.image_path ? `/api/books/${book.id}/pages/${index}?v=${encodeURIComponent(page.updated_at)}` : null
           return (
-            <div key={index} className="bk-card flex flex-col gap-2 p-2">
-              <div className="relative aspect-[3/4] overflow-hidden border-3 border-foreground bg-muted">
-                {page?.status === "ready" && page.image_path ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img
-                    src={`/api/books/${book.id}/pages/${index}?v=${encodeURIComponent(page.updated_at)}`}
-                    alt={pageLabel(index)}
-                    className="size-full object-cover"
-                  />
-                ) : page?.status === "failed" ? (
-                  <div className="flex size-full items-center justify-center bg-destructive p-2 text-center text-xs font-bold text-white">
-                    Falhou: {page.error ?? "sem detalhes"}
-                  </div>
-                ) : page?.status === "pending" ? (
-                  <div className="flex size-full items-center justify-center bg-[var(--bk-mustard)] p-2 text-center text-xs font-black uppercase tracking-wider">
-                    Gerando...
-                  </div>
-                ) : (
-                  <div className="flex size-full items-center justify-center p-2 text-center text-xs font-black uppercase tracking-wider text-foreground/40">
-                    Não gerada
-                  </div>
-                )}
-              </div>
-              <div className="flex min-h-9 items-center justify-between gap-1 px-1">
-                <span className="text-xs font-black uppercase tracking-wider">{pageLabel(index)}</span>
-                {canRedo && (
-                  <button
-                    className="bk-btn bk-btn-icon"
-                    disabled={busy !== null}
-                    onClick={() =>
-                      run(`page-${index}`, () => regeneratePageAction(book.id, index), `${pageLabel(index)} refeita.`)
-                    }
-                    title="Refazer esta página"
-                    aria-label={`Refazer ${pageLabel(index)}`}
-                  >
-                    <RefreshCw className={`size-3.5 ${busy === `page-${index}` ? "animate-spin" : ""}`} aria-hidden />
-                  </button>
-                )}
-              </div>
-            </div>
+            <PageCard
+              key={index}
+              label={pageLabel(index)}
+              note={pageNote(index)}
+              state={state}
+              imageSrc={src}
+              error={page?.error}
+              canRedo={canRedo || (!coverReady && index === COVER_INDEX && page?.status === "failed" && busy === null)}
+              onRedo={() =>
+                index === COVER_INDEX && !coverReady
+                  ? startCover()
+                  : run(`page-${index}`, () => regeneratePageAction(book.id, index), `${pageLabel(index)} refeita.`)
+              }
+            />
           )
         })}
       </div>
-    </div>
+
+      <DeleteBookDialog open={deleteOpen} onOpenChange={setDeleteOpen} title={title} deleting={busy === "delete"} onConfirm={onDelete} />
+    </>
+  )
+}
+
+function Warn({ children }: { children: React.ReactNode }) {
+  return (
+    <Chip>
+      <TriangleAlert className="size-3.5" strokeWidth={2.4} aria-hidden />
+      {children}
+    </Chip>
   )
 }
