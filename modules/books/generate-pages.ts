@@ -37,7 +37,7 @@ export async function generatePages(
   if (!ready.has(COVER_INDEX)) throw new Error("[BOOKS] Gere e aprove a capa antes das páginas.")
 
   const theme = getBookTheme(book.theme)
-  const child = { name: book.child_name, gender: book.child_gender }
+  const child = { name: book.child_name, gender: book.child_gender, pediatricianName: book.pediatrician_name }
   const pending = new Map<number, number[]>()
   for (let index = 1; index < BOOK_PAGE_COUNT; index++) {
     if (!ready.has(index)) pending.set(index, buildPagePrompt({ theme, child, index }).refIndexes)

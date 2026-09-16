@@ -1,5 +1,5 @@
 export type BookStoryPage = {
-  /** Texto da página em PT-BR (26 a 35 palavras), com `{nome}` e `{masc|fem}`. Sem travessão nem aspas. */
+  /** Texto da página em PT-BR (26 a 35 palavras), com `{nome}`, `{masc|fem}` (criança), `{pediatra}` e `[fem|masc]` (pediatra). Sem travessão nem aspas. */
   text: string
   /** Cena em inglês. Descreve ação pelo resultado físico; personagens fixos via `cast`. */
   scene: string

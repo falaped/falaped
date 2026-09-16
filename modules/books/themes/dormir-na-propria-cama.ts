@@ -48,13 +48,13 @@ export const dormirNaPropriaCama: BookTheme = {
       refs: [2],
     },
     {
-      text: "Foi aí que a mamãe lembrou da consulta. A Dra. Lia tinha dito que {meninos|meninas} grandes conseguem dormir na própria cama. E que {nome} já era grande o bastante para tentar.",
+      text: "Foi aí que a mamãe lembrou da consulta. [A|O] {pediatra} tinha dito que {meninos|meninas} grandes conseguem dormir na própria cama. E que {nome} já era grande o bastante para tentar.",
       scene: `same sunny kitchen; ${MOM} talks gently to the {boy|girl}, one finger raised as she remembers; above her a soft rounded thought bubble shows ${DRA} smiling in a colorful consulting room; the {boy|girl} listens with wide eyes, holding ${DINO}.`,
       panel: "upper",
       refs: [2],
     },
     {
-      text: "{nome} lembrou da dica da doutora, contada nos dedos: um banho quentinho, uma história, a luz bem baixa e um amigo de pelúcia para fazer companhia a noite inteira.",
+      text: "{nome} lembrou da dica [da doutora|do doutor], contada nos dedos: um banho quentinho, uma história, a luz bem baixa e um amigo de pelúcia para fazer companhia a noite inteira.",
       scene: `large soft thought bubble filling most of the image: inside it, ${DRA} crouches at the child's height showing four fingers with a kind smile, and the {boy|girl} in the pajamas holds ${DINO} and nods; the real {boy|girl} sits at the bottom of the image at the kitchen table, eyes up, remembering.`,
       panel: "lower",
       refs: [4],
@@ -126,7 +126,7 @@ export const dormirNaPropriaCama: BookTheme = {
       refs: [],
     },
     {
-      text: "{nome} ensinou a dica da Dra. Lia: respira fundo, abraça o amigo e conta as estrelinhas. Emprestou o Dino e as duas cabeças ficaram olhando para o teto juntas.",
+      text: "{nome} ensinou a dica [da|do] {pediatra}: respira fundo, abraça o amigo e conta as estrelinhas. Emprestou o Dino e as duas cabeças ficaram olhando para o teto juntas.",
       scene: `both children lie side by side on the blue bed looking up; the {boy|girl} points at the glowing ceiling stars; ${COUSIN} hugs ${DINO} against her chest, now smiling softly, her pillow beside her.`,
       panel: "upper",
       refs: [16],

@@ -380,7 +380,7 @@ export function NewBookWizard({ themes }: { themes: WizardTheme[] }) {
                 Pediatra <span className={HELP}>(opcional)</span>
               </span>
               <input value={pediatricianName} onChange={(e) => setPediatricianName(e.target.value)} maxLength={80} placeholder="Dra. Marina Duarte" className={FIELD} />
-              <span className={HELP}>Aparece na página final do livro.</span>
+              <span className={HELP}>Entra na história no lugar da Dra. Lia e na página final. Use Dr. ou Dra. na frente.</span>
             </label>
             <div className="flex flex-col gap-2">
               <span className={LABEL}>
