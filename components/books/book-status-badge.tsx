@@ -1,15 +1,14 @@
-import { Badge } from "@/components/ui/badge"
 import type { BookStatus } from "@/modules/books/constants"
 
-const LABELS: Record<BookStatus, { label: string; variant: "default" | "secondary" | "destructive" | "outline" }> = {
-  draft: { label: "Rascunho", variant: "outline" },
-  cover_ready: { label: "Capa pronta", variant: "secondary" },
-  generating: { label: "Gerando", variant: "secondary" },
-  ready: { label: "Pronto", variant: "default" },
-  failed: { label: "Com falhas", variant: "destructive" },
+const LABELS: Record<BookStatus, { label: string; className: string }> = {
+  draft: { label: "Rascunho", className: "bg-muted" },
+  cover_ready: { label: "Capa pronta", className: "bg-accent" },
+  generating: { label: "Gerando", className: "bg-[var(--bk-mustard)]" },
+  ready: { label: "Pronto", className: "bg-primary" },
+  failed: { label: "Com falhas", className: "bg-destructive text-white" },
 }
 
 export function BookStatusBadge({ status }: { status: BookStatus }) {
-  const { label, variant } = LABELS[status]
-  return <Badge variant={variant}>{label}</Badge>
+  const { label, className } = LABELS[status]
+  return <span className={`bk-sticker ${className}`}>{label}</span>
 }

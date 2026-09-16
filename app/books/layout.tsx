@@ -1,21 +1,18 @@
-import Link from "next/link"
-import { BookOpenIcon } from "lucide-react"
+import { Caveat, Inter } from "next/font/google"
+
+import { BooksHeader } from "@/components/books/books-header"
+
+// Mesmas fontes da landing (falaped-lp): Inter para tudo, Caveat para o toque manuscrito.
+const inter = Inter({ subsets: ["latin"], weight: ["400", "600", "700", "900"], variable: "--font-books", display: "swap" })
+const caveat = Caveat({ subsets: ["latin"], weight: ["600", "700"], variable: "--font-books-hand", display: "swap" })
 
 export default function BooksLayout({ children }: { children: React.ReactNode }) {
   return (
-    <div className="min-h-screen bg-background">
-      <header className="border-b border-t-8 border-t-primary">
-        <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
-          <Link href="/books" className="flex items-center gap-2 font-semibold">
-            <BookOpenIcon className="size-5 text-primary" aria-hidden />
-            Falaped Books
-          </Link>
-          <a href="https://app.falaped.com.br/dashboard" className="text-sm text-muted-foreground hover:underline">
-            Voltar ao Falaped
-          </a>
-        </div>
-      </header>
-      <main className="mx-auto flex max-w-6xl flex-col gap-6 px-6 py-8">{children}</main>
+    <div className={`books-theme relative min-h-screen overflow-hidden ${inter.variable} ${caveat.variable}`}>
+      <div className="pointer-events-none absolute -right-16 top-40 size-56 rotate-12 bg-accent" aria-hidden />
+      <div className="pointer-events-none absolute -left-12 bottom-24 size-40 -rotate-6 bg-secondary opacity-60" aria-hidden />
+      <BooksHeader />
+      <main className="relative z-10 mx-auto flex max-w-6xl flex-col gap-8 px-6 py-10">{children}</main>
     </div>
   )
 }

@@ -13,7 +13,6 @@ import {
   generatePagesAction,
   regeneratePageAction,
 } from "@/actions/books"
-import { Button } from "@/components/ui/button"
 import { BOOK_PAGE_COUNT, COVER_INDEX, DEDICATION_INDEX, ENDING_INDEX } from "@/modules/books/constants"
 import type { BookWithPages } from "@/modules/books/types"
 
@@ -73,100 +72,121 @@ export function BookActions({ book }: { book: BookWithPages }) {
     router.push("/books")
   }
 
+  const step =
+    cover?.status !== "ready"
+      ? "Passo 1 de 3: gere a capa e veja se a criança ficou parecida."
+      : !allReady
+        ? "Passo 2 de 3: aprove a capa para gerar as outras 19 páginas. Não feche a aba."
+        : "Passo 3 de 3: refaça o que quiser e gere o PDF."
+
   return (
-    <div className="flex flex-col gap-6">
-      <div className="flex flex-wrap gap-2">
-        {cover?.status !== "ready" && (
-          <Button
-            disabled={busy !== null}
-            onClick={() => run("cover", () => generateCoverAction(book.id), "Capa pronta. Aprove ou refaça.")}
-          >
-            <Sparkles className="mr-2 size-4" aria-hidden />
-            {busy === "cover" ? "Gerando capa (≈ 2 min)..." : "Gerar capa"}
-          </Button>
-        )}
-        {canGeneratePages && (
-          <Button
-            disabled={busy !== null}
-            onClick={() =>
-              run("pages", generateAllPages, "Todas as páginas prontas.")
-            }
-          >
-            <Sparkles className="mr-2 size-4" aria-hidden />
-            {busy === "pages"
-              ? "Gerando páginas (vários minutos, não feche a aba)..."
-              : readyCount > 1
-                ? "Retomar páginas pendentes"
-                : "Aprovar capa e gerar as 19 páginas"}
-          </Button>
-        )}
-        {allReady && (
-          <Button
-            variant={book.pdf_path ? "outline" : "default"}
-            disabled={busy !== null}
-            onClick={() => run("pdf", () => buildBookPdfAction(book.id), "PDF gerado.")}
-          >
-            <FileText className="mr-2 size-4" aria-hidden />
-            {busy === "pdf" ? "Montando PDF..." : book.pdf_path ? "Gerar PDF de novo" : "Gerar PDF"}
-          </Button>
-        )}
-        {book.pdf_path && (
-          <Button asChild variant="default">
-            <a href={`/api/books/${book.id}/pdf`} target="_blank" rel="noreferrer">
-              <Download className="mr-2 size-4" aria-hidden />
+    <div className="flex flex-col gap-8">
+      <div className="bk-card flex flex-col gap-4 bg-accent p-5 sm:p-6">
+        <p className="bk-hand text-2xl">{step}</p>
+        <div className="flex flex-wrap items-center gap-3">
+          {cover?.status !== "ready" && (
+            <button
+              className="bk-btn bk-btn-primary"
+              disabled={busy !== null}
+              onClick={() => run("cover", () => generateCoverAction(book.id), "Capa pronta. Aprove ou refaça.")}
+            >
+              <Sparkles className="size-4" aria-hidden />
+              {busy === "cover" ? "Gerando capa (≈ 2 min)..." : "Gerar capa"}
+            </button>
+          )}
+          {canGeneratePages && (
+            <button
+              className="bk-btn bk-btn-primary"
+              disabled={busy !== null}
+              onClick={() => run("pages", generateAllPages, "Todas as páginas prontas.")}
+            >
+              <Sparkles className="size-4" aria-hidden />
+              {busy === "pages"
+                ? "Gerando páginas (vários minutos)..."
+                : readyCount > 1
+                  ? "Retomar páginas pendentes"
+                  : "Aprovar capa e gerar as 19 páginas"}
+            </button>
+          )}
+          {allReady && (
+            <button
+              className={`bk-btn ${book.pdf_path ? "" : "bk-btn-primary"}`}
+              disabled={busy !== null}
+              onClick={() => run("pdf", () => buildBookPdfAction(book.id), "PDF gerado.")}
+            >
+              <FileText className="size-4" aria-hidden />
+              {busy === "pdf" ? "Montando PDF..." : book.pdf_path ? "Gerar PDF de novo" : "Gerar PDF"}
+            </button>
+          )}
+          {book.pdf_path && (
+            <a href={`/api/books/${book.id}/pdf`} target="_blank" rel="noreferrer" className="bk-btn bk-btn-secondary">
+              <Download className="size-4" aria-hidden />
               Baixar PDF
             </a>
-          </Button>
-        )}
-        <Button variant="destructive" disabled={busy !== null} onClick={onDelete} className="ml-auto">
-          <Trash2 className="mr-2 size-4" aria-hidden />
-          Excluir livro
-        </Button>
+          )}
+          <button className="bk-btn bk-btn-destructive sm:ml-auto" disabled={busy !== null} onClick={onDelete}>
+            <Trash2 className="size-4" aria-hidden />
+            Excluir livro
+          </button>
+        </div>
       </div>
 
-      <p className="text-sm text-muted-foreground">
-        {readyCount} de {BOOK_PAGE_COUNT} páginas prontas.
-      </p>
+      <div className="flex items-center gap-4">
+        <div className="h-6 flex-1 border-3 border-foreground bg-card">
+          <div className="h-full bg-primary transition-all" style={{ width: `${(readyCount / BOOK_PAGE_COUNT) * 100}%` }} />
+        </div>
+        <span className="text-sm font-black uppercase tracking-wider">
+          {readyCount} / {BOOK_PAGE_COUNT} páginas
+        </span>
+      </div>
 
-      <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
-        {pages.map((page, index) => (
-          <div key={index} className="flex flex-col gap-2">
-            <div className="relative aspect-[3/4] overflow-hidden rounded-md border bg-muted">
-              {page?.status === "ready" && page.image_path ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  src={`/api/books/${book.id}/pages/${index}?v=${encodeURIComponent(page.updated_at)}`}
-                  alt={pageLabel(index)}
-                  className="size-full object-cover"
-                />
-              ) : (
-                <div className="flex size-full items-center justify-center p-2 text-center text-xs text-muted-foreground">
-                  {page?.status === "failed"
-                    ? `Falhou: ${page.error ?? "sem detalhes"}`
-                    : page?.status === "pending"
-                      ? "Gerando..."
-                      : "Não gerada"}
-                </div>
-              )}
+      <div className="grid grid-cols-2 gap-6 sm:grid-cols-3 lg:grid-cols-5">
+        {pages.map((page, index) => {
+          const canRedo =
+            (page?.status === "ready" || page?.status === "failed") && (index === COVER_INDEX || cover?.status === "ready")
+          return (
+            <div key={index} className="bk-card flex flex-col gap-2 p-2">
+              <div className="relative aspect-[3/4] overflow-hidden border-3 border-foreground bg-muted">
+                {page?.status === "ready" && page.image_path ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={`/api/books/${book.id}/pages/${index}?v=${encodeURIComponent(page.updated_at)}`}
+                    alt={pageLabel(index)}
+                    className="size-full object-cover"
+                  />
+                ) : page?.status === "failed" ? (
+                  <div className="flex size-full items-center justify-center bg-destructive p-2 text-center text-xs font-bold text-white">
+                    Falhou: {page.error ?? "sem detalhes"}
+                  </div>
+                ) : page?.status === "pending" ? (
+                  <div className="flex size-full items-center justify-center bg-[var(--bk-mustard)] p-2 text-center text-xs font-black uppercase tracking-wider">
+                    Gerando...
+                  </div>
+                ) : (
+                  <div className="flex size-full items-center justify-center p-2 text-center text-xs font-black uppercase tracking-wider text-foreground/40">
+                    Não gerada
+                  </div>
+                )}
+              </div>
+              <div className="flex min-h-9 items-center justify-between gap-1 px-1">
+                <span className="text-xs font-black uppercase tracking-wider">{pageLabel(index)}</span>
+                {canRedo && (
+                  <button
+                    className="bk-btn bk-btn-icon"
+                    disabled={busy !== null}
+                    onClick={() =>
+                      run(`page-${index}`, () => regeneratePageAction(book.id, index), `${pageLabel(index)} refeita.`)
+                    }
+                    title="Refazer esta página"
+                    aria-label={`Refazer ${pageLabel(index)}`}
+                  >
+                    <RefreshCw className={`size-3.5 ${busy === `page-${index}` ? "animate-spin" : ""}`} aria-hidden />
+                  </button>
+                )}
+              </div>
             </div>
-            <div className="flex items-center justify-between gap-1">
-              <span className="text-xs font-medium">{pageLabel(index)}</span>
-              {(page?.status === "ready" || page?.status === "failed") && (index === COVER_INDEX || cover?.status === "ready") && (
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  disabled={busy !== null}
-                  onClick={() =>
-                    run(`page-${index}`, () => regeneratePageAction(book.id, index), `${pageLabel(index)} refeita.`)
-                  }
-                  title="Refazer esta página"
-                >
-                  <RefreshCw className={`size-3.5 ${busy === `page-${index}` ? "animate-spin" : ""}`} aria-hidden />
-                </Button>
-              )}
-            </div>
-          </div>
-        ))}
+          )
+        })}
       </div>
     </div>
   )

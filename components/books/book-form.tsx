@@ -3,18 +3,24 @@
 import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { toast } from "sonner"
+import { Sparkles } from "lucide-react"
 
 import { createBookAction } from "@/actions/books"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Textarea } from "@/components/ui/textarea"
 import { MAX_BOOK_PHOTOS } from "@/modules/books/constants"
 
 type Props = { themes: { slug: string; label: string }[] }
 
-const selectClass =
-  "border-input bg-background h-9 w-full rounded-md border px-3 text-sm shadow-xs outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50"
+function Section({ n, title, children }: { n: string; title: string; children: React.ReactNode }) {
+  return (
+    <fieldset className="grid gap-5">
+      <legend className="mb-4 flex items-center gap-3">
+        <span className="bk-sticker bg-primary">{n}</span>
+        <span className="text-lg font-black uppercase tracking-tight">{title}</span>
+      </legend>
+      {children}
+    </fieldset>
+  )
+}
 
 export function BookForm({ themes }: Props) {
   const router = useRouter()
@@ -40,74 +46,76 @@ export function BookForm({ themes }: Props) {
   }
 
   return (
-    <form onSubmit={onSubmit} className="grid max-w-2xl gap-5">
-      <div className="grid gap-2 sm:grid-cols-2">
-        <div className="grid gap-1.5">
-          <Label htmlFor="childName">Nome da criança</Label>
-          <Input id="childName" name="childName" required minLength={2} maxLength={40} />
+    <form onSubmit={onSubmit} className="bk-card grid max-w-3xl gap-10 p-6 sm:p-10">
+      <Section n="01" title="A criança">
+        <div className="grid gap-5 sm:grid-cols-2">
+          <div className="grid gap-2">
+            <label htmlFor="childName" className="bk-label">Nome</label>
+            <input id="childName" name="childName" required minLength={2} maxLength={40} className="bk-input" placeholder="Samuel" />
+          </div>
+          <div className="grid gap-2">
+            <label htmlFor="childGender" className="bk-label">Gênero</label>
+            <select id="childGender" name="childGender" required className="bk-input" defaultValue="">
+              <option value="" disabled>Escolha</option>
+              <option value="menino">Menino</option>
+              <option value="menina">Menina</option>
+            </select>
+          </div>
         </div>
-        <div className="grid gap-1.5">
-          <Label htmlFor="childGender">Gênero</Label>
-          <select id="childGender" name="childGender" required className={selectClass} defaultValue="">
-            <option value="" disabled>
-              Escolha
-            </option>
-            <option value="menino">Menino</option>
-            <option value="menina">Menina</option>
-          </select>
+        <div className="grid gap-2">
+          <label htmlFor="photos" className="bk-label">Fotos (1 a {MAX_BOOK_PHOTOS}, rosto nítido)</label>
+          <input id="photos" name="photos" type="file" accept="image/png,image/jpeg,image/webp" multiple required className="bk-input" />
         </div>
-      </div>
+      </Section>
 
-      <div className="grid gap-1.5">
-        <Label htmlFor="photos">Fotos da criança (1 a {MAX_BOOK_PHOTOS}, rosto nítido)</Label>
-        <Input id="photos" name="photos" type="file" accept="image/png,image/jpeg,image/webp" multiple required />
-      </div>
-
-      <div className="grid gap-2 sm:grid-cols-2">
-        <div className="grid gap-1.5">
-          <Label htmlFor="theme">Tema</Label>
-          <select id="theme" name="theme" required className={selectClass} defaultValue={themes[0]?.slug}>
-            {themes.map((t) => (
-              <option key={t.slug} value={t.slug}>
-                {t.label}
-              </option>
-            ))}
-          </select>
+      <Section n="02" title="O livro">
+        <div className="grid gap-5 sm:grid-cols-2">
+          <div className="grid gap-2">
+            <label htmlFor="theme" className="bk-label">Tema</label>
+            <select id="theme" name="theme" required className="bk-input" defaultValue={themes[0]?.slug}>
+              {themes.map((t) => (
+                <option key={t.slug} value={t.slug}>{t.label}</option>
+              ))}
+            </select>
+          </div>
+          <div className="grid gap-2">
+            <label htmlFor="quality" className="bk-label">Qualidade das imagens</label>
+            <select id="quality" name="quality" required className="bk-input" defaultValue="high">
+              <option value="high">Alta (≈ US$ 0,13 por página)</option>
+              <option value="medium">Média (≈ US$ 0,05 por página)</option>
+            </select>
+          </div>
         </div>
-        <div className="grid gap-1.5">
-          <Label htmlFor="quality">Qualidade das imagens</Label>
-          <select id="quality" name="quality" required className={selectClass} defaultValue="high">
-            <option value="high">Alta (≈ US$ 0,13 por página)</option>
-            <option value="medium">Média (≈ US$ 0,05 por página)</option>
-          </select>
+        <div className="grid gap-2">
+          <label htmlFor="dedication" className="bk-label">Dedicatória (opcional)</label>
+          <textarea
+            id="dedication"
+            name="dedication"
+            maxLength={400}
+            rows={3}
+            className="bk-input"
+            placeholder="Vazio usa a dedicatória padrão do tema. Aceita {nome} e {ele|ela}."
+          />
         </div>
-      </div>
+      </Section>
 
-      <div className="grid gap-1.5">
-        <Label htmlFor="dedication">Dedicatória (opcional)</Label>
-        <Textarea
-          id="dedication"
-          name="dedication"
-          maxLength={400}
-          rows={3}
-          placeholder="Vazio usa a dedicatória padrão do tema. Aceita {nome} e {ele|ela}."
-        />
-      </div>
-
-      <div className="grid gap-2 sm:grid-cols-2">
-        <div className="grid gap-1.5">
-          <Label htmlFor="pediatricianName">Nome do pediatra (opcional)</Label>
-          <Input id="pediatricianName" name="pediatricianName" maxLength={80} placeholder="Dra. Lia" />
+      <Section n="03" title="O pediatra">
+        <div className="grid gap-5 sm:grid-cols-2">
+          <div className="grid gap-2">
+            <label htmlFor="pediatricianName" className="bk-label">Nome (opcional)</label>
+            <input id="pediatricianName" name="pediatricianName" maxLength={80} className="bk-input" placeholder="Dra. Lia" />
+          </div>
+          <div className="grid gap-2">
+            <label htmlFor="pediatricianLogo" className="bk-label">Logo (opcional)</label>
+            <input id="pediatricianLogo" name="pediatricianLogo" type="file" accept="image/png,image/jpeg,image/webp" className="bk-input" />
+          </div>
         </div>
-        <div className="grid gap-1.5">
-          <Label htmlFor="pediatricianLogo">Logo do pediatra (opcional)</Label>
-          <Input id="pediatricianLogo" name="pediatricianLogo" type="file" accept="image/png,image/jpeg,image/webp" />
-        </div>
-      </div>
+      </Section>
 
-      <Button type="submit" disabled={submitting} className="w-full sm:w-auto">
+      <button type="submit" disabled={submitting} className="bk-btn bk-btn-primary bk-btn-lg w-full sm:w-auto sm:justify-self-start">
+        <Sparkles className="size-5" aria-hidden />
         {submitting ? "Enviando..." : "Criar livro"}
-      </Button>
+      </button>
     </form>
   )
 }

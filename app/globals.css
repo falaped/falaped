@@ -425,3 +425,147 @@
     color: var(--agenda-st-canceled-ink);
   }
 }
+/* ------------------------------------------------------------------ */
+/* books.falaped.com.br: mesmo design system neo-brutalista da landing  */
+/* (falaped-lp/app/globals.css, "BoldKit"). Escopado em .books-theme.  */
+/* ------------------------------------------------------------------ */
+.books-theme {
+  --background: hsl(60 9% 98%);
+  --foreground: hsl(240 10% 10%);
+  --card: hsl(0 0% 100%);
+  --card-foreground: hsl(240 10% 10%);
+  --popover: hsl(0 0% 100%);
+  --popover-foreground: hsl(240 10% 10%);
+  --primary: hsl(200 80% 85%);
+  --primary-foreground: hsl(240 10% 10%);
+  --secondary: hsl(10 80% 85%);
+  --secondary-foreground: hsl(240 10% 10%);
+  --accent: hsl(200 70% 92%);
+  --accent-foreground: hsl(240 10% 10%);
+  --muted: hsl(60 5% 90%);
+  --muted-foreground: hsl(240 4% 46%);
+  --destructive: hsl(0 84% 60%);
+  --destructive-foreground: 0 0% 100%;
+  --border: hsl(240 10% 10%);
+  --input: hsl(240 10% 10%);
+  --ring: hsl(240 10% 10%);
+  --radius: 0rem;
+  --bk-mustard: hsl(45 95% 55%);
+  --bk-shadow: hsl(240 10% 10%);
+  font-family: var(--font-books), var(--font-sans), sans-serif;
+  background: var(--background);
+  color: var(--foreground);
+}
+
+@layer components {
+  .books-theme .bk-hand {
+    font-family: var(--font-books-hand), cursive;
+  }
+
+  .books-theme .bk-card {
+    background: var(--card);
+    border: 3px solid var(--foreground);
+    box-shadow: 6px 6px 0 var(--bk-shadow);
+  }
+
+  .books-theme .bk-card-interactive {
+    transition: all 0.2s;
+  }
+  .books-theme .bk-card-interactive:hover {
+    transform: translate(4px, 4px);
+    box-shadow: none;
+  }
+
+  .books-theme .bk-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    height: 2.75rem;
+    padding: 0 1.25rem;
+    font-size: 0.875rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.025em;
+    white-space: nowrap;
+    border: 3px solid var(--foreground);
+    background: var(--card);
+    color: var(--foreground);
+    box-shadow: 4px 4px 0 var(--bk-shadow);
+    transition: all 0.2s;
+  }
+  .books-theme .bk-btn:hover:not(:disabled),
+  .books-theme .bk-btn:active:not(:disabled) {
+    transform: translate(4px, 4px);
+    box-shadow: none;
+  }
+  .books-theme .bk-btn:disabled {
+    opacity: 0.5;
+    pointer-events: none;
+  }
+  .books-theme .bk-btn-primary { background: var(--primary); }
+  .books-theme .bk-btn-secondary { background: var(--secondary); }
+  .books-theme .bk-btn-accent { background: var(--accent); }
+  .books-theme .bk-btn-destructive { background: var(--destructive); color: #fff; }
+  .books-theme .bk-btn-sm { height: 2.25rem; padding: 0 1rem; font-size: 0.75rem; }
+  .books-theme .bk-btn-lg { height: 3rem; padding: 0 2rem; font-size: 1rem; }
+  .books-theme .bk-btn-icon { width: 2.25rem; height: 2.25rem; padding: 0; box-shadow: 3px 3px 0 var(--bk-shadow); }
+  .books-theme .bk-btn-icon:hover:not(:disabled) { transform: translate(3px, 3px); }
+
+  .books-theme .bk-label {
+    display: block;
+    font-size: 0.75rem;
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+  }
+
+  .books-theme .bk-input {
+    width: 100%;
+    height: 2.75rem;
+    padding: 0 0.75rem;
+    font-size: 0.875rem;
+    font-weight: 600;
+    background: var(--card);
+    color: var(--foreground);
+    border: 3px solid var(--foreground);
+    box-shadow: 3px 3px 0 var(--bk-shadow);
+    outline: none;
+    transition: all 0.2s;
+  }
+  .books-theme textarea.bk-input { height: auto; padding: 0.625rem 0.75rem; }
+  .books-theme .bk-input:focus {
+    transform: translate(3px, 3px);
+    box-shadow: none;
+    background: var(--accent);
+  }
+  .books-theme .bk-input::file-selector-button {
+    height: 100%;
+    margin: 0 0.75rem 0 -0.75rem;
+    padding: 0 0.75rem;
+    border: 0;
+    border-right: 3px solid var(--foreground);
+    background: var(--primary);
+    color: var(--foreground);
+    font-weight: 900;
+    text-transform: uppercase;
+    font-size: 0.75rem;
+    letter-spacing: 0.05em;
+    cursor: pointer;
+  }
+
+  .books-theme .bk-sticker {
+    display: inline-block;
+    padding: 0.25rem 0.625rem;
+    font-size: 0.7rem;
+    line-height: 1.2;
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    white-space: nowrap;
+    background: var(--card);
+    border: 3px solid var(--foreground);
+    box-shadow: 3px 3px 0 var(--bk-shadow);
+    transform: rotate(-2deg);
+  }
+}
