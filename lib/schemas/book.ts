@@ -9,6 +9,7 @@ const optionalText = (max: number) =>
     .string()
     .trim()
     .max(max, `Use até ${max} caracteres.`)
+    .nullable()
     .optional()
     .transform((v) => v || null)
 
