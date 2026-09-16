@@ -9,6 +9,8 @@ const envSchema = z.object({
     .string()
     .min(1, "NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY is required"),
   SUPABASE_SERVICE_ROLE_KEY: z.string().optional(),
+  // books.falaped.com.br: geração de ilustrações (gpt-image-2 via Replicate).
+  REPLICATE_API_TOKEN: z.string().optional(),
 });
 
 const parsed = envSchema.safeParse(process.env);
