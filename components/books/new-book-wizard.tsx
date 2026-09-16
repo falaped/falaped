@@ -434,7 +434,7 @@ export function NewBookWizard({ themes }: { themes: WizardTheme[] }) {
               Voltar
             </BkButton>
             <div className="order-1 flex flex-col items-stretch gap-2 sm:order-2 sm:items-end">
-              <BkButton variant="primary" busy={submitting} busyLabel="Criando livro..." className="h-[52px] px-6 text-base">
+              <BkButton type="submit" variant="primary" busy={submitting} busyLabel="Criando livro..." className="h-[52px] px-6 text-base">
                 <Sparkles className="size-4" strokeWidth={2.4} aria-hidden />
                 Criar livro e gerar a capa
               </BkButton>
