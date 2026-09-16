@@ -18,5 +18,5 @@ export const MAX_BOOK_PHOTOS = 2
 export const bookPhotoPath = (bookId: string, n: number, ext: string) =>
   `${bookId}/photos/${n}.${ext}`
 export const bookPagePath = (bookId: string, index: number) =>
-  `${bookId}/pages/${index}.png`
+  `${bookId}/pages/${index}.jpg`
 export const bookPdfPath = (bookId: string) => `${bookId}/book.pdf`
