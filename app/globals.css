@@ -425,3 +425,59 @@
     color: var(--agenda-st-canceled-ink);
   }
 }
+
+/* ------------------------------------------------------------------ */
+/* books.falaped.com.br: design "neo-brutalista lúdico" do handoff     */
+/* (Claude Design, pranchas 1c). Tokens globais + escopo .books-theme. */
+/* ------------------------------------------------------------------ */
+@theme {
+  --color-ink: #17171a;
+  --color-warning: #f5c21a;
+  --color-success: #c9ebd0;
+  --color-danger-soft: #fde0dc;
+  --color-danger-text: #d23b3b;
+  --shadow-hard-sm: 2px 2px 0 #17171a;
+  --shadow-hard-xs: 3px 3px 0 #17171a;
+  --shadow-hard: 4px 4px 0 #17171a;
+  --shadow-hard-md: 5px 5px 0 #17171a;
+  --shadow-hard-lg: 6px 6px 0 #17171a;
+  --shadow-hard-xl: 8px 8px 0 #17171a;
+  --font-display: var(--font-books-display), Inter, sans-serif;
+  --animate-shimmer: fp-shimmer 1.4s linear infinite;
+  --animate-fade-in: fp-in 0.3s ease both;
+  @keyframes fp-shimmer {
+    from { background-position: -380px 0; }
+    to { background-position: 380px 0; }
+  }
+  @keyframes fp-in {
+    from { opacity: 0; transform: translateY(6px); }
+    to { opacity: 1; transform: none; }
+  }
+}
+
+.books-theme {
+  --background: #fafaf9;
+  --foreground: #17171a;
+  --card: #ffffff;
+  --card-foreground: #17171a;
+  --popover: #ffffff;
+  --popover-foreground: #17171a;
+  --primary: #b8e0f5;
+  --primary-foreground: #17171a;
+  --secondary: #f5c4b8;
+  --secondary-foreground: #17171a;
+  --accent: #e1f1fa;
+  --accent-foreground: #17171a;
+  --muted: #f2f2f0;
+  --muted-foreground: #52525b;
+  --destructive: #f04444;
+  --destructive-foreground: 240 10% 10%;
+  --border: #17171a;
+  --input: #17171a;
+  --ring: #f5c21a;
+  --radius: 0.75rem;
+  font-family: var(--font-books), Inter, system-ui, sans-serif;
+  color: #17171a;
+  background: #fafaf9 radial-gradient(#e3e3de 1px, transparent 1px) 0 0 / 20px 20px;
+  -webkit-font-smoothing: antialiased;
+}
