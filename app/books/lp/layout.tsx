@@ -7,10 +7,10 @@ import { LpBrand } from "@/components/books/lp/lp-ui"
 import { BOOKS_WHATSAPP } from "@/modules/books/constants"
 
 export const metadata: Metadata = {
-  title: "Falaped Books — o livro em que seu filho é o herói",
+  title: "Falaped Books — o livro que a sua criança vai pedir para ler de novo",
   description:
-    "Livro infantil ilustrado e personalizado com a foto e o nome da criança. Crie a capa grátis em 2 minutos; o livro completo em PDF sai por R$ 29,99, entregue na hora.",
-  openGraph: { title: "Falaped Books", description: "Livro infantil personalizado com a foto do seu filho. Capa grátis.", type: "website" },
+    "Livro infantil ilustrado de 20 páginas onde a sua criança é a protagonista, com o rosto e o nome dela em cada página. Uma história para cada fase da infância, em PDF, entregue na hora.",
+  openGraph: { title: "Falaped Books", description: "Um livro ilustrado onde a sua criança é a protagonista.", type: "website" },
 }
 
 export default function BooksLandingLayout({ children }: { children: React.ReactNode }) {
@@ -26,7 +26,7 @@ export default function BooksLandingLayout({ children }: { children: React.React
             Temas
           </Link>
           <Link href="/books/lp/criar" className={bkButton("warning", "h-10 px-4 text-[13px] sm:h-11 sm:px-5 sm:text-sm")}>
-            Criar a capa grátis
+            Criar a história
             <ArrowRight className="size-4" strokeWidth={2.6} aria-hidden />
           </Link>
         </nav>

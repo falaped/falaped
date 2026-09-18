@@ -490,3 +490,92 @@
 .books-grid .bk-marker {
   background: linear-gradient(transparent 55%, var(--marker, #f5c21a) 55%, var(--marker, #f5c21a) 92%, transparent 92%);
 }
+
+/* Hero da landing: livro folheando em CSS 3D + coreografia de entrada (1ª visita).
+   O script inline em app/books/lp/page.tsx tira .bk-intro em quem já viu e reinicia
+   .bk-play a cada 9 s para o livro folhear de novo. */
+.bk-stage {
+  --sx: 0px;
+  --sc: 1.1;
+  --d: 0.18s;
+  perspective: 1500px;
+}
+@media (min-width: 1024px) {
+  .bk-stage {
+    --sx: 26%;
+  }
+}
+.bk-intro .bk-stage {
+  --d: 0.78s;
+}
+.bk-book {
+  position: relative;
+  aspect-ratio: 3 / 4;
+  transform-style: preserve-3d;
+}
+.bk-page {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  border: 2px solid #17171a;
+  border-radius: 14px;
+  background: #fcfbf7;
+  backface-visibility: hidden;
+  transform-origin: left center;
+  box-shadow: 4px 6px 0 #17171a;
+}
+.bk-close {
+  transform: rotateY(-170deg);
+}
+@keyframes bk-flip {
+  to {
+    transform: rotateY(-170deg);
+  }
+}
+@keyframes bk-unflip {
+  from {
+    transform: rotateY(-170deg);
+  }
+  to {
+    transform: rotateY(0deg);
+  }
+}
+@keyframes bk-cinema {
+  0% {
+    opacity: 0;
+    transform: translate(var(--sx), -44px) scale(var(--sc)) rotate(-5deg);
+  }
+  8% {
+    opacity: 1;
+    transform: translate(var(--sx), 0) scale(var(--sc)) rotate(0deg);
+  }
+  83% {
+    transform: translate(var(--sx), 0) scale(var(--sc));
+  }
+  100% {
+    transform: translate(0, 0) scale(1);
+  }
+}
+@keyframes bk-reveal {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .bk-play .bk-page[data-flip] {
+    animation: bk-flip 0.62s ease-in both;
+    animation-delay: calc(var(--d) + var(--i) * 0.62s);
+  }
+  .bk-play .bk-close {
+    animation: bk-unflip 0.55s ease-out both;
+    animation-delay: calc(var(--d) + 3.18s);
+  }
+  .bk-intro .bk-stage {
+    animation: bk-cinema 5.4s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+  }
+  .bk-intro .bk-reveal {
+    animation: bk-reveal 0.7s ease-out both;
+    animation-delay: 4.7s;
+  }
+}

@@ -8,6 +8,12 @@ import { BOOK_PRICE_BRL, BOOKS_WHATSAPP } from "@/modules/books/constants"
 import { BOOK_THEMES } from "@/modules/books/themes"
 import { cn } from "@/lib/utils"
 
+/** Páginas do livro real do Samuel usadas na animação do hero (capa + 5 páginas). */
+const HERO_PAGES = ["/books/samples/cama/0.jpg", "/books/samples/cama/4.jpg", "/books/samples/cama/7.jpg", "/books/samples/cama/11.jpg", "/books/samples/cama/15.jpg", "/books/samples/cama/18.jpg"]
+
+/** Coreografia do hero: a entrada roda só na 1ª visita; clique ou rolagem pula; o livro refolheia a cada 9 s. */
+const HERO_SCRIPT = `(function(){var s=document.getElementById("bk-hero");if(!s)return;try{if(localStorage.getItem("fpBookHero"))s.classList.remove("bk-intro");else localStorage.setItem("fpBookHero","1")}catch(e){}var skip=function(){s.classList.remove("bk-intro")};["click","wheel","touchstart","keydown"].forEach(function(e){addEventListener(e,skip,{once:true,passive:true})});setInterval(function(){s.classList.remove("bk-play");void s.offsetWidth;s.classList.add("bk-play")},9000)})()`
+
 const STEPS = [
   { icon: Camera, title: "Envie a foto", text: "Nome, menino ou menina e 1 ou 2 fotos do rosto. Leva 1 minuto." },
   { icon: Palette, title: "Escolha o tema", text: "Dia da vacina, dormir na própria cama, adeus chupeta e mais 7 histórias." },
@@ -60,32 +66,66 @@ export default function BooksLandingPage() {
   const themes = Object.values(BOOK_THEMES)
   return (
     <>
-      {/* Hero */}
-      <section className="mx-auto max-w-[1100px] px-4 pb-10 pt-8 sm:px-10 sm:pb-16 sm:pt-16">
-        <LpCard className="grid gap-8 px-6 py-9 sm:px-12 sm:py-14 lg:grid-cols-[1.15fr_.85fr] lg:items-center">
+      {/* Hero: 100% da dobra, livro folheando à esquerda, texto à direita. */}
+      <section id="bk-hero" suppressHydrationWarning className="bk-intro bk-play mx-auto flex min-h-[calc(100svh-4rem)] max-w-[1100px] items-center overflow-x-clip px-4 py-8 sm:min-h-[calc(100svh-5rem)] sm:px-10 sm:py-12">
+        <LpCard className="grid w-full gap-10 px-6 py-9 sm:px-12 sm:py-12 lg:grid-cols-[.8fr_1.2fr] lg:items-center">
           <Orn kind="star" color="#f5c21a" className="-left-4 -top-6 sm:-left-6 sm:-top-8" />
           <Orn kind="ring" color="#f5c4b8" className="-right-3 -top-4 sm:-right-5 sm:-top-5" />
           <Orn kind="plus" color="#b8e0f5" className="-bottom-5 -left-3 sm:-bottom-6 sm:-left-5" />
           <Orn kind="star" color="#cdebd3" className="-bottom-6 -right-4 text-4xl sm:-right-6" />
-          <div>
-            <Chip className="bg-secondary uppercase tracking-[.04em]">Livro infantil personalizado</Chip>
-            <LpTitle as="h1" text="O livro em que seu filho é o herói." highlight="seu filho" className="mt-4 text-[38px] sm:text-[64px]" />
-            <p className="mt-5 max-w-2xl text-base font-medium leading-relaxed text-[#3f3f46] sm:text-lg">
-              Envie uma foto, escolha o tema e veja a capa com a sua criança desenhada, de graça, em 2 minutos. O livro completo com 20 páginas sai por{" "}
-              <strong className="text-ink">R$ {BOOK_PRICE_BRL}</strong>, em PDF, entregue na hora.
+
+          {/* Livro do Samuel (livro real, com consentimento dos pais) folheando. */}
+          <div className="bk-stage relative order-1 mx-auto w-full max-w-[250px] sm:max-w-[290px]">
+            <div className="bk-book">
+              {HERO_PAGES.map((src, i) => (
+                <div
+                  key={src}
+                  className="bk-page"
+                  style={{ "--i": i, zIndex: HERO_PAGES.length - i } as React.CSSProperties}
+                  data-flip={i < HERO_PAGES.length - 1 ? "" : undefined}
+                  aria-hidden={i > 0 ? true : undefined}
+                >
+                  <Image
+                    src={src}
+                    alt={i === 0 ? "Capa do livro A Cama do Samuel, feito no Falaped Books" : ""}
+                    fill
+                    sizes="290px"
+                    priority={i < 2}
+                    className="object-cover"
+                  />
+                </div>
+              ))}
+              <div className="bk-page bk-close" style={{ zIndex: 10 }} aria-hidden>
+                <Image src={HERO_PAGES[0]} alt="" fill sizes="290px" className="object-cover" />
+              </div>
+            </div>
+            <Sticker className="absolute -right-4 -top-4 rotate-6 bg-warning">Livro real</Sticker>
+          </div>
+
+          <div className="bk-reveal order-2">
+            <Chip className="max-w-full whitespace-normal bg-secondary uppercase leading-snug tracking-[.04em]">Livro de história onde a sua criança é a protagonista</Chip>
+            <h1 className="mt-4 font-display text-[31px] font-extrabold uppercase leading-[0.94] tracking-[-.03em] text-balance sm:text-[50px]">
+              O livro que a sua criança vai pedir para ler de novo.
+              <span className="mt-2 block text-[24px] sm:text-[34px]">
+                Porque é <span className="bk-marker">sobre ela</span>.
+              </span>
+            </h1>
+            <p className="mt-5 max-w-xl text-base font-medium leading-relaxed text-[#3f3f46] sm:text-lg">
+              Você manda uma foto e escolhe a história. A gente transforma em um livro ilustrado de 20 páginas onde ela é a protagonista, com o rosto e o nome dela em cada página. Tem
+              história para cada fase da infância, e você lê com ela hoje mesmo.
             </p>
             <div className="mt-7 flex flex-col gap-3 sm:flex-row sm:items-center">
               <Link href="/books/lp/criar" className={bkButton("warning", "h-[54px] px-7 text-base")}>
                 <Sparkles className="size-4" strokeWidth={2.4} aria-hidden />
-                Criar a capa grátis
+                Criar a história dela
                 <ArrowRight className="size-4" strokeWidth={2.6} aria-hidden />
               </Link>
-              <Link href="#como-funciona" className={bkButton("secondary", "h-[54px] px-6 text-base")}>
-                Como funciona
+              <Link href="#paginas" className={bkButton("secondary", "h-[54px] px-6 text-base")}>
+                Folhear um exemplo
               </Link>
             </div>
             <ul className="mt-6 flex flex-wrap gap-2 text-[12.5px] font-semibold">
-              {["Sem cartão para ver a capa", "Foto em área privada", "10 temas de marcos da infância"].map((t) => (
+              {["Ninguém além de você vê o livro", "Sem cartão para começar"].map((t) => (
                 <li key={t} className="inline-flex items-center gap-1.5 rounded-full border-2 border-ink bg-accent px-[11px] py-1.5">
                   <Check className="size-3" strokeWidth={3} aria-hidden />
                   {t}
@@ -93,15 +133,8 @@ export default function BooksLandingPage() {
               ))}
             </ul>
           </div>
-          <div className="relative mx-auto w-full max-w-[300px] sm:max-w-[340px]">
-            <div className="absolute -left-4 top-6 aspect-[3/4] w-full -rotate-6 rounded-[14px] border-2 border-ink bg-primary" aria-hidden />
-            <div className="relative aspect-[3/4] w-full rotate-2 overflow-hidden rounded-[14px] border-2 border-ink shadow-hard-lg">
-              <Image src="/books/samples/cama-capa.jpg" alt="Capa do livro A Cama do Samuel" fill sizes="(min-width: 640px) 340px, 300px" priority className="object-cover" />
-            </div>
-            <Sticker className="absolute -right-3 top-3 rotate-6 bg-warning">Livro real</Sticker>
-            <Sticker className="absolute -left-3 bottom-4 -rotate-6 bg-white">Feito da foto</Sticker>
-          </div>
         </LpCard>
+        <script dangerouslySetInnerHTML={{ __html: HERO_SCRIPT }} />
       </section>
 
       {/* Como funciona */}
@@ -147,7 +180,7 @@ export default function BooksLandingPage() {
       </section>
 
       {/* Páginas reais */}
-      <section className="mx-auto mt-14 max-w-[1100px] px-4 sm:mt-20 sm:px-10">
+      <section id="paginas" className="mx-auto mt-14 max-w-[1100px] scroll-mt-24 px-4 sm:mt-20 sm:px-10">
         <div className="flex flex-wrap items-end justify-between gap-3">
           <LpTitle text="Páginas de um livro de verdade" highlight="de verdade" marker="#cdebd3" className="max-w-2xl text-[30px] sm:text-[44px]" />
           <span className="text-sm font-medium text-muted-foreground">Três livros do Samuel, feitos a partir de duas fotos. Publicados com autorização da família.</span>
