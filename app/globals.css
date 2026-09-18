@@ -493,13 +493,19 @@
   background: linear-gradient(transparent 55%, var(--marker, #f5c21a) 55%, var(--marker, #f5c21a) 92%, transparent 92%);
 }
 
-/* Hero da landing: livro com volume folheando (CSS 3D) + coreografia de entrada.
+/* Hero da landing: livro com volume, folhear por scroll e páginas com curvatura.
    Estado controlado por components/books/lp/hero-stage.tsx. */
 .hero-glow {
   background: radial-gradient(closest-side, rgba(184, 224, 245, 0.95), rgba(184, 224, 245, 0));
 }
 .hero-stage {
-  perspective: 1900px;
+  --cx: 0%;
+  perspective: 2000px;
+}
+@media (min-width: 1024px) {
+  .hero-stage {
+    --cx: -17%;
+  }
 }
 .hero-book {
   position: relative;
@@ -509,9 +515,9 @@
   transition: transform 0.9s cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 .hero-book:hover {
-  transform: rotateY(-5deg) rotateX(2deg) scale(1.02);
+  transform: rotateY(-9deg) rotateX(3deg);
 }
-/* miolo: folhas empilhadas aparecendo atrás da capa */
+/* miolo: folhas de papel aparecendo atrás da capa */
 .hero-edge {
   position: absolute;
   inset: 0;
@@ -519,67 +525,143 @@
   border-radius: 6px 14px 14px 6px;
   background: repeating-linear-gradient(0deg, #fff 0 3px, #e3e1d6 3px 6px);
 }
+/* uma folha = três dobradiças encadeadas, para a página curvar ao virar */
 .hero-leaf {
   position: absolute;
   inset: 0;
-  overflow: hidden;
-  border: 2px solid #17171a;
-  border-radius: 6px 14px 14px 6px;
-  background: #0d1b3a;
-  backface-visibility: hidden;
-  transform-origin: left center;
-  transition: transform 1.05s cubic-bezier(0.45, 0.05, 0.3, 1);
+  transform-style: preserve-3d;
 }
-.hero-leaf::after {
+.hero-hinge {
+  position: absolute;
+  top: 0;
+  height: 100%;
+  width: 33.334%;
+  transform-origin: left center;
+  transform-style: preserve-3d;
+  transition: transform 1.5s cubic-bezier(0.42, 0, 0.3, 1);
+}
+.hero-hinge.h1 {
+  left: 0;
+}
+.hero-hinge.h2,
+.hero-hinge.h3 {
+  left: 100%;
+  width: 100%;
+  transition-duration: 0.75s;
+  transition-timing-function: ease-in-out;
+}
+.hero-face {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  backface-visibility: hidden;
+  border-top: 2px solid #17171a;
+  border-bottom: 2px solid #17171a;
+}
+.h1 > .hero-face {
+  border-left: 2px solid #17171a;
+  border-radius: 6px 0 0 6px;
+}
+.h3 > .hero-face {
+  border-right: 2px solid #17171a;
+  border-radius: 0 14px 14px 0;
+}
+.hero-face > img {
+  position: absolute;
+  top: 0;
+  height: 100%;
+  width: 300%;
+  max-width: none;
+}
+.h1 > .hero-face > img {
+  left: 0;
+}
+.h2 > .hero-face > img {
+  left: -100%;
+}
+.h3 > .hero-face > img {
+  left: -200%;
+}
+/* verso de papel, visível enquanto a página passa do meio */
+.hero-back {
+  position: absolute;
+  inset: 0;
+  transform: rotateY(180deg);
+  backface-visibility: hidden;
+  background: linear-gradient(100deg, #fdfbf4, #ece7d8);
+  border: 2px solid #17171a;
+}
+/* sombra da lombada em cada fatia */
+.hero-face::after,
+.hero-back::after {
   content: "";
   position: absolute;
   inset: 0;
-  background: linear-gradient(90deg, rgba(0, 0, 0, 0.42), rgba(0, 0, 0, 0) 15%);
+  background: linear-gradient(90deg, rgba(0, 0, 0, 0.26), rgba(0, 0, 0, 0) 72%);
 }
-.hero-leaf[data-turned="true"] {
-  transform: rotateY(-174deg);
+.hero-leaf[data-turned="true"] .h1 {
+  transform: rotateY(-168deg);
 }
-/* entrada do livro e dos textos */
-@keyframes hero-fly {
+/* curvatura: a ponta fica para trás enquanto a folha está em movimento */
+.hero-leaf[data-bend="true"] .h2 {
+  transform: rotateY(19deg);
+}
+.hero-leaf[data-bend="true"] .h3 {
+  transform: rotateY(13deg);
+}
+/* entrada: sobe de baixo no centro e escorrega para a direita */
+@keyframes hero-in {
   0% {
     opacity: 0;
-    transform: translate(-18%, 64px) scale(0.82) rotate(5deg);
+    transform: translate(var(--cx), 76px) scale(1.04);
   }
-  55% {
+  42% {
     opacity: 1;
-    transform: translate(-18%, 0) scale(1.1) rotate(0deg);
+    transform: translate(var(--cx), 0) scale(1.04);
   }
   100% {
     opacity: 1;
-    transform: none;
+    transform: translate(0, 0) scale(1);
   }
 }
 @keyframes hero-rise {
   from {
     opacity: 0;
-    transform: translateY(20px);
+    transform: translateY(22px);
+  }
+}
+@keyframes hero-nudge {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(7px);
   }
 }
 @media (prefers-reduced-motion: no-preference) {
   .hero-stage[data-animate="true"] {
-    animation: hero-fly 1.2s cubic-bezier(0.2, 0.9, 0.25, 1) 0.1s both;
+    animation: hero-in 1.9s cubic-bezier(0.25, 0.9, 0.3, 1) 0.1s both;
   }
   .hero-copy[data-in="false"] > * {
     opacity: 0;
   }
   .hero-copy[data-in="true"] > * {
-    animation: hero-rise 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+    animation: hero-rise 0.7s cubic-bezier(0.2, 0.8, 0.2, 1) both;
   }
   .hero-copy[data-in="true"] > *:nth-child(2) {
-    animation-delay: 0.14s;
+    animation-delay: 0.1s;
   }
   .hero-copy[data-in="true"] > *:nth-child(3) {
-    animation-delay: 0.28s;
+    animation-delay: 0.2s;
   }
   .hero-copy[data-in="true"] > *:nth-child(4) {
-    animation-delay: 0.42s;
+    animation-delay: 0.3s;
   }
   .hero-copy[data-in="true"] > *:nth-child(5) {
-    animation-delay: 0.56s;
+    animation-delay: 0.4s;
+  }
+  .hero-scroll-icon {
+    animation: hero-nudge 1.8s ease-in-out infinite;
   }
 }

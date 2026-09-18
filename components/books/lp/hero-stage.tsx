@@ -1,95 +1,176 @@
 "use client"
 
-import Image from "next/image"
-import { useEffect, useRef, useState } from "react"
+import { ChevronDown, Mouse } from "lucide-react"
+import { useCallback, useEffect, useRef, useState } from "react"
 
 import { Sticker } from "@/components/books/books-ui"
 import { Orn } from "@/components/books/lp/lp-ui"
 
-/** Páginas do livro real do Samuel (consentimento dos pais) usadas na animação do hero. */
+/** Páginas do livro real do Samuel (consentimento dos pais) usadas no hero. */
+/** Número real de cada página de amostra dentro do livro de 20 páginas. */
+const PAGE_LABELS = [1, 5, 8, 12, 16, 19]
+
 const PAGES = ["/books/samples/cama/0.jpg", "/books/samples/cama/4.jpg", "/books/samples/cama/7.jpg", "/books/samples/cama/11.jpg", "/books/samples/cama/15.jpg", "/books/samples/cama/18.jpg"]
 
-/** Coreografia de entrada: folha virada em cada tempo, texto entrando em 3,3 s e volta para a capa. */
-const INTRO: [number, number][] = [
-  [1250, 1],
-  [2050, 2],
-  [2750, 3],
-  [3550, 4],
-  [5100, 0],
-]
-const COPY_AT = 3300
-const TURN_MS = 780
+/** Passos da rolagem: 0 = capa, 1..5 = páginas viradas, 6 = livro fechado de novo. */
+const LAST_PAGE = PAGES.length - 1
+const CLOSED_STEP = PAGES.length
+/** Duração de uma virada (igual à transição em globals.css) e da curvatura do papel. */
+const TURN_MS = 1500
+const BEND_MS = 900
+const COPY_AT = 950
+const INTRO_MS = 2000
 
 /**
- * Hero da landing: texto à esquerda (children) e o livro folheando à direita.
- * A entrada roda a cada carregamento; o primeiro mouse sobre o livro assume o folhear.
+ * Hero da landing: texto à esquerda (children) e o livro à direita.
+ * O livro sobe de baixo no centro, escorrega para a direita e fica fechado.
+ * A partir daí cada rolagem vira uma página; quando as páginas acabam o livro
+ * fecha e a rolagem seguinte segue para a próxima seção. Em tela de toque não
+ * há trava de rolagem: o livro folheia no toque.
  */
-export function HeroStage({ children }: { children: React.ReactNode }) {
-  const [turned, setTurned] = useState(0)
+export function HeroStage({ children, nextSectionId = "como-funciona" }: { children: React.ReactNode; nextSectionId?: string }) {
+  const [step, setStep] = useState(0)
+  const [bending, setBending] = useState(-1)
   const [copyIn, setCopyIn] = useState(false)
-  const timers = useRef<ReturnType<typeof setTimeout>[]>([])
+  const [locked, setLocked] = useState(false)
   const busy = useRef(false)
+  const bendTimer = useRef<ReturnType<typeof setTimeout>>(undefined)
 
+  const turned = step >= CLOSED_STEP ? 0 : step
+
+  /** Marca a folha em movimento para ela curvar durante a virada. */
+  const markBend = useCallback((leaf: number) => {
+    setBending(leaf)
+    clearTimeout(bendTimer.current)
+    bendTimer.current = setTimeout(() => setBending(-1), BEND_MS)
+  }, [])
+
+  /** Avança ou volta um passo. Retorna false quando não há mais livro para folhear. */
+  const move = useCallback(
+    (dir: 1 | -1) => {
+      if (busy.current) return true
+      let more = true
+      setStep((s) => {
+        const n = s + dir
+        if (n < 0) return s
+        if (n > CLOSED_STEP) {
+          more = false
+          return s
+        }
+        busy.current = true
+        setTimeout(() => (busy.current = false), TURN_MS * 0.6)
+        // ao fechar, todas as folhas voltam juntas: -2 marca todas
+        markBend(dir > 0 ? (n === CLOSED_STEP ? -2 : n - 1) : n)
+        return n
+      })
+      return more
+    },
+    [markBend],
+  )
+
+  // entrada: o texto começa a subir enquanto o livro ainda escorrega para a direita
   useEffect(() => {
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
       setCopyIn(true)
       return
     }
-    timers.current = [...INTRO.map(([ms, n]) => setTimeout(() => setTurned(n), ms)), setTimeout(() => setCopyIn(true), COPY_AT)]
-    return () => timers.current.forEach(clearTimeout)
+    const t = [setTimeout(() => setCopyIn(true), COPY_AT), setTimeout(() => setLocked(window.matchMedia("(pointer: fine)").matches), INTRO_MS)]
+    return () => t.forEach(clearTimeout)
   }, [])
 
-  /** Vira a próxima folha; ao chegar no fim volta para a capa. */
-  function turn() {
-    if (busy.current) return
-    busy.current = true
-    setTurned((v) => (v >= PAGES.length - 1 ? 0 : v + 1))
-    setTimeout(() => (busy.current = false), TURN_MS)
-  }
+  // segura a rolagem enquanto o livro é folheado (só com mouse e só no topo da página)
+  useEffect(() => {
+    if (!locked) return
 
-  function takeOver() {
-    timers.current.forEach(clearTimeout)
-    setCopyIn(true)
-  }
+    function release() {
+      setLocked(false)
+      document.getElementById(nextSectionId)?.scrollIntoView({ behavior: "smooth" })
+    }
+    function onWheel(e: WheelEvent) {
+      if (Math.abs(e.deltaY) < 4) return
+      if (window.scrollY > 4) return
+      e.preventDefault()
+      if (!move(e.deltaY > 0 ? 1 : -1)) release()
+    }
+    function onKey(e: KeyboardEvent) {
+      if (["ArrowDown", "PageDown", " "].includes(e.key)) {
+        e.preventDefault()
+        if (!move(1)) release()
+      } else if (["ArrowUp", "PageUp"].includes(e.key)) {
+        e.preventDefault()
+        move(-1)
+      } else if (e.key === "Escape") {
+        release()
+      }
+    }
+    window.addEventListener("wheel", onWheel, { passive: false })
+    window.addEventListener("keydown", onKey)
+    return () => {
+      window.removeEventListener("wheel", onWheel)
+      window.removeEventListener("keydown", onKey)
+    }
+  }, [locked, move, nextSectionId])
+
+  useEffect(() => () => clearTimeout(bendTimer.current), [])
+
+  const hint = step === 0 ? "Role para folhear o livro" : step >= CLOSED_STEP ? "Role para continuar" : `Página ${PAGE_LABELS[Math.min(step, LAST_PAGE)]} de 20`
 
   return (
     <section className="relative mx-auto grid min-h-[calc(100svh-4rem)] max-w-[1280px] items-center gap-8 px-4 py-10 sm:min-h-[calc(100svh-5rem)] sm:px-10 lg:grid-cols-[1.04fr_.96fr]">
       <Orn kind="star" color="#f5c21a" className="left-0 top-12 hidden lg:block" />
       <Orn kind="plus" color="#b8e0f5" className="bottom-16 left-[2%] hidden lg:block" />
-      <Orn kind="ring" color="#f5c4b8" className="right-2 bottom-24 hidden lg:block" />
+      <Orn kind="ring" color="#f5c4b8" className="bottom-24 right-2 hidden lg:block" />
 
       <div className="hero-copy order-2 lg:order-1" data-in={copyIn}>
         {children}
+        <p className="mt-9 hidden lg:block">
+          <span className="hero-scroll-icon inline-flex items-center gap-2 rounded-full border-2 border-ink bg-white px-4 py-2 text-[12.5px] font-bold shadow-hard-sm">
+            {step >= CLOSED_STEP ? <ChevronDown className="size-4" strokeWidth={2.6} aria-hidden /> : <Mouse className="size-4" strokeWidth={2.4} aria-hidden />}
+            {hint}
+          </span>
+        </p>
       </div>
 
       <div className="hero-stage relative order-1 flex justify-center lg:order-2" data-animate="true">
         <div className="hero-glow pointer-events-none absolute inset-[-8%_-6%]" aria-hidden />
-        <div
-          className="hero-book w-[min(400px,84vw)] shadow-[14px_18px_0_rgba(23,23,26,.14)] sm:w-[min(430px,80%)]"
-          onMouseEnter={takeOver}
-          onMouseMove={turn}
-          onClick={turn}
+        <button
+          type="button"
+          aria-label="Folhear o livro de exemplo"
+          className="hero-book w-[min(400px,84vw)] cursor-pointer shadow-[14px_18px_0_rgba(23,23,26,.13)] sm:w-[min(430px,80%)]"
+          onClick={() => move(1)}
         >
           <span className="hero-edge translate-x-[10px] translate-y-[6px]" aria-hidden />
           <span className="hero-edge translate-x-[5px] translate-y-[3px]" aria-hidden />
           {PAGES.map((src, i) => (
-            <div key={src} className="hero-leaf" style={{ zIndex: PAGES.length - i }} data-turned={i < turned} aria-hidden={i > 0 ? true : undefined}>
-              <Image
-                src={src}
-                alt={i === 0 ? "Capa do livro A Cama do Samuel, feito no Falaped Books" : ""}
-                fill
-                sizes="430px"
-                priority={i < 2}
-                className="object-cover"
-              />
-            </div>
+            <span key={src} className="hero-leaf" style={{ zIndex: PAGES.length - i }} data-turned={i < turned} data-bend={bending === -2 || i === bending} aria-hidden={i > 0 ? true : undefined}>
+              <span className="hero-hinge h1">
+                <span className="hero-face">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={src} alt={i === 0 ? "Capa do livro A Cama do Samuel, feito no Falaped Books" : ""} />
+                </span>
+                {i < LAST_PAGE && <span className="hero-back" aria-hidden />}
+                <span className="hero-hinge h2">
+                  <span className="hero-face">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={src} alt="" />
+                  </span>
+                  {i < LAST_PAGE && <span className="hero-back" aria-hidden />}
+                  <span className="hero-hinge h3">
+                    <span className="hero-face">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src={src} alt="" />
+                    </span>
+                    {i < LAST_PAGE && <span className="hero-back" aria-hidden />}
+                  </span>
+                </span>
+              </span>
+            </span>
           ))}
-        </div>
+        </button>
         <Sticker className="pointer-events-none absolute -top-3 left-[6%] z-30 -rotate-6 bg-warning">Livro real</Sticker>
         <span className="pointer-events-none absolute -bottom-2 right-[5%] z-30 rounded-full border-2 border-ink bg-warning px-4 py-2 text-[12.5px] font-extrabold uppercase tracking-[.04em] shadow-hard-sm">
           20 páginas
         </span>
-        <p className="absolute -bottom-12 left-1/2 -translate-x-1/2 whitespace-nowrap text-[13px] font-semibold text-muted-foreground">Passe o mouse para folhear</p>
       </div>
     </section>
   )
