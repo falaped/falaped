@@ -352,7 +352,7 @@ export function LeadWizard({ themes, initial }: { themes: WizardTheme[]; initial
       )}
 
       {step === 3 && (
-        <div className="mt-7 grid gap-10 lg:mt-11 lg:grid-cols-[1.25fr_.75fr] lg:items-center lg:gap-14">
+        <div className="mt-7 grid gap-10 lg:mt-11 lg:grid-cols-[1.15fr_.85fr] lg:items-center lg:gap-14">
           {/* Palco: o livro é um objeto, e atrás dele as 19 páginas ainda seladas. */}
           <div className="relative mx-auto aspect-[1/1.2] w-full max-w-[620px]">
             <Orn kind="star" color="#f5c21a" className="-left-3 top-2 hidden lg:block" />
@@ -416,7 +416,7 @@ export function LeadWizard({ themes, initial }: { themes: WizardTheme[]; initial
 
             {coverUrl && (
               <>
-                <ul className="grid gap-2.5 sm:grid-cols-2 lg:grid-cols-1">
+                <ul className="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
                   {[
                     { icon: Sparkles, t: `As 19 páginas com ${name}`, d: "mesma personagem, mesmo traço" },
                     { icon: BookOpen, t: selectedTheme?.label ?? "A história completa", d: "história do começo ao fim" },
