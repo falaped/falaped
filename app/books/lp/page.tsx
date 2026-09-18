@@ -63,16 +63,12 @@ export default function BooksLandingPage() {
     <>
       {/* Hero: 100% da dobra, texto à esquerda, livro folheando à direita. */}
       <HeroStage>
-        <Chip className="max-w-full whitespace-normal bg-white uppercase leading-snug tracking-[.05em] shadow-hard-sm">Livro de história onde a sua criança é a protagonista</Chip>
-        <h1 className="mt-5 font-display text-[36px] font-extrabold uppercase leading-[0.9] tracking-[-.035em] text-balance sm:text-[64px]">
-          O livro que a sua criança vai pedir para ler de novo.
-          <span className="mt-3 block text-[22px] sm:text-[34px]">
-            Porque é <span className="bk-marker">sobre ela</span>.
-          </span>
+        <Chip className="bg-white uppercase tracking-[.05em] shadow-hard-sm">Livro de história</Chip>
+        <h1 className="mt-5 font-display text-[36px] font-extrabold uppercase leading-[0.92] tracking-[-.035em] text-balance sm:text-[56px]">
+          O livro que a sua <span className="bk-marker">criança</span> vai pedir para ler de novo.
         </h1>
         <p className="mt-6 max-w-[32em] text-base font-medium leading-relaxed text-[#3f3f46] sm:text-[17.5px]">
-          Você manda uma foto e escolhe a história. A gente transforma em um livro ilustrado de 20 páginas onde ela é a protagonista, com o rosto e o nome dela em cada página. Tem
-          história para cada fase da infância, e você lê com ela hoje mesmo.
+          Você manda uma foto e escolhe a história. A gente transforma em um livro ilustrado de 20 páginas onde ela é a protagonista, com o rosto e o nome dela em cada página.
         </p>
         <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:items-center">
           <Link href="/books/lp/criar" className={bkButton("warning", "h-[58px] px-7 text-base")}>
