@@ -12,7 +12,7 @@ import { LP_WRAP, LpCard, Orn } from "@/components/books/lp/lp-ui"
 import { Dialog, DialogClose, DialogContent, DialogTitle } from "@/components/ui/dialog"
 import { PhotoSlot, type WizardTheme } from "@/components/books/new-book-wizard"
 import type { LeadCoverResult } from "@/app/api/books/lead/cover/route"
-import { BOOK_COUPONS, BOOK_PAGE_COUNT, BOOK_PRICE_BRL, BOOKS_WHATSAPP, MAX_BOOK_PHOTOS, bookPriceWithCoupon } from "@/modules/books/constants"
+import { BOOK_COUPONS, BOOK_PRICE_BRL, BOOKS_WHATSAPP, MAX_BOOK_PHOTOS, bookPriceWithCoupon } from "@/modules/books/constants"
 import type { BookLeadStatus } from "@/modules/books/types"
 import { renderBookText, type BookGender } from "@/modules/books/render-book-text"
 import { cn } from "@/lib/utils"
@@ -164,7 +164,7 @@ export function LeadWizard({ themes, initial }: { themes: WizardTheme[]; initial
     <div className={cn(LP_WRAP, "pb-10 pt-6 sm:pb-16 sm:pt-10")}>
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between sm:gap-6">
         <h1 className="font-display text-[30px] font-extrabold uppercase leading-none tracking-[-.03em] sm:text-[44px]">
-          {step === 3 && name ? `O livro de ${name}` : "Criar o livro"}
+          {step === 3 ? bookTitle || "Seu livro" : "Criar o livro"}
         </h1>
         <Stepper current={step} />
       </div>
@@ -352,14 +352,14 @@ export function LeadWizard({ themes, initial }: { themes: WizardTheme[]; initial
       )}
 
       {step === 3 && (
-        <div className="mt-7 grid gap-10 lg:mt-11 lg:grid-cols-[1.02fr_.98fr] lg:items-center lg:gap-16">
+        <div className="mt-7 grid gap-10 lg:mt-11 lg:grid-cols-[1.25fr_.75fr] lg:items-center lg:gap-14">
           {/* Palco: o livro é um objeto, e atrás dele as 19 páginas ainda seladas. */}
-          <div className="relative mx-auto aspect-[1/1.04] w-full max-w-[470px]">
+          <div className="relative mx-auto aspect-[1/1.2] w-full max-w-[620px]">
             <Orn kind="star" color="#f5c21a" className="-left-3 top-2 hidden lg:block" />
             <Orn kind="ring" color="#f5c4b8" className="-right-1 bottom-10 hidden lg:block" />
-            <span className="bk-sealed left-[2%] top-[11%] w-[62%] -rotate-[12deg]" aria-hidden />
-            <span className="bk-sealed right-[1%] top-[7%] w-[62%] rotate-[10deg]" aria-hidden />
-            <div className="absolute left-1/2 top-1/2 w-[74%] -translate-x-1/2 -translate-y-1/2">
+            <span className="bk-sealed left-[1%] top-[13%] w-[58%] -rotate-[12deg]" aria-hidden />
+            <span className="bk-sealed right-0 top-[9%] w-[58%] rotate-[10deg]" aria-hidden />
+            <div className="absolute left-1/2 top-1/2 w-[82%] -translate-x-1/2 -translate-y-1/2">
               {coverUrl ? (
                 <>
                   <button type="button" onClick={() => setZoom(true)} className="bk-book bk-book--in block w-full cursor-zoom-in p-0" aria-label={`Ampliar a capa do livro de ${name}`}>
@@ -405,49 +405,18 @@ export function LeadWizard({ themes, initial }: { themes: WizardTheme[]; initial
 
           {/* O que a pessoa tem na mão e o que falta para o livro inteiro. */}
           <div className="flex flex-col gap-6">
-            <div>
-              <p className="font-display text-[12.5px] font-extrabold uppercase tracking-[.12em] text-muted-foreground">
-                {coverUrl ? "O livro se chama" : "Estamos desenhando"}
-              </p>
-              <h2 className="mt-2 font-display text-[30px] font-extrabold uppercase leading-[0.95] tracking-[-.035em] text-balance sm:text-[42px]">
-                <span className="bk-marker" style={{ "--marker": "#b8e0f5" } as React.CSSProperties}>{bookTitle || name}</span>
-              </h2>
-              <p className="mt-4 max-w-[44ch] text-[14.5px] font-medium leading-relaxed text-[#3f3f46] text-pretty">
+            <div className="flex flex-col items-start gap-3">
+              <Chip className="bg-secondary uppercase tracking-[.04em]">{selectedTheme?.label}</Chip>
+              <p className="max-w-[40ch] text-[15px] font-medium leading-relaxed text-[#3f3f46] text-pretty">
                 {coverUrl
-                  ? `A capa já está pronta, com o rosto e o nome ${gender === "menino" ? "do" : "da"} ${name} na frente. Faltam as 19 páginas da história: elas são desenhadas assim que o pedido entra e o PDF chega no seu WhatsApp na hora.`
-                  : "A primeira página do livro está sendo desenhada agora, com a foto que você enviou. Nada é cobrado até ela aparecer."}
-              </p>
-            </div>
-
-            {/* As 20 páginas: a 1ª é sua, as outras ainda estão fechadas. */}
-            <div>
-              <ul className="flex flex-wrap gap-[5px]">
-                {Array.from({ length: BOOK_PAGE_COUNT }, (_, i) =>
-                  i === 0 ? (
-                    <li key={i} className="relative size-8 overflow-hidden rounded-[7px] border-2 border-ink bg-muted">
-                      {coverUrl ? (
-                        // eslint-disable-next-line @next/next/no-img-element
-                        <img src={coverUrl} alt="" className="size-full object-cover" />
-                      ) : (
-                        <BrandBlur pulse />
-                      )}
-                    </li>
-                  ) : (
-                    <li key={i} className="bk-hatch grid size-8 place-items-center rounded-[7px] border-2 border-ink text-[10px] font-extrabold text-muted-foreground">
-                      {i + 1}
-                    </li>
-                  ),
-                )}
-              </ul>
-              <p className="mt-2.5 text-[13px] font-bold">
-                {coverUrl ? "1 de 20 páginas na sua mão." : "Página 1 de 20 em andamento."}{" "}
-                <span className="font-medium text-muted-foreground">As outras 19 saem depois do pedido.</span>
+                  ? "A capa está pronta. As outras 19 páginas são desenhadas assim que o pedido entra, e o PDF chega no seu WhatsApp na hora."
+                  : "A capa está sendo desenhada com a foto que você enviou. Nada é cobrado até ela aparecer."}
               </p>
             </div>
 
             {coverUrl && (
               <>
-                <ul className="grid gap-2.5 sm:grid-cols-2">
+                <ul className="grid gap-2.5 sm:grid-cols-2 lg:grid-cols-1">
                   {[
                     { icon: Sparkles, t: `As 19 páginas com ${name}`, d: "mesma personagem, mesmo traço" },
                     { icon: BookOpen, t: selectedTheme?.label ?? "A história completa", d: "história do começo ao fim" },
