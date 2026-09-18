@@ -481,3 +481,12 @@
   background: #fafaf9 radial-gradient(#e3e3de 1px, transparent 1px) 0 0 / 20px 20px;
   -webkit-font-smoothing: antialiased;
 }
+
+/* Landing pública (books.falaped.com.br): papel quadriculado dos criativos. */
+.books-grid {
+  background: #fcfbf7 linear-gradient(#e3e3de 1.5px, transparent 1.5px) 0 0 / 48px 48px,
+    linear-gradient(90deg, #e3e3de 1.5px, transparent 1.5px) 0 0 / 48px 48px;
+}
+.books-grid .bk-marker {
+  background: linear-gradient(transparent 55%, var(--marker, #f5c21a) 55%, var(--marker, #f5c21a) 92%, transparent 92%);
+}

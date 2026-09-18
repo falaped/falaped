@@ -48,17 +48,32 @@ export async function updateSession(request: NextRequest) {
 
   // books.falaped.com.br serve o app de livros na raiz: "/" → /books, "/{id}" → /books/{id}.
   // Auth e API seguem os mesmos paths; "/dashboard" não existe nesse host e volta à raiz.
+  // Landing pública (lead + capa grátis) vive em app/books/lp: na raiz para visitante,
+  // e nos aliases /criar e /privacidade; o pediatra logado continua vendo a lista na raiz.
   const isBooksHost = (request.headers.get("host") ?? "").startsWith("books.");
   const homePath = isBooksHost ? "/" : "/dashboard";
+  const LP_ALIASES = ["/criar", "/privacidade"];
+  // Também públicos em qualquer host (localhost: /books/lp, /books/lp/criar, /api/books/lead/*).
+  const isBooksPublic =
+    pathname.startsWith("/books/lp") ||
+    pathname.startsWith("/api/books/lead") ||
+    (isBooksHost && (LP_ALIASES.includes(pathname) || pathname.startsWith("/lp") || (pathname === "/" && !user)));
   if (isBooksHost) {
-    if (pathname.startsWith("/dashboard")) {
+    if (pathname.startsWith("/dashboard") || pathname.startsWith("/books/lp")) {
       const url = request.nextUrl.clone();
-      url.pathname = "/";
+      url.pathname = pathname.startsWith("/books/lp") ? pathname.slice("/books/lp".length) || "/" : "/";
       return NextResponse.redirect(url);
     }
     if (!pathname.startsWith("/auth") && !pathname.startsWith("/api") && !pathname.startsWith("/books")) {
       const url = request.nextUrl.clone();
-      url.pathname = `/books${pathname === "/" ? "" : pathname}`;
+      url.pathname =
+        pathname === "/"
+          ? user
+            ? "/books"
+            : "/books/lp"
+          : LP_ALIASES.includes(pathname)
+            ? `/books/lp${pathname}`
+            : `/books${pathname}`;
       const rewriteResponse = NextResponse.rewrite(url, { request });
       supabaseResponse.cookies.getAll().forEach((cookie) =>
         rewriteResponse.cookies.set(cookie.name, cookie.value, {
@@ -104,7 +119,7 @@ export async function updateSession(request: NextRequest) {
   }
 
   // Unauthenticated user: redirect protected routes to login
-  if (!user && (!isHomePage || isBooksHost) && !pathname.startsWith("/auth")) {
+  if (!user && (!isHomePage || isBooksHost) && !pathname.startsWith("/auth") && !isBooksPublic) {
     await supabase.auth.signOut();
     const url = request.nextUrl.clone();
     url.pathname = "/auth/login";

@@ -25,14 +25,17 @@ export type CreateBookPayload = {
   pediatricianLogo?: File | null
 }
 
+/** Dono do livro: pediatra logado (profile) ou lead da landing pública. */
+export type BookOwner = { profileId: string; leadId?: null } | { profileId?: null; leadId: string }
+
 /**
- * Cria o livro em `draft` para o usuário e sobe as fotos de referência (e o
+ * Cria o livro em `draft` para o dono e sobe as fotos de referência (e o
  * logo do pediatra, se houver) em book-assets/{bookId}/. A geração da capa é
  * um passo separado (generateCover). Caller valida os campos de texto.
  */
 export async function createBook(
   supabase: SupabaseClient,
-  profileId: string,
+  owner: BookOwner,
   payload: CreateBookPayload,
 ): Promise<Book> {
   getBookTheme(payload.theme)
@@ -47,7 +50,8 @@ export async function createBook(
   const { data: inserted, error: insertError } = await supabase
     .from("books")
     .insert({
-      profile_id: profileId,
+      profile_id: owner.profileId ?? null,
+      lead_id: owner.leadId ?? null,
       child_name: payload.childName.trim(),
       child_gender: payload.childGender,
       theme: payload.theme,
