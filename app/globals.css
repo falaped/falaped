@@ -484,98 +484,102 @@
 
 /* Landing pública (books.falaped.com.br): papel quadriculado dos criativos. */
 .books-grid {
-  background: #fcfbf7 linear-gradient(#e3e3de 1.5px, transparent 1.5px) 0 0 / 48px 48px,
-    linear-gradient(90deg, #e3e3de 1.5px, transparent 1.5px) 0 0 / 48px 48px;
+  background-color: #fcfbf7;
+  background-image: linear-gradient(#e3e3de 1.5px, transparent 1.5px), linear-gradient(90deg, #e3e3de 1.5px, transparent 1.5px);
+  background-size: 48px 48px;
+  background-position: 0 0;
 }
 .books-grid .bk-marker {
   background: linear-gradient(transparent 55%, var(--marker, #f5c21a) 55%, var(--marker, #f5c21a) 92%, transparent 92%);
 }
 
-/* Hero da landing: livro folheando em CSS 3D + coreografia de entrada (1ª visita).
-   O script inline em app/books/lp/page.tsx tira .bk-intro em quem já viu e reinicia
-   .bk-play a cada 9 s para o livro folhear de novo. */
-.bk-stage {
-  --sx: 0px;
-  --sc: 1.1;
-  --d: 0.18s;
-  perspective: 1500px;
+/* Hero da landing: livro com volume folheando (CSS 3D) + coreografia de entrada.
+   Estado controlado por components/books/lp/hero-stage.tsx. */
+.hero-glow {
+  background: radial-gradient(closest-side, rgba(184, 224, 245, 0.95), rgba(184, 224, 245, 0));
 }
-@media (min-width: 1024px) {
-  .bk-stage {
-    --sx: 26%;
-  }
+.hero-stage {
+  perspective: 1900px;
 }
-.bk-intro .bk-stage {
-  --d: 0.78s;
-}
-.bk-book {
+.hero-book {
   position: relative;
   aspect-ratio: 3 / 4;
+  transform: rotateY(-15deg) rotateX(5deg);
   transform-style: preserve-3d;
+  transition: transform 0.9s cubic-bezier(0.2, 0.8, 0.2, 1);
 }
-.bk-page {
+.hero-book:hover {
+  transform: rotateY(-5deg) rotateX(2deg) scale(1.02);
+}
+/* miolo: folhas empilhadas aparecendo atrás da capa */
+.hero-edge {
+  position: absolute;
+  inset: 0;
+  border: 2px solid #17171a;
+  border-radius: 6px 14px 14px 6px;
+  background: repeating-linear-gradient(0deg, #fff 0 3px, #e3e1d6 3px 6px);
+}
+.hero-leaf {
   position: absolute;
   inset: 0;
   overflow: hidden;
   border: 2px solid #17171a;
-  border-radius: 14px;
-  background: #fcfbf7;
+  border-radius: 6px 14px 14px 6px;
+  background: #0d1b3a;
   backface-visibility: hidden;
   transform-origin: left center;
-  box-shadow: 4px 6px 0 #17171a;
+  transition: transform 1.05s cubic-bezier(0.45, 0.05, 0.3, 1);
 }
-.bk-close {
-  transform: rotateY(-170deg);
+.hero-leaf::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, rgba(0, 0, 0, 0.42), rgba(0, 0, 0, 0) 15%);
 }
-@keyframes bk-flip {
-  to {
-    transform: rotateY(-170deg);
-  }
+.hero-leaf[data-turned="true"] {
+  transform: rotateY(-174deg);
 }
-@keyframes bk-unflip {
-  from {
-    transform: rotateY(-170deg);
-  }
-  to {
-    transform: rotateY(0deg);
-  }
-}
-@keyframes bk-cinema {
+/* entrada do livro e dos textos */
+@keyframes hero-fly {
   0% {
     opacity: 0;
-    transform: translate(var(--sx), -44px) scale(var(--sc)) rotate(-5deg);
+    transform: translate(-18%, 64px) scale(0.82) rotate(5deg);
   }
-  8% {
+  55% {
     opacity: 1;
-    transform: translate(var(--sx), 0) scale(var(--sc)) rotate(0deg);
-  }
-  83% {
-    transform: translate(var(--sx), 0) scale(var(--sc));
+    transform: translate(-18%, 0) scale(1.1) rotate(0deg);
   }
   100% {
-    transform: translate(0, 0) scale(1);
+    opacity: 1;
+    transform: none;
   }
 }
-@keyframes bk-reveal {
+@keyframes hero-rise {
   from {
     opacity: 0;
-    transform: translateY(14px);
+    transform: translateY(20px);
   }
 }
 @media (prefers-reduced-motion: no-preference) {
-  .bk-play .bk-page[data-flip] {
-    animation: bk-flip 0.62s ease-in both;
-    animation-delay: calc(var(--d) + var(--i) * 0.62s);
+  .hero-stage[data-animate="true"] {
+    animation: hero-fly 1.2s cubic-bezier(0.2, 0.9, 0.25, 1) 0.1s both;
   }
-  .bk-play .bk-close {
-    animation: bk-unflip 0.55s ease-out both;
-    animation-delay: calc(var(--d) + 3.18s);
+  .hero-copy[data-in="false"] > * {
+    opacity: 0;
   }
-  .bk-intro .bk-stage {
-    animation: bk-cinema 5.4s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+  .hero-copy[data-in="true"] > * {
+    animation: hero-rise 0.8s cubic-bezier(0.2, 0.8, 0.2, 1) both;
   }
-  .bk-intro .bk-reveal {
-    animation: bk-reveal 0.7s ease-out both;
-    animation-delay: 4.7s;
+  .hero-copy[data-in="true"] > *:nth-child(2) {
+    animation-delay: 0.14s;
+  }
+  .hero-copy[data-in="true"] > *:nth-child(3) {
+    animation-delay: 0.28s;
+  }
+  .hero-copy[data-in="true"] > *:nth-child(4) {
+    animation-delay: 0.42s;
+  }
+  .hero-copy[data-in="true"] > *:nth-child(5) {
+    animation-delay: 0.56s;
   }
 }
