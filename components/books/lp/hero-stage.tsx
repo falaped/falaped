@@ -21,6 +21,12 @@ const BEND_MS = 900
 const COPY_AT = 950
 const INTRO_MS = 2000
 
+/** O hero ainda ocupa a tela? Usado para saber se a rolagem folheia ou navega. */
+function isHeroInView(el: HTMLElement | null) {
+  const r = el?.getBoundingClientRect()
+  return !!r && r.top > -40 && r.bottom > window.innerHeight * 0.6
+}
+
 /**
  * Hero da landing: texto à esquerda (children) e o livro à direita.
  * O livro sobe de baixo no centro, escorrega para a direita e fica fechado.
@@ -34,6 +40,8 @@ export function HeroStage({ children, nextSectionId = "como-funciona" }: { child
   const [copyIn, setCopyIn] = useState(false)
   const [locked, setLocked] = useState(false)
   const busy = useRef(false)
+  const sectionRef = useRef<HTMLElement>(null)
+  const stepRef = useRef(0)
   const bendTimer = useRef<ReturnType<typeof setTimeout>>(undefined)
 
   const turned = step >= CLOSED_STEP ? 0 : step
@@ -45,25 +53,20 @@ export function HeroStage({ children, nextSectionId = "como-funciona" }: { child
     bendTimer.current = setTimeout(() => setBending(-1), BEND_MS)
   }, [])
 
-  /** Avança ou volta um passo. Retorna false quando não há mais livro para folhear. */
+  /** Avança ou volta um passo. Retorna false quando o livro já acabou e a rolagem deve seguir. */
   const move = useCallback(
     (dir: 1 | -1) => {
       if (busy.current) return true
-      let more = true
-      setStep((s) => {
-        const n = s + dir
-        if (n < 0) return s
-        if (n > CLOSED_STEP) {
-          more = false
-          return s
-        }
-        busy.current = true
-        setTimeout(() => (busy.current = false), TURN_MS * 0.6)
-        // ao fechar, todas as folhas voltam juntas: -2 marca todas
-        markBend(dir > 0 ? (n === CLOSED_STEP ? -2 : n - 1) : n)
-        return n
-      })
-      return more
+      const n = stepRef.current + dir
+      if (n < 0) return true
+      if (n > CLOSED_STEP) return false
+      stepRef.current = n
+      setStep(n)
+      busy.current = true
+      setTimeout(() => (busy.current = false), TURN_MS * 0.6)
+      // ao fechar, todas as folhas voltam juntas: -2 marca todas
+      markBend(dir > 0 ? (n === CLOSED_STEP ? -2 : n - 1) : n)
+      return true
     },
     [markBend],
   )
@@ -74,7 +77,10 @@ export function HeroStage({ children, nextSectionId = "como-funciona" }: { child
       setCopyIn(true)
       return
     }
-    const t = [setTimeout(() => setCopyIn(true), COPY_AT), setTimeout(() => setLocked(window.matchMedia("(pointer: fine)").matches), INTRO_MS)]
+    const t = [
+      setTimeout(() => setCopyIn(true), COPY_AT),
+      setTimeout(() => setLocked(window.matchMedia("(pointer: fine)").matches && isHeroInView(sectionRef.current)), INTRO_MS),
+    ]
     return () => t.forEach(clearTimeout)
   }, [])
 
@@ -87,8 +93,12 @@ export function HeroStage({ children, nextSectionId = "como-funciona" }: { child
       document.getElementById(nextSectionId)?.scrollIntoView({ behavior: "smooth" })
     }
     function onWheel(e: WheelEvent) {
-      if (Math.abs(e.deltaY) < 4) return
-      if (window.scrollY > 4) return
+      if (Math.abs(e.deltaY) < 2) return
+      // rolou para longe do hero (ou a página abriu no meio): devolve a rolagem
+      if (!isHeroInView(sectionRef.current)) {
+        setLocked(false)
+        return
+      }
       e.preventDefault()
       if (!move(e.deltaY > 0 ? 1 : -1)) release()
     }
@@ -115,8 +125,9 @@ export function HeroStage({ children, nextSectionId = "como-funciona" }: { child
 
   const hint = step === 0 ? "Role para folhear o livro" : step >= CLOSED_STEP ? "Role para continuar" : `Página ${PAGE_LABELS[Math.min(step, LAST_PAGE)]} de 20`
 
+  // data-locked no <section> existe para testar a trava de rolagem por fora do app
   return (
-    <section className="relative mx-auto grid min-h-[calc(100svh-4rem)] max-w-[1280px] items-center gap-8 px-4 py-10 sm:min-h-[calc(100svh-5rem)] sm:px-10 lg:grid-cols-[1.04fr_.96fr]">
+    <section ref={sectionRef} data-locked={locked} className="relative mx-auto grid min-h-[calc(100svh-4rem)] max-w-[1280px] items-center gap-8 px-4 py-10 sm:min-h-[calc(100svh-5rem)] sm:px-10 lg:grid-cols-[1.04fr_.96fr]">
       <Orn kind="star" color="#f5c21a" className="left-0 top-12 hidden lg:block" />
       <Orn kind="plus" color="#b8e0f5" className="bottom-16 left-[2%] hidden lg:block" />
       <Orn kind="ring" color="#f5c4b8" className="bottom-24 right-2 hidden lg:block" />

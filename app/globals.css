@@ -588,16 +588,41 @@
   inset: 0;
   transform: rotateY(180deg);
   backface-visibility: hidden;
-  background: linear-gradient(100deg, #fdfbf4, #ece7d8);
-  border: 2px solid #17171a;
+  background-image: linear-gradient(100deg, #fdfbf4, #ece7d8);
+  background-size: 300% 100%;
+  border-top: 2px solid #17171a;
+  border-bottom: 2px solid #17171a;
 }
-/* sombra da lombada em cada fatia */
+.h1 > .hero-back {
+  border-left: 2px solid #17171a;
+}
+.h3 > .hero-back {
+  border-right: 2px solid #17171a;
+}
+/* sombra da lombada: um único gradiente do tamanho da página, fatiado entre as
+   três dobradiças — se cada fatia desenhasse o seu, apareceriam costuras. */
 .hero-face::after,
 .hero-back::after {
   content: "";
   position: absolute;
   inset: 0;
-  background: linear-gradient(90deg, rgba(0, 0, 0, 0.26), rgba(0, 0, 0, 0) 72%);
+  background-image: linear-gradient(90deg, rgba(0, 0, 0, 0.26), rgba(0, 0, 0, 0) 72%);
+  background-size: 300% 100%;
+}
+.h1 > .hero-face::after,
+.h1 > .hero-back::after,
+.h1 > .hero-back {
+  background-position-x: 0%;
+}
+.h2 > .hero-face::after,
+.h2 > .hero-back::after,
+.h2 > .hero-back {
+  background-position-x: 50%;
+}
+.h3 > .hero-face::after,
+.h3 > .hero-back::after,
+.h3 > .hero-back {
+  background-position-x: 100%;
 }
 .hero-leaf[data-turned="true"] .h1 {
   transform: rotateY(-168deg);
