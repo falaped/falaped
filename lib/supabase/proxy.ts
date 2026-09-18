@@ -45,35 +45,20 @@ export async function updateSession(request: NextRequest) {
   const user = data?.user;
 
   const pathname = request.nextUrl.pathname;
-
-  // books.falaped.com.br serve o app de livros na raiz: "/" → /books, "/{id}" → /books/{id}.
-  // Auth e API seguem os mesmos paths; "/dashboard" não existe nesse host e volta à raiz.
-  // Landing pública (lead + capa grátis) vive em app/books/lp: na raiz para visitante,
-  // e nos aliases /criar e /privacidade; o pediatra logado continua vendo a lista na raiz.
+  // books.falaped.com.br é 100% público: só a landing (app/books/lp) e a API do lead.
+  // O app interno de livros do pediatra fica em app.falaped.com.br/books.
   const isBooksHost = (request.headers.get("host") ?? "").startsWith("books.");
-  const homePath = isBooksHost ? "/" : "/dashboard";
-  const LP_ALIASES = ["/criar", "/privacidade"];
-  // Também públicos em qualquer host (localhost: /books/lp, /books/lp/criar, /api/books/lead/*).
-  const isBooksPublic =
-    pathname.startsWith("/books/lp") ||
-    pathname.startsWith("/api/books/lead") ||
-    (isBooksHost && (LP_ALIASES.includes(pathname) || pathname.startsWith("/lp") || (pathname === "/" && !user)));
+  const isBooksPublic = pathname.startsWith("/books/lp") || pathname.startsWith("/api/books/lead");
   if (isBooksHost) {
-    if (pathname.startsWith("/dashboard") || pathname.startsWith("/books/lp")) {
-      const url = request.nextUrl.clone();
-      url.pathname = pathname.startsWith("/books/lp") ? pathname.slice("/books/lp".length) || "/" : "/";
+    const LP_ALIASES = ["/criar", "/privacidade"];
+    const url = request.nextUrl.clone();
+    if (pathname.startsWith("/books/lp")) {
+      url.pathname = pathname.slice("/books/lp".length) || "/";
       return NextResponse.redirect(url);
     }
-    if (!pathname.startsWith("/auth") && !pathname.startsWith("/api") && !pathname.startsWith("/books")) {
-      const url = request.nextUrl.clone();
-      url.pathname =
-        pathname === "/"
-          ? user
-            ? "/books"
-            : "/books/lp"
-          : LP_ALIASES.includes(pathname)
-            ? `/books/lp${pathname}`
-            : `/books${pathname}`;
+    if (pathname.startsWith("/api/books/lead")) return supabaseResponse;
+    if (pathname === "/" || LP_ALIASES.includes(pathname) || pathname.startsWith("/lp")) {
+      url.pathname = pathname === "/" ? "/books/lp" : pathname.startsWith("/lp") ? `/books${pathname}` : `/books/lp${pathname}`;
       const rewriteResponse = NextResponse.rewrite(url, { request });
       supabaseResponse.cookies.getAll().forEach((cookie) =>
         rewriteResponse.cookies.set(cookie.name, cookie.value, {
@@ -86,8 +71,10 @@ export async function updateSession(request: NextRequest) {
           sameSite: cookie.sameSite,
         }),
       );
-      supabaseResponse = rewriteResponse;
+      return rewriteResponse;
     }
+    url.pathname = "/";
+    return NextResponse.redirect(url);
   }
 
   const isAuthRoute =
@@ -100,9 +87,9 @@ export async function updateSession(request: NextRequest) {
   const isHomePage = pathname === "/";
 
   // Authenticated user: redirect away from auth screens and home to dashboard
-  if (user && ((isHomePage && !isBooksHost) || isAuthRoute)) {
+  if (user && (isHomePage || isAuthRoute)) {
     const url = request.nextUrl.clone();
-    url.pathname = homePath;
+    url.pathname = "/dashboard";
     const redirectResponse = NextResponse.redirect(url);
     supabaseResponse.cookies.getAll().forEach((cookie) =>
       redirectResponse.cookies.set(cookie.name, cookie.value, {
@@ -119,7 +106,7 @@ export async function updateSession(request: NextRequest) {
   }
 
   // Unauthenticated user: redirect protected routes to login
-  if (!user && (!isHomePage || isBooksHost) && !pathname.startsWith("/auth") && !isBooksPublic) {
+  if (!user && !isHomePage && !pathname.startsWith("/auth") && !isBooksPublic) {
     await supabase.auth.signOut();
     const url = request.nextUrl.clone();
     url.pathname = "/auth/login";

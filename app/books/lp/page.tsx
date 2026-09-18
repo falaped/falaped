@@ -1,3 +1,4 @@
+import Image from "next/image"
 import Link from "next/link"
 import { ArrowRight, Camera, Check, Clock, Lock, MessageCircle, Palette, Sparkles, WandSparkles } from "lucide-react"
 
@@ -42,41 +43,64 @@ const FAQ = [
   },
 ]
 
+/** Capas reais (livros do Samuel, com consentimento dos pais) por slug de tema. */
+const THEME_COVERS: Record<string, string> = {
+  "dormir-na-propria-cama": "/books/samples/cama-capa.jpg",
+  "comer-de-tudo": "/books/samples/comer-capa.jpg",
+  "escovar-os-dentes": "/books/samples/dentes-capa.jpg",
+}
+
+const SAMPLE_PAGES = [
+  { src: "/books/samples/cama-p4.jpg", book: "A Cama do Samuel", page: 5 },
+  { src: "/books/samples/comer-p7.jpg", book: "O Arco-íris do Samuel", page: 8 },
+  { src: "/books/samples/dentes-p10.jpg", book: "O Sorriso do Samuel", page: 11 },
+]
+
 export default function BooksLandingPage() {
   const themes = Object.values(BOOK_THEMES)
   return (
     <>
       {/* Hero */}
       <section className="mx-auto max-w-[1100px] px-4 pb-10 pt-8 sm:px-10 sm:pb-16 sm:pt-16">
-        <LpCard className="px-6 py-9 sm:px-12 sm:py-14">
+        <LpCard className="grid gap-8 px-6 py-9 sm:px-12 sm:py-14 lg:grid-cols-[1.15fr_.85fr] lg:items-center">
           <Orn kind="star" color="#f5c21a" className="-left-4 -top-6 sm:-left-6 sm:-top-8" />
           <Orn kind="ring" color="#f5c4b8" className="-right-3 -top-4 sm:-right-5 sm:-top-5" />
           <Orn kind="plus" color="#b8e0f5" className="-bottom-5 -left-3 sm:-bottom-6 sm:-left-5" />
           <Orn kind="star" color="#cdebd3" className="-bottom-6 -right-4 text-4xl sm:-right-6" />
-          <Chip className="bg-secondary uppercase tracking-[.04em]">Livro infantil personalizado</Chip>
-          <LpTitle as="h1" text="O livro em que seu filho é o herói." highlight="seu filho" className="mt-4 text-[38px] sm:text-[72px]" />
-          <p className="mt-5 max-w-2xl text-base font-medium leading-relaxed text-[#3f3f46] sm:text-xl">
-            Envie uma foto, escolha o tema e veja a capa com a sua criança desenhada, de graça, em 2 minutos. O livro completo com 20 páginas sai por{" "}
-            <strong className="text-ink">R$ {BOOK_PRICE_BRL}</strong>, em PDF, entregue na hora.
-          </p>
-          <div className="mt-7 flex flex-col gap-3 sm:flex-row sm:items-center">
-            <Link href="/books/lp/criar" className={bkButton("warning", "h-[54px] px-7 text-base")}>
-              <Sparkles className="size-4" strokeWidth={2.4} aria-hidden />
-              Criar a capa grátis
-              <ArrowRight className="size-4" strokeWidth={2.6} aria-hidden />
-            </Link>
-            <Link href="#como-funciona" className={bkButton("secondary", "h-[54px] px-6 text-base")}>
-              Como funciona
-            </Link>
+          <div>
+            <Chip className="bg-secondary uppercase tracking-[.04em]">Livro infantil personalizado</Chip>
+            <LpTitle as="h1" text="O livro em que seu filho é o herói." highlight="seu filho" className="mt-4 text-[38px] sm:text-[64px]" />
+            <p className="mt-5 max-w-2xl text-base font-medium leading-relaxed text-[#3f3f46] sm:text-lg">
+              Envie uma foto, escolha o tema e veja a capa com a sua criança desenhada, de graça, em 2 minutos. O livro completo com 20 páginas sai por{" "}
+              <strong className="text-ink">R$ {BOOK_PRICE_BRL}</strong>, em PDF, entregue na hora.
+            </p>
+            <div className="mt-7 flex flex-col gap-3 sm:flex-row sm:items-center">
+              <Link href="/books/lp/criar" className={bkButton("warning", "h-[54px] px-7 text-base")}>
+                <Sparkles className="size-4" strokeWidth={2.4} aria-hidden />
+                Criar a capa grátis
+                <ArrowRight className="size-4" strokeWidth={2.6} aria-hidden />
+              </Link>
+              <Link href="#como-funciona" className={bkButton("secondary", "h-[54px] px-6 text-base")}>
+                Como funciona
+              </Link>
+            </div>
+            <ul className="mt-6 flex flex-wrap gap-2 text-[12.5px] font-semibold">
+              {["Sem cartão para ver a capa", "Foto em área privada", "10 temas de marcos da infância"].map((t) => (
+                <li key={t} className="inline-flex items-center gap-1.5 rounded-full border-2 border-ink bg-accent px-[11px] py-1.5">
+                  <Check className="size-3" strokeWidth={3} aria-hidden />
+                  {t}
+                </li>
+              ))}
+            </ul>
           </div>
-          <ul className="mt-6 flex flex-wrap gap-2 text-[12.5px] font-semibold">
-            {["Sem cartão para ver a capa", "Foto em área privada", "10 temas de marcos da infância"].map((t) => (
-              <li key={t} className="inline-flex items-center gap-1.5 rounded-full border-2 border-ink bg-accent px-[11px] py-1.5">
-                <Check className="size-3" strokeWidth={3} aria-hidden />
-                {t}
-              </li>
-            ))}
-          </ul>
+          <div className="relative mx-auto w-full max-w-[300px] sm:max-w-[340px]">
+            <div className="absolute -left-4 top-6 aspect-[3/4] w-full -rotate-6 rounded-[14px] border-2 border-ink bg-primary" aria-hidden />
+            <div className="relative aspect-[3/4] w-full rotate-2 overflow-hidden rounded-[14px] border-2 border-ink shadow-hard-lg">
+              <Image src="/books/samples/cama-capa.jpg" alt="Capa do livro A Cama do Samuel" fill sizes="(min-width: 640px) 340px, 300px" priority className="object-cover" />
+            </div>
+            <Sticker className="absolute -right-3 top-3 rotate-6 bg-warning">Livro real</Sticker>
+            <Sticker className="absolute -left-3 bottom-4 -rotate-6 bg-white">Feito da foto</Sticker>
+          </div>
         </LpCard>
       </section>
 
@@ -108,8 +132,9 @@ export default function BooksLandingPage() {
             const [a, b] = TINTS[i % TINTS.length]
             return (
               <li key={t.slug} className="overflow-hidden rounded-[14px] border-2 border-ink bg-white shadow-hard-xs">
-                <span className="relative block aspect-square border-b-2 border-ink" style={{ background: `repeating-linear-gradient(135deg,${a} 0 10px,${b} 10px 20px)` }}>
-                  <Sticker className="absolute left-2 top-2 bg-white px-2 py-1.5 text-[10px]">Tema {i + 1}</Sticker>
+                <span className="relative block aspect-[3/4] overflow-hidden border-b-2 border-ink" style={{ background: `repeating-linear-gradient(135deg,${a} 0 10px,${b} 10px 20px)` }}>
+                  {THEME_COVERS[t.slug] && <Image src={THEME_COVERS[t.slug]} alt={`Capa de exemplo do tema ${t.label}`} fill sizes="(min-width: 1024px) 200px, 45vw" className="object-cover" />}
+                  <Sticker className={cn("absolute left-2 bg-white px-2 py-1.5 text-[10px]", THEME_COVERS[t.slug] ? "bottom-2" : "top-2")}>{THEME_COVERS[t.slug] ? "Exemplo real" : `Tema ${i + 1}`}</Sticker>
                 </span>
                 <span className="block px-3 pb-3 pt-2.5 font-display text-sm font-bold leading-tight text-pretty">
                   {t.label}
@@ -118,6 +143,26 @@ export default function BooksLandingPage() {
               </li>
             )
           })}
+        </ul>
+      </section>
+
+      {/* Páginas reais */}
+      <section className="mx-auto mt-14 max-w-[1100px] px-4 sm:mt-20 sm:px-10">
+        <div className="flex flex-wrap items-end justify-between gap-3">
+          <LpTitle text="Páginas de um livro de verdade" highlight="de verdade" marker="#cdebd3" className="max-w-2xl text-[30px] sm:text-[44px]" />
+          <span className="text-sm font-medium text-muted-foreground">Três livros do Samuel, feitos a partir de duas fotos. Publicados com autorização da família.</span>
+        </div>
+        <ul className="mt-6 grid gap-4 sm:grid-cols-3 sm:gap-6">
+          {SAMPLE_PAGES.map((p, i) => (
+            <li key={p.src} className={cn("relative", i === 1 ? "sm:-translate-y-3" : "")}>
+              <div className="relative aspect-[3/4] overflow-hidden rounded-[14px] border-2 border-ink shadow-hard">
+                <Image src={p.src} alt={`${p.book}, página ${p.page}`} fill sizes="(min-width: 640px) 33vw, 100vw" className="object-cover" />
+              </div>
+              <p className="mt-3 text-[13px] font-bold">
+                {p.book} <span className="font-medium text-muted-foreground">· página {p.page} de 20</span>
+              </p>
+            </li>
+          ))}
         </ul>
       </section>
 

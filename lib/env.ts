@@ -11,6 +11,11 @@ const envSchema = z.object({
   SUPABASE_SERVICE_ROLE_KEY: z.string().optional(),
   // books.falaped.com.br: geração de ilustrações (gpt-image-2 via Replicate).
   REPLICATE_API_TOKEN: z.string().optional(),
+  // E-mails (separados por vírgula) que veem os pedidos da landing em app.falaped.com.br/books/leads.
+  BOOKS_ADMIN_EMAILS: z
+    .string()
+    .default("")
+    .transform((v) => v.split(",").map((e) => e.trim().toLowerCase()).filter(Boolean)),
 });
 
 const parsed = envSchema.safeParse(process.env);
