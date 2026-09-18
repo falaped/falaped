@@ -4,11 +4,12 @@ import { useEffect, useRef, useState } from "react"
 import Link from "next/link"
 import { useSearchParams } from "next/navigation"
 import { toast } from "sonner"
-import { Check, ChevronLeft, ChevronRight, Loader2, MessageCircle, Shield, Sparkles } from "lucide-react"
+import { Check, ChevronLeft, ChevronRight, Loader2, Maximize2, MessageCircle, Shield, Sparkles, X } from "lucide-react"
 
 import { checkoutLeadBookAction, createLeadBookAction, startBookLeadAction } from "@/actions/books"
 import { BkButton, BrandBlur, Chip, FIELD, HELP, LABEL, Sticker, TINTS } from "@/components/books/books-ui"
 import { LP_WRAP, LpCard } from "@/components/books/lp/lp-ui"
+import { Dialog, DialogClose, DialogContent, DialogTitle } from "@/components/ui/dialog"
 import { PhotoSlot, type WizardTheme } from "@/components/books/new-book-wizard"
 import type { LeadCoverResult } from "@/app/api/books/lead/cover/route"
 import { BOOK_COUPONS, BOOK_PRICE_BRL, BOOKS_WHATSAPP, MAX_BOOK_PHOTOS, bookPriceWithCoupon } from "@/modules/books/constants"
@@ -72,6 +73,7 @@ export function LeadWizard({ themes, initial }: { themes: WizardTheme[]; initial
   const [coverUrl, setCoverUrl] = useState(initial.coverUrl)
   const [coverError, setCoverError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
+  const [zoom, setZoom] = useState(false)
   const [leadStatus, setLeadStatus] = useState<BookLeadStatus | null>(initial.lead?.status ?? null)
   const generating = useRef(false)
 
@@ -348,80 +350,106 @@ export function LeadWizard({ themes, initial }: { themes: WizardTheme[]; initial
       )}
 
       {step === 3 && (
-        <LpCard className={cn(CARD, "sm:flex-row sm:items-start sm:gap-8")}>
-          <div className="relative mx-auto aspect-[3/4] w-full max-w-[340px] shrink-0 overflow-hidden rounded-[14px] border-2 border-ink bg-muted shadow-hard">
-            {coverUrl ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img src={coverUrl} alt={`Capa do livro de ${name}`} className="size-full object-cover" />
-            ) : (
-              <>
-                <BrandBlur pulse={!coverError} />
-                <div className="relative grid size-full place-items-center p-6 text-center">
-                  {coverError ? (
-                    <div className="flex flex-col items-center gap-3">
-                      <p className="text-[13.5px] font-bold">{coverError}</p>
-                      <BkButton
-                        variant="secondary"
-                        onClick={() => {
-                          setCoverError(null)
-                          generating.current = false
-                          setCoverUrl(null)
-                        }}
-                      >
-                        Tentar de novo
-                      </BkButton>
-                    </div>
-                  ) : (
-                    <div className="flex flex-col items-center gap-3">
-                      <Loader2 className="size-6 animate-spin" aria-hidden />
-                      <p className="text-[13.5px] font-bold">Montando o livro de {name || "sua criança"}...</p>
-                      <p className="text-xs font-medium text-[#3f3f46]">Leva cerca de 2 minutos. Pode deixar esta página aberta.</p>
-                    </div>
-                  )}
-                </div>
-              </>
-            )}
-            {coverUrl && <Sticker className="absolute left-3 top-3 bg-warning">Página 1 de 20</Sticker>}
+        <div className="mt-6 flex flex-col items-center gap-7 sm:mt-9">
+          {/* A capa manda na tela: grande, centrada e ampliável. */}
+          <div className="relative w-full max-w-[420px] sm:max-w-[460px]">
+            <div className="relative aspect-[3/4] w-full overflow-hidden rounded-[18px] border-[3px] border-ink bg-muted shadow-hard-xl">
+              {coverUrl ? (
+                <button type="button" onClick={() => setZoom(true)} className="group size-full cursor-zoom-in" aria-label={`Ampliar a capa do livro de ${name}`}>
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={coverUrl} alt={`Capa do livro de ${name}`} className="size-full object-cover" />
+                  <span className="absolute bottom-3 right-3 inline-flex h-10 items-center gap-2 rounded-full border-2 border-ink bg-white px-4 text-[13px] font-bold shadow-hard-sm transition-transform duration-100 group-hover:-translate-y-0.5">
+                    <Maximize2 className="size-4" strokeWidth={2.6} aria-hidden />
+                    Ampliar
+                  </span>
+                </button>
+              ) : (
+                <>
+                  <BrandBlur pulse={!coverError} />
+                  <div className="relative grid size-full place-items-center p-6 text-center">
+                    {coverError ? (
+                      <div className="flex flex-col items-center gap-3">
+                        <p className="text-[13.5px] font-bold">{coverError}</p>
+                        <BkButton
+                          variant="secondary"
+                          onClick={() => {
+                            setCoverError(null)
+                            generating.current = false
+                            setCoverUrl(null)
+                          }}
+                        >
+                          Tentar de novo
+                        </BkButton>
+                      </div>
+                    ) : (
+                      <div className="flex flex-col items-center gap-3">
+                        <Loader2 className="size-6 animate-spin" aria-hidden />
+                        <p className="text-[13.5px] font-bold">Montando o livro de {name || "sua criança"}...</p>
+                        <p className="text-xs font-medium text-[#3f3f46]">Leva cerca de 2 minutos. Pode deixar esta página aberta.</p>
+                      </div>
+                    )}
+                  </div>
+                </>
+              )}
+            </div>
+            {coverUrl && <Sticker className="absolute -left-2 -top-3 rotate-[-4deg] bg-warning">Página 1 de 20</Sticker>}
           </div>
-          <div className="flex flex-1 flex-col gap-4">
-            <div>
-              <Chip className="bg-secondary uppercase tracking-[.04em]">{selectedTheme?.label}</Chip>
-              <h2 className="mt-3 font-display text-[24px] font-extrabold leading-tight sm:text-[30px]">
-                {coverUrl ? `${name} já é protagonista.` : `Estamos desenhando ${name || "sua criança"}.`}
-              </h2>
-              <p className="mt-2 text-[14px] font-medium leading-relaxed text-[#3f3f46]">
-                {coverUrl
-                  ? "Esta é a primeira página, do jeito que ela vai ficar. As outras 19 páginas são montadas assim que o pagamento cair, e o PDF chega no seu WhatsApp na hora."
-                  : "Leva cerca de 2 minutos. Nada é cobrado: você vê antes de decidir."}
-              </p>
-            </div>
-            {coverUrl && (
-            <div className="rounded-[14px] border-2 border-ink bg-warning p-4">
-              <div className="flex items-baseline gap-2">
-                <span className="font-display text-[34px] font-extrabold leading-none tracking-[-.03em]">R$ {price}</span>
-                {validCoupon && <span className="text-[13px] font-bold line-through opacity-60">R$ {BOOK_PRICE_BRL}</span>}
-              </div>
-              <p className="mt-1 text-[12.5px] font-bold">As 19 páginas restantes · PDF · Pix pelo WhatsApp{validCoupon ? ` · cupom ${validCoupon}` : ""}</p>
-            </div>
-            )}
-            {leadStatus === "paid" ? (
-              <p className="flex items-center gap-2 text-[14px] font-bold">
-                <Check className="size-4" strokeWidth={3} aria-hidden />
-                Pagamento confirmado. Seu livro está sendo montado.
-              </p>
-            ) : (
-              <>
-                <BkButton variant="primary" disabled={!coverUrl} busy={busy} busyLabel="Abrindo o WhatsApp..." onClick={() => void checkout()} className="h-[54px] text-base">
-                  <MessageCircle className="size-4" strokeWidth={2.4} aria-hidden />
-                  Quero o livro completo
-                </BkButton>
-                <p className="text-xs font-medium text-muted-foreground">
-                  {leadStatus === "checkout" ? "Pedido registrado. Se a conversa não abriu, toque de novo." : "Abre a conversa no WhatsApp com o seu pedido já escrito."}
+
+          <div className="flex w-full max-w-[600px] flex-col items-center gap-4 text-center">
+            <Chip className="bg-secondary uppercase tracking-[.04em]">{selectedTheme?.label}</Chip>
+            <h2 className="font-display text-[24px] font-extrabold leading-tight text-balance sm:text-[32px]">
+              {coverUrl ? `${name} já é protagonista.` : `Estamos desenhando ${name || "sua criança"}.`}
+            </h2>
+            <p className="max-w-[46ch] text-[14px] font-medium leading-relaxed text-[#3f3f46] text-pretty">
+              {coverUrl
+                ? "Esta é a primeira página, do jeito que ela vai ficar. As outras 19 páginas são montadas assim que o pagamento cair, e o PDF chega no seu WhatsApp na hora."
+                : "Leva cerca de 2 minutos. Nada é cobrado: você vê antes de decidir."}
+            </p>
+
+            {coverUrl &&
+              (leadStatus === "paid" ? (
+                <p className="mt-1 inline-flex items-center gap-2 rounded-full border-2 border-ink bg-success px-4 py-2 text-[14px] font-bold">
+                  <Check className="size-4" strokeWidth={3} aria-hidden />
+                  Pagamento confirmado. Seu livro está sendo montado.
                 </p>
-              </>
-            )}
+              ) : (
+                <div className="mt-1 flex w-full flex-col items-center gap-3 rounded-[18px] border-2 border-ink bg-warning p-5 shadow-hard sm:p-6">
+                  <div className="flex items-baseline gap-2.5">
+                    <span className="font-display text-[40px] font-extrabold leading-none tracking-[-.03em] sm:text-[46px]">R$ {price}</span>
+                    {validCoupon && <span className="text-[14px] font-bold line-through opacity-60">R$ {BOOK_PRICE_BRL}</span>}
+                  </div>
+                  <p className="text-[12.5px] font-bold">As 19 páginas restantes · PDF · Pix pelo WhatsApp{validCoupon ? ` · cupom ${validCoupon}` : ""}</p>
+                  <BkButton variant="primary" busy={busy} busyLabel="Abrindo o WhatsApp..." onClick={() => void checkout()} className="h-[54px] w-full max-w-[380px] text-base">
+                    <MessageCircle className="size-4" strokeWidth={2.4} aria-hidden />
+                    Quero o livro completo
+                  </BkButton>
+                  <p className="text-xs font-medium text-[#3f3f46]">
+                    {leadStatus === "checkout" ? "Pedido registrado. Se a conversa não abriu, toque de novo." : "Abre a conversa no WhatsApp com o seu pedido já escrito."}
+                  </p>
+                </div>
+              ))}
           </div>
-        </LpCard>
+
+          {coverUrl && (
+            <Dialog open={zoom} onOpenChange={setZoom}>
+              {/* Mesmo lightbox das páginas do livro (components/books/page-card.tsx). */}
+              <DialogContent
+                className="books-theme w-auto max-w-[calc(100vw-2rem)] gap-0 overflow-hidden rounded-[20px] border-2 border-ink bg-white p-0 shadow-hard-xl"
+                style={{ background: "#fff" }}
+              >
+                <DialogTitle className="sr-only">Capa do livro de {name}</DialogTitle>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={coverUrl} alt={`Capa do livro de ${name}`} className="block max-h-[calc(100svh-2rem)] w-auto max-w-full object-contain" />
+                <DialogClose
+                  aria-label="Fechar"
+                  className="absolute right-3 top-3 grid size-9 place-items-center rounded-full border-2 border-ink bg-white text-ink shadow-hard-xs hover:bg-warning"
+                >
+                  <X className="size-4" strokeWidth={2.6} aria-hidden />
+                </DialogClose>
+              </DialogContent>
+            </Dialog>
+          )}
+        </div>
       )}
     </div>
   )
