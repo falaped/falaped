@@ -5,6 +5,9 @@ import type { ComponentProps } from "react"
 import { Sticker } from "@/components/books/books-ui"
 import { cn } from "@/lib/utils"
 
+/** Coluna da landing: hero, seções, header e rodapé usam a mesma largura e as mesmas margens. */
+export const LP_WRAP = "mx-auto w-full max-w-[1480px] px-4 sm:px-10 xl:px-[6.5rem]"
+
 /** Logo principal (empilhada) + adesivo Books. Link para a landing. */
 export function LpBrand({ className, small }: { className?: string; small?: boolean }) {
   return (
@@ -21,16 +24,16 @@ export function Orn({ kind, color, className }: { kind: "star" | "ring" | "plus"
     return (
       <span
         aria-hidden
-        className={cn("pointer-events-none absolute select-none text-5xl leading-none motion-safe:animate-[spin_14s_linear_infinite]", className)}
+        className={cn("orn-star pointer-events-none absolute select-none text-5xl leading-none", className)}
         style={{ color, WebkitTextStroke: "3px #17171a", paintOrder: "stroke fill" }}
       >
         ✦
       </span>
     )
   if (kind === "ring")
-    return <span aria-hidden className={cn("pointer-events-none absolute size-9 rounded-full border-[5px] border-ink shadow-hard-sm", className)} style={{ background: color }} />
+    return <span aria-hidden className={cn("orn-ring pointer-events-none absolute size-9 rounded-full border-[5px] border-ink shadow-hard-sm", className)} style={{ background: color }} />
   return (
-    <span aria-hidden className={cn("pointer-events-none absolute size-10 rotate-6", className)}>
+    <span aria-hidden className={cn("orn-plus pointer-events-none absolute size-10 rotate-6", className)}>
       <span className="absolute left-[15px] top-0 h-10 w-2.5 rounded-sm border-2 border-ink" style={{ background: color }} />
       <span className="absolute left-0 top-[15px] h-2.5 w-10 rounded-sm border-2 border-ink" style={{ background: color }} />
     </span>

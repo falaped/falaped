@@ -8,7 +8,7 @@ import { Check, ChevronLeft, ChevronRight, Loader2, MessageCircle, Shield, Spark
 
 import { checkoutLeadBookAction, createLeadBookAction, startBookLeadAction } from "@/actions/books"
 import { BkButton, BrandBlur, Chip, FIELD, HELP, LABEL, Sticker, TINTS } from "@/components/books/books-ui"
-import { LpCard } from "@/components/books/lp/lp-ui"
+import { LP_WRAP, LpCard } from "@/components/books/lp/lp-ui"
 import { PhotoSlot, type WizardTheme } from "@/components/books/new-book-wizard"
 import type { LeadCoverResult } from "@/app/api/books/lead/cover/route"
 import { BOOK_COUPONS, BOOK_PRICE_BRL, BOOKS_WHATSAPP, MAX_BOOK_PHOTOS, bookPriceWithCoupon } from "@/modules/books/constants"
@@ -16,7 +16,7 @@ import type { BookLeadStatus } from "@/modules/books/types"
 import type { BookGender } from "@/modules/books/render-book-text"
 import { cn } from "@/lib/utils"
 
-const STEPS = ["Contato", "Criança", "Tema", "Capa"] as const
+const STEPS = ["Contato", "Criança", "Tema", "Pronto"] as const
 
 export type LeadWizardInitial = {
   lead: { firstName: string; coupon: string | null; status: BookLeadStatus } | null
@@ -26,7 +26,7 @@ export type LeadWizardInitial = {
 
 function Stepper({ current }: { current: number }) {
   return (
-    <ol className="flex flex-wrap items-center gap-1.5 text-xs font-bold sm:gap-0 sm:text-[13px]">
+    <ol className="flex shrink-0 flex-wrap items-center gap-1.5 text-xs font-bold sm:flex-nowrap sm:gap-0 sm:text-[13px]">
       {STEPS.map((name, i) => {
         const done = i < current
         const active = i === current
@@ -152,15 +152,15 @@ export function LeadWizard({ themes, initial }: { themes: WizardTheme[]; initial
     setBusy(false)
     if (!result.ok) return toast.error(result.error)
     setLeadStatus("checkout")
-    const text = `Olá! Aprovei a capa do livro "${selectedTheme?.label ?? ""}" de ${name.trim()} e quero o livro completo por R$ ${price}${validCoupon ? ` (cupom ${validCoupon})` : ""}. Pedido ${bookId?.slice(0, 8)}.`
+    const text = `Olá! Criei o livro "${selectedTheme?.label ?? ""}" ${name.trim() ? `de ${name.trim()} ` : ""}e quero as 20 páginas por R$ ${price}${validCoupon ? ` (cupom ${validCoupon})` : ""}. Pedido ${bookId?.slice(0, 8)}.`
     window.open(`https://wa.me/${BOOKS_WHATSAPP}?text=${encodeURIComponent(text)}`, "_blank", "noopener")
   }
 
   return (
-    <div className={cn("mx-auto px-4 pb-10 pt-6 sm:px-10 sm:pb-16 sm:pt-10", step === 2 ? "max-w-[1000px]" : "max-w-[800px]")}>
+    <div className={cn(LP_WRAP, "pb-10 pt-6 sm:pb-16 sm:pt-10")}>
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between sm:gap-6">
         <h1 className="font-display text-[30px] font-extrabold uppercase leading-none tracking-[-.03em] sm:text-[44px]">
-          {step === 3 ? "Sua capa" : "Criar a capa grátis"}
+          {step === 3 && name ? `O livro de ${name}` : "Criar o livro"}
         </h1>
         <Stepper current={step} />
       </div>
@@ -169,7 +169,7 @@ export function LeadWizard({ themes, initial }: { themes: WizardTheme[]; initial
         <LpCard className={CARD}>
           <form onSubmit={submitContact} className="flex flex-col gap-5">
             <p className="text-[14px] font-medium leading-relaxed text-[#3f3f46]">
-              Deixe seu contato para guardarmos a capa e enviarmos o livro. Sem cartão: você só paga se quiser o livro completo.
+              Deixe seu contato para guardarmos o livro e falarmos com você sobre o pedido. Sem cartão: você só paga se quiser o livro completo.
             </p>
             <div className="grid gap-4 sm:grid-cols-2">
               <label className="flex flex-col gap-2">
@@ -196,7 +196,7 @@ export function LeadWizard({ themes, initial }: { themes: WizardTheme[]; initial
               </span>
               <div className="flex items-center gap-3">
                 <input value={coupon} onChange={(e) => setCoupon(e.target.value.toUpperCase())} maxLength={30} placeholder="CODIGO10" className={cn(FIELD, "max-w-xs uppercase")} />
-                {validCoupon && <Chip className="bg-success">10% off · R$ {price}</Chip>}
+                {validCoupon && <Chip className="bg-success">Cupom válido · 10% de desconto</Chip>}
               </div>
             </label>
             <label className="flex items-start gap-3 rounded-[14px] border-2 border-ink bg-background p-4 text-[13px] font-medium leading-snug">
@@ -228,7 +228,7 @@ export function LeadWizard({ themes, initial }: { themes: WizardTheme[]; initial
           <form onSubmit={submitChild} className="flex flex-col gap-6">
             {initial.lead && (
               <p className="text-[14px] font-medium text-[#3f3f46]">
-                Olá, {firstName}! Vamos criar a capa.{" "}
+                Olá, {firstName}! Vamos criar o livro.{" "}
                 <button type="button" onClick={() => setStep(0)} className="font-bold underline decoration-secondary decoration-2 underline-offset-2">
                   Não é você?
                 </button>
@@ -237,7 +237,7 @@ export function LeadWizard({ themes, initial }: { themes: WizardTheme[]; initial
             <label className="flex flex-col gap-2">
               <span className={LABEL}>Nome da criança</span>
               <input value={name} onChange={(e) => setName(e.target.value)} maxLength={40} placeholder="Samuel" className={FIELD} autoFocus />
-              <span className={HELP}>É assim que o nome aparece na capa e na história.</span>
+              <span className={HELP}>É assim que o nome aparece no livro inteiro.</span>
             </label>
             <fieldset className="flex flex-col gap-2.5 border-0 p-0">
               <legend className={cn(LABEL, "mb-2.5")}>Gênero</legend>
@@ -263,7 +263,7 @@ export function LeadWizard({ themes, initial }: { themes: WizardTheme[]; initial
             <div className="flex flex-col gap-3">
               <div className="flex flex-wrap items-baseline gap-2.5">
                 <span className={LABEL}>Fotos da criança</span>
-                <span className={HELP}>1 ou 2 fotos · a capa é desenhada a partir delas</span>
+                <span className={HELP}>1 ou 2 fotos do rosto, bem iluminadas e de frente</span>
               </div>
               <div className="grid gap-4 sm:grid-cols-2">
                 {photos.map((f, i) => (
@@ -301,7 +301,7 @@ export function LeadWizard({ themes, initial }: { themes: WizardTheme[]; initial
         <div className="mt-6">
           <div className="flex flex-wrap items-baseline gap-3">
             <h2 className="font-display text-[19px] font-extrabold sm:text-[22px]">Escolha o tema da história</h2>
-            <span className="text-[13px] font-medium text-muted-foreground">A capa e as 17 páginas seguem o tema.</span>
+            <span className="text-[13px] font-medium text-muted-foreground">As 20 páginas da história seguem o tema.</span>
           </div>
           <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 lg:grid-cols-5">
             {themes.map((t, i) => {
@@ -339,9 +339,9 @@ export function LeadWizard({ themes, initial }: { themes: WizardTheme[]; initial
             <div className="order-1 flex flex-col items-stretch gap-2 sm:order-2 sm:items-end">
               <BkButton variant="warning" onClick={() => void submitTheme()} busy={busy} busyLabel="Enviando a foto..." className="h-[52px] px-6 text-base">
                 <Sparkles className="size-4" strokeWidth={2.4} aria-hidden />
-                Gerar a capa grátis
+                Criar o livro
               </BkButton>
-              <span className="text-xs font-medium text-muted-foreground">Você cria uma capa por cadastro. Ela leva ≈ 2 min e não pode ser refeita.</span>
+              <span className="text-xs font-medium text-muted-foreground">Um livro por cadastro: confira o nome, o tema e a foto, porque não dá para refazer.</span>
             </div>
           </div>
         </div>
@@ -374,34 +374,36 @@ export function LeadWizard({ themes, initial }: { themes: WizardTheme[]; initial
                   ) : (
                     <div className="flex flex-col items-center gap-3">
                       <Loader2 className="size-6 animate-spin" aria-hidden />
-                      <p className="text-[13.5px] font-bold">Desenhando {name || "a criança"}...</p>
+                      <p className="text-[13.5px] font-bold">Montando o livro de {name || "sua criança"}...</p>
                       <p className="text-xs font-medium text-[#3f3f46]">Leva cerca de 2 minutos. Pode deixar esta página aberta.</p>
                     </div>
                   )}
                 </div>
               </>
             )}
-            {coverUrl && <Sticker className="absolute left-3 top-3 bg-warning">Sua capa</Sticker>}
+            {coverUrl && <Sticker className="absolute left-3 top-3 bg-warning">Página 1 de 20</Sticker>}
           </div>
           <div className="flex flex-1 flex-col gap-4">
             <div>
               <Chip className="bg-secondary uppercase tracking-[.04em]">{selectedTheme?.label}</Chip>
               <h2 className="mt-3 font-display text-[24px] font-extrabold leading-tight sm:text-[30px]">
-                {coverUrl ? `${name} já é protagonista.` : "Sua capa está a caminho."}
+                {coverUrl ? `${name} já é protagonista.` : `Estamos desenhando ${name || "sua criança"}.`}
               </h2>
               <p className="mt-2 text-[14px] font-medium leading-relaxed text-[#3f3f46]">
                 {coverUrl
-                  ? "Gostou? O livro completo tem 20 páginas com a mesma personagem, em PDF, entregue na hora após o pagamento por Pix."
-                  : "Assim que a capa aparecer, você decide se quer o livro completo. Nada é cobrado até lá."}
+                  ? "Esta é a primeira página, do jeito que ela vai ficar. As outras 19 páginas são montadas assim que o pagamento cair, e o PDF chega no seu WhatsApp na hora."
+                  : "Leva cerca de 2 minutos. Nada é cobrado: você vê antes de decidir."}
               </p>
             </div>
+            {coverUrl && (
             <div className="rounded-[14px] border-2 border-ink bg-warning p-4">
               <div className="flex items-baseline gap-2">
                 <span className="font-display text-[34px] font-extrabold leading-none tracking-[-.03em]">R$ {price}</span>
                 {validCoupon && <span className="text-[13px] font-bold line-through opacity-60">R$ {BOOK_PRICE_BRL}</span>}
               </div>
-              <p className="mt-1 text-[12.5px] font-bold">20 páginas · PDF · Pix pelo WhatsApp{validCoupon ? ` · cupom ${validCoupon}` : ""}</p>
+              <p className="mt-1 text-[12.5px] font-bold">As 19 páginas restantes · PDF · Pix pelo WhatsApp{validCoupon ? ` · cupom ${validCoupon}` : ""}</p>
             </div>
+            )}
             {leadStatus === "paid" ? (
               <p className="flex items-center gap-2 text-[14px] font-bold">
                 <Check className="size-4" strokeWidth={3} aria-hidden />

@@ -34,7 +34,7 @@ const VARIANTS: Record<BkButtonVariant, string> = {
 /** Classes do botão do handoff (pílula, borda 2px, sombra dura). Use em <Link> quando não for <button>. */
 export function bkButton(variant: BkButtonVariant = "primary", className?: string) {
   return cn(
-    "inline-flex h-12 shrink-0 items-center justify-center gap-2 rounded-full border-2 border-ink px-5 text-sm font-bold text-ink outline-none focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-warning",
+    "inline-flex h-12 shrink-0 items-center justify-center gap-2 whitespace-nowrap rounded-full border-2 border-ink px-5 text-sm font-bold text-ink outline-none focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-warning",
     VARIANTS[variant],
     className,
   )
