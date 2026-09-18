@@ -4,24 +4,24 @@ import { useEffect, useRef, useState } from "react"
 import Link from "next/link"
 import { useSearchParams } from "next/navigation"
 import { toast } from "sonner"
-import { Check, ChevronLeft, ChevronRight, Loader2, Maximize2, MessageCircle, Shield, Sparkles, X } from "lucide-react"
+import { BookOpen, Check, ChevronLeft, ChevronRight, Loader2, Maximize2, MessageCircle, Printer, Shield, Sparkles, X, Zap } from "lucide-react"
 
 import { checkoutLeadBookAction, createLeadBookAction, startBookLeadAction } from "@/actions/books"
 import { BkButton, BrandBlur, Chip, FIELD, HELP, LABEL, Sticker, TINTS } from "@/components/books/books-ui"
-import { LP_WRAP, LpCard } from "@/components/books/lp/lp-ui"
+import { LP_WRAP, LpCard, Orn } from "@/components/books/lp/lp-ui"
 import { Dialog, DialogClose, DialogContent, DialogTitle } from "@/components/ui/dialog"
 import { PhotoSlot, type WizardTheme } from "@/components/books/new-book-wizard"
 import type { LeadCoverResult } from "@/app/api/books/lead/cover/route"
-import { BOOK_COUPONS, BOOK_PRICE_BRL, BOOKS_WHATSAPP, MAX_BOOK_PHOTOS, bookPriceWithCoupon } from "@/modules/books/constants"
+import { BOOK_COUPONS, BOOK_PAGE_COUNT, BOOK_PRICE_BRL, BOOKS_WHATSAPP, MAX_BOOK_PHOTOS, bookPriceWithCoupon } from "@/modules/books/constants"
 import type { BookLeadStatus } from "@/modules/books/types"
-import type { BookGender } from "@/modules/books/render-book-text"
+import { renderBookText, type BookGender } from "@/modules/books/render-book-text"
 import { cn } from "@/lib/utils"
 
 const STEPS = ["Contato", "Criança", "Tema", "Pronto"] as const
 
 export type LeadWizardInitial = {
   lead: { firstName: string; coupon: string | null; status: BookLeadStatus } | null
-  book: { id: string; childName: string; theme: string; coverStatus: "pending" | "ready" | "failed" | null } | null
+  book: { id: string; childName: string; childGender: BookGender; theme: string; coverStatus: "pending" | "ready" | "failed" | null } | null
   coverUrl: string | null
 }
 
@@ -66,7 +66,7 @@ export function LeadWizard({ themes, initial }: { themes: WizardTheme[]; initial
   const [coupon, setCoupon] = useState(initial.lead?.coupon ?? params.get("cupom")?.toUpperCase() ?? "")
   const [consent, setConsent] = useState(false)
   const [name, setName] = useState(initial.book?.childName ?? "")
-  const [gender, setGender] = useState<BookGender | "">("")
+  const [gender, setGender] = useState<BookGender | "">(initial.book?.childGender ?? "")
   const [photos, setPhotos] = useState<(File | null)[]>(Array.from({ length: MAX_BOOK_PHOTOS }, () => null))
   const [theme, setTheme] = useState(initial.book?.theme ?? themes[0]?.slug ?? "")
   const [bookId, setBookId] = useState(initial.book?.id ?? null)
@@ -81,6 +81,8 @@ export function LeadWizard({ themes, initial }: { themes: WizardTheme[]; initial
   const selectedTheme = themes.find((t) => t.slug === theme) ?? themes[0]
   const validCoupon = coupon && coupon in BOOK_COUPONS ? coupon : null
   const price = bookPriceWithCoupon(validCoupon)
+  /** Título de verdade do livro ("A Cama do Samuel"), o mesmo que vai na capa. */
+  const bookTitle = selectedTheme && name.trim() && gender ? renderBookText(selectedTheme.title, { name: name.trim(), gender }) : ""
 
   /** Passo 4: gera a capa (uma vez) assim que o livro existe e ainda não há capa. */
   useEffect(() => {
@@ -350,23 +352,30 @@ export function LeadWizard({ themes, initial }: { themes: WizardTheme[]; initial
       )}
 
       {step === 3 && (
-        <div className="mt-6 flex flex-col items-center gap-7 sm:mt-9">
-          {/* A capa manda na tela: grande, centrada e ampliável. */}
-          <div className="relative w-full max-w-[420px] sm:max-w-[460px]">
-            <div className="relative aspect-[3/4] w-full overflow-hidden rounded-[18px] border-[3px] border-ink bg-muted shadow-hard-xl">
+        <div className="mt-7 grid gap-10 lg:mt-11 lg:grid-cols-[1.02fr_.98fr] lg:items-center lg:gap-16">
+          {/* Palco: o livro é um objeto, e atrás dele as 19 páginas ainda seladas. */}
+          <div className="relative mx-auto aspect-[1/1.04] w-full max-w-[470px]">
+            <Orn kind="star" color="#f5c21a" className="-left-3 top-2 hidden lg:block" />
+            <Orn kind="ring" color="#f5c4b8" className="-right-1 bottom-10 hidden lg:block" />
+            <span className="bk-sealed left-[2%] top-[11%] w-[62%] -rotate-[12deg]" aria-hidden />
+            <span className="bk-sealed right-[1%] top-[7%] w-[62%] rotate-[10deg]" aria-hidden />
+            <div className="absolute left-1/2 top-1/2 w-[74%] -translate-x-1/2 -translate-y-1/2">
               {coverUrl ? (
-                <button type="button" onClick={() => setZoom(true)} className="group size-full cursor-zoom-in" aria-label={`Ampliar a capa do livro de ${name}`}>
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={coverUrl} alt={`Capa do livro de ${name}`} className="size-full object-cover" />
-                  <span className="absolute bottom-3 right-3 inline-flex h-10 items-center gap-2 rounded-full border-2 border-ink bg-white px-4 text-[13px] font-bold shadow-hard-sm transition-transform duration-100 group-hover:-translate-y-0.5">
-                    <Maximize2 className="size-4" strokeWidth={2.6} aria-hidden />
-                    Ampliar
-                  </span>
-                </button>
-              ) : (
                 <>
+                  <button type="button" onClick={() => setZoom(true)} className="bk-book bk-book--in block w-full cursor-zoom-in p-0" aria-label={`Ampliar a capa do livro de ${name}`}>
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={coverUrl} alt={`Capa do livro de ${name}`} />
+                  </button>
+                  <Sticker className="pointer-events-none absolute -left-4 -top-4 z-10 bg-warning shadow-hard">Capa pronta</Sticker>
+                  <span className="pointer-events-none absolute -bottom-4 right-2 z-10 inline-flex h-10 items-center gap-2 rounded-full border-2 border-ink bg-white px-4 text-[13px] font-bold shadow-hard-sm">
+                    <Maximize2 className="size-4" strokeWidth={2.6} aria-hidden />
+                    Toque para ampliar
+                  </span>
+                </>
+              ) : (
+                <div className="bk-book w-full">
                   <BrandBlur pulse={!coverError} />
-                  <div className="relative grid size-full place-items-center p-6 text-center">
+                  <div className="absolute inset-0 grid place-items-center p-6 text-center">
                     {coverError ? (
                       <div className="flex flex-col items-center gap-3">
                         <p className="text-[13.5px] font-bold">{coverError}</p>
@@ -384,50 +393,114 @@ export function LeadWizard({ themes, initial }: { themes: WizardTheme[]; initial
                     ) : (
                       <div className="flex flex-col items-center gap-3">
                         <Loader2 className="size-6 animate-spin" aria-hidden />
-                        <p className="text-[13.5px] font-bold">Montando o livro de {name || "sua criança"}...</p>
-                        <p className="text-xs font-medium text-[#3f3f46]">Leva cerca de 2 minutos. Pode deixar esta página aberta.</p>
+                        <p className="text-[13.5px] font-bold">Desenhando a capa...</p>
+                        <p className="text-xs font-medium text-[#3f3f46]">Cerca de 2 minutos. Pode deixar a página aberta.</p>
                       </div>
                     )}
                   </div>
-                </>
+                </div>
               )}
             </div>
-            {coverUrl && <Sticker className="absolute -left-2 -top-3 rotate-[-4deg] bg-warning">Página 1 de 20</Sticker>}
           </div>
 
-          <div className="flex w-full max-w-[600px] flex-col items-center gap-4 text-center">
-            <Chip className="bg-secondary uppercase tracking-[.04em]">{selectedTheme?.label}</Chip>
-            <h2 className="font-display text-[24px] font-extrabold leading-tight text-balance sm:text-[32px]">
-              {coverUrl ? `${name} já é protagonista.` : `Estamos desenhando ${name || "sua criança"}.`}
-            </h2>
-            <p className="max-w-[46ch] text-[14px] font-medium leading-relaxed text-[#3f3f46] text-pretty">
-              {coverUrl
-                ? "Esta é a primeira página, do jeito que ela vai ficar. As outras 19 páginas são montadas assim que o pagamento cair, e o PDF chega no seu WhatsApp na hora."
-                : "Leva cerca de 2 minutos. Nada é cobrado: você vê antes de decidir."}
-            </p>
+          {/* O que a pessoa tem na mão e o que falta para o livro inteiro. */}
+          <div className="flex flex-col gap-6">
+            <div>
+              <p className="font-display text-[12.5px] font-extrabold uppercase tracking-[.12em] text-muted-foreground">
+                {coverUrl ? "O livro se chama" : "Estamos desenhando"}
+              </p>
+              <h2 className="mt-2 font-display text-[30px] font-extrabold uppercase leading-[0.95] tracking-[-.035em] text-balance sm:text-[42px]">
+                <span className="bk-marker" style={{ "--marker": "#b8e0f5" } as React.CSSProperties}>{bookTitle || name}</span>
+              </h2>
+              <p className="mt-4 max-w-[44ch] text-[14.5px] font-medium leading-relaxed text-[#3f3f46] text-pretty">
+                {coverUrl
+                  ? `A capa já está pronta, com o rosto e o nome ${gender === "menino" ? "do" : "da"} ${name} na frente. Faltam as 19 páginas da história: elas são desenhadas assim que o pedido entra e o PDF chega no seu WhatsApp na hora.`
+                  : "A primeira página do livro está sendo desenhada agora, com a foto que você enviou. Nada é cobrado até ela aparecer."}
+              </p>
+            </div>
 
-            {coverUrl &&
-              (leadStatus === "paid" ? (
-                <p className="mt-1 inline-flex items-center gap-2 rounded-full border-2 border-ink bg-success px-4 py-2 text-[14px] font-bold">
-                  <Check className="size-4" strokeWidth={3} aria-hidden />
-                  Pagamento confirmado. Seu livro está sendo montado.
-                </p>
-              ) : (
-                <div className="mt-1 flex w-full flex-col items-center gap-3 rounded-[18px] border-2 border-ink bg-warning p-5 shadow-hard sm:p-6">
-                  <div className="flex items-baseline gap-2.5">
-                    <span className="font-display text-[40px] font-extrabold leading-none tracking-[-.03em] sm:text-[46px]">R$ {price}</span>
-                    {validCoupon && <span className="text-[14px] font-bold line-through opacity-60">R$ {BOOK_PRICE_BRL}</span>}
-                  </div>
-                  <p className="text-[12.5px] font-bold">As 19 páginas restantes · PDF · Pix pelo WhatsApp{validCoupon ? ` · cupom ${validCoupon}` : ""}</p>
-                  <BkButton variant="primary" busy={busy} busyLabel="Abrindo o WhatsApp..." onClick={() => void checkout()} className="h-[54px] w-full max-w-[380px] text-base">
-                    <MessageCircle className="size-4" strokeWidth={2.4} aria-hidden />
-                    Quero o livro completo
-                  </BkButton>
-                  <p className="text-xs font-medium text-[#3f3f46]">
-                    {leadStatus === "checkout" ? "Pedido registrado. Se a conversa não abriu, toque de novo." : "Abre a conversa no WhatsApp com o seu pedido já escrito."}
+            {/* As 20 páginas: a 1ª é sua, as outras ainda estão fechadas. */}
+            <div>
+              <ul className="flex flex-wrap gap-[5px]">
+                {Array.from({ length: BOOK_PAGE_COUNT }, (_, i) =>
+                  i === 0 ? (
+                    <li key={i} className="relative size-8 overflow-hidden rounded-[7px] border-2 border-ink bg-muted">
+                      {coverUrl ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img src={coverUrl} alt="" className="size-full object-cover" />
+                      ) : (
+                        <BrandBlur pulse />
+                      )}
+                    </li>
+                  ) : (
+                    <li key={i} className="bk-hatch grid size-8 place-items-center rounded-[7px] border-2 border-ink text-[10px] font-extrabold text-muted-foreground">
+                      {i + 1}
+                    </li>
+                  ),
+                )}
+              </ul>
+              <p className="mt-2.5 text-[13px] font-bold">
+                {coverUrl ? "1 de 20 páginas na sua mão." : "Página 1 de 20 em andamento."}{" "}
+                <span className="font-medium text-muted-foreground">As outras 19 saem depois do pedido.</span>
+              </p>
+            </div>
+
+            {coverUrl && (
+              <>
+                <ul className="grid gap-2.5 sm:grid-cols-2">
+                  {[
+                    { icon: Sparkles, t: `As 19 páginas com ${name}`, d: "mesma personagem, mesmo traço" },
+                    { icon: BookOpen, t: selectedTheme?.label ?? "A história completa", d: "história do começo ao fim" },
+                    { icon: Printer, t: "PDF em A4", d: "imprimir em casa ou ler na tela" },
+                    { icon: Zap, t: "Na hora", d: "assim que o Pix cair, no WhatsApp" },
+                  ].map((f, i) => (
+                    <li key={f.t} className="flex items-start gap-3 rounded-[14px] border-2 border-ink bg-white p-3 shadow-hard-xs">
+                      <span className="grid size-9 shrink-0 place-items-center rounded-[10px] border-2 border-ink" style={{ background: TINTS[i % TINTS.length][0] }}>
+                        <f.icon className="size-4" strokeWidth={2.4} aria-hidden />
+                      </span>
+                      <span className="flex flex-col">
+                        <span className="text-[13.5px] font-extrabold leading-tight">{f.t}</span>
+                        <span className="text-[12px] font-medium leading-snug text-muted-foreground">{f.d}</span>
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+
+                {leadStatus === "paid" ? (
+                  <p className="inline-flex items-center gap-2 self-start rounded-full border-2 border-ink bg-success px-4 py-2.5 text-[14px] font-bold shadow-hard-xs">
+                    <Check className="size-4" strokeWidth={3} aria-hidden />
+                    Pagamento confirmado. Seu livro está sendo montado.
                   </p>
-                </div>
-              ))}
+                ) : (
+                  /* Bilhete destacável: o preço de um lado, o pedido do outro. */
+                  <div className="relative rounded-[20px] border-[3px] border-ink bg-warning shadow-hard-xl">
+                    <div className="flex flex-wrap items-end justify-between gap-3 p-5 sm:p-6">
+                      <div>
+                        <p className="font-display text-[12px] font-extrabold uppercase tracking-[.12em]">Livro completo</p>
+                        <div className="mt-1.5 flex items-baseline gap-2.5">
+                          <span className="font-display text-[44px] font-extrabold leading-none tracking-[-.035em] sm:text-[52px]">R$ {price}</span>
+                          {validCoupon && <span className="text-[14px] font-bold line-through opacity-60">R$ {BOOK_PRICE_BRL}</span>}
+                        </div>
+                      </div>
+                      {validCoupon && <Sticker className="bg-white">cupom {validCoupon}</Sticker>}
+                    </div>
+                    <div className="relative border-t-[3px] border-dashed border-ink">
+                      <span aria-hidden className="absolute -left-[17px] top-1/2 size-8 -translate-y-1/2 rounded-full border-[3px] border-ink bg-[#fcfbf7]" />
+                      <span aria-hidden className="absolute -right-[17px] top-1/2 size-8 -translate-y-1/2 rounded-full border-[3px] border-ink bg-[#fcfbf7]" />
+                    </div>
+                    <div className="flex flex-col gap-2.5 p-5 sm:p-6">
+                      <BkButton variant="primary" busy={busy} busyLabel="Abrindo o WhatsApp..." onClick={() => void checkout()} className="h-[56px] w-full text-base">
+                        <MessageCircle className="size-4" strokeWidth={2.4} aria-hidden />
+                        Quero o livro completo
+                      </BkButton>
+                      <p className="text-center text-[12px] font-medium text-[#3f3f46]">
+                        {leadStatus === "checkout" ? "Pedido registrado. Se a conversa não abriu, toque de novo." : "Pix pelo WhatsApp, com o seu pedido já escrito."}
+                      </p>
+                    </div>
+                  </div>
+                )}
+              </>
+            )}
           </div>
 
           {coverUrl && (

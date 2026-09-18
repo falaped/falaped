@@ -18,7 +18,7 @@ async function LeadWizardLoader() {
       themes={themes}
       initial={{
         lead: ctx ? { firstName: ctx.lead.first_name, coupon: ctx.lead.coupon, status: ctx.lead.status } : null,
-        book: ctx?.book ? { id: ctx.book.id, childName: ctx.book.child_name, theme: ctx.book.theme, coverStatus: cover?.status ?? null } : null,
+        book: ctx?.book ? { id: ctx.book.id, childName: ctx.book.child_name, childGender: ctx.book.child_gender, theme: ctx.book.theme, coverStatus: cover?.status ?? null } : null,
         coverUrl: ctx?.coverUrl ?? null,
       }}
     />
