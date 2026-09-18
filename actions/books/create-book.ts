@@ -43,7 +43,7 @@ export async function createBookAction(formData: FormData): Promise<CreateBookRe
   const pediatricianLogo = logo instanceof File && logo.size > 0 ? logo : null
 
   try {
-    const book = await createBook(createAdminClient(), profile.id, { ...parsed.data, photos, pediatricianLogo })
+    const book = await createBook(createAdminClient(), { profileId: profile.id }, { ...parsed.data, photos, pediatricianLogo })
     return { ok: true, bookId: book.id }
   } catch (error: unknown) {
     return { ok: false, error: error instanceof Error ? error.message : "Erro ao criar livro." }

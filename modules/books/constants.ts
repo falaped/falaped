@@ -20,3 +20,16 @@ export const bookPhotoPath = (bookId: string, n: number, ext: string) =>
 export const bookPagePath = (bookId: string, index: number) =>
   `${bookId}/pages/${index}.jpg`
 export const bookPdfPath = (bookId: string) => `${bookId}/book.pdf`
+
+/** Oferta da landing pública (decisão do gestor, 17/09/2026). */
+export const BOOK_PRICE_BRL = "29,99"
+/** WhatsApp da venda concierge (Pix), só dígitos com DDI. */
+export const BOOKS_WHATSAPP = "5531997815503"
+/** Cupons de indicação (código → % de desconto). Em código por enquanto: são 2. */
+export const BOOK_COUPONS: Record<string, number> = { GABIMARINHO10: 10, MARIZINATO10: 10 }
+/** Preço em BRL já com o desconto do cupom (ou cheio, se nulo/inválido). */
+export function bookPriceWithCoupon(coupon: string | null | undefined): string {
+  const pct = coupon ? BOOK_COUPONS[coupon] ?? 0 : 0
+  const cents = Math.round(2999 * (1 - pct / 100))
+  return (cents / 100).toFixed(2).replace(".", ",")
+}

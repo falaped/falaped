@@ -1,6 +1,6 @@
 import { z } from "zod"
 
-import { BOOK_QUALITIES, STORY_PAGE_COUNT } from "@/modules/books/constants"
+import { BOOK_COUPONS, BOOK_QUALITIES, STORY_PAGE_COUNT } from "@/modules/books/constants"
 import { countWords, STORY_FORBIDDEN_CHARS, STORY_HARD_MAX_WORDS, STORY_HARD_MIN_WORDS } from "@/modules/books/story/rules"
 import { BOOK_THEMES } from "@/modules/books/themes"
 
@@ -90,3 +90,28 @@ export const alignStorySchema = z.object({
   changed: z.array(z.object({ position: z.number().int().min(0).max(STORY_PAGE_COUNT - 1), previousText: z.string().max(600) })).max(STORY_PAGE_COUNT),
 })
 export type AlignStoryInput = z.infer<typeof alignStorySchema>
+
+/** Passo 1 da landing pública: contato do responsável + consentimento LGPD. */
+export const bookLeadSchema = z.object({
+  firstName: z.string().trim().min(2, "Informe seu nome.").max(60, "Nome muito longo."),
+  lastName: z.string().trim().min(2, "Informe seu sobrenome.").max(60, "Sobrenome muito longo."),
+  email: z.string().trim().toLowerCase().max(254).pipe(z.email("Informe um e-mail válido.")),
+  whatsapp: z
+    .string()
+    .transform((v) => v.replace(/\D/g, "").replace(/^55(?=\d{10,11}$)/, ""))
+    .refine((v) => /^[1-9]{2}9?\d{8}$/.test(v), "Informe o WhatsApp com DDD."),
+  consent: z.literal(true, { message: "Aceite a política de privacidade para continuar." }),
+  coupon: z
+    .string()
+    .trim()
+    .toUpperCase()
+    .max(30)
+    .optional()
+    .default("")
+    .transform((v) => v || null)
+    .refine((v) => v === null || v in BOOK_COUPONS, "Cupom não encontrado. Confira o código."),
+})
+export type BookLeadInput = z.infer<typeof bookLeadSchema>
+
+/** Passo 2 da landing pública: criança + tema (a capa é gerada em seguida). */
+export const createLeadBookSchema = createBookSchema.pick({ childName: true, childGender: true, theme: true })

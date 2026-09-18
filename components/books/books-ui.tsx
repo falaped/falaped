@@ -3,6 +3,19 @@ import { Loader2 } from "lucide-react"
 
 import { cn } from "@/lib/utils"
 
+/** Pares de cores das listras dos cartões de tema (ciclo por índice). */
+export const TINTS = [
+  ["#e1f1fa", "#cfe8f6"],
+  ["#fbe4de", "#f5c4b8"],
+  ["#fdf1c2", "#f9e39a"],
+  ["#e1f3e6", "#cdebd3"],
+]
+
+/** Classes dos formulários do handoff (campo, rótulo, ajuda). */
+export const FIELD = "h-[50px] w-full rounded-xl border-2 border-ink bg-white px-4 text-base font-medium text-ink outline-none focus:shadow-[0_0_0_4px_#b8e0f5]"
+export const LABEL = "font-display text-[15px] font-extrabold"
+export const HELP = "text-[12.5px] font-normal text-muted-foreground"
+
 export type BkButtonVariant = "primary" | "secondary" | "warning" | "destructive" | "icon" | "icon-destructive"
 
 const LIFT =
@@ -21,7 +34,7 @@ const VARIANTS: Record<BkButtonVariant, string> = {
 /** Classes do botão do handoff (pílula, borda 2px, sombra dura). Use em <Link> quando não for <button>. */
 export function bkButton(variant: BkButtonVariant = "primary", className?: string) {
   return cn(
-    "inline-flex h-12 shrink-0 items-center justify-center gap-2 rounded-full border-2 border-ink px-5 text-sm font-bold text-ink outline-none focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-warning",
+    "inline-flex h-12 shrink-0 items-center justify-center gap-2 whitespace-nowrap rounded-full border-2 border-ink px-5 text-sm font-bold text-ink outline-none focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-warning",
     VARIANTS[variant],
     className,
   )

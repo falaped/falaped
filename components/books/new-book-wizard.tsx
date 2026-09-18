@@ -7,7 +7,7 @@ import { toast } from "sonner"
 import { ArrowLeft, Camera, Check, ChevronLeft, ChevronRight, Shield, Sparkles, Upload, X } from "lucide-react"
 
 import { alignStoryAction, createBookAction, generateStoryAction } from "@/actions/books"
-import { BkButton, Sticker, bkButton } from "@/components/books/books-ui"
+import { BkButton, FIELD, HELP, LABEL, Sticker, TINTS, bkButton } from "@/components/books/books-ui"
 import { describeDetails, draftToDetails, emptyDraft, hasDetails, StoryDetailsFields, type DetailsDraft } from "@/components/books/story-details-fields"
 import { pageTextError, StoryReview } from "@/components/books/story-review"
 import type { BookStory } from "@/lib/schemas/book"
@@ -18,18 +18,8 @@ import { cn } from "@/lib/utils"
 export type WizardTheme = { slug: string; label: string; hint: string; title: string }
 
 const STEPS = ["Criança", "Tema", "História", "Revisão"] as const
-const ACCEPT = "image/png,image/jpeg,image/webp"
+export const ACCEPT = "image/png,image/jpeg,image/webp"
 const MAX_BYTES = 8 * 1024 * 1024
-const TINTS = [
-  ["#e1f1fa", "#cfe8f6"],
-  ["#fbe4de", "#f5c4b8"],
-  ["#fdf1c2", "#f9e39a"],
-  ["#e1f3e6", "#cdebd3"],
-]
-
-const FIELD = "h-[50px] w-full rounded-xl border-2 border-ink bg-white px-4 text-base font-medium text-ink outline-none focus:shadow-[0_0_0_4px_#b8e0f5]"
-const LABEL = "font-display text-[15px] font-extrabold"
-const HELP = "text-[12.5px] font-normal text-muted-foreground"
 
 function formatBytes(n: number) {
   return n >= 1024 * 1024 ? `${(n / 1024 / 1024).toFixed(1).replace(".", ",")} MB` : `${Math.round(n / 1024)} KB`
@@ -64,7 +54,7 @@ function Stepper({ current }: { current: number }) {
   )
 }
 
-function PhotoSlot({
+export function PhotoSlot({
   n,
   file,
   onPick,

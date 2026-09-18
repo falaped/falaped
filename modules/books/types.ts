@@ -4,7 +4,10 @@ import type { BookDetails, BookStory } from "@/lib/schemas/book"
 
 export type Book = {
   id: string
-  profile_id: string
+  /** Dono no Falaped. Null em livro de lead ainda não reivindicado pelo gestor. */
+  profile_id: string | null
+  /** Lead da landing pública (book_leads.id). Null em livro criado por pediatra. */
+  lead_id: string | null
   child_name: string
   child_gender: BookGender
   theme: string
@@ -38,6 +41,25 @@ export type BookPage = {
 export type BookWithPages = Book & { pages: BookPage[] }
 
 export const BOOK_SELECT =
-  "id, profile_id, child_name, child_gender, theme, status, quality, photo_paths, dedication, pediatrician_name, pediatrician_logo_path, details, story, pdf_path, created_at, updated_at"
+  "id, profile_id, lead_id, child_name, child_gender, theme, status, quality, photo_paths, dedication, pediatrician_name, pediatrician_logo_path, details, story, pdf_path, created_at, updated_at"
 
 export const BOOK_PAGE_SELECT = "book_id, index, image_path, status, error, prompt, updated_at"
+
+export type BookLeadStatus = "new" | "cover_ready" | "checkout" | "paid"
+
+export type BookLead = {
+  id: string
+  email: string
+  first_name: string
+  last_name: string
+  whatsapp: string
+  consent_at: string
+  ip: string | null
+  /** Cupom de indicação validado (BOOK_COUPONS). */
+  coupon: string | null
+  status: BookLeadStatus
+  created_at: string
+  updated_at: string
+}
+
+export const BOOK_LEAD_SELECT = "id, email, first_name, last_name, whatsapp, consent_at, ip, coupon, status, created_at, updated_at"
