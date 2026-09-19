@@ -113,7 +113,7 @@ export function LeadWizard({ themes, initial }: { themes: WizardTheme[]; initial
     setStep(3)
   }
 
-  /** "Criar outra capa": volta ao tema já com um que ainda não foi usado. */
+  /** "Criar com outro tema": volta ao passo do tema já em um que sobrou. */
   function startAnother() {
     setTheme(themes.find((t) => !bookByTheme.has(t.slug))?.slug ?? theme)
     setPhotos(Array.from({ length: MAX_BOOK_PHOTOS }, () => null))
@@ -482,7 +482,7 @@ export function LeadWizard({ themes, initial }: { themes: WizardTheme[]; initial
               </p>
             </div>
 
-            {/* Até MAX_LEAD_COVERS capas por cadastro: troca entre elas e cria a próxima sem pagar nada. */}
+            {/* Até MAX_LEAD_COVERS capas por cadastro, uma por tema: troca entre elas e cria a próxima sem pagar nada. */}
             <div className="flex flex-col gap-2.5">
               <span className="font-display text-[12px] font-extrabold uppercase tracking-[.12em] text-muted-foreground">
                 Suas capas · {books.length} de {MAX_LEAD_COVERS}
@@ -510,7 +510,7 @@ export function LeadWizard({ themes, initial }: { themes: WizardTheme[]; initial
                 {!atLimit && (
                   <BkButton variant="secondary" onClick={startAnother} className="h-14 rounded-[14px] px-4 text-[13.5px]">
                     <Plus className="size-4" strokeWidth={2.6} aria-hidden />
-                    Criar outra capa
+                    Criar com outro tema
                   </BkButton>
                 )}
               </div>
