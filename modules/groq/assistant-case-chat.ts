@@ -1,4 +1,4 @@
-import { groq } from "@/modules/groq/groq-client"
+import { getGroq } from "@/modules/groq/groq-client"
 import { env } from "@/lib/env"
 import { stripJsonFences } from "@/modules/groq/lib/strip-json-fences"
 import { getReplyFromUnknownPayload } from "@/modules/groq/lib/groq-response-parsers"
@@ -100,7 +100,7 @@ export async function generateAssistantCaseChat(
       "A última entrada em messages é a mensagem atual do médico. Trate-a como foco principal da resposta.",
   })
 
-  const completion = await groq.chat.completions.create({
+  const completion = await getGroq().chat.completions.create({
     model: ASSISTANT_CHAT_MODEL,
     temperature: resolveTemperature(input),
     max_tokens: CHAT_MAX_COMPLETION_TOKENS,

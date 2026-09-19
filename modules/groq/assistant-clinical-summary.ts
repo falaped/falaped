@@ -1,4 +1,5 @@
-import { groq } from "@/modules/groq/groq-client"
+import type Groq from "groq-sdk"
+import { getGroq } from "@/modules/groq/groq-client"
 import { env } from "@/lib/env"
 import { stripJsonFences } from "@/modules/groq/lib/strip-json-fences"
 import {
@@ -54,9 +55,9 @@ async function generateCaseClinicalSummaryOnce(
     explicitGuardianAlertsHint: input.explicitGuardianAlertsHint ?? null,
   })
 
-  let completion: Awaited<ReturnType<typeof groq.chat.completions.create>>
+  let completion: Awaited<ReturnType<Groq["chat"]["completions"]["create"]>>
   try {
-    completion = await groq.chat.completions.create({
+    completion = await getGroq().chat.completions.create({
       model: CLINICAL_SUMMARY_MODEL,
       temperature: 0.25,
       max_tokens: SUMMARY_MAX_COMPLETION_TOKENS,
