@@ -1,4 +1,4 @@
-import { groq } from "@/modules/groq/groq-client"
+import { getGroq } from "@/modules/groq/groq-client"
 import { looksLikeCaptionHallucination } from "@/modules/groq/lib/caption-hallucination"
 
 const TRANSCRIPTION_MODEL = "whisper-large-v3"
@@ -26,7 +26,7 @@ const DOMAIN_VOCABULARY_HINT = `${WHISPER_DOMAIN_TERMS.join(", ")}.`
 export const TRANSCRIPTION_REJECTED_UNUSABLE = "TRANSCRIPTION_REJECTED_UNUSABLE"
 
 export async function transcribeAudioFile(file: File): Promise<string> {
-  const transcription = await groq.audio.transcriptions.create({
+  const transcription = await getGroq().audio.transcriptions.create({
     file,
     model: TRANSCRIPTION_MODEL,
     language: "pt",

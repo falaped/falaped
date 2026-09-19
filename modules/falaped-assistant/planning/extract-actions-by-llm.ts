@@ -1,4 +1,4 @@
-import { groq } from "@/modules/groq/groq-client"
+import { getGroq } from "@/modules/groq/groq-client"
 import { env } from "@/lib/env"
 import type { TurnActionKind } from "@/modules/falaped-assistant/planning/turn-action-types"
 import { cleanupRawContent, parseActionsFromPayload } from "@/modules/falaped-assistant/planning/llm-action-parsers"
@@ -55,7 +55,7 @@ export async function extractActionsByLlm(userMessage: string): Promise<Extracte
   if (!text) return { actions: ["CHAT"], source: "fallback" }
 
   try {
-    const completion = await groq.chat.completions.create({
+    const completion = await getGroq().chat.completions.create({
       model: MODEL,
       temperature: 0,
       max_tokens: MAX_COMPLETION_TOKENS,

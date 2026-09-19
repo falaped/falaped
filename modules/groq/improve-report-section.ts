@@ -1,4 +1,4 @@
-import { groq } from "@/modules/groq/groq-client"
+import { getGroq } from "@/modules/groq/groq-client"
 import { env } from "@/lib/env"
 
 const REPORT_IMPROVEMENT_MODEL = env.GROQ_ASSISTANT_MODEL
@@ -37,7 +37,7 @@ ${currentContent || "(empty)"}
 
 Return only the improved section text, nothing else.`
 
-  const completion = await groq.chat.completions.create({
+  const completion = await getGroq().chat.completions.create({
     model: REPORT_IMPROVEMENT_MODEL,
     messages: [
       { role: "system", content: systemPrompt },

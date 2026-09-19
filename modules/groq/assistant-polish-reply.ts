@@ -1,4 +1,4 @@
-import { groq } from "@/modules/groq/groq-client"
+import { getGroq } from "@/modules/groq/groq-client"
 import { env } from "@/lib/env"
 import { stripJsonFences } from "@/modules/groq/lib/strip-json-fences"
 import { getReplyFromUnknownPayload } from "@/modules/groq/lib/groq-response-parsers"
@@ -45,7 +45,7 @@ export async function polishAssistantReplyForDisplay(input: {
   })
 
   try {
-    const completion = await groq.chat.completions.create({
+    const completion = await getGroq().chat.completions.create({
       model: POLISH_MODEL,
       temperature: 0,
       max_tokens: POLISH_MAX_COMPLETION_TOKENS,
