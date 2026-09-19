@@ -71,7 +71,7 @@ export function HeroStage({ children }: { children: React.ReactNode }) {
 
       <div className="hero-stage relative order-1 flex justify-center lg:order-2 lg:justify-end">
         <div className="hero-glow pointer-events-none absolute inset-[-10%_-6%]" aria-hidden />
-        <div className="hero-travel relative w-[min(580px,90vw)]">
+        <div className="hero-travel relative w-full max-w-[580px]">
           <div className="hero-fan w-full">
             {COVERS.map((c) => (
               <div key={c.src} className="hero-cover">
@@ -80,8 +80,8 @@ export function HeroStage({ children }: { children: React.ReactNode }) {
               </div>
             ))}
           </div>
-          <Sticker className="hero-tag pointer-events-none absolute left-[-10%] top-[4%] z-30 -rotate-6 bg-warning">Livros reais</Sticker>
-          <span className="hero-tag pointer-events-none absolute -bottom-3 right-[-8%] z-30 rounded-full border-2 border-ink bg-warning px-4 py-2 text-[12.5px] font-extrabold uppercase tracking-[.04em] shadow-hard-sm">
+          <Sticker className="hero-tag pointer-events-none absolute left-0 top-[-2%] z-30 -rotate-6 bg-warning sm:left-[-10%] sm:top-[4%]">Livros reais</Sticker>
+          <span className="hero-tag pointer-events-none absolute -bottom-3 right-0 z-30 rounded-full sm:right-[-8%] border-2 border-ink bg-warning px-4 py-2 text-[12.5px] font-extrabold uppercase tracking-[.04em] shadow-hard-sm">
             20 páginas cada
           </span>
         </div>

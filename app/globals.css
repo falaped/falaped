@@ -891,3 +891,40 @@
 .bk-hatch {
   background: repeating-linear-gradient(135deg, #f4f3ef 0 5px, #e6e4dd 5px 10px);
 }
+
+/* Mobile: o leque não cabe na tela — duas capas em cima, uma embaixo, tudo
+   dentro da margem. Vem depois das regras de fase para vencer por ordem. */
+@media (max-width: 639.98px) {
+  .hero-fan {
+    aspect-ratio: auto;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    justify-items: center;
+    gap: 14px;
+  }
+  .hero-boot[data-phase] .hero-cover {
+    position: static;
+    width: 100%;
+    margin: 0;
+    transform: rotate(var(--rot, 0deg));
+  }
+  .hero-boot[data-phase] .hero-cover:nth-child(1) {
+    --rot: -3deg;
+  }
+  .hero-boot[data-phase] .hero-cover:nth-child(2) {
+    --rot: 3deg;
+  }
+  .hero-boot[data-phase] .hero-cover:nth-child(3) {
+    grid-column: 1 / -1;
+    width: calc(50% - 7px);
+    --rot: -2deg;
+  }
+  /* sem o zoom de câmera: em 2 colunas ele estouraria a tela */
+  .hero-boot[data-phase="boot"] .hero-fan {
+    transform: translateY(24px);
+  }
+  .hero-boot[data-phase="rise"] .hero-fan,
+  .hero-boot[data-phase="fan"] .hero-fan {
+    transform: none;
+  }
+}

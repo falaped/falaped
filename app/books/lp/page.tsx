@@ -125,7 +125,7 @@ export default function BooksLandingPage() {
         </div>
         <ul className={cn(LP_WRAP, "lp-strip mt-6 flex gap-4 overflow-x-auto pb-4 sm:gap-6")}>
           {SAMPLE_PAGES.map((p) => (
-            <li key={p.src} className="w-[78vw] shrink-0 sm:w-[300px]">
+            <li key={p.src} className="w-[calc(100vw-5.5rem)] shrink-0 sm:w-[300px]">
               <div className="relative aspect-[3/4] overflow-hidden rounded-[14px] border-2 border-ink shadow-hard">
                 <Image src={p.src} alt={`${p.book}, página ${p.page}`} fill sizes="(min-width: 640px) 300px, 78vw" className="object-cover" />
               </div>
@@ -140,17 +140,17 @@ export default function BooksLandingPage() {
       {/* Temas */}
       <section id="temas" className={cn(LP_WRAP, "lp-rise mt-14 scroll-mt-24 sm:mt-20")}>
         <LpTitle text="10 histórias para os marcos da infância" highlight="marcos" marker="#f5c4b8" className="max-w-2xl text-[30px] sm:text-[44px]" />
-        <ul className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 lg:grid-cols-5">
+        <ul className="mt-6 grid gap-3 sm:grid-cols-3 sm:gap-4 lg:grid-cols-5">
           {themes.map((t, i) => {
             const [a, b] = TINTS[i % TINTS.length]
             return (
               <li
                 key={t.slug}
-                className="flex min-h-[132px] flex-col justify-between rounded-[14px] border-2 border-ink p-4 shadow-hard-xs"
+                className="flex items-center gap-3 rounded-[14px] border-2 border-ink p-4 shadow-hard-xs sm:min-h-[132px] sm:flex-col sm:items-stretch sm:justify-between sm:gap-0"
                 style={{ background: `linear-gradient(150deg,${a},${b})` }}
               >
                 <span className="font-display text-xs font-extrabold uppercase tracking-[.06em] text-[#3f3f46]">{String(i + 1).padStart(2, "0")}</span>
-                <span className="mt-4 font-display text-[16px] font-extrabold leading-tight text-pretty">{t.label}</span>
+                <span className="font-display text-[16px] font-extrabold leading-tight text-pretty sm:mt-4">{t.label}</span>
               </li>
             )
           })}
