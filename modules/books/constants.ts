@@ -14,6 +14,9 @@ export type BookStatus = (typeof BOOK_STATUSES)[number]
 
 export const MAX_BOOK_PHOTOS = 2
 
+/** Capas que um lead da landing pode gerar de graça, uma por tema. */
+export const MAX_LEAD_COVERS = 3
+
 /** Paths no bucket book-assets. */
 export const bookPhotoPath = (bookId: string, n: number, ext: string) =>
   `${bookId}/photos/${n}.${ext}`

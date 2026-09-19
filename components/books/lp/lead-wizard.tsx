@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react"
 import Link from "next/link"
 import { useSearchParams } from "next/navigation"
 import { toast } from "sonner"
-import { BookOpen, Check, ChevronLeft, ChevronRight, Loader2, Maximize2, MessageCircle, Printer, Shield, Sparkles, X, Zap } from "lucide-react"
+import { BookOpen, Check, ChevronLeft, ChevronRight, Loader2, Maximize2, MessageCircle, Plus, Printer, Shield, Sparkles, X, Zap } from "lucide-react"
 
 import { checkoutLeadBookAction, createLeadBookAction, startBookLeadAction } from "@/actions/books"
 import { BkButton, BrandBlur, Chip, FIELD, HELP, LABEL, Sticker, TINTS } from "@/components/books/books-ui"
@@ -12,20 +12,23 @@ import { LP_WRAP, LpCard, Orn } from "@/components/books/lp/lp-ui"
 import { Dialog, DialogClose, DialogContent, DialogTitle } from "@/components/ui/dialog"
 import { PhotoSlot, type WizardTheme } from "@/components/books/new-book-wizard"
 import type { LeadCoverResult } from "@/app/api/books/lead/cover/route"
-import { BOOK_COUPONS, BOOK_PRICE_BRL, BOOKS_WHATSAPP, MAX_BOOK_PHOTOS, bookPriceWithCoupon } from "@/modules/books/constants"
+import { BOOK_COUPONS, BOOK_PRICE_BRL, BOOKS_WHATSAPP, MAX_BOOK_PHOTOS, MAX_LEAD_COVERS, bookPriceWithCoupon } from "@/modules/books/constants"
 import type { BookLeadStatus } from "@/modules/books/types"
 import { renderBookText, type BookGender } from "@/modules/books/render-book-text"
 import { cn } from "@/lib/utils"
 
 const STEPS = ["Contato", "Criança", "Tema", "Pronto"] as const
 
+/** Uma das capas do lead (cada capa é um livro, um tema por capa). */
+export type WizardBook = { id: string; childName: string; childGender: BookGender; theme: string; coverUrl: string | null }
+
 export type LeadWizardInitial = {
   lead: { firstName: string; coupon: string | null; status: BookLeadStatus } | null
-  book: { id: string; childName: string; childGender: BookGender; theme: string; coverStatus: "pending" | "ready" | "failed" | null } | null
-  coverUrl: string | null
+  /** Capas já criadas, da mais antiga para a mais nova. */
+  books: WizardBook[]
 }
 
-function Stepper({ current }: { current: number }) {
+function Stepper({ current, onGo }: { current: number; onGo: (i: number) => void }) {
   return (
     <ol className="flex shrink-0 flex-wrap items-center gap-1.5 text-xs font-bold sm:flex-nowrap sm:gap-0 sm:text-[13px]">
       {STEPS.map((name, i) => {
@@ -33,10 +36,14 @@ function Stepper({ current }: { current: number }) {
         const active = i === current
         return (
           <li key={name} className="flex items-center">
-            <span
+            {/* passos já vencidos voltam com um clique: nada é cobrado antes do Pix */}
+            <button
+              type="button"
+              disabled={!done}
+              onClick={() => onGo(i)}
               className={cn(
                 "inline-flex h-8 items-center gap-1.5 rounded-full border-2 border-ink pl-1.5 pr-2.5 sm:h-9 sm:gap-2 sm:pr-3.5",
-                done && "bg-success",
+                done && "bg-success hover:-translate-y-0.5 hover:shadow-hard-sm",
                 active && "bg-warning shadow-hard-sm",
                 !done && !active && "bg-white text-muted-foreground",
               )}
@@ -45,7 +52,7 @@ function Stepper({ current }: { current: number }) {
                 {done ? <Check className="size-3" strokeWidth={3.4} aria-hidden /> : i + 1}
               </span>
               {name}
-            </span>
+            </button>
             {i < STEPS.length - 1 && <span className="hidden h-0.5 w-[18px] bg-ink sm:block" aria-hidden />}
           </li>
         )
@@ -58,43 +65,72 @@ const CARD = "mt-6 flex flex-col gap-6 p-5 sm:mt-7 sm:p-8"
 
 export function LeadWizard({ themes, initial }: { themes: WizardTheme[]; initial: LeadWizardInitial }) {
   const params = useSearchParams()
-  const [step, setStep] = useState(initial.book ? 3 : initial.lead ? 1 : 0)
+  const [books, setBooks] = useState<WizardBook[]>(initial.books)
+  const [activeId, setActiveId] = useState<string | null>(initial.books.at(-1)?.id ?? null)
+  const [step, setStep] = useState(initial.books.length ? 3 : initial.lead ? 1 : 0)
   const [firstName, setFirstName] = useState(initial.lead?.firstName ?? "")
   const [lastName, setLastName] = useState("")
   const [email, setEmail] = useState("")
   const [whatsapp, setWhatsapp] = useState("")
   const [coupon, setCoupon] = useState(initial.lead?.coupon ?? params.get("cupom")?.toUpperCase() ?? "")
   const [consent, setConsent] = useState(false)
-  const [name, setName] = useState(initial.book?.childName ?? "")
-  const [gender, setGender] = useState<BookGender | "">(initial.book?.childGender ?? "")
+  const [name, setName] = useState(initial.books.at(-1)?.childName ?? "")
+  const [gender, setGender] = useState<BookGender | "">(initial.books.at(-1)?.childGender ?? "")
   const [photos, setPhotos] = useState<(File | null)[]>(Array.from({ length: MAX_BOOK_PHOTOS }, () => null))
-  const [theme, setTheme] = useState(initial.book?.theme ?? themes[0]?.slug ?? "")
-  const [bookId, setBookId] = useState(initial.book?.id ?? null)
-  const [coverUrl, setCoverUrl] = useState(initial.coverUrl)
+  const [theme, setTheme] = useState(initial.books.at(-1)?.theme ?? themes[0]?.slug ?? "")
   const [coverError, setCoverError] = useState<string | null>(null)
+  /** Muda para destravar o efeito da capa quando a pessoa pede outra tentativa. */
+  const [retry, setRetry] = useState(0)
   const [busy, setBusy] = useState(false)
   const [zoom, setZoom] = useState(false)
   const [leadStatus, setLeadStatus] = useState<BookLeadStatus | null>(initial.lead?.status ?? null)
-  const generating = useRef(false)
+  const generating = useRef(new Set<string>())
 
   const files = photos.filter((f): f is File => !!f)
   const selectedTheme = themes.find((t) => t.slug === theme) ?? themes[0]
   const validCoupon = coupon && coupon in BOOK_COUPONS ? coupon : null
   const price = bookPriceWithCoupon(validCoupon)
-  /** Título de verdade do livro ("A Cama do Samuel"), o mesmo que vai na capa. */
-  const bookTitle = selectedTheme && name.trim() && gender ? renderBookText(selectedTheme.title, { name: name.trim(), gender }) : ""
 
-  /** Passo 4: gera a capa (uma vez) assim que o livro existe e ainda não há capa. */
+  /** Capa em exibição no passo "Pronto" (pode não ser a do formulário). */
+  const active = books.find((b) => b.id === activeId) ?? null
+  const coverUrl = active?.coverUrl ?? null
+  const bookId = active?.id ?? null
+  const activeTheme = themes.find((t) => t.slug === active?.theme) ?? selectedTheme
+  const activeName = active?.childName ?? name.trim()
+  const activeGender = active?.childGender ?? gender
+  /** Título de verdade do livro ("A Cama do Samuel"), o mesmo que vai na capa. */
+  const bookTitle = activeTheme && activeName && activeGender ? renderBookText(activeTheme.title, { name: activeName, gender: activeGender }) : ""
+
+  /** Um tema por capa: repetir só mostra a que já existe. */
+  const bookByTheme = new Map(books.map((b) => [b.theme, b]))
+  const existing = bookByTheme.get(theme) ?? null
+  const atLimit = books.length >= MAX_LEAD_COVERS
+
+  function showCover(book: WizardBook) {
+    setActiveId(book.id)
+    setCoverError(null)
+    setStep(3)
+  }
+
+  /** "Criar outra capa": volta ao tema já com um que ainda não foi usado. */
+  function startAnother() {
+    setTheme(themes.find((t) => !bookByTheme.has(t.slug))?.slug ?? theme)
+    setPhotos(Array.from({ length: MAX_BOOK_PHOTOS }, () => null))
+    setStep(2)
+  }
+
+  /** Passo 4: gera a capa do livro em exibição (uma vez por livro). */
   useEffect(() => {
-    if (step !== 3 || !bookId || coverUrl || generating.current) return
-    generating.current = true
+    if (step !== 3 || !activeId || coverUrl || generating.current.has(activeId)) return
+    const id = activeId
+    generating.current.add(id)
     let cancelled = false
     async function run(attempt = 0) {
-      const res = await fetch("/api/books/lead/cover", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ bookId }) })
+      const res = await fetch("/api/books/lead/cover", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ bookId: id }) })
       const data = (await res.json().catch(() => ({ ok: false, error: "Erro de rede." }))) as LeadCoverResult
       if (cancelled) return
       if (data.ok) {
-        setCoverUrl(data.coverUrl)
+        setBooks((bs) => bs.map((b) => (b.id === id ? { ...b, coverUrl: data.coverUrl } : b)))
         setLeadStatus((s) => (s === "new" || !s ? "cover_ready" : s))
         return
       }
@@ -104,13 +140,13 @@ export function LeadWizard({ themes, initial }: { themes: WizardTheme[]; initial
         return
       }
       setCoverError(data.error)
-      generating.current = false
+      generating.current.delete(id)
     }
     void run()
     return () => {
       cancelled = true
     }
-  }, [step, bookId, coverUrl])
+  }, [step, activeId, coverUrl, retry])
 
   async function submitContact(e: React.FormEvent) {
     e.preventDefault()
@@ -131,12 +167,14 @@ export function LeadWizard({ themes, initial }: { themes: WizardTheme[]; initial
     e.preventDefault()
     if (name.trim().length < 2) return toast.error("Informe o nome da criança.")
     if (!gender) return toast.error("Escolha menino ou menina.")
-    if (!files.length) return toast.error("Envie pelo menos 1 foto.")
+    if (!files.length && !books.length) return toast.error("Envie pelo menos 1 foto.")
     setStep(2)
   }
 
   async function submitTheme() {
     if (!theme || !gender) return toast.error("Escolha um tema.")
+    if (existing) return showCover(existing)
+    if (atLimit) return toast.error(`Você já criou as ${MAX_LEAD_COVERS} capas deste cadastro.`)
     setBusy(true)
     const fd = new FormData()
     fd.set("childName", name.trim())
@@ -146,17 +184,19 @@ export function LeadWizard({ themes, initial }: { themes: WizardTheme[]; initial
     const result = await createLeadBookAction(fd)
     setBusy(false)
     if (!result.ok) return toast.error(result.error)
-    setBookId(result.bookId)
-    setStep(3)
+    const created: WizardBook = { id: result.bookId, childName: name.trim(), childGender: gender, theme, coverUrl: null }
+    setBooks((bs) => (bs.some((b) => b.id === created.id) ? bs : [...bs, created]))
+    showCover(created)
   }
 
   async function checkout() {
+    if (!bookId) return
     setBusy(true)
-    const result = await checkoutLeadBookAction()
+    const result = await checkoutLeadBookAction(bookId)
     setBusy(false)
     if (!result.ok) return toast.error(result.error)
     setLeadStatus("checkout")
-    const text = `Olá! Criei o livro "${selectedTheme?.label ?? ""}" ${name.trim() ? `de ${name.trim()} ` : ""}e quero as 20 páginas por R$ ${price}${validCoupon ? ` (cupom ${validCoupon})` : ""}. Pedido ${bookId?.slice(0, 8)}.`
+    const text = `Olá! Criei o livro "${bookTitle || activeTheme?.label || ""}" e quero as 20 páginas por R$ ${price}${validCoupon ? ` (cupom ${validCoupon})` : ""}. Pedido ${bookId.slice(0, 8)}.`
     window.open(`https://wa.me/${BOOKS_WHATSAPP}?text=${encodeURIComponent(text)}`, "_blank", "noopener")
   }
 
@@ -166,7 +206,7 @@ export function LeadWizard({ themes, initial }: { themes: WizardTheme[]; initial
         <h1 className="font-display text-[30px] font-extrabold uppercase leading-none tracking-[-.03em] sm:text-[44px]">
           {step === 3 ? bookTitle || "Seu livro" : "Criar o livro"}
         </h1>
-        <Stepper current={step} />
+        <Stepper current={step} onGo={(i) => { setCoverError(null); setStep(i) }} />
       </div>
 
       {step === 0 && (
@@ -267,7 +307,7 @@ export function LeadWizard({ themes, initial }: { themes: WizardTheme[]; initial
             <div className="flex flex-col gap-3">
               <div className="flex flex-wrap items-baseline gap-2.5">
                 <span className={LABEL}>Fotos da criança</span>
-                <span className={HELP}>1 ou 2 fotos do rosto, bem iluminadas e de frente</span>
+                <span className={HELP}>{books.length ? "sem foto nova, usamos as mesmas da capa anterior" : "1 ou 2 fotos do rosto, bem iluminadas e de frente"}</span>
               </div>
               <div className="grid gap-4 sm:grid-cols-2">
                 {photos.map((f, i) => (
@@ -306,10 +346,27 @@ export function LeadWizard({ themes, initial }: { themes: WizardTheme[]; initial
           <div className="flex flex-wrap items-baseline gap-3">
             <h2 className="font-display text-[19px] font-extrabold sm:text-[22px]">Escolha o tema da história</h2>
             <span className="text-[13px] font-medium text-muted-foreground">As 20 páginas da história seguem o tema.</span>
+            {!!books.length && (
+              <Chip className={atLimit ? "bg-secondary" : "bg-success"}>
+                {books.length} de {MAX_LEAD_COVERS} capas criadas
+              </Chip>
+            )}
           </div>
+          {existing ? (
+            <p className="mt-4 flex flex-wrap items-center gap-2 rounded-[14px] border-2 border-ink bg-warning p-3.5 text-[13.5px] font-bold">
+              <Sparkles className="size-4 shrink-0" strokeWidth={2.4} aria-hidden />
+              Você já criou a capa de “{themes.find((t) => t.slug === existing.theme)?.label}”. Escolha outro tema — ou veja a que já está pronta.
+            </p>
+          ) : atLimit ? (
+            <p className="mt-4 flex flex-wrap items-center gap-2 rounded-[14px] border-2 border-ink bg-secondary p-3.5 text-[13.5px] font-bold">
+              <Sparkles className="size-4 shrink-0" strokeWidth={2.4} aria-hidden />
+              Você já usou as {MAX_LEAD_COVERS} capas grátis deste cadastro. Escolha uma delas para rever e pedir o livro.
+            </p>
+          ) : null}
           <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 lg:grid-cols-5">
             {themes.map((t, i) => {
               const on = t.slug === theme
+              const used = bookByTheme.has(t.slug)
               const [a, b] = TINTS[i % TINTS.length]
               return (
                 <label
@@ -326,6 +383,7 @@ export function LeadWizard({ themes, initial }: { themes: WizardTheme[]; initial
                         <Check className="size-3" strokeWidth={3.2} aria-hidden />
                       </span>
                     )}
+                    {used && <Sticker className="absolute bottom-1.5 left-1.5 bg-success px-2 py-1 text-[10px]">Já criada</Sticker>}
                   </span>
                   <span className="block px-3 pb-3 pt-2.5 font-display text-sm font-bold leading-tight text-pretty">
                     {t.label}
@@ -341,11 +399,20 @@ export function LeadWizard({ themes, initial }: { themes: WizardTheme[]; initial
               Voltar
             </BkButton>
             <div className="order-1 flex flex-col items-stretch gap-2 sm:order-2 sm:items-end">
-              <BkButton variant="warning" onClick={() => void submitTheme()} busy={busy} busyLabel="Enviando a foto..." className="h-[52px] px-6 text-base">
-                <Sparkles className="size-4" strokeWidth={2.4} aria-hidden />
-                Criar o livro
+              <BkButton
+                variant="warning"
+                disabled={atLimit && !existing}
+                onClick={() => void submitTheme()}
+                busy={busy}
+                busyLabel="Enviando a foto..."
+                className="h-[52px] px-6 text-base"
+              >
+                {existing ? <Maximize2 className="size-4" strokeWidth={2.4} aria-hidden /> : <Sparkles className="size-4" strokeWidth={2.4} aria-hidden />}
+                {existing ? "Ver essa capa" : `Criar a capa ${Math.min(books.length + 1, MAX_LEAD_COVERS)} de ${MAX_LEAD_COVERS}`}
               </BkButton>
-              <span className="text-xs font-medium text-muted-foreground">Um livro por cadastro: confira o nome, o tema e a foto, porque não dá para refazer.</span>
+              <span className="text-xs font-medium text-muted-foreground">
+                São até {MAX_LEAD_COVERS} capas por cadastro, uma por tema. Confira o nome e a foto: cada capa é desenhada uma vez.
+              </span>
             </div>
           </div>
         </div>
@@ -362,9 +429,9 @@ export function LeadWizard({ themes, initial }: { themes: WizardTheme[]; initial
             <div className="absolute left-1/2 top-1/2 w-[82%] -translate-x-1/2 -translate-y-1/2">
               {coverUrl ? (
                 <>
-                  <button type="button" onClick={() => setZoom(true)} className="bk-book bk-book--in block w-full cursor-zoom-in p-0" aria-label={`Ampliar a capa do livro de ${name}`}>
+                  <button type="button" onClick={() => setZoom(true)} className="bk-book bk-book--in block w-full cursor-zoom-in p-0" aria-label={`Ampliar a capa do livro de ${activeName}`}>
                     {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={coverUrl} alt={`Capa do livro de ${name}`} />
+                    <img src={coverUrl} alt={`Capa do livro de ${activeName}`} />
                   </button>
                   <Sticker className="pointer-events-none absolute -left-4 -top-4 z-10 bg-warning shadow-hard">Capa pronta</Sticker>
                   <span className="pointer-events-none absolute -bottom-4 right-2 z-10 inline-flex h-10 items-center gap-2 rounded-full border-2 border-ink bg-white px-4 text-[13px] font-bold shadow-hard-sm">
@@ -383,8 +450,8 @@ export function LeadWizard({ themes, initial }: { themes: WizardTheme[]; initial
                           variant="secondary"
                           onClick={() => {
                             setCoverError(null)
-                            generating.current = false
-                            setCoverUrl(null)
+                            if (activeId) generating.current.delete(activeId)
+                            setRetry((r) => r + 1)
                           }}
                         >
                           Tentar de novo
@@ -406,7 +473,7 @@ export function LeadWizard({ themes, initial }: { themes: WizardTheme[]; initial
           {/* O que a pessoa tem na mão e o que falta para o livro inteiro. */}
           <div className="flex flex-col gap-6">
             <div className="flex flex-col items-start gap-3">
-              <Chip className="bg-secondary uppercase tracking-[.04em]">{selectedTheme?.label}</Chip>
+              <Chip className="bg-secondary uppercase tracking-[.04em]">{activeTheme?.label}</Chip>
               <p className="max-w-[40ch] text-[15px] font-medium leading-relaxed text-[#3f3f46] text-pretty">
                 {coverUrl
                   ? "A capa está pronta. As outras 19 páginas são desenhadas assim que o pedido entra, e o PDF chega no seu WhatsApp na hora."
@@ -414,12 +481,46 @@ export function LeadWizard({ themes, initial }: { themes: WizardTheme[]; initial
               </p>
             </div>
 
+            {/* Até MAX_LEAD_COVERS capas por cadastro: troca entre elas e cria a próxima sem pagar nada. */}
+            <div className="flex flex-col gap-2.5">
+              <span className="font-display text-[12px] font-extrabold uppercase tracking-[.12em] text-muted-foreground">
+                Suas capas · {books.length} de {MAX_LEAD_COVERS}
+              </span>
+              <div className="flex flex-wrap items-center gap-2.5">
+                {books.map((b) => (
+                  <button
+                    key={b.id}
+                    type="button"
+                    onClick={() => showCover(b)}
+                    title={themes.find((t) => t.slug === b.theme)?.label}
+                    className={cn(
+                      "relative size-14 overflow-hidden rounded-[10px] border-2 border-ink bg-muted",
+                      b.id === activeId ? "shadow-hard outline-2 outline-offset-2 outline-warning" : "opacity-70 hover:opacity-100",
+                    )}
+                  >
+                    {b.coverUrl ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={b.coverUrl} alt="" className="size-full object-cover" />
+                    ) : (
+                      <BrandBlur pulse />
+                    )}
+                  </button>
+                ))}
+                {!atLimit && (
+                  <BkButton variant="secondary" onClick={startAnother} className="h-14 rounded-[14px] px-4 text-[13.5px]">
+                    <Plus className="size-4" strokeWidth={2.6} aria-hidden />
+                    Criar outra capa
+                  </BkButton>
+                )}
+              </div>
+            </div>
+
             {coverUrl && (
               <>
                 <ul className="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
                   {[
-                    { icon: Sparkles, t: `As 19 páginas com ${name}`, d: "mesma personagem, mesmo traço" },
-                    { icon: BookOpen, t: selectedTheme?.label ?? "A história completa", d: "história do começo ao fim" },
+                    { icon: Sparkles, t: `As 19 páginas com ${activeName}`, d: "mesma personagem, mesmo traço" },
+                    { icon: BookOpen, t: activeTheme?.label ?? "A história completa", d: "história do começo ao fim" },
                     { icon: Printer, t: "PDF em A4", d: "imprimir em casa ou ler na tela" },
                     { icon: Zap, t: "Na hora", d: "assim que o Pix cair, no WhatsApp" },
                   ].map((f, i) => (
@@ -479,9 +580,9 @@ export function LeadWizard({ themes, initial }: { themes: WizardTheme[]; initial
                 className="books-theme w-auto max-w-[calc(100vw-2rem)] gap-0 overflow-hidden rounded-[20px] border-2 border-ink bg-white p-0 shadow-hard-xl"
                 style={{ background: "#fff" }}
               >
-                <DialogTitle className="sr-only">Capa do livro de {name}</DialogTitle>
+                <DialogTitle className="sr-only">Capa do livro de {activeName}</DialogTitle>
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={coverUrl} alt={`Capa do livro de ${name}`} className="block max-h-[calc(100svh-2rem)] w-auto max-w-full object-contain" />
+                <img src={coverUrl} alt={`Capa do livro de ${activeName}`} className="block max-h-[calc(100svh-2rem)] w-auto max-w-full object-contain" />
                 <DialogClose
                   aria-label="Fechar"
                   className="absolute right-3 top-3 grid size-9 place-items-center rounded-full border-2 border-ink bg-white text-ink shadow-hard-xs hover:bg-warning"

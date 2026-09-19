@@ -20,8 +20,10 @@ export type CreateBookPayload = {
   details?: BookDetails | null
   /** História revisada no wizard; null usa o texto do tema. Caller valida. */
   story?: BookStory | null
-  /** 1 a 2 fotos da criança. */
+  /** 1 a 2 fotos da criança. Vazio exige `copyPhotosFrom`. */
   photos: File[]
+  /** Paths de fotos de um livro anterior, copiadas em vez de reenviadas. */
+  copyPhotosFrom?: string[]
   pediatricianLogo?: File | null
 }
 
@@ -39,7 +41,8 @@ export async function createBook(
   payload: CreateBookPayload,
 ): Promise<Book> {
   getBookTheme(payload.theme)
-  if (payload.photos.length < 1 || payload.photos.length > MAX_BOOK_PHOTOS)
+  const reuse = payload.photos.length ? [] : (payload.copyPhotosFrom ?? [])
+  if (!reuse.length && (payload.photos.length < 1 || payload.photos.length > MAX_BOOK_PHOTOS))
     throw new Error(`[BOOKS] Envie de 1 a ${MAX_BOOK_PHOTOS} fotos da criança.`)
   for (const f of [...payload.photos, ...(payload.pediatricianLogo ? [payload.pediatricianLogo] : [])]) {
     if (!ALLOWED_TYPES.includes(f.type))
@@ -69,6 +72,12 @@ export async function createBook(
   const storage = supabase.storage.from(BOOK_ASSETS_BUCKET)
   const ext = (f: File) => (f.type === "image/png" ? "png" : f.type === "image/webp" ? "webp" : "jpg")
   const photoPaths: string[] = []
+  for (const [i, from] of reuse.entries()) {
+    const path = bookPhotoPath(bookId, i + 1, from.split(".").pop() || "jpg")
+    const { error } = await storage.copy(from, path)
+    if (error) throw new Error(`[BOOKS] Falha ao reaproveitar a foto: ${error.message}`)
+    photoPaths.push(path)
+  }
   for (const [i, photo] of payload.photos.entries()) {
     const path = bookPhotoPath(bookId, i + 1, ext(photo))
     const { error } = await storage.upload(path, photo, { contentType: photo.type, upsert: true })
