@@ -42,7 +42,8 @@ function Stepper({ current, onGo }: { current: number; onGo: (i: number) => void
               disabled={!done}
               onClick={() => onGo(i)}
               className={cn(
-                "inline-flex h-8 items-center gap-1.5 rounded-full border-2 border-ink pl-1.5 pr-2.5 sm:h-9 sm:gap-2 sm:pr-3.5",
+                "inline-flex h-8 items-center gap-1.5 rounded-full border-2 border-ink pl-1.5 sm:h-9 sm:gap-2 sm:pr-3.5",
+                active ? "pr-2.5" : "pr-1.5 sm:pr-3.5",
                 done && "bg-success hover:-translate-y-0.5 hover:shadow-hard-sm",
                 active && "bg-warning shadow-hard-sm",
                 !done && !active && "bg-white text-muted-foreground",
@@ -51,7 +52,7 @@ function Stepper({ current, onGo }: { current: number; onGo: (i: number) => void
               <span className="grid size-5 place-items-center rounded-full border-2 border-ink bg-white text-[11px] font-extrabold text-ink sm:size-6 sm:text-xs">
                 {done ? <Check className="size-3" strokeWidth={3.4} aria-hidden /> : i + 1}
               </span>
-              {name}
+              <span className={cn(!active && "hidden sm:inline")}>{name}</span>
             </button>
             {i < STEPS.length - 1 && <span className="hidden h-0.5 w-[18px] bg-ink sm:block" aria-hidden />}
           </li>
@@ -421,12 +422,12 @@ export function LeadWizard({ themes, initial }: { themes: WizardTheme[]; initial
       {step === 3 && (
         <div className="mt-7 grid gap-10 lg:mt-11 lg:grid-cols-[1.15fr_.85fr] lg:items-center lg:gap-14">
           {/* Palco: o livro é um objeto, e atrás dele as 19 páginas ainda seladas. */}
-          <div className="relative mx-auto aspect-[1/1.2] w-full max-w-[620px]">
+          <div className="relative -mx-6 aspect-[1/1.3] w-[calc(100%+3rem)] sm:mx-auto sm:aspect-[1/1.2] sm:w-full sm:max-w-[620px]">
             <Orn kind="star" color="#f5c21a" className="-left-3 top-2 hidden lg:block" />
             <Orn kind="ring" color="#f5c4b8" className="-right-1 bottom-10 hidden lg:block" />
-            <span className="bk-sealed left-[1%] top-[13%] w-[58%] -rotate-[12deg]" aria-hidden />
-            <span className="bk-sealed right-0 top-[9%] w-[58%] rotate-[10deg]" aria-hidden />
-            <div className="absolute left-1/2 top-1/2 w-[82%] -translate-x-1/2 -translate-y-1/2">
+            <span className="bk-sealed left-[8%] top-[13%] w-[62%] -rotate-[12deg] sm:left-[1%] sm:w-[58%]" aria-hidden />
+            <span className="bk-sealed right-[8%] top-[9%] w-[62%] rotate-[10deg] sm:right-0 sm:w-[58%]" aria-hidden />
+            <div className="absolute left-1/2 top-1/2 w-[80%] -translate-x-1/2 -translate-y-1/2 sm:w-[82%]">
               {coverUrl ? (
                 <>
                   <button type="button" onClick={() => setZoom(true)} className="bk-book bk-book--in block w-full cursor-zoom-in p-0" aria-label={`Ampliar a capa do livro de ${activeName}`}>
@@ -471,7 +472,7 @@ export function LeadWizard({ themes, initial }: { themes: WizardTheme[]; initial
           </div>
 
           {/* O que a pessoa tem na mão e o que falta para o livro inteiro. */}
-          <div className="flex flex-col gap-6">
+          <div id="pedido" className="flex scroll-mt-24 flex-col gap-6">
             <div className="flex flex-col items-start gap-3">
               <Chip className="bg-secondary uppercase tracking-[.04em]">{activeTheme?.label}</Chip>
               <p className="max-w-[40ch] text-[15px] font-medium leading-relaxed text-[#3f3f46] text-pretty">
@@ -576,18 +577,21 @@ export function LeadWizard({ themes, initial }: { themes: WizardTheme[]; initial
           {coverUrl && (
             <Dialog open={zoom} onOpenChange={setZoom}>
               {/* Mesmo lightbox das páginas do livro (components/books/page-card.tsx). */}
-              <DialogContent
-                className="books-theme w-auto max-w-[calc(100vw-2rem)] gap-0 overflow-hidden rounded-[20px] border-2 border-ink bg-white p-0 shadow-hard-xl"
-                style={{ background: "#fff" }}
-              >
+              {/* tela cheia: a capa é o produto, ampliar tem que mostrar tudo */}
+              <DialogContent className="books-theme inset-0 top-0 left-0 h-[100svh] w-screen max-w-none translate-x-0 translate-y-0 place-items-center gap-0 rounded-none border-0 bg-transparent p-3 shadow-none sm:p-6">
                 <DialogTitle className="sr-only">Capa do livro de {activeName}</DialogTitle>
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={coverUrl} alt={`Capa do livro de ${activeName}`} className="block max-h-[calc(100svh-2rem)] w-auto max-w-full object-contain" />
+                <img
+                  src={coverUrl}
+                  alt={`Capa do livro de ${activeName}`}
+                  className="max-h-full w-auto max-w-full rounded-[10px] border-2 border-ink object-contain"
+                />
                 <DialogClose
                   aria-label="Fechar"
-                  className="absolute right-3 top-3 grid size-9 place-items-center rounded-full border-2 border-ink bg-white text-ink shadow-hard-xs hover:bg-warning"
+                  className="absolute right-4 top-4 grid size-11 place-items-center rounded-full border-2 border-ink bg-white text-ink shadow-hard hover:bg-warning"
+                  style={{ top: "calc(env(safe-area-inset-top, 0px) + 1rem)" }}
                 >
-                  <X className="size-4" strokeWidth={2.6} aria-hidden />
+                  <X className="size-5" strokeWidth={2.6} aria-hidden />
                 </DialogClose>
               </DialogContent>
             </Dialog>
