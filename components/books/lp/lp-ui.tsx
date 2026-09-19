@@ -6,7 +6,7 @@ import { Sticker } from "@/components/books/books-ui"
 import { cn } from "@/lib/utils"
 
 /** Coluna da landing: hero, seções, header e rodapé usam a mesma largura e as mesmas margens. */
-export const LP_WRAP = "mx-auto w-full max-w-[1480px] px-4 sm:px-10 xl:px-[6.5rem]"
+export const LP_WRAP = "mx-auto w-full max-w-[1480px] px-6 sm:px-10 xl:px-[6.5rem]"
 
 /** Logo principal (empilhada) + adesivo Books. Link para a landing. */
 export function LpBrand({ className, small }: { className?: string; small?: boolean }) {

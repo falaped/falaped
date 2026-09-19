@@ -1,4 +1,4 @@
-import { groq } from "@/modules/groq/groq-client"
+import { getGroq } from "@/modules/groq/groq-client"
 import { env } from "@/lib/env"
 import type { ReportTemplateSection } from "@/modules/report-templates/get-report-template-by-id"
 import {
@@ -48,7 +48,7 @@ ${trimmed}
 
 Return the JSON object with "suggestedName" and "sections" as described in the system message.`
 
-  const completion = await groq.chat.completions.create({
+  const completion = await getGroq().chat.completions.create({
     model: TEMPLATE_GENERATION_MODEL,
     messages: [
       { role: "system", content: systemPrompt },

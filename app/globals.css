@@ -891,3 +891,31 @@
 .bk-hatch {
   background: repeating-linear-gradient(135deg, #f4f3ef 0 5px, #e6e4dd 5px 10px);
 }
+
+/* Mobile: a coreografia é a mesma (close, leque, pousa) — só o repouso muda.
+   Em vez do leque deitado, que sangrava para fora da tela, as capas param em
+   duas em cima e uma embaixo, dentro da margem. Vem depois das regras de fase
+   para vencer por ordem, com a mesma especificidade. */
+@media (max-width: 639.98px) {
+  .hero-fan {
+    aspect-ratio: 1 / 1.12;
+  }
+  .hero-boot[data-phase="split"] .hero-cover {
+    --sc: 0.7;
+  }
+  .hero-boot[data-phase="split"] .hero-cover:nth-child(1) {
+    --tx: -36%;
+    --ty: -35%;
+    --rot: -5deg;
+  }
+  .hero-boot[data-phase="split"] .hero-cover:nth-child(2) {
+    --tx: 36%;
+    --ty: -35%;
+    --rot: 5deg;
+  }
+  .hero-boot[data-phase="split"] .hero-cover:nth-child(3) {
+    --tx: 0%;
+    --ty: 35%;
+    --rot: -2deg;
+  }
+}

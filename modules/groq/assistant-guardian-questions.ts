@@ -1,4 +1,4 @@
-import { groq } from "@/modules/groq/groq-client"
+import { getGroq } from "@/modules/groq/groq-client"
 import { env } from "@/lib/env"
 import { stripJsonFences } from "@/modules/groq/lib/strip-json-fences"
 import { getReplyFromUnknownPayload } from "@/modules/groq/lib/groq-response-parsers"
@@ -42,7 +42,7 @@ export async function generateGuardianQuestionSuggestions(input: {
     patientGrammarHint: input.patientGrammarHint ?? null,
   })
 
-  const completion = await groq.chat.completions.create({
+  const completion = await getGroq().chat.completions.create({
     model: GUARDIAN_QUESTIONS_MODEL,
     temperature: 0.35,
     max_tokens: 500,
