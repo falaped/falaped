@@ -11,6 +11,10 @@ const envSchema = z.object({
   SUPABASE_SERVICE_ROLE_KEY: z.string().optional(),
   // books.falaped.com.br: geração de ilustrações (gpt-image-2 via Replicate).
   REPLICATE_API_TOKEN: z.string().optional(),
+  // Envio de e-mail transacional dos pedidos (Resend). Sem a chave, o aviso de
+  // produção não sai e o gestor vê o erro na tela de pedidos.
+  RESEND_API_KEY: z.string().optional(),
+  BOOKS_EMAIL_FROM: z.string().default("Falaped Books <livros@contato.falaped.com.br>"),
   // E-mails (separados por vírgula) que veem os pedidos da landing em app.falaped.com.br/books/leads.
   BOOKS_ADMIN_EMAILS: z
     .string()

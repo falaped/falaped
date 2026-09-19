@@ -8,6 +8,10 @@ export async function requireBooksAdmin(): Promise<{ ok: true; profileId: string
   const { profile } = await getAuthenticatedUser(supabase)
   if (!profile?.id) return { ok: false, error: "Sessão não encontrada." }
   if (profile.status !== "paid") return { ok: false, error: "Perfil não ativo." }
-  if (!profile.email || !env.BOOKS_ADMIN_EMAILS.includes(profile.email.toLowerCase())) return { ok: false, error: "Sem acesso aos pedidos." }
+  if (!profile.email || !env.BOOKS_ADMIN_EMAILS.includes(profile.email.toLowerCase()))
+    return {
+      ok: false,
+      error: `Sem acesso aos pedidos: ${profile.email ?? "perfil sem e-mail"} não está em BOOKS_ADMIN_EMAILS (${env.BOOKS_ADMIN_EMAILS.length} e-mail(s) configurado(s)).`,
+    }
   return { ok: true, profileId: profile.id }
 }

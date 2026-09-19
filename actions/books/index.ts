@@ -7,3 +7,5 @@ export { startBookLeadAction, type StartBookLeadResult } from "./start-book-lead
 export { createLeadBookAction, type CreateLeadBookResult } from "./create-lead-book"
 export { checkoutLeadBookAction, type CheckoutLeadBookResult } from "./checkout-lead-book"
 export { claimLeadBookAction } from "./claim-lead-book"
+export { notifyBookProductionAction } from "./notify-book-production"
+export { markBookDeliveredAction } from "./mark-book-delivered"

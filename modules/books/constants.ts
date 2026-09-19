@@ -26,6 +26,8 @@ export const bookPdfPath = (bookId: string) => `${bookId}/book.pdf`
 
 /** Oferta da landing pública (decisão do gestor, 17/09/2026). */
 export const BOOK_PRICE_BRL = "29,99"
+/** Caixa que recebe as respostas: o domínio de envio (contato.falaped.com.br) não tem entrada. */
+export const BOOKS_EMAIL_REPLY_TO = "contato@falaped.com.br"
 /** WhatsApp da venda concierge (Pix), só dígitos com DDI. */
 export const BOOKS_WHATSAPP = "5531997815503"
 /** Cupons de indicação (código → % de desconto). Em código por enquanto: são 2. */

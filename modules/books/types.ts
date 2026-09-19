@@ -22,6 +22,10 @@ export type Book = {
   /** História final revisada pelo usuário. Null = usa o texto do tema. */
   story: BookStory | null
   pdf_path: string | null
+  /** Pedido da landing: quando o comprador foi avisado por e-mail que entrou em produção. */
+  notified_at: string | null
+  /** Pedido da landing: quando o PDF foi enviado ao comprador pelo WhatsApp. */
+  delivered_at: string | null
   created_at: string
   updated_at: string
 }
@@ -41,7 +45,7 @@ export type BookPage = {
 export type BookWithPages = Book & { pages: BookPage[] }
 
 export const BOOK_SELECT =
-  "id, profile_id, lead_id, child_name, child_gender, theme, status, quality, photo_paths, dedication, pediatrician_name, pediatrician_logo_path, details, story, pdf_path, created_at, updated_at"
+  "id, profile_id, lead_id, child_name, child_gender, theme, status, quality, photo_paths, dedication, pediatrician_name, pediatrician_logo_path, details, story, pdf_path, notified_at, delivered_at, created_at, updated_at"
 
 export const BOOK_PAGE_SELECT = "book_id, index, image_path, status, error, prompt, updated_at"
 
