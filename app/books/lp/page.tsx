@@ -123,7 +123,7 @@ export default function BooksLandingPage() {
         <div className={LP_WRAP}>
           <LpTitle text="Páginas de um livro de verdade" highlight="de verdade" marker="#cdebd3" className="max-w-2xl text-[30px] sm:text-[44px]" />
         </div>
-        <ul className={cn(LP_WRAP, "lp-strip mt-6 flex gap-4 overflow-x-auto pb-4 sm:gap-6")}>
+        <ul className={cn(LP_WRAP, "lp-strip mt-6 flex gap-4 overflow-x-auto pb-4 scroll-pl-6 sm:gap-6 sm:scroll-pl-10 xl:scroll-pl-[6.5rem]")}>
           {SAMPLE_PAGES.map((p) => (
             <li key={p.src} className="w-[calc(100vw-5.5rem)] shrink-0 sm:w-[300px]">
               <div className="relative aspect-[3/4] overflow-hidden rounded-[14px] border-2 border-ink shadow-hard">
