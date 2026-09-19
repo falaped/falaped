@@ -7,14 +7,14 @@ const MAX_LEADS_PER_IP_24H = 5
 
 /**
  * Cria o lead da landing ou atualiza o existente com o mesmo e-mail (nome e
- * WhatsApp mais recentes; `consent_at` renovado). Devolve o lead e o livro já
- * criado por ele, se houver, para o wizard pular direto para a capa.
+ * WhatsApp mais recentes; `consent_at` renovado). Devolve o lead e quantos
+ * livros ele já criou, para o wizard retomar de onde parou.
  */
 export async function upsertBookLead(
   supabase: SupabaseClient,
   input: BookLeadInput,
   ip: string | null,
-): Promise<{ lead: BookLead; bookId: string | null }> {
+): Promise<{ lead: BookLead; bookCount: number }> {
   const { data: existing, error: findError } = await supabase
     .from("book_leads")
     .select("id")
@@ -50,7 +50,10 @@ export async function upsertBookLead(
     .single()
   if (error || !lead) throw new Error(`[BOOKS] Falha ao salvar lead: ${error?.message}`)
 
-  const { data: book, error: bookError } = await supabase.from("books").select("id").eq("lead_id", lead.id).maybeSingle()
-  if (bookError) throw new Error(`[BOOKS] Falha ao buscar livro do lead: ${bookError.message}`)
-  return { lead: lead as BookLead, bookId: book?.id ?? null }
+  const { count, error: bookError } = await supabase
+    .from("books")
+    .select("id", { count: "exact", head: true })
+    .eq("lead_id", lead.id)
+  if (bookError) throw new Error(`[BOOKS] Falha ao buscar livros do lead: ${bookError.message}`)
+  return { lead: lead as BookLead, bookCount: count ?? 0 }
 }

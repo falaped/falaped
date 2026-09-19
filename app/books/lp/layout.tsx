@@ -1,8 +1,7 @@
 import type { Metadata } from "next"
 import Link from "next/link"
-import { ArrowRight } from "lucide-react"
 
-import { bkButton } from "@/components/books/books-ui"
+import { LpHeaderCta } from "@/components/books/lp/lp-header-cta"
 import { LP_WRAP, LpBrand } from "@/components/books/lp/lp-ui"
 import { cn } from "@/lib/utils"
 import { BOOKS_WHATSAPP } from "@/modules/books/constants"
@@ -27,10 +26,7 @@ export default function BooksLandingLayout({ children }: { children: React.React
             <Link href="/books/lp#temas" className="hidden text-[13px] font-bold underline decoration-secondary decoration-2 underline-offset-4 sm:inline">
               Temas
             </Link>
-            <Link href="/books/lp/criar" className={bkButton("warning", "h-10 px-4 text-[13px] sm:h-11 sm:px-5 sm:text-sm")}>
-              Criar a história
-              <ArrowRight className="size-4" strokeWidth={2.6} aria-hidden />
-            </Link>
+            <LpHeaderCta />
           </nav>
         </div>
       </header>

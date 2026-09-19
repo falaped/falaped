@@ -21,9 +21,9 @@ export async function startBookLeadAction(input: unknown): Promise<StartBookLead
 
   const ip = (await headers()).get("x-forwarded-for")?.split(",")[0]?.trim() || null
   try {
-    const { lead, bookId } = await upsertBookLead(createAdminClient(), parsed.data, ip)
+    const { lead, bookCount } = await upsertBookLead(createAdminClient(), parsed.data, ip)
     await setBookLeadId(lead.id)
-    return { ok: true, hasBook: !!bookId }
+    return { ok: true, hasBook: bookCount > 0 }
   } catch (error: unknown) {
     return { ok: false, error: error instanceof Error ? error.message.replace(/^\[BOOKS\] /, "") : "Erro ao salvar seus dados." }
   }
