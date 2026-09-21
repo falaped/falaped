@@ -4,15 +4,18 @@ import { getBookLeadId } from "@/lib/book-lead-cookie"
 import { createLeadBookSchema } from "@/lib/schemas/book"
 import { createAdminClient } from "@/lib/supabase/server-admin"
 import { zodErrorToUserMessage } from "@/lib/zod-error-message"
+import { MAX_LEAD_COVERS } from "@/modules/books/constants"
 import { createBook } from "@/modules/books/create-book"
-import { getLeadBook } from "@/modules/books/get-lead-book"
+import { getLeadBooks } from "@/modules/books/get-lead-books"
 
 export type CreateLeadBookResult = { ok: true; bookId: string } | { ok: false; error: string }
 
 /**
- * Passo 2 da landing pública: cria o único livro do lead (quality medium, sem
- * história personalizada) com as fotos. A capa é gerada em seguida pela rota
- * /api/books/lead/cover. Se o lead já tem livro, devolve o existente.
+ * Passo 3 da landing pública: cria mais um livro do lead (quality medium, sem
+ * história personalizada). A capa vem em seguida pela rota
+ * /api/books/lead/cover. São até MAX_LEAD_COVERS livros, um por tema: repetir
+ * um tema devolve o livro que já existe, em vez de desenhar a mesma capa de
+ * novo. Sem fotos novas, reaproveita as do livro anterior.
  */
 export async function createLeadBookAction(formData: FormData): Promise<CreateLeadBookResult> {
   const leadId = await getBookLeadId()
@@ -28,10 +31,20 @@ export async function createLeadBookAction(formData: FormData): Promise<CreateLe
 
   const admin = createAdminClient()
   try {
-    const ctx = await getLeadBook(admin, leadId)
+    const ctx = await getLeadBooks(admin, leadId)
     if (!ctx) return { ok: false, error: "Cadastro não encontrado. Preencha seus dados de novo." }
-    if (ctx.book) return { ok: true, bookId: ctx.book.id }
-    const book = await createBook(admin, { leadId }, { ...parsed.data, quality: "medium", photos })
+
+    const sameTheme = ctx.books.find((b) => b.book.theme === parsed.data.theme)
+    if (sameTheme) return { ok: true, bookId: sameTheme.book.id }
+    if (ctx.books.length >= MAX_LEAD_COVERS)
+      return { ok: false, error: `Você já criou as ${MAX_LEAD_COVERS} capas deste cadastro.` }
+
+    const previous = ctx.books.at(-1)?.book
+    const book = await createBook(
+      admin,
+      { leadId },
+      { ...parsed.data, quality: "medium", photos, copyPhotosFrom: photos.length ? undefined : previous?.photo_paths ?? [] },
+    )
     return { ok: true, bookId: book.id }
   } catch (error: unknown) {
     return { ok: false, error: error instanceof Error ? error.message.replace(/^\[BOOKS\] /, "") : "Erro ao criar o livro." }
