@@ -7,7 +7,7 @@ import { PEWS } from "@/lib/scales/pews"
 import { PRAM } from "@/lib/scales/pram"
 import { TAL_6M_PLUS, TAL_UNDER_6M } from "@/lib/scales/tal"
 import { WESTLEY } from "@/lib/scales/westley"
-import { getScalesForAgeMonths } from "@/lib/scales"
+import { SCALES, getScalesForAgeMonths } from "@/lib/scales"
 import { scoreScale, scoreRange } from "@/lib/scales/score-scale"
 
 test("Apgar: 3 é grave, 6 é moderado, 7 é boa vitalidade", () => {
@@ -172,4 +172,28 @@ test("PRAM: saturação abaixo de 92% com tiragem já é crise moderada", () => 
   // PRAM não é oferecida abaixo de 1 ano; PASS ficou de fora de propósito.
   assert.ok(!getScalesForAgeMonths(11).some((s) => s.key === "pram"))
   assert.ok(getScalesForAgeMonths(12).some((s) => s.key === "pram"))
+})
+
+test("a idade da criança tira da lista a escala que não é da faixa dela", () => {
+  const keysAt = (months: number | null) =>
+    getScalesForAgeMonths(months).map((s) => s.key)
+
+  // Recém-nascido: neonatologia sim, asma e Wong-Baker não.
+  const newborn = keysAt(0)
+  assert.ok(newborn.includes("apgar"))
+  assert.ok(newborn.includes("nips"))
+  assert.ok(!newborn.includes("pram"))
+  assert.ok(!newborn.includes("wong-baker"))
+
+  // Escolar de 8 anos: nada de neonatologia, nem crupe, nem Tal.
+  const schoolAge = keysAt(96)
+  assert.ok(!schoolAge.includes("apgar"))
+  assert.ok(!schoolAge.includes("silverman-andersen"))
+  assert.ok(!schoolAge.includes("westley"))
+  assert.ok(!schoolAge.some((k) => k.startsWith("tal-")))
+  assert.ok(schoolAge.includes("pram"))
+  assert.ok(schoolAge.includes("wong-baker"))
+
+  // Ficha sem data de nascimento: a lista vem inteira, o médico decide.
+  assert.equal(keysAt(null).length, SCALES.length)
 })

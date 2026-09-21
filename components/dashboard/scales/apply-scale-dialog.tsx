@@ -65,6 +65,16 @@ function buildInitialAnswers(scale: ScaleDefinition): Record<string, number> {
 }
 
 /** Agrupa as escalas por categoria, preservando a ordem do seletor. */
+/** Idade em meses como o médico fala: "8 meses", "3 anos e 2 meses". */
+function formatAgeMonths(months: number): string {
+  if (months < 24) return `${months} ${months === 1 ? "mês" : "meses"}`
+  const years = Math.floor(months / 12)
+  const rest = months % 12
+  const yearsText = `${years} ${years === 1 ? "ano" : "anos"}`
+  if (rest === 0) return yearsText
+  return `${yearsText} e ${rest} ${rest === 1 ? "mês" : "meses"}`
+}
+
 function groupByCategory(
   scales: readonly ScaleDefinition[],
 ): { category: ScaleCategory; scales: ScaleDefinition[] }[] {
@@ -87,6 +97,14 @@ export function ApplyScaleDialog({
   const [isSaving, setIsSaving] = useState(false)
 
   const available = useMemo(() => getScalesForAgeMonths(ageMonths), [ageMonths])
+
+  // A lista some escalas por idade. Dizer isso em voz alta evita o médico
+  // procurar uma escala que a criança não tem idade de receber — e avisa quando
+  // a ficha está sem data de nascimento, caso em que a lista vem inteira.
+  const ageFilterNote =
+    ageMonths === null
+      ? "A ficha não tem data de nascimento, então a lista mostra todas as escalas."
+      : `Lista filtrada pela idade da criança (${formatAgeMonths(ageMonths)}).`
   const groups = useMemo(() => groupByCategory(available), [available])
   const scale = scaleKey ? getScaleByKey(scaleKey) : null
 
@@ -154,7 +172,7 @@ export function ApplyScaleDialog({
           <DialogTitle>Aplicar escala</DialogTitle>
           <DialogDescription>
             Escolha a escala, responda os itens e o resultado fica registrado no
-            histórico do paciente.
+            histórico do paciente. {ageFilterNote}
           </DialogDescription>
         </DialogHeader>
 
