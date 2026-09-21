@@ -71,22 +71,44 @@ export function ChangelogMenuItem() {
     <>
       <SidebarMenuItem>
         <SidebarMenuButton
-          tooltip="Novidades"
+          tooltip={
+            hasUnseen
+              ? `${LATEST_RELEASE.entries.length} novidades no app`
+              : "Novidades"
+          }
           onClick={() => setOpen(true)}
-          className={cn(hasUnseen && "text-primary hover:text-primary")}
+          className={cn(
+            "relative overflow-hidden",
+            hasUnseen &&
+              "bg-primary/10 text-primary ring-1 ring-primary/40 hover:bg-primary/15 hover:text-primary",
+          )}
         >
-          {/* A animação só roda enquanto há novidade não vista, e só para quem
-              não pediu menos movimento no sistema — chamar atenção de quem
-              desligou animação é ignorar a preferência, não insistir. */}
-          <SparklesIcon className={cn(hasUnseen && "motion-safe:animate-pulse")} />
-          <span className={cn(hasUnseen && "font-medium")}>Novidades</span>
+          {/* Brilho varrendo a linha. Só enquanto há novidade não vista, e só
+              para quem não pediu menos movimento no sistema: insistir com quem
+              desligou animação é ignorar a preferência, não chamar atenção. */}
           {hasUnseen ? (
             <span
-              className="relative ml-auto flex h-2 w-2 shrink-0"
-              aria-label="Há novidades que você ainda não viu"
-            >
-              <span className="absolute inline-flex h-full w-full rounded-full bg-primary opacity-75 motion-safe:animate-ping" />
-              <span className="relative inline-flex h-2 w-2 rounded-full bg-primary" />
+              aria-hidden
+              className="pointer-events-none absolute inset-0 bg-gradient-to-r from-transparent via-primary/30 to-transparent bg-[length:380px_100%] bg-no-repeat motion-safe:animate-shimmer"
+            />
+          ) : null}
+
+          <SparklesIcon
+            className={cn("relative", hasUnseen && "motion-safe:animate-pulse")}
+          />
+          <span className={cn("relative", hasUnseen && "font-semibold")}>
+            Novidades
+          </span>
+
+          {hasUnseen ? (
+            <span className="relative ml-auto flex shrink-0 items-center gap-1.5">
+              <span className="relative flex h-2 w-2">
+                <span className="absolute inline-flex h-full w-full rounded-full bg-primary opacity-75 motion-safe:animate-ping" />
+                <span className="relative inline-flex h-2 w-2 rounded-full bg-primary" />
+              </span>
+              <span className="rounded-full bg-primary px-1.5 py-0.5 text-[10px] font-bold uppercase leading-none tracking-wide text-primary-foreground motion-safe:animate-bounce">
+                Novo
+              </span>
             </span>
           ) : null}
         </SidebarMenuButton>
