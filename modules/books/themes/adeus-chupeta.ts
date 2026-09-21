@@ -34,7 +34,7 @@ export const adeusChupeta: BookTheme = {
   title: "O Presente {do|da} {nome}",
   subtitle: "Uma história sobre se despedir da chupeta.",
   defaultDedication:
-    "Para {nome}, que escolheu {sozinho|sozinha} o dia da despedida e descobriu um sorriso ainda maior. Que boca linda para falar coisas bonitas.",
+    "Você escolheu {sozinho|sozinha} o dia da despedida e descobriu um sorriso ainda maior. Que boca linda para falar coisas bonitas.",
   outfit:
     "a coral t-shirt with a white sailboat on the chest, denim shorts with rolled cuffs and white sneakers",
   coverScene: `sunny front porch of a small house; the {boy|girl} stands holding ${BOX} out toward the viewer with both hands, a huge open smile showing small white teeth, chin up with pride; potted flowers and a wooden door softly blurred behind.`,

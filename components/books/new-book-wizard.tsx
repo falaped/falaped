@@ -484,6 +484,9 @@ export function NewBookWizard({ themes }: { themes: WizardTheme[] }) {
             <span className={LABEL}>
               Dedicatória <span className={HELP}>(opcional)</span>
             </span>
+            <span className={HELP}>
+              A página já abre com <b className="font-bold">Para {name.trim() || "[nome]"}</b> em letras douradas — escreva só o recado que vem abaixo.
+            </span>
             <textarea
               value={dedication}
               onChange={(e) => setDedication(e.target.value)}

@@ -25,7 +25,7 @@ export const oDiaDaVacina: BookTheme = {
   title: "O Escudo {do|da} {nome}",
   subtitle: "Uma história sobre coragem no dia da vacina.",
   defaultDedication:
-    "Para {nome}, que descobriu que coragem não é não ter medo. É dar o primeiro passo mesmo com ele.",
+    "Você descobriu que coragem não é não ter medo. É dar o primeiro passo mesmo com ele.",
   outfit:
     "a yellow t-shirt with a small white cloud on the chest, navy shorts and blue sneakers",
   coverScene: `the {boy|girl} stands in a heroic pose on a sunny clinic path, chest out and fists on hips, a round gold star sticker on the t-shirt and a small colorful bandage on the left upper arm; around {him|her} float ${SOLDIERS}; a cozy pediatric clinic with a red roof softly blurred behind; bright blue sky.`,

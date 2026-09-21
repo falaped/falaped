@@ -14,10 +14,13 @@ const STATUS: Record<string, { label: string; className: string }> = {
   new: { label: "Sem capa", className: "bg-white" },
   cover_ready: { label: "Capa pronta", className: "bg-accent" },
   checkout: { label: "Pediu o livro", className: "bg-warning" },
-  paid: { label: "Em produção", className: "bg-success" },
+  paid: { label: "Pix recebido", className: "bg-success" },
 }
 
 const DELIVERED = { label: "Entregue", className: "bg-success" }
+const IN_PRODUCTION = { label: "Em produção", className: "bg-success" }
+/** Pix confirmado pela Asaas (webhook), ainda não assumido. */
+const PAID = { label: "Pix recebido", className: "bg-success" }
 
 function formatDateTime(iso: string) {
   return new Date(iso).toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo" })
@@ -41,8 +44,8 @@ export async function LeadOrders() {
   return (
     <ul className="mx-auto grid max-w-[1400px] gap-4 px-4 pb-10 sm:px-10 sm:pb-14">
       {orders.map(({ book, lead, coverUrl, pdfUrl }) => {
-        const st = book.delivered_at ? DELIVERED : STATUS[lead.status] ?? STATUS.new
         const claimed = !!book.profile_id
+        const st = book.delivered_at ? DELIVERED : claimed ? IN_PRODUCTION : book.paid_at ? PAID : STATUS[lead.status] ?? STATUS.new
         const wa = `https://wa.me/55${lead.whatsapp}?text=${encodeURIComponent(`Olá, ${lead.first_name}! Aqui é do Falaped Books, sobre o livro de ${book.child_name}.`)}`
         const waPdf =
           pdfUrl &&
@@ -82,6 +85,12 @@ export async function LeadOrders() {
               </dd>
               <dt className="text-muted-foreground">Criado</dt>
               <dd className="font-bold">{formatDateTime(book.created_at)}</dd>
+              {book.paid_at && (
+                <>
+                  <dt className="text-muted-foreground">Pix</dt>
+                  <dd className="font-bold">confirmado em {formatDateTime(book.paid_at)}</dd>
+                </>
+              )}
               {claimed && (
                 <>
                   <dt className="text-muted-foreground">E-mail de produção</dt>
@@ -112,7 +121,7 @@ export async function LeadOrders() {
                 <form action={claimLeadBookAction}>
                   <input type="hidden" name="bookId" value={book.id} />
                   <button type="submit" className={bkButton("primary", "h-11 w-full text-[13px]")}>
-                    Pix confirmado: produzir e avisar
+                    {book.paid_at ? "Produzir e avisar" : "Pix confirmado: produzir e avisar"}
                     <ArrowRight className="size-4" strokeWidth={2.6} aria-hidden />
                   </button>
                 </form>

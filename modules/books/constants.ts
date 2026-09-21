@@ -32,9 +32,14 @@ export const BOOKS_EMAIL_REPLY_TO = "contato@falaped.com.br"
 export const BOOKS_WHATSAPP = "5531997815503"
 /** Cupons de indicação (código → % de desconto). Em código por enquanto: são 2. */
 export const BOOK_COUPONS: Record<string, number> = { GABIMARINHO10: 10, MARIZINATO10: 10 }
+/** Preço em centavos já com o desconto do cupom. Base do valor cobrado no Pix. */
+export function bookPriceCents(coupon: string | null | undefined): number {
+  const pct = coupon ? BOOK_COUPONS[coupon] ?? 0 : 0
+  return Math.round(2999 * (1 - pct / 100))
+}
 /** Preço em BRL já com o desconto do cupom (ou cheio, se nulo/inválido). */
 export function bookPriceWithCoupon(coupon: string | null | undefined): string {
-  const pct = coupon ? BOOK_COUPONS[coupon] ?? 0 : 0
-  const cents = Math.round(2999 * (1 - pct / 100))
-  return (cents / 100).toFixed(2).replace(".", ",")
+  return (bookPriceCents(coupon) / 100).toFixed(2).replace(".", ",")
 }
+/** Validade do QR do Pix. Passou disso, o checkout gera outro. */
+export const PIX_EXPIRES_IN_SECONDS = 24 * 60 * 60

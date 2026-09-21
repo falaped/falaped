@@ -26,7 +26,7 @@ export const primeiroDiaNaEscola: BookTheme = {
   title: "A Mochila {do|da} {nome}",
   subtitle: "Uma história sobre o primeiro dia na escola.",
   defaultDedication:
-    "Para {nome}, que descobriu que o friozinho na barriga é só o motor da coragem ligando.",
+    "Você descobriu que o friozinho na barriga é só o motor da coragem ligando.",
   outfit:
     "a light-blue polo shirt, navy shorts, white socks and red sneakers",
   coverScene: `sunny morning in front of a colorful school gate; the {boy|girl} stands with feet apart and a proud grin, both thumbs hooked into the straps of ${BACKPACK}, chin up; a cheerful low school building with a red roof softly blurred behind, bright blue sky.`,

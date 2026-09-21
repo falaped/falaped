@@ -15,6 +15,12 @@ const envSchema = z.object({
   // produção não sai e o gestor vê o erro na tela de pedidos.
   RESEND_API_KEY: z.string().optional(),
   BOOKS_EMAIL_FROM: z.string().default("Falaped Books <livros@contato.falaped.com.br>"),
+  // Cobrança Pix da landing (Asaas). O prefixo da chave escolhe o ambiente:
+  // $aact_hmlg_ = sandbox, $aact_prod_ = produção.
+  ASAAS_API_KEY: z.string().optional(),
+  // Token do webhook da Asaas, conferido no header `asaas-access-token`.
+  // Sem ele a rota recusa tudo: pagamento não se confirma por engano.
+  ASAAS_WEBHOOK_TOKEN: z.string().optional(),
   // E-mails (separados por vírgula) que veem os pedidos da landing em app.falaped.com.br/books/leads.
   BOOKS_ADMIN_EMAILS: z
     .string()

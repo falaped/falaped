@@ -25,6 +25,7 @@ export async function createLeadBookAction(formData: FormData): Promise<CreateLe
     childName: formData.get("childName"),
     childGender: formData.get("childGender"),
     theme: formData.get("theme"),
+    dedication: formData.get("dedication"),
   })
   if (!parsed.success) return { ok: false, error: zodErrorToUserMessage(parsed.error) }
   const photos = formData.getAll("photos").filter((f): f is File => f instanceof File && f.size > 0)

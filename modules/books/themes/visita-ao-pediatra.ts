@@ -24,7 +24,7 @@ export const visitaAoPediatra: BookTheme = {
   title: "O Check-up {do|da} {nome}",
   subtitle: "Uma história sobre cuidar do corpo com o pediatra.",
   defaultDedication:
-    "Para {nome}, que descobriu que cuidar do corpo é uma missão de {herói|heroína}. E que crescer forte começa com coragem.",
+    "Você descobriu que cuidar do corpo é uma missão de {herói|heroína}. E que crescer forte começa com coragem.",
   outfit:
     "a green t-shirt with a small white sailboat on the chest, khaki shorts and red sneakers",
   coverScene: `bright pediatric consulting room; the {boy|girl} stands proudly on a small step stool with fists on hips and chin up, a colorful stethoscope hanging around the neck and a round green sticker with a smiling sun on the t-shirt; a blank growth chart poster and a wooden toy box softly blurred behind; warm daylight from a window.`,

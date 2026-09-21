@@ -32,7 +32,7 @@ export const escovarOsDentes: BookTheme = {
   title: "O Sorriso {do|da} {nome}",
   subtitle: "Uma história sobre escovar os dentes todo dia.",
   defaultDedication:
-    "Para {nome}, que descobriu que cuidar do sorriso é uma aventura de dois minutos. Que ele brilhe sempre, {pequeno herói|pequena heroína}.",
+    "Você descobriu que cuidar do sorriso é uma aventura de dois minutos. Que ele brilhe sempre, {pequeno herói|pequena heroína}.",
   outfit:
     "a light-green t-shirt with a small white star on the chest, blue denim shorts and red sneakers",
   coverScene: `sunny bathroom; the {boy|girl} stands on a small wooden stool in a heroic pose, holding ${BRUSH} up high like a sword, a huge bright smile with sparkling teeth; a few ${BUGS} run away in the background; soft light-blue wall behind.`,

@@ -29,7 +29,7 @@ export const feECoragem: BookTheme = {
   title: "A Luz {do|da} {nome}",
   subtitle: "Uma história sobre fé, coragem e um coração tranquilo.",
   defaultDedication:
-    "Para {nome}, que descobriu que a coragem já morava dentro {dele|dela}. Bastou respirar fundo e acreditar.",
+    "Você descobriu que a coragem já morava dentro de você. Bastou respirar fundo e acreditar.",
   outfit:
     "a coral t-shirt with a small white star on the chest, denim overalls and white sneakers",
   coverScene: `a small school stage with a deep-blue curtain; the {boy|girl} stands at the center in a warm spotlight, feet apart, one hand resting flat on the chest and the other arm open wide, chin up with a brave smile; ${GLOW}; tiny golden sparkles float around.`,

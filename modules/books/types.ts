@@ -22,6 +22,13 @@ export type Book = {
   /** História final revisada pelo usuário. Null = usa o texto do tema. */
   story: BookStory | null
   pdf_path: string | null
+  /** Cobrança Pix (Asaas): QR estático de uso único deste livro. */
+  pix_qr_code_id: string | null
+  pix_payload: string | null
+  pix_encoded_image: string | null
+  pix_expires_at: string | null
+  /** Quando a Asaas confirmou o Pix. Só o webhook escreve aqui. */
+  paid_at: string | null
   /** Pedido da landing: quando o comprador foi avisado por e-mail que entrou em produção. */
   notified_at: string | null
   /** Pedido da landing: quando o PDF foi enviado ao comprador pelo WhatsApp. */
@@ -45,7 +52,7 @@ export type BookPage = {
 export type BookWithPages = Book & { pages: BookPage[] }
 
 export const BOOK_SELECT =
-  "id, profile_id, lead_id, child_name, child_gender, theme, status, quality, photo_paths, dedication, pediatrician_name, pediatrician_logo_path, details, story, pdf_path, notified_at, delivered_at, created_at, updated_at"
+  "id, profile_id, lead_id, child_name, child_gender, theme, status, quality, photo_paths, dedication, pediatrician_name, pediatrician_logo_path, details, story, pdf_path, pix_qr_code_id, pix_payload, pix_encoded_image, pix_expires_at, paid_at, notified_at, delivered_at, created_at, updated_at"
 
 export const BOOK_PAGE_SELECT = "book_id, index, image_path, status, error, prompt, updated_at"
 

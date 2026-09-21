@@ -113,5 +113,5 @@ export const bookLeadSchema = z.object({
 })
 export type BookLeadInput = z.infer<typeof bookLeadSchema>
 
-/** Passo 2 da landing pública: criança + tema (a capa é gerada em seguida). */
-export const createLeadBookSchema = createBookSchema.pick({ childName: true, childGender: true, theme: true })
+/** Passo 2 da landing pública: criança + dedicatória + tema (a capa é gerada em seguida). */
+export const createLeadBookSchema = createBookSchema.pick({ childName: true, childGender: true, theme: true, dedication: true })

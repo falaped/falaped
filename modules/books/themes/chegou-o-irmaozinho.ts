@@ -27,7 +27,7 @@ export const chegouOIrmaozinho: BookTheme = {
   title: "O Time {do|da} {nome}",
   subtitle: "Uma história sobre ganhar um irmãozinho.",
   defaultDedication:
-    "Para {nome}, {capitão|capitã} do time que só cresceu. O amor não divide: ele multiplica.",
+    "{Capitão|Capitã} do time que só cresceu. O amor não divide: ele multiplica.",
   outfit:
     "a red t-shirt with a small white star on the chest, denim overalls and white sneakers",
   coverScene: `sunny living room; the {boy|girl} stands proudly on the sofa cushion with one arm raised like a team captain, the other hand resting gently on the head of ${BABY}, who lies on a soft blanket beside {him|her}; warm light, plants and a big window softly blurred behind.`,

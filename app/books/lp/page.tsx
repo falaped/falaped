@@ -13,7 +13,7 @@ const STEPS = [
   { icon: Camera, title: "Conte quem é a criança", text: "Nome, menino ou menina e 1 ou 2 fotos do rosto. Leva 1 minuto." },
   { icon: Palette, title: "Escolha a história", text: "Dia da vacina, dormir na própria cama, adeus chupeta e mais 7 histórias." },
   { icon: WandSparkles, title: "Veja a capa na tela", text: "Em cerca de 2 minutos ela aparece com a sua criança. É uma prévia para você decidir: dá para ver, não para baixar." },
-  { icon: MessageCircle, title: "Receba o livro completo", text: `Gostou? Pague ${"R$ " + BOOK_PRICE_BRL} por Pix no WhatsApp e o PDF com as 20 páginas chega na hora.` },
+  { icon: MessageCircle, title: "Receba o livro completo", text: `Gostou? Pague ${"R$ " + BOOK_PRICE_BRL} por Pix na própria tela e o PDF com as 20 páginas chega no seu WhatsApp.` },
 ]
 
 const FEATURES = [
@@ -40,7 +40,7 @@ const FAQ = [
   },
   {
     q: "Como eu pago?",
-    a: `Por Pix, pelo WhatsApp. Depois de ver a capa, você toca em "Quero o livro completo" e a conversa já abre com o seu pedido escrito. Cupom de indicação dá 10% de desconto.`,
+    a: `Por Pix, na própria tela. Depois de ver a capa, você toca em "Quero o livro completo" e aparece o QR Code (e o copia e cola) para pagar no app do seu banco. A tela avisa sozinha quando o Pix cai. Cupom de indicação dá 10% de desconto.`,
   },
   {
     q: "Quanto tempo leva?",
