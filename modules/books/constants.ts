@@ -24,12 +24,8 @@ export const bookPagePath = (bookId: string, index: number) =>
   `${bookId}/pages/${index}.jpg`
 export const bookPdfPath = (bookId: string) => `${bookId}/book.pdf`
 
-// ┌─────────────────────────────────────────────────────────────────────────┐
-// │ TESTE EM PRODUÇÃO: preço em 1 centavo para pagar o Pix de verdade sem    │
-// │ gastar. VOLTAR PARA 2999 ANTES DE DIVULGAR A LANDING.                    │
-// └─────────────────────────────────────────────────────────────────────────┘
-/** Oferta da landing pública em centavos (decisão do gestor, 17/09/2026: 2999). */
-export const BOOK_PRICE_CENTS = 1
+/** Oferta da landing pública em centavos (decisão do gestor, 17/09/2026). */
+export const BOOK_PRICE_CENTS = 2999
 /** Caixa que recebe as respostas: o domínio de envio (contato.falaped.com.br) não tem entrada. */
 export const BOOKS_EMAIL_REPLY_TO = "contato@falaped.com.br"
 /** WhatsApp da venda concierge (Pix), só dígitos com DDI. */
