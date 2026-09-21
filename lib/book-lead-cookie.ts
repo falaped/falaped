@@ -19,3 +19,8 @@ export async function setBookLeadId(id: string): Promise<void> {
     maxAge: MAX_AGE,
   })
 }
+
+/** Esquece o lead deste navegador. Só em Server Action ou Route Handler. */
+export async function clearBookLeadId(): Promise<void> {
+  ;(await cookies()).delete(NAME)
+}

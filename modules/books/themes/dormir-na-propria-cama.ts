@@ -26,7 +26,7 @@ export const dormirNaPropriaCama: BookTheme = {
   title: "A Cama {do|da} {nome}",
   subtitle: "Uma história sobre dormir na própria cama.",
   defaultDedication:
-    "Para {nome}, que descobriu que a cama {dele|dela} é o lugar mais seguro e gostoso do mundo. Boa noite, {capitão|capitã}.",
+    "Você descobriu que a sua cama é o lugar mais seguro e gostoso do mundo. Boa noite, {capitão|capitã}.",
   outfit:
     "light-blue pajamas with small white stars, long sleeves and long pants, barefoot",
   coverScene: `night; the {boy|girl} sits proudly on a blue bed as if on a throne, back straight, chin up, one hand resting on ${DINO} beside {him|her}; the bedroom has a soft blue wall and a ceiling covered in small glowing yellow stars; a warm bedside lamp glows on the nightstand.`,

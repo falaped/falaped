@@ -4,7 +4,10 @@ import { BOOK_ASSETS_BUCKET } from "@/lib/constants"
 import { bookPagePath, COVER_INDEX } from "@/modules/books/constants"
 import { BOOK_LEAD_SELECT, BOOK_SELECT, type Book, type BookLead } from "@/modules/books/types"
 
-export type LeadBookOrder = { book: Book; lead: BookLead; coverUrl: string | null }
+export type LeadBookOrder = { book: Book; lead: BookLead; coverUrl: string | null; pdfUrl: string | null }
+
+/** O link do PDF vai por WhatsApp para o comprador: vale uma semana. */
+const PDF_URL_EXPIRY_SECONDS = 7 * 24 * 60 * 60
 
 /**
  * Pedidos da landing pública: livros criados por lead, mais recentes primeiro,
@@ -33,7 +36,22 @@ export async function listLeadBooks(supabase: SupabaseClient): Promise<LeadBookO
   const { data: signed } = paths.length ? await supabase.storage.from(BOOK_ASSETS_BUCKET).createSignedUrls(paths, 60 * 60) : { data: [] }
   const urlByPath = new Map((signed ?? []).map((s) => [s.path, s.signedUrl]))
 
+  const pdfPaths = rows.flatMap((r) => (r.pdf_path ? [r.pdf_path] : []))
+  const { data: signedPdfs } = pdfPaths.length
+    ? await supabase.storage.from(BOOK_ASSETS_BUCKET).createSignedUrls(pdfPaths, PDF_URL_EXPIRY_SECONDS)
+    : { data: [] }
+  const pdfByPath = new Map((signedPdfs ?? []).map((s) => [s.path, s.signedUrl]))
+
   return rows.flatMap(({ lead, ...book }) =>
-    lead ? [{ book, lead, coverUrl: urlByPath.get(bookPagePath(book.id, COVER_INDEX)) ?? null }] : [],
+    lead
+      ? [
+          {
+            book,
+            lead,
+            coverUrl: urlByPath.get(bookPagePath(book.id, COVER_INDEX)) ?? null,
+            pdfUrl: book.pdf_path ? pdfByPath.get(book.pdf_path) ?? null : null,
+          },
+        ]
+      : [],
   )
 }

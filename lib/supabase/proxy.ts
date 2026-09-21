@@ -48,7 +48,8 @@ export async function updateSession(request: NextRequest) {
   // books.falaped.com.br é 100% público: só a landing (app/books/lp) e a API do lead.
   // O app interno de livros do pediatra fica em app.falaped.com.br/books.
   const isBooksHost = (request.headers.get("host") ?? "").startsWith("books.");
-  const isBooksPublic = pathname.startsWith("/books/lp") || pathname.startsWith("/api/books/lead");
+  const isBooksPublic =
+    pathname.startsWith("/books/lp") || pathname.startsWith("/api/books/lead") || pathname.startsWith("/api/books/pix");
   if (isBooksHost) {
     const LP_ALIASES = ["/criar", "/privacidade"];
     const url = request.nextUrl.clone();
@@ -56,7 +57,7 @@ export async function updateSession(request: NextRequest) {
       url.pathname = pathname.slice("/books/lp".length) || "/";
       return NextResponse.redirect(url);
     }
-    if (pathname.startsWith("/api/books/lead")) return supabaseResponse;
+    if (pathname.startsWith("/api/books/lead") || pathname.startsWith("/api/books/pix")) return supabaseResponse;
     if (pathname === "/" || LP_ALIASES.includes(pathname) || pathname.startsWith("/lp")) {
       url.pathname = pathname === "/" ? "/books/lp" : pathname.startsWith("/lp") ? `/books${pathname}` : `/books/lp${pathname}`;
       const rewriteResponse = NextResponse.rewrite(url, { request });

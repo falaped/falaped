@@ -4,10 +4,11 @@ import { useEffect, useRef, useState } from "react"
 import Link from "next/link"
 import { useSearchParams } from "next/navigation"
 import { toast } from "sonner"
-import { BookOpen, Check, ChevronLeft, ChevronRight, Loader2, Maximize2, MessageCircle, Plus, Printer, Shield, Sparkles, X, Zap } from "lucide-react"
+import { BookOpen, Check, ChevronLeft, ChevronRight, Copy, Loader2, Maximize2, MessageCircle, Plus, Printer, Shield, Sparkles, X, Zap } from "lucide-react"
 
-import { checkoutLeadBookAction, createLeadBookAction, startBookLeadAction } from "@/actions/books"
-import { BkButton, BrandBlur, Chip, FIELD, HELP, LABEL, Sticker, TINTS } from "@/components/books/books-ui"
+import { checkoutLeadBookAction, createLeadBookAction, forgetBookLeadAction, getLeadBookPaymentAction, startBookLeadAction } from "@/actions/books"
+import type { BookPix } from "@/modules/books/get-book-pix"
+import { BkButton, BrandBlur, Chip, FIELD, HELP, LABEL, Sticker, TINTS, bkButton } from "@/components/books/books-ui"
 import { LP_WRAP, LpCard, Orn } from "@/components/books/lp/lp-ui"
 import { Dialog, DialogClose, DialogContent, DialogTitle } from "@/components/ui/dialog"
 import { PhotoSlot, type WizardTheme } from "@/components/books/new-book-wizard"
@@ -20,7 +21,7 @@ import { cn } from "@/lib/utils"
 const STEPS = ["Contato", "Criança", "Tema", "Pronto"] as const
 
 /** Uma das capas do lead (cada capa é um livro, um tema por capa). */
-export type WizardBook = { id: string; childName: string; childGender: BookGender; theme: string; coverUrl: string | null }
+export type WizardBook = { id: string; childName: string; childGender: BookGender; theme: string; dedication: string | null; coverUrl: string | null; paid: boolean }
 
 export type LeadWizardInitial = {
   lead: { firstName: string; coupon: string | null; status: BookLeadStatus } | null
@@ -77,6 +78,7 @@ export function LeadWizard({ themes, initial }: { themes: WizardTheme[]; initial
   const [consent, setConsent] = useState(false)
   const [name, setName] = useState(initial.books.at(-1)?.childName ?? "")
   const [gender, setGender] = useState<BookGender | "">(initial.books.at(-1)?.childGender ?? "")
+  const [dedication, setDedication] = useState(initial.books.at(-1)?.dedication ?? "")
   const [photos, setPhotos] = useState<(File | null)[]>(Array.from({ length: MAX_BOOK_PHOTOS }, () => null))
   const [theme, setTheme] = useState(initial.books.at(-1)?.theme ?? themes[0]?.slug ?? "")
   const [coverError, setCoverError] = useState<string | null>(null)
@@ -84,6 +86,9 @@ export function LeadWizard({ themes, initial }: { themes: WizardTheme[]; initial
   const [retry, setRetry] = useState(0)
   const [busy, setBusy] = useState(false)
   const [zoom, setZoom] = useState(false)
+  /** Cobrança aberta na tela. Null = ainda não pediu o livro completo. */
+  const [pix, setPix] = useState<BookPix | null>(null)
+  const [copied, setCopied] = useState(false)
   const [leadStatus, setLeadStatus] = useState<BookLeadStatus | null>(initial.lead?.status ?? null)
   const generating = useRef(new Set<string>())
 
@@ -99,6 +104,7 @@ export function LeadWizard({ themes, initial }: { themes: WizardTheme[]; initial
   const activeTheme = themes.find((t) => t.slug === active?.theme) ?? selectedTheme
   const activeName = active?.childName ?? name.trim()
   const activeGender = active?.childGender ?? gender
+  const paid = !!active?.paid
   /** Título de verdade do livro ("A Cama do Samuel"), o mesmo que vai na capa. */
   const bookTitle = activeTheme && activeName && activeGender ? renderBookText(activeTheme.title, { name: activeName, gender: activeGender }) : ""
 
@@ -110,7 +116,32 @@ export function LeadWizard({ themes, initial }: { themes: WizardTheme[]; initial
   function showCover(book: WizardBook) {
     setActiveId(book.id)
     setCoverError(null)
+    setPix(null)
     setStep(3)
+  }
+
+  /** Esquece tudo que veio do lead anterior (capas, criança, cobrança). */
+  function resetBooks() {
+    setBooks([])
+    setActiveId(null)
+    setPix(null)
+    setName("")
+    setGender("")
+    setDedication("")
+    setPhotos(Array.from({ length: MAX_BOOK_PHOTOS }, () => null))
+  }
+
+  /** "Não é você?": descarta o cookie do lead e recomeça o cadastro em branco. */
+  async function startOver() {
+    await forgetBookLeadAction()
+    resetBooks()
+    setFirstName("")
+    setLastName("")
+    setEmail("")
+    setWhatsapp("")
+    setConsent(false)
+    setLeadStatus(null)
+    setStep(0)
   }
 
   /** "Criar com outro tema": volta ao passo do tema já em um que sobrou. */
@@ -161,6 +192,9 @@ export function LeadWizard({ themes, initial }: { themes: WizardTheme[]; initial
       window.location.reload()
       return
     }
+    // Cadastro novo: as capas em memória são do lead anterior e travariam o
+    // limite de MAX_LEAD_COVERS neste, que ainda não criou nenhuma.
+    resetBooks()
     setStep(1)
   }
 
@@ -181,15 +215,17 @@ export function LeadWizard({ themes, initial }: { themes: WizardTheme[]; initial
     fd.set("childName", name.trim())
     fd.set("childGender", gender)
     fd.set("theme", theme)
+    fd.set("dedication", dedication.trim())
     files.forEach((f) => fd.append("photos", f))
     const result = await createLeadBookAction(fd)
     setBusy(false)
     if (!result.ok) return toast.error(result.error)
-    const created: WizardBook = { id: result.bookId, childName: name.trim(), childGender: gender, theme, coverUrl: null }
+    const created: WizardBook = { id: result.bookId, childName: name.trim(), childGender: gender, theme, dedication: dedication.trim() || null, coverUrl: null, paid: false }
     setBooks((bs) => (bs.some((b) => b.id === created.id) ? bs : [...bs, created]))
     showCover(created)
   }
 
+  /** Pede o livro completo: registra o pedido e abre o Pix na própria tela. */
   async function checkout() {
     if (!bookId) return
     setBusy(true)
@@ -197,9 +233,39 @@ export function LeadWizard({ themes, initial }: { themes: WizardTheme[]; initial
     setBusy(false)
     if (!result.ok) return toast.error(result.error)
     setLeadStatus("checkout")
-    const text = `Olá! Criei o livro "${bookTitle || activeTheme?.label || ""}" e quero as 20 páginas por R$ ${price}${validCoupon ? ` (cupom ${validCoupon})` : ""}. Pedido ${bookId.slice(0, 8)}.`
-    window.open(`https://wa.me/${BOOKS_WHATSAPP}?text=${encodeURIComponent(text)}`, "_blank", "noopener")
+    if (result.paid) return setBooks((bs) => bs.map((b) => (b.id === bookId ? { ...b, paid: true } : b)))
+    setPix(result.pix)
   }
+
+  /** Enquanto o Pix está aberto, pergunta ao servidor se já caiu. Quem confirma
+   *  é o webhook da Asaas; aqui só lemos o que ele escreveu. */
+  useEffect(() => {
+    if (!pix || !bookId || paid) return
+    const id = setInterval(async () => {
+      const result = await getLeadBookPaymentAction(bookId)
+      if (!result.ok || !result.paid) return
+      setBooks((bs) => bs.map((b) => (b.id === bookId ? { ...b, paid: true } : b)))
+      setLeadStatus("paid")
+      setPix(null)
+    }, 5000)
+    return () => clearInterval(id)
+  }, [pix, bookId, paid])
+
+  async function copyPix() {
+    if (!pix) return
+    try {
+      await navigator.clipboard.writeText(pix.payload)
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2500)
+    } catch {
+      toast.error("Não foi possível copiar. Selecione o código e copie na mão.")
+    }
+  }
+
+  /** Conversa já escrita para mandar o comprovante do Pix. */
+  const receiptUrl = `https://wa.me/${BOOKS_WHATSAPP}?text=${encodeURIComponent(
+    `Olá! Paguei o livro "${bookTitle || activeTheme?.label || ""}" (R$ ${pix?.amount.replace(".", ",") ?? price}). Segue o comprovante. Pedido ${pix?.reference ?? bookId?.slice(0, 8) ?? ""}.`,
+  )}`
 
   return (
     <div className={cn(LP_WRAP, "pb-10 pt-6 sm:pb-16 sm:pt-10")}>
@@ -274,7 +340,7 @@ export function LeadWizard({ themes, initial }: { themes: WizardTheme[]; initial
             {initial.lead && (
               <p className="text-[14px] font-medium text-[#3f3f46]">
                 Olá, {firstName}! Vamos criar o livro.{" "}
-                <button type="button" onClick={() => setStep(0)} className="font-bold underline decoration-secondary decoration-2 underline-offset-2">
+                <button type="button" onClick={() => void startOver()} className="font-bold underline decoration-secondary decoration-2 underline-offset-2">
                   Não é você?
                 </button>
               </p>
@@ -305,6 +371,23 @@ export function LeadWizard({ themes, initial }: { themes: WizardTheme[]; initial
                 })}
               </div>
             </fieldset>
+            <label className="flex flex-col gap-2">
+              <span className={LABEL}>
+                Dedicatória <span className={HELP}>(opcional)</span>
+              </span>
+              <span className={HELP}>
+                A página já abre com <b className="font-bold">Para {name.trim() || "[nome]"}</b> em letras douradas — escreva só o recado que vem abaixo.
+              </span>
+              <textarea
+                value={dedication}
+                onChange={(e) => setDedication(e.target.value)}
+                maxLength={400}
+                rows={3}
+                placeholder="Que você durma tranquilo sabendo o quanto é amado. Com amor, mamãe e papai."
+                className={cn(FIELD, "h-auto py-3")}
+              />
+              <span className={HELP}>Vazio usa a mensagem do tema.</span>
+            </label>
             <div className="flex flex-col gap-3">
               <div className="flex flex-wrap items-baseline gap-2.5">
                 <span className={LABEL}>Fotos da criança</span>
@@ -537,7 +620,7 @@ export function LeadWizard({ themes, initial }: { themes: WizardTheme[]; initial
                   ))}
                 </ul>
 
-                {leadStatus === "paid" ? (
+                {paid || leadStatus === "paid" ? (
                   <p className="inline-flex items-center gap-2 self-start rounded-full border-2 border-ink bg-success px-4 py-2.5 text-[14px] font-bold shadow-hard-xs">
                     <Check className="size-4" strokeWidth={3} aria-hidden />
                     Pagamento confirmado. Seu livro está sendo montado.
@@ -560,13 +643,40 @@ export function LeadWizard({ themes, initial }: { themes: WizardTheme[]; initial
                       <span aria-hidden className="absolute -right-[17px] top-1/2 size-8 -translate-y-1/2 rounded-full border-[3px] border-ink bg-[#fcfbf7]" />
                     </div>
                     <div className="flex flex-col gap-2.5 p-5 sm:p-6">
-                      <BkButton variant="primary" busy={busy} busyLabel="Abrindo o WhatsApp..." onClick={() => void checkout()} className="h-[56px] w-full text-base">
-                        <MessageCircle className="size-4" strokeWidth={2.4} aria-hidden />
-                        Quero o livro completo
-                      </BkButton>
-                      <p className="text-center text-[12px] font-medium text-[#3f3f46]">
-                        {leadStatus === "checkout" ? "Pedido registrado. Se a conversa não abriu, toque de novo." : "Pix pelo WhatsApp, com o seu pedido já escrito."}
-                      </p>
+                      {pix ? (
+                        <>
+                          <div className="flex flex-col items-center gap-3 rounded-[14px] border-2 border-ink bg-white p-4">
+                            <div className="size-[190px] overflow-hidden rounded-[10px] border-2 border-ink" dangerouslySetInnerHTML={{ __html: pix.svg }} />
+                            <p className="text-center text-[12.5px] font-semibold leading-snug">
+                              Abra o app do banco, escolha Pix e leia o código.
+                            </p>
+                          </div>
+                          <p className="break-all rounded-[12px] border-2 border-ink bg-white px-3 py-2.5 text-[11px] font-medium leading-relaxed text-[#3f3f46]">
+                            {pix.payload}
+                          </p>
+                          <BkButton variant="secondary" onClick={() => void copyPix()} className="h-[52px] w-full text-[15px]">
+                            {copied ? <Check className="size-4" strokeWidth={3} aria-hidden /> : <Copy className="size-4" strokeWidth={2.4} aria-hidden />}
+                            {copied ? "Código copiado" : "Copiar código Pix"}
+                          </BkButton>
+                          <a href={receiptUrl} target="_blank" rel="noopener" className={cn(bkButton("primary", "h-[52px] w-full text-[15px]"))}>
+                            <MessageCircle className="size-4" strokeWidth={2.4} aria-hidden />
+                            Já paguei: enviar comprovante
+                          </a>
+                          <p className="text-center text-[12px] font-medium leading-snug text-[#3f3f46]">
+                            Mande o comprovante no WhatsApp e confirmamos na hora. Esta tela avisa quando o livro entrar em produção.
+                          </p>
+                        </>
+                      ) : (
+                        <>
+                          <BkButton variant="primary" busy={busy} busyLabel="Gerando o Pix..." onClick={() => void checkout()} className="h-[56px] w-full text-base">
+                            <Sparkles className="size-4" strokeWidth={2.4} aria-hidden />
+                            Quero o livro completo
+                          </BkButton>
+                          <p className="text-center text-[12px] font-medium text-[#3f3f46]">
+                            Pix na hora, aqui mesmo. O PDF chega no seu WhatsApp.
+                          </p>
+                        </>
+                      )}
                     </div>
                   </div>
                 )}
@@ -578,13 +688,13 @@ export function LeadWizard({ themes, initial }: { themes: WizardTheme[]; initial
             <Dialog open={zoom} onOpenChange={setZoom}>
               {/* Mesmo lightbox das páginas do livro (components/books/page-card.tsx). */}
               {/* tela cheia: a capa é o produto, ampliar tem que mostrar tudo */}
-              <DialogContent className="books-theme inset-0 top-0 left-0 h-[100svh] w-screen max-w-none translate-x-0 translate-y-0 place-items-center gap-0 rounded-none border-0 bg-transparent p-3 shadow-none sm:p-6">
+              <DialogContent className="books-theme inset-0 top-0 left-0 h-[100svh] w-screen max-w-none translate-x-0 translate-y-0 place-items-center gap-0 rounded-none border-0 bg-transparent p-0 shadow-none">
                 <DialogTitle className="sr-only">Capa do livro de {activeName}</DialogTitle>
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src={coverUrl}
                   alt={`Capa do livro de ${activeName}`}
-                  className="max-h-full w-auto max-w-full rounded-[10px] border-2 border-ink object-contain"
+                  className="h-[100svh] w-auto max-w-full object-contain"
                 />
                 <DialogClose
                   aria-label="Fechar"

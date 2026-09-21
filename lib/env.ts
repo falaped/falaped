@@ -11,6 +11,21 @@ const envSchema = z.object({
   SUPABASE_SERVICE_ROLE_KEY: z.string().optional(),
   // books.falaped.com.br: geração de ilustrações (gpt-image-2 via Replicate).
   REPLICATE_API_TOKEN: z.string().optional(),
+  // Envio de e-mail transacional dos pedidos (Resend). Sem a chave, o aviso de
+  // produção não sai e o gestor vê o erro na tela de pedidos.
+  RESEND_API_KEY: z.string().optional(),
+  BOOKS_EMAIL_FROM: z.string().default("Falaped Books <livros@contato.falaped.com.br>"),
+  // Pix da landing: chave do próprio recebedor, sem intermediário. O QR é
+  // montado no app e a confirmação é manual, pelo comprovante no WhatsApp.
+  PIX_KEY: z.string().optional(),
+  PIX_MERCHANT_NAME: z.string().default("Falaped"),
+  PIX_MERCHANT_CITY: z.string().default("Belo Horizonte"),
+  // Cobrança Pix da landing (Asaas). O prefixo da chave escolhe o ambiente:
+  // $aact_hmlg_ = sandbox, $aact_prod_ = produção.
+  ASAAS_API_KEY: z.string().optional(),
+  // Token do webhook da Asaas, conferido no header `asaas-access-token`.
+  // Sem ele a rota recusa tudo: pagamento não se confirma por engano.
+  ASAAS_WEBHOOK_TOKEN: z.string().optional(),
   // E-mails (separados por vírgula) que veem os pedidos da landing em app.falaped.com.br/books/leads.
   BOOKS_ADMIN_EMAILS: z
     .string()

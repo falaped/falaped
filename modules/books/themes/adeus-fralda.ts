@@ -31,7 +31,7 @@ export const adeusFralda: BookTheme = {
   title: "O Trono {do|da} {nome}",
   subtitle: "Uma história sobre deixar a fralda.",
   defaultDedication:
-    "Para {nome}, que aprendeu a escutar o próprio corpo e subiu no trono como {um rei|uma rainha}. Que orgulho de você.",
+    "Você aprendeu a escutar o próprio corpo e subiu no trono como {um rei|uma rainha}. Que orgulho de você.",
   outfit:
     "a mint-green t-shirt with a small orange fox on the chest, soft gray shorts with an elastic waistband and white socks",
   coverScene: `sunny bathroom with white tiles and a round window; the {boy|girl} stands proudly beside ${THRONE} wearing a paper crown decorated with gold stars, one fist raised high, ${FOX} tucked under the other arm; a fluffy yellow bath mat on the floor.`,

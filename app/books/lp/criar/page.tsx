@@ -21,6 +21,8 @@ async function LeadWizardLoader() {
           childName: book.child_name,
           childGender: book.child_gender,
           theme: book.theme,
+          dedication: book.dedication,
+          paid: !!book.paid_at,
           coverUrl,
         })),
       }}

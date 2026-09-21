@@ -26,7 +26,7 @@ export const comerDeTudo: BookTheme = {
   title: "O Arco-íris {do|da} {nome}",
   subtitle: "Uma história sobre experimentar comidas novas.",
   defaultDedication:
-    "Para {nome}, que aprendeu que provar já é ser {corajoso|corajosa}. Que seu prato e sua vida tenham sempre todas as cores.",
+    "Você aprendeu que provar já é ser {corajoso|corajosa}. Que seu prato e sua vida tenham sempre todas as cores.",
   outfit:
     "a white t-shirt with a small rainbow on the chest, orange shorts and blue sneakers",
   coverScene: `sunny kitchen; the {boy|girl} stands on a wooden stool in a heroic pose holding up a white plate arranged like a rainbow of carrot sticks, broccoli, cherry tomatoes, banana slices and grapes, big proud smile; ${GLOW} arcs behind {him|her} like a small rainbow.`,
