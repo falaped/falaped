@@ -8,6 +8,7 @@ import {
   CardTitle,
 } from "@/components/ui/card"
 import { CaseRemindersForm } from "@/components/dashboard/cases/case-reminders-form"
+import type { CaseReminder } from "@/modules/cases/types"
 
 /** Lembretes do atendimento na página do caso. */
 export function CaseRemindersCard({
@@ -15,7 +16,7 @@ export function CaseRemindersCard({
   initialReminders,
 }: {
   caseId: string
-  initialReminders: string | null
+  initialReminders: CaseReminder[]
 }) {
   return (
     <Card className="border-border/80">

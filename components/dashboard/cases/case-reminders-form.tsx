@@ -1,49 +1,47 @@
 "use client"
 
 import { useState } from "react"
-import { Loader2 } from "lucide-react"
+import { Loader2, Plus, Trash2 } from "lucide-react"
 import { toast } from "sonner"
 
-import { saveCaseRemindersAction } from "@/actions"
+import { addCaseReminderAction, deleteCaseReminderAction } from "@/actions"
 import { Button } from "@/components/ui/button"
-import { Textarea } from "@/components/ui/textarea"
+import { Input } from "@/components/ui/input"
 import { getFriendlyToastMessage } from "@/lib/get-friendly-toast-message"
+import type { CaseReminder } from "@/modules/cases/types"
 
 type CaseRemindersFormProps = {
   caseId: string
-  initialReminders: string | null
-  rows?: number
-  onSaved?: () => void
+  initialReminders: CaseReminder[]
 }
 
 /**
- * Campo de lembretes do atendimento. Salva por botão, não a cada tecla: é texto
- * escrito no meio da consulta, e autosave por caractere viraria uma escrita por
- * letra durante o atendimento.
+ * Lista de lembretes do atendimento, um registro por item: escreve e adiciona,
+ * apaga um a um. Apagar É resolver a pendência — o que continua na lista é o
+ * que continua em aberto.
  *
- * Vive sozinho para servir os dois lugares onde o médico escreve lembrete — o
- * card da página do caso e o diálogo dentro da consulta — sem duplicar a lógica.
+ * A lista é local e otimista (a action devolve a linha criada) para o médico
+ * poder escrever vários seguidos sem esperar a página revalidar entre um e outro.
  */
 export function CaseRemindersForm({
   caseId,
   initialReminders,
-  rows = 4,
-  onSaved,
 }: CaseRemindersFormProps) {
-  const [value, setValue] = useState(initialReminders ?? "")
-  const [saved, setSaved] = useState(initialReminders ?? "")
+  const [reminders, setReminders] = useState<CaseReminder[]>(initialReminders)
+  const [text, setText] = useState("")
   const [isSaving, setIsSaving] = useState(false)
+  const [deletingId, setDeletingId] = useState<string | null>(null)
 
-  const isDirty = value.trim() !== saved.trim()
+  async function handleAdd() {
+    const clean = text.trim()
+    if (!clean || isSaving) return
 
-  async function handleSave() {
     setIsSaving(true)
     try {
-      const result = await saveCaseRemindersAction(caseId, value)
+      const result = await addCaseReminderAction(caseId, clean)
       if (result.ok) {
-        setSaved(value)
-        toast.success("Lembretes salvos.")
-        onSaved?.()
+        setReminders((prev) => [...prev, result.reminder])
+        setText("")
       } else {
         toast.error(getFriendlyToastMessage(result.error))
       }
@@ -51,33 +49,89 @@ export function CaseRemindersForm({
       const message =
         error instanceof Error
           ? error.message
-          : "Erro ao salvar os lembretes. Tente novamente."
+          : "Erro ao salvar o lembrete. Tente novamente."
       toast.error(getFriendlyToastMessage(message))
     } finally {
       setIsSaving(false)
     }
   }
 
+  async function handleDelete(id: string) {
+    setDeletingId(id)
+    try {
+      const result = await deleteCaseReminderAction(id, caseId)
+      if (result.ok) {
+        setReminders((prev) => prev.filter((item) => item.id !== id))
+      } else {
+        toast.error(getFriendlyToastMessage(result.error))
+      }
+    } catch (error: unknown) {
+      const message =
+        error instanceof Error
+          ? error.message
+          : "Erro ao apagar o lembrete. Tente novamente."
+      toast.error(getFriendlyToastMessage(message))
+    } finally {
+      setDeletingId(null)
+    }
+  }
+
   return (
     <div className="flex flex-col gap-3">
-      <Textarea
-        value={value}
-        onChange={(event) => setValue(event.target.value)}
-        rows={rows}
-        maxLength={4000}
-        placeholder="Ex.: reavaliar em 15 dias; trazer resultado do hemograma; mãe relatou dificuldade com a mamada."
-      />
-      <div className="flex justify-end">
+      {reminders.length > 0 ? (
+        <ul className="flex flex-col gap-2">
+          {reminders.map((reminder) => (
+            <li
+              key={reminder.id}
+              className="flex items-start justify-between gap-2 rounded-lg border border-border px-3 py-2"
+            >
+              <span className="min-w-0 flex-1 wrap-break-word text-sm">
+                {reminder.text}
+              </span>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() => handleDelete(reminder.id)}
+                disabled={deletingId === reminder.id}
+                aria-label={`Apagar lembrete: ${reminder.text}`}
+              >
+                <Trash2 className="h-4 w-4" aria-hidden />
+              </Button>
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <p className="text-sm text-muted-foreground">
+          Nenhum lembrete neste atendimento.
+        </p>
+      )}
+
+      <div className="flex items-center gap-2">
+        <Input
+          value={text}
+          maxLength={500}
+          placeholder="Ex.: reavaliar em 15 dias"
+          onChange={(event) => setText(event.target.value)}
+          onKeyDown={(event) => {
+            if (event.key === "Enter") {
+              event.preventDefault()
+              void handleAdd()
+            }
+          }}
+        />
         <Button
           type="button"
           size="sm"
-          onClick={handleSave}
-          disabled={!isDirty || isSaving}
+          onClick={handleAdd}
+          disabled={!text.trim() || isSaving}
         >
           {isSaving ? (
             <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
-          ) : null}
-          {isDirty ? "Salvar lembretes" : "Salvo"}
+          ) : (
+            <Plus className="h-4 w-4" aria-hidden />
+          )}
+          Adicionar
         </Button>
       </div>
     </div>

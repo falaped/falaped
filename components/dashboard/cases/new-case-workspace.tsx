@@ -55,6 +55,7 @@ import { ConsultationTimerWidget } from "@/components/dashboard/cases/consultati
 import { CaseRemindersDialog } from "@/components/dashboard/cases/case-reminders-dialog"
 import { PreviousCaseSummaryDialog } from "@/components/dashboard/cases/previous-case-summary-dialog"
 import type { CaseCarryover } from "@/modules/cases/get-previous-case-carryover"
+import type { CaseReminder } from "@/modules/cases/types"
 
 type WorkspaceMessage = {
   id: string
@@ -523,7 +524,7 @@ export function NewCaseWorkspace({
   endedAt,
   consultationPausedMs,
   consultationPausedAt,
-  reminders = null,
+  reminders = [],
   previousCarryover = null,
 }: {
   caseId: string
@@ -541,7 +542,7 @@ export function NewCaseWorkspace({
   consultationPausedMs: number
   consultationPausedAt: string | null
   /** Lembretes já escritos neste atendimento. */
-  reminders?: string | null
+  reminders?: CaseReminder[]
   /** O que a consulta anterior desta criança deixou; null quando não há. */
   previousCarryover?: CaseCarryover | null
 }) {

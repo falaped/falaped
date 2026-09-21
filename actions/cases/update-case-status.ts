@@ -9,6 +9,7 @@ import { getCaseById } from "@/modules/cases/get-case-by-id"
 import { getCaseReports } from "@/modules/cases/get-case-report"
 import { updateCaseSummary } from "@/modules/cases/update-case-summary"
 import { getPhoneByProfileId } from "@/modules/authenticated-users/get-phone-by-profile-id"
+import { listCaseReminders } from "@/modules/cases/list-case-reminders"
 import { env } from "@/lib/env"
 import type { SupabaseClient } from "@supabase/supabase-js"
 
@@ -83,7 +84,13 @@ async function generateAndStoreCarryoverSummary(
       .join("\n")
       .trim() || null
 
-  const reminders = caseDetail.reminders?.trim() || null
+  // Os lembretes viram uma lista com marcador: o modelo recebe "são N itens",
+  // não um parágrafo onde dois lembretes podem virar um.
+  const reminderRows = await listCaseReminders(supabase, profileId, caseId).catch(
+    () => [],
+  )
+  const reminders =
+    reminderRows.map((row) => `• ${row.text}`).join("\n").trim() || null
 
   // Nada de material e nenhum lembrete: não há o que resumir, e chamar a IA para
   // isso só queimaria uma requisição.

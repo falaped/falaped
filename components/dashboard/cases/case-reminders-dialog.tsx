@@ -13,6 +13,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog"
 import { CaseRemindersForm } from "@/components/dashboard/cases/case-reminders-form"
+import type { CaseReminder } from "@/modules/cases/types"
 
 /** Lembretes durante a consulta, sem tirar a conversa da tela. */
 export function CaseRemindersDialog({
@@ -20,7 +21,7 @@ export function CaseRemindersDialog({
   initialReminders,
 }: {
   caseId: string
-  initialReminders: string | null
+  initialReminders: CaseReminder[]
 }) {
   const [open, setOpen] = useState(false)
 
@@ -40,12 +41,7 @@ export function CaseRemindersDialog({
             Aparece na abertura do próximo atendimento.
           </DialogDescription>
         </DialogHeader>
-        <CaseRemindersForm
-          caseId={caseId}
-          initialReminders={initialReminders}
-          rows={6}
-          onSaved={() => setOpen(false)}
-        />
+        <CaseRemindersForm caseId={caseId} initialReminders={initialReminders} />
       </DialogContent>
     </Dialog>
   )

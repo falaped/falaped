@@ -1,12 +1,15 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
 
+import { listCaseReminders } from "./list-case-reminders"
+
 /** O que a consulta anterior deixou para a próxima. */
 export type CaseCarryover = {
   caseId: string
   endedAt: string | null
   startedAt: string
   summary: string | null
-  reminders: string | null
+  /** Lembretes daquele atendimento, um por item. */
+  reminders: string[]
 }
 
 /**
@@ -21,13 +24,14 @@ export type CaseCarryover = {
  */
 export async function getPreviousCaseCarryover(
   supabase: SupabaseClient,
+  profileId: string,
   userPhone: string,
   patientId: string,
   currentCaseId: string | null = null,
 ): Promise<CaseCarryover | null> {
   let query = supabase
     .from("cases")
-    .select("id, started_at, ended_at, summary, reminders")
+    .select("id, started_at, ended_at, summary")
     .eq("user_phone", userPhone)
     .eq("patient_id", patientId)
 
@@ -49,18 +53,22 @@ export async function getPreviousCaseCarryover(
         started_at: string
         ended_at: string | null
         summary: string | null
-        reminders: string | null
       }
     | undefined
 
   if (!row) return null
-  if (!row.summary?.trim() && !row.reminders?.trim()) return null
+
+  const reminders = (await listCaseReminders(supabase, profileId, row.id)).map(
+    (reminder) => reminder.text,
+  )
+
+  if (!row.summary?.trim() && reminders.length === 0) return null
 
   return {
     caseId: row.id,
     startedAt: row.started_at,
     endedAt: row.ended_at,
     summary: row.summary?.trim() || null,
-    reminders: row.reminders?.trim() || null,
+    reminders,
   }
 }

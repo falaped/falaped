@@ -58,14 +58,18 @@ export function PreviousCaseSummaryDialog({
             </div>
           ) : null}
 
-          {carryover.reminders ? (
+          {carryover.reminders.length > 0 ? (
             <div className="rounded-lg border border-border bg-muted/30 p-3">
-              <p className="mb-1 text-sm font-medium">
+              <p className="mb-2 text-sm font-medium">
                 Lembretes deixados por você
               </p>
-              <p className="whitespace-pre-wrap text-sm text-muted-foreground">
-                {carryover.reminders}
-              </p>
+              <ul className="flex list-disc flex-col gap-1 pl-5 text-sm text-muted-foreground">
+                {carryover.reminders.map((reminder, index) => (
+                  <li key={index} className="wrap-break-word">
+                    {reminder}
+                  </li>
+                ))}
+              </ul>
             </div>
           ) : null}
         </div>

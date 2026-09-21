@@ -61,7 +61,7 @@ export async function PatientDetailContent({ id }: { id: string }) {
   // pode cair porque o resumo não carregou.
   const phone = await getPhoneByProfileId(supabase, profile.id).catch(() => null)
   const lastCarryover = phone
-    ? await getPreviousCaseCarryover(supabase, phone, patient.id).catch(() => null)
+    ? await getPreviousCaseCarryover(supabase, profile.id, phone, patient.id).catch(() => null)
     : null
 
   return (

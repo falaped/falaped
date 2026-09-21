@@ -20,6 +20,7 @@ import { getScaleResultsByCase } from "@/modules/patient-scales/get-scale-result
 import { listAttachmentsByCase } from "@/modules/patient-attachments/list-attachments-by-case"
 import { getPhoneByProfileId } from "@/modules/authenticated-users/get-phone-by-profile-id"
 import { getPreviousCaseCarryover } from "@/modules/cases/get-previous-case-carryover"
+import { listCaseReminders } from "@/modules/cases/list-case-reminders"
 import { computePediatricAge } from "@/lib/compute-pediatric-age"
 import { Separator } from "@/components/ui/separator"
 import { CaseDetailCommandStrip } from "@/components/dashboard/cases/case-detail-command-strip"
@@ -53,6 +54,7 @@ export async function CaseDetailContent({ id }: { id: string }) {
     caseEntries,
     scaleResults,
     caseAttachments,
+    caseReminders,
   ] = await Promise.all([
     getCaseById(supabase, id, profile.id),
     profile.report_template_id
@@ -74,6 +76,7 @@ export async function CaseDetailContent({ id }: { id: string }) {
     // inteira porque a leitura do histórico falhou seria pior que não mostrá-lo.
     getScaleResultsByCase(supabase, profile.id, id).catch(() => []),
     listAttachmentsByCase(supabase, profile.id, id).catch(() => []),
+    listCaseReminders(supabase, profile.id, id).catch(() => []),
   ])
 
   if (!caseDetail) {
@@ -137,6 +140,7 @@ export async function CaseDetailContent({ id }: { id: string }) {
           if (!phone) return null
           return getPreviousCaseCarryover(
             supabase,
+            profile.id,
             phone,
             caseDetail.patient!.id,
             caseDetail.id,
@@ -223,7 +227,7 @@ export async function CaseDetailContent({ id }: { id: string }) {
         />
         <CaseRemindersCard
           caseId={id}
-          initialReminders={caseDetail.reminders}
+          initialReminders={caseReminders}
         />
         {caseDetail.patient ? (
           <>
