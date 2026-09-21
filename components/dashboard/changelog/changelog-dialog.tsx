@@ -109,7 +109,10 @@ export function ChangelogMenuItem() {
                 <span className="absolute inline-flex h-full w-full rounded-full bg-primary opacity-75 motion-safe:animate-ping" />
                 <span className="relative inline-flex h-2 w-2 rounded-full bg-primary" />
               </span>
-              <span className="rounded-full bg-primary px-1.5 py-0.5 text-[10px] font-bold uppercase leading-none tracking-wide text-primary-foreground motion-safe:animate-bounce">
+              {/* Pulso, não salto: a linha precisa de overflow-hidden para o
+                  brilho não vazar, e qualquer animação que desloque o selo o
+                  faria ser cortado na borda. Piscar chama atenção sem sair. */}
+              <span className="rounded-full bg-primary px-1.5 py-0.5 text-[10px] font-bold uppercase leading-none tracking-wide text-primary-foreground motion-safe:animate-pulse">
                 Novo
               </span>
             </span>
@@ -118,7 +121,7 @@ export function ChangelogMenuItem() {
       </SidebarMenuItem>
 
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-lg">
+        <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-2xl">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <SparklesIcon className="h-5 w-5 text-primary" aria-hidden />
