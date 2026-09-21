@@ -2,7 +2,7 @@
 
 import { getBookLeadId } from "@/lib/book-lead-cookie"
 import { createAdminClient } from "@/lib/supabase/server-admin"
-import { ensureBookPix, type BookPix } from "@/modules/books/ensure-book-pix"
+import { getBookPix, type BookPix } from "@/modules/books/get-book-pix"
 import { getLeadBooks } from "@/modules/books/get-lead-books"
 
 export type CheckoutLeadBookResult = { ok: true; paid: boolean; pix: BookPix | null } | { ok: false; error: string }
@@ -10,7 +10,8 @@ export type CheckoutLeadBookResult = { ok: true; paid: boolean; pix: BookPix | n
 /**
  * O lead escolheu uma das capas e quer o livro completo: marca `checkout` para
  * o follow-up e devolve o Pix (QR + copia e cola) para pagar na própria tela.
- * Quem confirma o pagamento é o webhook da Asaas, nunca esta chamada.
+ * O Pix cai direto na conta do recebedor, sem intermediário: quem confirma é o
+ * gestor, ao ver o comprovante que o comprador manda no WhatsApp.
  */
 export async function checkoutLeadBookAction(bookId: string): Promise<CheckoutLeadBookResult> {
   const leadId = await getBookLeadId()
@@ -29,7 +30,7 @@ export async function checkoutLeadBookAction(bookId: string): Promise<CheckoutLe
         .eq("id", leadId)
       if (error) throw new Error(error.message)
     }
-    const pix = await ensureBookPix(admin, bookId)
+    const pix = await getBookPix(admin, bookId)
     return { ok: true, paid: false, pix }
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message.replace(/^\[(BOOKS|PAYMENTS)\] /, "") : "Erro ao gerar o Pix."

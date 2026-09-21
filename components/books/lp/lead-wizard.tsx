@@ -4,11 +4,11 @@ import { useEffect, useRef, useState } from "react"
 import Link from "next/link"
 import { useSearchParams } from "next/navigation"
 import { toast } from "sonner"
-import { BookOpen, Check, ChevronLeft, ChevronRight, Copy, Loader2, Maximize2, Plus, Printer, Shield, Sparkles, X, Zap } from "lucide-react"
+import { BookOpen, Check, ChevronLeft, ChevronRight, Copy, Loader2, Maximize2, MessageCircle, Plus, Printer, Shield, Sparkles, X, Zap } from "lucide-react"
 
 import { checkoutLeadBookAction, createLeadBookAction, forgetBookLeadAction, getLeadBookPaymentAction, startBookLeadAction } from "@/actions/books"
-import type { BookPix } from "@/modules/books/ensure-book-pix"
-import { BkButton, BrandBlur, Chip, FIELD, HELP, LABEL, Sticker, TINTS } from "@/components/books/books-ui"
+import type { BookPix } from "@/modules/books/get-book-pix"
+import { BkButton, BrandBlur, Chip, FIELD, HELP, LABEL, Sticker, TINTS, bkButton } from "@/components/books/books-ui"
 import { LP_WRAP, LpCard, Orn } from "@/components/books/lp/lp-ui"
 import { Dialog, DialogClose, DialogContent, DialogTitle } from "@/components/ui/dialog"
 import { PhotoSlot, type WizardTheme } from "@/components/books/new-book-wizard"
@@ -262,9 +262,9 @@ export function LeadWizard({ themes, initial }: { themes: WizardTheme[]; initial
     }
   }
 
-  /** Conversa com o pedido já escrito, para quem prefere falar antes de pagar. */
-  const whatsappUrl = `https://wa.me/${BOOKS_WHATSAPP}?text=${encodeURIComponent(
-    `Olá! Criei o livro "${bookTitle || activeTheme?.label || ""}" e quero as 20 páginas por R$ ${price}${validCoupon ? ` (cupom ${validCoupon})` : ""}. Pedido ${bookId?.slice(0, 8) ?? ""}.`,
+  /** Conversa já escrita para mandar o comprovante do Pix. */
+  const receiptUrl = `https://wa.me/${BOOKS_WHATSAPP}?text=${encodeURIComponent(
+    `Olá! Paguei o livro "${bookTitle || activeTheme?.label || ""}" (R$ ${pix?.amount.replace(".", ",") ?? price}). Segue o comprovante. Pedido ${pix?.reference ?? bookId?.slice(0, 8) ?? ""}.`,
   )}`
 
   return (
@@ -646,12 +646,7 @@ export function LeadWizard({ themes, initial }: { themes: WizardTheme[]; initial
                       {pix ? (
                         <>
                           <div className="flex flex-col items-center gap-3 rounded-[14px] border-2 border-ink bg-white p-4">
-                            {/* eslint-disable-next-line @next/next/no-img-element */}
-                            <img
-                              src={`data:image/png;base64,${pix.encodedImage}`}
-                              alt="QR Code do Pix"
-                              className="size-[190px] rounded-[10px] border-2 border-ink"
-                            />
+                            <div className="size-[190px] overflow-hidden rounded-[10px] border-2 border-ink" dangerouslySetInnerHTML={{ __html: pix.svg }} />
                             <p className="text-center text-[12.5px] font-semibold leading-snug">
                               Abra o app do banco, escolha Pix e leia o código.
                             </p>
@@ -659,17 +654,17 @@ export function LeadWizard({ themes, initial }: { themes: WizardTheme[]; initial
                           <p className="break-all rounded-[12px] border-2 border-ink bg-white px-3 py-2.5 text-[11px] font-medium leading-relaxed text-[#3f3f46]">
                             {pix.payload}
                           </p>
-                          <BkButton variant="primary" onClick={() => void copyPix()} className="h-[52px] w-full text-[15px]">
+                          <BkButton variant="secondary" onClick={() => void copyPix()} className="h-[52px] w-full text-[15px]">
                             {copied ? <Check className="size-4" strokeWidth={3} aria-hidden /> : <Copy className="size-4" strokeWidth={2.4} aria-hidden />}
                             {copied ? "Código copiado" : "Copiar código Pix"}
                           </BkButton>
-                          <p className="flex items-center justify-center gap-2 text-center text-[12px] font-bold">
-                            <Loader2 className="size-3.5 animate-spin" strokeWidth={2.6} aria-hidden />
-                            Esta tela avisa sozinha quando o Pix cair.
-                          </p>
-                          <a href={whatsappUrl} target="_blank" rel="noopener" className="text-center text-[12px] font-medium text-[#3f3f46] underline decoration-ink/30 underline-offset-2">
-                            Prefere falar com a gente antes? Chama no WhatsApp
+                          <a href={receiptUrl} target="_blank" rel="noopener" className={cn(bkButton("primary", "h-[52px] w-full text-[15px]"))}>
+                            <MessageCircle className="size-4" strokeWidth={2.4} aria-hidden />
+                            Já paguei: enviar comprovante
                           </a>
+                          <p className="text-center text-[12px] font-medium leading-snug text-[#3f3f46]">
+                            Mande o comprovante no WhatsApp e confirmamos na hora. Esta tela avisa quando o livro entrar em produção.
+                          </p>
                         </>
                       ) : (
                         <>

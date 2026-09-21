@@ -15,6 +15,11 @@ const envSchema = z.object({
   // produção não sai e o gestor vê o erro na tela de pedidos.
   RESEND_API_KEY: z.string().optional(),
   BOOKS_EMAIL_FROM: z.string().default("Falaped Books <livros@contato.falaped.com.br>"),
+  // Pix da landing: chave do próprio recebedor, sem intermediário. O QR é
+  // montado no app e a confirmação é manual, pelo comprovante no WhatsApp.
+  PIX_KEY: z.string().optional(),
+  PIX_MERCHANT_NAME: z.string().default("Falaped"),
+  PIX_MERCHANT_CITY: z.string().default("Belo Horizonte"),
   // Cobrança Pix da landing (Asaas). O prefixo da chave escolhe o ambiente:
   // $aact_hmlg_ = sandbox, $aact_prod_ = produção.
   ASAAS_API_KEY: z.string().optional(),
