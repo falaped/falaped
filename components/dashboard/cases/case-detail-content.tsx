@@ -18,6 +18,8 @@ import { getCaseEarningsTotals } from "@/modules/financial-entries/get-case-earn
 import { listFinancialEntries } from "@/modules/financial-entries/list-financial-entries"
 import { getScaleResultsByCase } from "@/modules/patient-scales/get-scale-results-by-case"
 import { listAttachmentsByCase } from "@/modules/patient-attachments/list-attachments-by-case"
+import { getPhoneByProfileId } from "@/modules/authenticated-users/get-phone-by-profile-id"
+import { getPreviousCaseCarryover } from "@/modules/cases/get-previous-case-carryover"
 import { computePediatricAge } from "@/lib/compute-pediatric-age"
 import { Separator } from "@/components/ui/separator"
 import { CaseDetailCommandStrip } from "@/components/dashboard/cases/case-detail-command-strip"
@@ -33,6 +35,8 @@ import { CaseReport } from "@/components/dashboard/cases/case-report"
 import { ConsultationTimerWidget } from "@/components/dashboard/cases/consultation-timer-widget"
 import { ScalesSection } from "@/components/dashboard/scales/scales-section"
 import { AttachmentsSection } from "@/components/dashboard/attachments/attachments-section"
+import { CaseRemindersCard } from "@/components/dashboard/cases/case-reminders-card"
+import { PreviousCaseSummaryDialog } from "@/components/dashboard/cases/previous-case-summary-dialog"
 
 export async function CaseDetailContent({ id }: { id: string }) {
   const supabase = await createClient()
@@ -120,6 +124,25 @@ export async function CaseDetailContent({ id }: { id: string }) {
       .totalMonths ?? null
 
   const isActive = caseDetail.status === "active"
+
+  // O que a consulta anterior desta criança deixou. Só vale a pena mostrar num
+  // atendimento EM CURSO: abrir um caso antigo para consultar não é começar a
+  // próxima consulta. Falha vira null — nunca derruba a página do caso.
+  const previousCarryover =
+    isActive && caseDetail.patient?.id
+      ? await (async () => {
+          const phone = await getPhoneByProfileId(supabase, profile.id).catch(
+            () => null,
+          )
+          if (!phone) return null
+          return getPreviousCaseCarryover(
+            supabase,
+            phone,
+            caseDetail.patient!.id,
+            caseDetail.id,
+          ).catch(() => null)
+        })()
+      : null
   const templateSectionCount = template?.sections?.length ?? 0
 
   const reportBlock =
@@ -198,6 +221,10 @@ export async function CaseDetailContent({ id }: { id: string }) {
           certificates={caseCertificates}
           prescriptions={casePrescriptions}
         />
+        <CaseRemindersCard
+          caseId={id}
+          initialReminders={caseDetail.reminders}
+        />
         {caseDetail.patient ? (
           <>
             <ScalesSection
@@ -218,6 +245,12 @@ export async function CaseDetailContent({ id }: { id: string }) {
           </>
         ) : null}
       </div>
+      {previousCarryover && caseDetail.patient ? (
+        <PreviousCaseSummaryDialog
+          carryover={previousCarryover}
+          patientName={caseDetail.patient.name}
+        />
+      ) : null}
       <ConsultationTimerWidget
         caseId={id}
         startedAt={caseDetail.started_at}

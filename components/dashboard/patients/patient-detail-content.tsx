@@ -9,6 +9,8 @@ import { getPrescriptionsByPatientId } from "@/modules/prescriptions/get-prescri
 import { getMeasurementsByPatient } from "@/modules/patient-growth/get-measurements-by-patient"
 import { getScaleResultsByPatient } from "@/modules/patient-scales/get-scale-results-by-patient"
 import { listAttachmentsByPatient } from "@/modules/patient-attachments/list-attachments-by-patient"
+import { getPhoneByProfileId } from "@/modules/authenticated-users/get-phone-by-profile-id"
+import { getPreviousCaseCarryover } from "@/modules/cases/get-previous-case-carryover"
 import { computePediatricAge } from "@/lib/compute-pediatric-age"
 import { getVaccineScheduleWithItems } from "@/modules/vaccines/get-vaccine-schedule-with-items"
 import { getTakenDoseIdsByPatient } from "@/modules/patient-vaccine-doses/get-taken-dose-ids-by-patient"
@@ -55,6 +57,13 @@ export async function PatientDetailContent({ id }: { id: string }) {
   const ageMonths =
     computePediatricAge(patient.birth_date, new Date()).totalMonths ?? null
 
+  // Resumo e lembretes da última consulta. Falha vira null: a ficha inteira não
+  // pode cair porque o resumo não carregou.
+  const phone = await getPhoneByProfileId(supabase, profile.id).catch(() => null)
+  const lastCarryover = phone
+    ? await getPreviousCaseCarryover(supabase, phone, patient.id).catch(() => null)
+    : null
+
   return (
     <PatientDetailView
       key={patient.id}
@@ -70,6 +79,7 @@ export async function PatientDetailContent({ id }: { id: string }) {
       scaleResults={scaleResults}
       ageMonths={ageMonths}
       attachments={attachments}
+      lastCarryover={lastCarryover}
     />
   )
 }

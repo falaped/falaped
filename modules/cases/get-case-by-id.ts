@@ -43,6 +43,9 @@ export type CaseDetail = {
   pending_action: string | null
   assistant_turn_queue: unknown | null
   dashboard_chat_context_summary: string | null
+  reminders: string | null
+  summary: string | null
+  summary_generated_at: string | null
   /** Quando a pergunta do lançamento financeiro foi respondida; null = ainda em aberto. */
   earnings_prompted_at: string | null
   patient: CasePatientDetail | null
@@ -86,6 +89,9 @@ export async function getCaseById(
       assistant_turn_queue,
       dashboard_chat_context_summary,
       earnings_prompted_at,
+      reminders,
+      summary,
+      summary_generated_at,
       patient:patients(
         id,
         name,

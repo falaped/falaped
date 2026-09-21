@@ -4,6 +4,7 @@ import { useLayoutEffect, useState } from "react"
 import { usePathname, useRouter } from "next/navigation"
 import { toast } from "sonner"
 
+import { formatDate } from "@/lib/formatters"
 import { getFriendlyToastMessage } from "@/lib/get-friendly-toast-message"
 import {
   Card,
@@ -26,6 +27,7 @@ import type { Patient } from "@/modules/patients/types"
 import type { Measurement } from "@/modules/patient-growth/types"
 import type { ScaleResult } from "@/modules/patient-scales/types"
 import type { PatientAttachment } from "@/modules/patient-attachments/types"
+import type { CaseCarryover } from "@/modules/cases/get-previous-case-carryover"
 import type { CaseForPatient } from "@/modules/cases/get-cases-by-patient-id"
 import type { MedicalCertificateListItem } from "@/modules/medical-certificates/get-medical-certificates-by-profile-id"
 import type { PrescriptionListItem } from "@/modules/prescriptions/types"
@@ -44,6 +46,7 @@ export function PatientDetailView({
   scaleResults = [],
   ageMonths = null,
   attachments = [],
+  lastCarryover = null,
 }: {
   patient: Patient
   cases?: CaseForPatient[]
@@ -63,6 +66,8 @@ export function PatientDetailView({
   ageMonths?: number | null
   /** Anexos do paciente, do mais recente para o mais antigo. */
   attachments?: PatientAttachment[]
+  /** Resumo e lembretes da última consulta; null quando não há. */
+  lastCarryover?: CaseCarryover | null
 }) {
   const router = useRouter()
   const pathname = usePathname()
@@ -150,6 +155,34 @@ export function PatientDetailView({
       ) : (
         <>
           <PatientClinicalOverview patient={patient} />
+          {lastCarryover ? (
+            <Card className="border-border/80">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-base font-semibold">
+                  Última consulta
+                </CardTitle>
+                <CardDescription>
+                  Resumo e pendências do atendimento de{" "}
+                  {formatDate(lastCarryover.endedAt ?? lastCarryover.startedAt)}.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="flex flex-col gap-3">
+                {lastCarryover.summary ? (
+                  <p className="whitespace-pre-wrap text-sm text-muted-foreground">
+                    {lastCarryover.summary}
+                  </p>
+                ) : null}
+                {lastCarryover.reminders ? (
+                  <div className="rounded-lg border border-border bg-muted/30 p-3">
+                    <p className="mb-1 text-sm font-medium">Lembretes</p>
+                    <p className="whitespace-pre-wrap text-sm text-muted-foreground">
+                      {lastCarryover.reminders}
+                    </p>
+                  </div>
+                ) : null}
+              </CardContent>
+            </Card>
+          ) : null}
           <PatientVaccineCalendarSection
             patientId={patient.id}
             birthDate={patient.birth_date}

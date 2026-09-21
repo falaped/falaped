@@ -2,6 +2,7 @@ export {
   setCasePatientIdAction,
   deleteCaseAction,
   updateCaseStatusAction,
+  saveCaseRemindersAction,
   pauseConsultationAction,
   resumeConsultationAction,
   resetConsultationAction,

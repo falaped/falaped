@@ -1,6 +1,7 @@
 export { setCasePatientIdAction } from "./set-case-patient-id"
 export { deleteCaseAction } from "./delete-case"
 export { updateCaseStatusAction } from "./update-case-status"
+export { saveCaseRemindersAction } from "./save-case-reminders"
 export { pauseConsultationAction } from "./pause-consultation"
 export { resumeConsultationAction } from "./resume-consultation"
 export { resetConsultationAction } from "./reset-consultation"
