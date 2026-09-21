@@ -52,6 +52,18 @@ const CATEGORY_ORDER: readonly ScaleCategory[] = [
   "neonatologia",
 ]
 
+/**
+ * Respostas iniciais de uma escala: os itens com `defaultValue` já vêm marcados,
+ * os demais ficam em branco e continuam obrigatórios.
+ */
+function buildInitialAnswers(scale: ScaleDefinition): Record<string, number> {
+  const answers: Record<string, number> = {}
+  for (const item of scale.items) {
+    if (item.defaultValue !== undefined) answers[item.key] = item.defaultValue
+  }
+  return answers
+}
+
 /** Agrupa as escalas por categoria, preservando a ordem do seletor. */
 function groupByCategory(
   scales: readonly ScaleDefinition[],
@@ -147,7 +159,14 @@ export function ApplyScaleDialog({
         </DialogHeader>
 
         <div className="flex flex-col gap-5">
-          <Select value={scaleKey} onValueChange={(v) => { setScaleKey(v); setAnswers({}) }}>
+          <Select
+            value={scaleKey}
+            onValueChange={(value) => {
+              setScaleKey(value)
+              const next = getScaleByKey(value)
+              setAnswers(next ? buildInitialAnswers(next) : {})
+            }}
+          >
             <SelectTrigger className="w-full">
               <SelectValue placeholder="Selecione a escala" />
             </SelectTrigger>

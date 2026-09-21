@@ -1,5 +1,7 @@
+import { CADERNETA_MILESTONE_SCALES } from "./caderneta-milestones"
 import { FLACC } from "./flacc"
 import { MCHAT_R } from "./mchat-r"
+import { MCHAT_RF } from "./mchat-rf"
 import { MCISAAC } from "./mcisaac"
 import { STRONGKIDS } from "./strongkids"
 import { WONG_BAKER } from "./wong-baker"
@@ -14,7 +16,9 @@ export const SCALES: readonly ScaleDefinition[] = [
   WONG_BAKER,
   MCISAAC,
   MCHAT_R,
+  MCHAT_RF,
   STRONGKIDS,
+  ...CADERNETA_MILESTONE_SCALES,
 ]
 
 /** Rótulo PT-BR de cada categoria, na ordem em que o seletor as agrupa. */

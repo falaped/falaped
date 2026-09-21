@@ -3,6 +3,7 @@ import assert from "node:assert/strict"
 
 import { FLACC } from "@/lib/scales/flacc"
 import { WONG_BAKER } from "@/lib/scales/wong-baker"
+import { MCHAT_RF } from "@/lib/scales/mchat-rf"
 import { SCALES, getScalesForAgeMonths } from "@/lib/scales"
 import { scoreScale, scoreRange } from "@/lib/scales/score-scale"
 
@@ -93,4 +94,34 @@ test("getScalesForAgeMonths respeita a idade mínima e devolve tudo sem idade", 
   assert.ok(forFourYears.includes("wong-baker"))
 
   assert.equal(getScalesForAgeMonths(null).length, SCALES.length)
+})
+
+test("todo defaultValue é um valor válido das opções do próprio item", () => {
+  for (const scale of SCALES) {
+    for (const item of scale.items) {
+      if (item.defaultValue === undefined) continue
+      assert.ok(
+        item.options.some((o) => o.value === item.defaultValue),
+        `${scale.key}/${item.key}: defaultValue ${item.defaultValue} não é uma opção`,
+      )
+    }
+  }
+})
+
+test("M-CHAT-R/F: dois itens alterados viram rastreio positivo", () => {
+  const passed = Object.fromEntries(MCHAT_RF.items.map((i) => [i.key, 0]))
+  assert.equal(
+    scoreScale(MCHAT_RF, passed).band.label,
+    "Rastreio negativo após o seguimento",
+  )
+  assert.equal(
+    scoreScale(MCHAT_RF, { ...passed, q1: 1 }).band.label,
+    "Rastreio negativo após o seguimento",
+  )
+  assert.equal(
+    scoreScale(MCHAT_RF, { ...passed, q1: 1, q6: 1 }).band.label,
+    "Rastreio positivo",
+  )
+  // Todo item do /F já vem marcado como "passou": o médico só vira as exceções.
+  assert.ok(MCHAT_RF.items.every((i) => i.defaultValue === 0))
 })

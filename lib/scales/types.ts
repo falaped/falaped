@@ -27,6 +27,13 @@ export type ScaleItem = {
   key: string
   label: string
   options: readonly ScaleOption[]
+  /**
+   * Valor já marcado ao abrir a escala. Existe para a escala em que a resposta
+   * de rotina é a mesma em quase todos os itens e o médico só vira as exceções
+   * (M-CHAT-R/F: só os itens que continuam alterados). Precisa ser um dos
+   * valores das opções do próprio item — há teste que garante isso.
+   */
+  defaultValue?: number
 }
 
 /**
