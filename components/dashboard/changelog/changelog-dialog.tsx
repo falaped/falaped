@@ -17,7 +17,6 @@ import {
 } from "@/components/ui/sidebar"
 import { CHANGELOG, LATEST_RELEASE } from "@/lib/changelog"
 import { formatDate } from "@/lib/formatters"
-import { cn } from "@/lib/utils"
 
 // v2: antes bastava fechar o modal para marcar como lido, o que apagava o
 // destaque de quem só tinha dispensado a janela. A chave mudou de nome para
@@ -47,81 +46,65 @@ function writeSeen(id: string) {
 }
 
 /**
- * Item "Novidades" da barra lateral mais o modal que ele abre. O modal também
- * abre sozinho, uma vez, quando há versão que este navegador ainda não viu.
+ * Item "Novidades" da barra lateral mais o modal que ele abre.
+ *
+ * O item fica destacado e animado SEMPRE — decisão do produto: é a porta das
+ * novidades e deve saltar aos olhos o tempo todo, mesmo depois de lidas. O
+ * armazenamento local serve só para uma coisa: não reabrir o modal sozinho a
+ * cada navegação de quem já o viu.
  */
 export function ChangelogMenuItem() {
   const [open, setOpen] = useState(false)
-  const [hasUnseen, setHasUnseen] = useState(false)
 
   // localStorage só no efeito: ler durante a renderização quebraria a
   // hidratação, porque o servidor não tem como saber o que este navegador viu.
   useEffect(() => {
     if (readSeen() === LATEST_RELEASE.id) return
-    setHasUnseen(true)
     setOpen(true)
   }, [])
 
-  // Fechar não é ler: sair pelo Esc, pelo X ou clicando fora apenas fecha, e o
-  // destaque na barra lateral continua até o médico confirmar no botão.
-  function markAsRead() {
-    writeSeen(LATEST_RELEASE.id)
-    setHasUnseen(false)
-    setOpen(false)
+  function handleOpenChange(next: boolean) {
+    setOpen(next)
+    // Fechar de qualquer jeito basta para o modal não abrir sozinho de novo —
+    // não apaga o destaque do menu, que é permanente.
+    if (!next) writeSeen(LATEST_RELEASE.id)
   }
 
   return (
     <>
       <SidebarMenuItem>
         <SidebarMenuButton
-          tooltip={
-            hasUnseen
-              ? `${LATEST_RELEASE.entries.length} novidades no app`
-              : "Novidades"
-          }
+          tooltip={`${LATEST_RELEASE.entries.length} novidades no app`}
           onClick={() => setOpen(true)}
-          className={cn(
-            "relative overflow-hidden",
-            hasUnseen &&
-              "bg-primary/15 text-primary ring-1 ring-primary/50 shadow-sm hover:bg-primary/20 hover:text-primary",
-          )}
+          className="relative overflow-hidden bg-primary/15 text-primary ring-1 ring-primary/50 shadow-sm hover:bg-primary/20 hover:text-primary"
         >
-          {/* Brilho varrendo a linha. Este é deslocamento de verdade, então
-              respeita "reduzir movimento" do sistema e some para quem pediu
-              menos animação. O piscar do ícone e do selo, abaixo, é só
-              opacidade — não desloca nada e continua valendo para todos. */}
-          {hasUnseen ? (
-            <span
-              aria-hidden
-              className="pointer-events-none absolute inset-0 bg-gradient-to-r from-transparent via-primary/30 to-transparent bg-[length:380px_100%] bg-no-repeat motion-safe:animate-shimmer"
-            />
-          ) : null}
-
-          <SparklesIcon
-            className={cn("relative", hasUnseen && "animate-pulse")}
+          {/* Brilho varrendo a linha, sem condição de "reduzir movimento": o
+              dono do produto pediu o item sempre animado. Se algum dia isso
+              incomodar, é devolver o prefixo motion-safe: nesta classe. */}
+          <span
+            aria-hidden
+            className="pointer-events-none absolute inset-0 bg-gradient-to-r from-transparent via-primary/30 to-transparent bg-[length:380px_100%] bg-no-repeat animate-shimmer"
           />
-          <span className={cn("relative", hasUnseen && "font-semibold")}>
-            Novidades
-          </span>
 
-          {hasUnseen ? (
-            <span className="relative ml-auto flex shrink-0 items-center gap-1.5">
-              <span className="relative flex h-2 w-2">
-                <span className="absolute inline-flex h-full w-full rounded-full bg-primary opacity-75 motion-safe:animate-ping" />
-                <span className="relative inline-flex h-2 w-2 rounded-full bg-primary" />
-              </span>
-              {/* Pulso, não salto: a linha precisa de overflow-hidden para o
-                  brilho não vazar, e qualquer animação que desloque o selo o
-                  faria ser cortado na borda. Piscar chama atenção sem sair. */}
-              <span className="rounded-full bg-primary px-1.5 py-0.5 text-[10px] font-bold uppercase leading-none tracking-wide text-primary-foreground animate-pulse">
-                Novo
-              </span>
+          <SparklesIcon className="relative animate-pulse" />
+          <span className="relative font-semibold">Novidades</span>
+
+          <span className="relative ml-auto flex shrink-0 items-center gap-1.5">
+            <span className="relative flex h-2 w-2">
+              <span className="absolute inline-flex h-full w-full rounded-full bg-primary opacity-75 animate-ping" />
+              <span className="relative inline-flex h-2 w-2 rounded-full bg-primary" />
             </span>
-          ) : null}
+            {/* Pulso, não salto: a linha precisa de overflow-hidden para o
+                brilho não vazar, e qualquer animação que desloque o selo o
+                faria ser cortado na borda. Piscar chama atenção sem sair. */}
+            <span className="rounded-full bg-primary px-1.5 py-0.5 text-[10px] font-bold uppercase leading-none tracking-wide text-primary-foreground animate-pulse">
+              Novo
+            </span>
+          </span>
         </SidebarMenuButton>
       </SidebarMenuItem>
 
-      <Dialog open={open} onOpenChange={setOpen}>
+      <Dialog open={open} onOpenChange={handleOpenChange}>
         <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-2xl">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
@@ -168,7 +151,7 @@ export function ChangelogMenuItem() {
           </div>
 
           <div className="flex justify-end">
-            <Button type="button" onClick={markAsRead}>
+            <Button type="button" onClick={() => handleOpenChange(false)}>
               Entendi
             </Button>
           </div>
