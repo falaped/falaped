@@ -8,6 +8,7 @@ import { getMedicalCertificatesByPatientId } from "@/modules/medical-certificate
 import { getPrescriptionsByPatientId } from "@/modules/prescriptions/get-prescriptions-by-patient-id"
 import { getMeasurementsByPatient } from "@/modules/patient-growth/get-measurements-by-patient"
 import { getScaleResultsByPatient } from "@/modules/patient-scales/get-scale-results-by-patient"
+import { listAttachmentsByPatient } from "@/modules/patient-attachments/list-attachments-by-patient"
 import { computePediatricAge } from "@/lib/compute-pediatric-age"
 import { getVaccineScheduleWithItems } from "@/modules/vaccines/get-vaccine-schedule-with-items"
 import { getTakenDoseIdsByPatient } from "@/modules/patient-vaccine-doses/get-taken-dose-ids-by-patient"
@@ -36,6 +37,7 @@ export async function PatientDetailContent({ id }: { id: string }) {
     vaccines,
     takenVaccineItemIds,
     scaleResults,
+    attachments,
   ] = await Promise.all([
     getCasesByPatientId(supabase, profile.id, patient.id),
     getMedicalCertificatesByPatientId(supabase, profile.id, patient.id),
@@ -45,6 +47,7 @@ export async function PatientDetailContent({ id }: { id: string }) {
     getVaccineSchedulesSafely(supabase),
     getTakenVaccineDoseIdsSafely(supabase, profile.id, patient.id),
     getScaleResultsByPatient(supabase, profile.id, patient.id),
+    listAttachmentsByPatient(supabase, profile.id, patient.id),
   ])
 
   // Idade em meses inteiros derivada aqui (servidor) e descida como prop: é o
@@ -66,6 +69,7 @@ export async function PatientDetailContent({ id }: { id: string }) {
       takenVaccineItemIds={takenVaccineItemIds}
       scaleResults={scaleResults}
       ageMonths={ageMonths}
+      attachments={attachments}
     />
   )
 }

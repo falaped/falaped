@@ -26,6 +26,17 @@ export const GUIDANCE_BUCKET = "guidance"
  */
 export const PATIENT_PHOTOS_BUCKET = "patient-photos"
 
+/**
+ * Bucket privado para anexos do paciente (exames, laudos externos). Path:
+ * {profile_id}/{patient_id}/{attachment_id}.ext. Como qualquer tipo de arquivo
+ * é aceito, a signed URL SEMPRE força download (nunca abre inline) — ver
+ * `getAttachmentSignedUrl`.
+ */
+export const PATIENT_ATTACHMENTS_BUCKET = "patient-attachments"
+
+/** Teto por anexo: 20 MB, abaixo do bodySizeLimit de 25 MB das Server Actions. */
+export const PATIENT_ATTACHMENT_MAX_BYTES = 20 * 1024 * 1024
+
 export const ASSISTANT_CASE_CHAT_MAX_HISTORY_MESSAGES = 48
 export const ASSISTANT_CASE_CHAT_MAX_HISTORY_CHARS = 14_000
 export const CASE_CHAT_CHIP_MAX_PER_RESPONSE = 4

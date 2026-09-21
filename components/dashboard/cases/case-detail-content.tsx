@@ -17,6 +17,7 @@ import { getPrescriptionsByCaseId } from "@/modules/prescriptions/get-prescripti
 import { getCaseEarningsTotals } from "@/modules/financial-entries/get-case-earnings-totals"
 import { listFinancialEntries } from "@/modules/financial-entries/list-financial-entries"
 import { getScaleResultsByCase } from "@/modules/patient-scales/get-scale-results-by-case"
+import { listAttachmentsByCase } from "@/modules/patient-attachments/list-attachments-by-case"
 import { computePediatricAge } from "@/lib/compute-pediatric-age"
 import { Separator } from "@/components/ui/separator"
 import { CaseDetailCommandStrip } from "@/components/dashboard/cases/case-detail-command-strip"
@@ -31,6 +32,7 @@ import { caseDetailMainStackClassName } from "@/components/dashboard/cases/case-
 import { CaseReport } from "@/components/dashboard/cases/case-report"
 import { ConsultationTimerWidget } from "@/components/dashboard/cases/consultation-timer-widget"
 import { ScalesSection } from "@/components/dashboard/scales/scales-section"
+import { AttachmentsSection } from "@/components/dashboard/attachments/attachments-section"
 
 export async function CaseDetailContent({ id }: { id: string }) {
   const supabase = await createClient()
@@ -46,6 +48,7 @@ export async function CaseDetailContent({ id }: { id: string }) {
     earningsTotals,
     caseEntries,
     scaleResults,
+    caseAttachments,
   ] = await Promise.all([
     getCaseById(supabase, id, profile.id),
     profile.report_template_id
@@ -66,6 +69,7 @@ export async function CaseDetailContent({ id }: { id: string }) {
     // Lista vazia em falha, nunca throw: escala é apoio — derrubar a consulta
     // inteira porque a leitura do histórico falhou seria pior que não mostrá-lo.
     getScaleResultsByCase(supabase, profile.id, id).catch(() => []),
+    listAttachmentsByCase(supabase, profile.id, id).catch(() => []),
   ])
 
   if (!caseDetail) {
@@ -195,14 +199,23 @@ export async function CaseDetailContent({ id }: { id: string }) {
           prescriptions={casePrescriptions}
         />
         {caseDetail.patient ? (
-          <ScalesSection
-            patientId={caseDetail.patient.id}
-            caseId={id}
-            ageMonths={caseAgeMonths}
-            results={scaleResults}
-            title="Escalas desta consulta"
-            description="Escalas aplicadas neste atendimento. O registro fica no histórico do paciente."
-          />
+          <>
+            <ScalesSection
+              patientId={caseDetail.patient.id}
+              caseId={id}
+              ageMonths={caseAgeMonths}
+              results={scaleResults}
+              title="Escalas desta consulta"
+              description="Escalas aplicadas neste atendimento. O registro fica no histórico do paciente."
+            />
+            <AttachmentsSection
+              patientId={caseDetail.patient.id}
+              caseId={id}
+              attachments={caseAttachments}
+              title="Anexos desta consulta"
+              description="Arquivos enviados neste atendimento. Ficam guardados na ficha da criança."
+            />
+          </>
         ) : null}
       </div>
       <ConsultationTimerWidget

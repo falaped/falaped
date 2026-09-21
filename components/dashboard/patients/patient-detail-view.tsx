@@ -20,10 +20,12 @@ import { PatientVaccineCalendarSection } from "@/components/dashboard/patients/p
 import { PatientDetailTimeline } from "@/components/dashboard/patients/patient-detail-timeline"
 import { GrowthSection } from "@/components/dashboard/patients/growth/growth-section"
 import { ScalesSection } from "@/components/dashboard/scales/scales-section"
+import { AttachmentsSection } from "@/components/dashboard/attachments/attachments-section"
 import { deletePatientAction } from "@/actions"
 import type { Patient } from "@/modules/patients/types"
 import type { Measurement } from "@/modules/patient-growth/types"
 import type { ScaleResult } from "@/modules/patient-scales/types"
+import type { PatientAttachment } from "@/modules/patient-attachments/types"
 import type { CaseForPatient } from "@/modules/cases/get-cases-by-patient-id"
 import type { MedicalCertificateListItem } from "@/modules/medical-certificates/get-medical-certificates-by-profile-id"
 import type { PrescriptionListItem } from "@/modules/prescriptions/types"
@@ -41,6 +43,7 @@ export function PatientDetailView({
   takenVaccineItemIds = [],
   scaleResults = [],
   ageMonths = null,
+  attachments = [],
 }: {
   patient: Patient
   cases?: CaseForPatient[]
@@ -58,6 +61,8 @@ export function PatientDetailView({
   scaleResults?: ScaleResult[]
   /** Idade cronológica em meses inteiros, derivada no servidor; null sem data de nascimento. */
   ageMonths?: number | null
+  /** Anexos do paciente, do mais recente para o mais antigo. */
+  attachments?: PatientAttachment[]
 }) {
   const router = useRouter()
   const pathname = usePathname()
@@ -158,6 +163,10 @@ export function PatientDetailView({
             patientId={patient.id}
             ageMonths={ageMonths}
             results={scaleResults}
+          />
+          <AttachmentsSection
+            patientId={patient.id}
+            attachments={attachments}
           />
           <PatientDetailTimeline
             cases={cases}

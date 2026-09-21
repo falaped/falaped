@@ -30,6 +30,14 @@ export {
   type RemovePatientPhotoResult,
 } from "./patients"
 export {
+  uploadAttachmentAction,
+  type UploadAttachmentResult,
+  deleteAttachmentAction,
+  type DeleteAttachmentResult,
+  getAttachmentDownloadUrlAction,
+  type GetAttachmentDownloadUrlResult,
+} from "./patient-attachments"
+export {
   createScaleResultAction,
   type CreateScaleResultResult,
   deleteScaleResultAction,
