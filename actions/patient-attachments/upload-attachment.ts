@@ -44,6 +44,13 @@ export async function uploadAttachmentAction(
   const caseId =
     typeof rawCaseId === "string" && rawCaseId.trim() !== "" ? rawCaseId : null
   const file = formData.get("file")
+  const rawTitle = formData.get("title")
+  // Título é rótulo de tela: corta em 120 e vira null quando vazio — nome em
+  // branco tem que cair no nome do arquivo, não virar string vazia na ficha.
+  const title =
+    typeof rawTitle === "string" && rawTitle.trim() !== ""
+      ? rawTitle.trim().slice(0, 120)
+      : null
 
   if (!UUID_RE.test(patientId))
     return { ok: false, error: "Paciente inválido." }
@@ -81,6 +88,7 @@ export async function uploadAttachmentAction(
       case_id: caseId,
       storage_path: storagePath,
       file_name: file.name || "arquivo",
+      title,
       mime_type: file.type || null,
       size_bytes: file.size,
     })

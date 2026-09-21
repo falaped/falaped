@@ -2,7 +2,14 @@
 
 import { useRef, useState } from "react"
 import { useRouter } from "next/navigation"
-import { Download, Loader2, Paperclip, Trash2, Upload } from "lucide-react"
+import {
+  Download,
+  ExternalLink,
+  Loader2,
+  Paperclip,
+  Trash2,
+  Upload,
+} from "lucide-react"
 import { toast } from "sonner"
 
 import {
@@ -18,6 +25,17 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { isInlineViewableMimeType } from "@/lib/attachment-inline-view"
 import { PATIENT_ATTACHMENT_MAX_BYTES } from "@/lib/constants"
 import { formatDateTime } from "@/lib/formatters"
 import { getFriendlyToastMessage } from "@/lib/get-friendly-toast-message"
@@ -50,13 +68,14 @@ export function AttachmentsSection({
   const inputRef = useRef<HTMLInputElement>(null)
   const [isUploading, setIsUploading] = useState(false)
   const [busyId, setBusyId] = useState<string | null>(null)
+  // Arquivo escolhido aguardando o nome. O diálogo só existe enquanto ele existe.
+  const [pendingFile, setPendingFile] = useState<File | null>(null)
+  const [attachmentTitle, setAttachmentTitle] = useState("")
 
-  async function handleFileChange(
-    event: React.ChangeEvent<HTMLInputElement>,
-  ) {
+  function handleFileChange(event: React.ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0]
-    // Limpa o input já: sem isso, reenviar o MESMO arquivo depois de um erro não
-    // dispara change de novo e a tela parece travada.
+    // Limpa o input já: sem isso, escolher o MESMO arquivo depois de cancelar
+    // não dispara change de novo e a tela parece travada.
     event.target.value = ""
     if (!file) return
 
@@ -65,16 +84,27 @@ export function AttachmentsSection({
       return
     }
 
+    // Nome sugerido: o do arquivo sem a extensão — o médico só ajusta.
+    setAttachmentTitle(file.name.replace(/\.[A-Za-z0-9]{1,12}$/, ""))
+    setPendingFile(file)
+  }
+
+  async function handleConfirmUpload() {
+    if (!pendingFile) return
+
     const formData = new FormData()
     formData.set("patientId", patientId)
     if (caseId) formData.set("caseId", caseId)
-    formData.set("file", file)
+    formData.set("file", pendingFile)
+    formData.set("title", attachmentTitle)
 
     setIsUploading(true)
     try {
       const result = await uploadAttachmentAction(formData)
       if (result.ok) {
         toast.success("Arquivo anexado.")
+        setPendingFile(null)
+        setAttachmentTitle("")
         router.refresh()
       } else {
         toast.error(getFriendlyToastMessage(result.error))
@@ -90,10 +120,16 @@ export function AttachmentsSection({
     }
   }
 
-  async function handleDownload(id: string) {
+  /**
+   * Abre numa aba (`inline`) ou baixa. A URL é assinada no servidor a cada
+   * clique — nada de link permanente na tela — e é o servidor que decide se o
+   * tipo pode abrir inline; aqui o botão "Abrir" só some para não oferecer o
+   * que viraria download de qualquer jeito.
+   */
+  async function handleOpen(id: string, mode: "download" | "inline") {
     setBusyId(id)
     try {
-      const result = await getAttachmentDownloadUrlAction(id)
+      const result = await getAttachmentDownloadUrlAction(id, mode)
       if (result.ok) {
         window.open(result.url, "_blank", "noopener,noreferrer")
       } else {
@@ -162,8 +198,8 @@ export function AttachmentsSection({
               Nenhum arquivo anexado
             </p>
             <p className="mt-1 max-w-sm text-sm text-muted-foreground/80">
-              Qualquer tipo de arquivo, até 20 MB cada. Fica guardado na ficha e
-              só você tem acesso.
+              Qualquer tipo de arquivo, até 20 MB cada. PDF e imagem abrem em
+              outra aba; o resto baixa. Só você tem acesso.
             </p>
           </div>
         ) : (
@@ -180,22 +216,37 @@ export function AttachmentsSection({
                   />
                   <div className="min-w-0">
                     <p className="wrap-break-word font-medium">
-                      {attachment.file_name}
+                      {attachment.title?.trim() || attachment.file_name}
                     </p>
                     <p className="text-sm text-muted-foreground">
+                      {attachment.title?.trim()
+                        ? `${attachment.file_name} · `
+                        : ""}
                       {formatBytes(attachment.size_bytes)} ·{" "}
                       {formatDateTime(attachment.created_at)}
                     </p>
                   </div>
                 </div>
                 <div className="flex shrink-0 items-center gap-1">
+                  {isInlineViewableMimeType(attachment.mime_type) ? (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleOpen(attachment.id, "inline")}
+                      disabled={busyId === attachment.id}
+                      aria-label={`Abrir ${attachment.title?.trim() || attachment.file_name} em outra aba`}
+                    >
+                      <ExternalLink className="h-4 w-4" aria-hidden />
+                    </Button>
+                  ) : null}
                   <Button
                     type="button"
                     variant="ghost"
                     size="sm"
-                    onClick={() => handleDownload(attachment.id)}
+                    onClick={() => handleOpen(attachment.id, "download")}
                     disabled={busyId === attachment.id}
-                    aria-label={`Baixar ${attachment.file_name}`}
+                    aria-label={`Baixar ${attachment.title?.trim() || attachment.file_name}`}
                   >
                     <Download className="h-4 w-4" aria-hidden />
                   </Button>
@@ -205,7 +256,7 @@ export function AttachmentsSection({
                     size="sm"
                     onClick={() => handleDelete(attachment.id)}
                     disabled={busyId === attachment.id}
-                    aria-label={`Apagar ${attachment.file_name}`}
+                    aria-label={`Apagar ${attachment.title?.trim() || attachment.file_name}`}
                   >
                     <Trash2 className="h-4 w-4" aria-hidden />
                   </Button>
@@ -215,6 +266,72 @@ export function AttachmentsSection({
           </ul>
         )}
       </CardContent>
+
+      <Dialog
+        open={pendingFile !== null}
+        onOpenChange={(open) => {
+          if (open || isUploading) return
+          setPendingFile(null)
+          setAttachmentTitle("")
+        }}
+      >
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Nome do anexo</DialogTitle>
+            <DialogDescription>
+              Dê um nome para reconhecer o arquivo depois. O arquivo original é
+              guardado como está.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="flex flex-col gap-2">
+            <Label htmlFor="attachment-title">Nome</Label>
+            <Input
+              id="attachment-title"
+              value={attachmentTitle}
+              maxLength={120}
+              autoFocus
+              placeholder="Ex.: Hemograma de março"
+              onChange={(event) => setAttachmentTitle(event.target.value)}
+              onKeyDown={(event) => {
+                if (event.key === "Enter") {
+                  event.preventDefault()
+                  void handleConfirmUpload()
+                }
+              }}
+            />
+            <p className="text-sm text-muted-foreground">
+              {pendingFile
+                ? `${pendingFile.name} · ${formatBytes(pendingFile.size)}`
+                : ""}
+            </p>
+          </div>
+
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="ghost"
+              onClick={() => {
+                setPendingFile(null)
+                setAttachmentTitle("")
+              }}
+              disabled={isUploading}
+            >
+              Cancelar
+            </Button>
+            <Button
+              type="button"
+              onClick={handleConfirmUpload}
+              disabled={isUploading}
+            >
+              {isUploading ? (
+                <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
+              ) : null}
+              Anexar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </Card>
   )
 }

@@ -10,6 +10,8 @@ export type PatientAttachment = {
   case_id: string | null
   storage_path: string
   file_name: string
+  /** Nome dado pelo médico; null exibe `file_name`. */
+  title: string | null
   mime_type: string | null
   size_bytes: number
   created_at: string
@@ -20,6 +22,7 @@ export type CreateAttachmentPayload = {
   case_id: string | null
   storage_path: string
   file_name: string
+  title: string | null
   mime_type: string | null
   size_bytes: number
 }

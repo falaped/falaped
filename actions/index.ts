@@ -35,6 +35,7 @@ export {
   deleteAttachmentAction,
   type DeleteAttachmentResult,
   getAttachmentDownloadUrlAction,
+  type GetAttachmentUrlResult,
   type GetAttachmentDownloadUrlResult,
 } from "./patient-attachments"
 export {
