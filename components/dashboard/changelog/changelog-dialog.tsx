@@ -19,7 +19,10 @@ import { CHANGELOG, LATEST_RELEASE } from "@/lib/changelog"
 import { formatDate } from "@/lib/formatters"
 import { cn } from "@/lib/utils"
 
-const SEEN_KEY = "falaped:changelog:seen"
+// v2: antes bastava fechar o modal para marcar como lido, o que apagava o
+// destaque de quem só tinha dispensado a janela. A chave mudou de nome para
+// que todo mundo volte a ver as novidades uma vez com a regra nova.
+const SEEN_KEY = "falaped:changelog:seen:v2"
 
 /**
  * Lê e grava qual versão o médico já viu. É conveniência por navegador, não
@@ -59,12 +62,12 @@ export function ChangelogMenuItem() {
     setOpen(true)
   }, [])
 
-  function handleOpenChange(next: boolean) {
-    setOpen(next)
-    if (!next) {
-      writeSeen(LATEST_RELEASE.id)
-      setHasUnseen(false)
-    }
+  // Fechar não é ler: sair pelo Esc, pelo X ou clicando fora apenas fecha, e o
+  // destaque na barra lateral continua até o médico confirmar no botão.
+  function markAsRead() {
+    writeSeen(LATEST_RELEASE.id)
+    setHasUnseen(false)
+    setOpen(false)
   }
 
   return (
@@ -80,7 +83,7 @@ export function ChangelogMenuItem() {
           className={cn(
             "relative overflow-hidden",
             hasUnseen &&
-              "bg-primary/10 text-primary ring-1 ring-primary/40 hover:bg-primary/15 hover:text-primary",
+              "bg-primary/15 text-primary ring-1 ring-primary/50 shadow-sm hover:bg-primary/20 hover:text-primary",
           )}
         >
           {/* Brilho varrendo a linha. Só enquanto há novidade não vista, e só
@@ -114,7 +117,7 @@ export function ChangelogMenuItem() {
         </SidebarMenuButton>
       </SidebarMenuItem>
 
-      <Dialog open={open} onOpenChange={handleOpenChange}>
+      <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-lg">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
@@ -161,7 +164,7 @@ export function ChangelogMenuItem() {
           </div>
 
           <div className="flex justify-end">
-            <Button type="button" onClick={() => handleOpenChange(false)}>
+            <Button type="button" onClick={markAsRead}>
               Entendi
             </Button>
           </div>
