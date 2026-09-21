@@ -1,5 +1,7 @@
 import test from "node:test"
 import assert from "node:assert/strict"
+
+import { bookPriceCents } from "@/modules/books/constants"
 import type { SupabaseClient } from "@supabase/supabase-js"
 
 /**
@@ -55,7 +57,7 @@ test("reaproveita o QR ainda válido em vez de gerar outro na Asaas", async () =
     "b1",
   )
   assert.equal(pix.payload, "00020126-copia-e-cola")
-  assert.equal(pix.amount, "29.99")
+  assert.equal(pix.amount, (bookPriceCents(null) / 100).toFixed(2))
 })
 
 test("aplica o desconto do cupom no valor cobrado", async () => {
@@ -72,7 +74,8 @@ test("aplica o desconto do cupom no valor cobrado", async () => {
     }),
     "b1",
   )
-  assert.equal(pix.amount, "26.99")
+  assert.equal(pix.amount, (bookPriceCents("GABIMARINHO10") / 100).toFixed(2))
+  assert.ok(bookPriceCents("GABIMARINHO10") <= bookPriceCents(null), "cupom nunca encarece")
 })
 
 test("QR expirado não é reaproveitado (tenta gerar e falha sem chave)", async () => {

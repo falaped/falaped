@@ -24,8 +24,12 @@ export const bookPagePath = (bookId: string, index: number) =>
   `${bookId}/pages/${index}.jpg`
 export const bookPdfPath = (bookId: string) => `${bookId}/book.pdf`
 
-/** Oferta da landing pública (decisão do gestor, 17/09/2026). */
-export const BOOK_PRICE_BRL = "29,99"
+// ┌─────────────────────────────────────────────────────────────────────────┐
+// │ TESTE EM PRODUÇÃO: preço em 1 centavo para pagar o Pix de verdade sem    │
+// │ gastar. VOLTAR PARA 2999 ANTES DE DIVULGAR A LANDING.                    │
+// └─────────────────────────────────────────────────────────────────────────┘
+/** Oferta da landing pública em centavos (decisão do gestor, 17/09/2026: 2999). */
+export const BOOK_PRICE_CENTS = 1
 /** Caixa que recebe as respostas: o domínio de envio (contato.falaped.com.br) não tem entrada. */
 export const BOOKS_EMAIL_REPLY_TO = "contato@falaped.com.br"
 /** WhatsApp da venda concierge (Pix), só dígitos com DDI. */
@@ -35,8 +39,10 @@ export const BOOK_COUPONS: Record<string, number> = { GABIMARINHO10: 10, MARIZIN
 /** Preço em centavos já com o desconto do cupom. Base do valor cobrado no Pix. */
 export function bookPriceCents(coupon: string | null | undefined): number {
   const pct = coupon ? BOOK_COUPONS[coupon] ?? 0 : 0
-  return Math.round(2999 * (1 - pct / 100))
+  return Math.max(1, Math.round(BOOK_PRICE_CENTS * (1 - pct / 100)))
 }
+/** Preço cheio em BRL, como aparece na landing. */
+export const BOOK_PRICE_BRL = (BOOK_PRICE_CENTS / 100).toFixed(2).replace(".", ",")
 /** Preço em BRL já com o desconto do cupom (ou cheio, se nulo/inválido). */
 export function bookPriceWithCoupon(coupon: string | null | undefined): string {
   return (bookPriceCents(coupon) / 100).toFixed(2).replace(".", ",")
