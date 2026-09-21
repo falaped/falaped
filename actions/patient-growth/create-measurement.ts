@@ -54,6 +54,8 @@ export async function createMeasurementAction(
         weight_grams: kgToGrams(parsed.data.weight),
         length_height_mm: cmToMm(parsed.data.length_height),
         head_circumference_mm: cmToMm(parsed.data.head_circumference),
+        systolic_bp: parsed.data.systolic_bp ?? null,
+        diastolic_bp: parsed.data.diastolic_bp ?? null,
       },
     )
     revalidatePath(`/dashboard/patients/${parsed.data.patientId}`)

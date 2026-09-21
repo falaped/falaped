@@ -14,8 +14,16 @@ import { toast } from "sonner"
 
 import { createMeasurementAction, updateMeasurementAction } from "@/actions"
 import { getFriendlyToastMessage } from "@/lib/get-friendly-toast-message"
-import { maskBrazilianDateInput } from "@/lib/brazilian-date-form"
+import {
+  maskBrazilianDateInput,
+  parseBirthDateFormValueToIso,
+} from "@/lib/brazilian-date-form"
 import { computePediatricBmi } from "@/lib/parse-anthropometrics-for-bmi"
+import { computePediatricAge } from "@/lib/compute-pediatric-age"
+
+import { classifyBloodPressure } from "@/lib/bp-classification"
+import { BP_REFERENCE_SOURCE } from "@/lib/bp-reference"
+import { normalizePatientSexFromDb } from "@/modules/patients/patient-sex"
 import {
   createMeasurementSchema,
   updateMeasurementSchema,
@@ -41,6 +49,8 @@ const DEFAULT_VALUES: CreateMeasurementFormInput = {
   weight: "",
   length_height: "",
   head_circumference: "",
+  systolic_bp: "",
+  diastolic_bp: "",
 }
 
 /** Parses a Brazilian/plain decimal string to a finite number, else null. */
@@ -83,11 +93,22 @@ function editDefaultsFromMeasurement(
     weight: gramsToKgInput(measurement.weight_grams),
     length_height: mmToCmInput(measurement.length_height_mm),
     head_circumference: mmToCmInput(measurement.head_circumference_mm),
+    systolic_bp:
+      measurement.systolic_bp === null ? "" : String(measurement.systolic_bp),
+    diastolic_bp:
+      measurement.diastolic_bp === null ? "" : String(measurement.diastolic_bp),
   }
 }
 
 type MeasurementFormProps = {
   patientId: string
+  /**
+   * Sexo e data de nascimento da criança. Só servem para classificar a pressão
+   * arterial na hora da digitação — sem eles o campo continua funcionando, só
+   * não mostra a faixa.
+   */
+  patientSex?: string | null
+  patientBirthDate?: string | null
   /** "create" (default) opens via its own CTA; "edit" pre-populates from `measurement`. */
   mode?: "create" | "edit"
   /** Existing measurement to edit — required when `mode === "edit"`. */
@@ -100,6 +121,8 @@ type MeasurementFormProps = {
 
 export function MeasurementForm({
   patientId,
+  patientSex = null,
+  patientBirthDate = null,
   mode = "create",
   measurement,
   open: controlledOpen,
@@ -143,6 +166,36 @@ export function MeasurementForm({
   if (watchedWeight !== null && watchedHeightCm !== null) {
     const bmi = computePediatricBmi(watchedWeight, watchedHeightCm / 100)
     if (bmi.ok) bmiLabel = bmi.bmi.toFixed(1).replace(".", ",")
+  }
+
+  // Classificação da PA enquanto se digita. Depende da idade NA DATA DA MEDIÇÃO
+  // (não hoje): medição retroativa de dois anos atrás usa a régua daquela idade.
+  const watchedSystolic = toNumberOrNull(form.watch("systolic_bp"))
+  const watchedDiastolic = toNumberOrNull(form.watch("diastolic_bp"))
+  const sex = normalizePatientSexFromDb(patientSex)
+  const measuredOnIso = parseBirthDateFormValueToIso(
+    String(form.watch("measured_on") ?? ""),
+  )
+  let bpResult: ReturnType<typeof classifyBloodPressure> | null = null
+  if (
+    watchedSystolic !== null &&
+    watchedDiastolic !== null &&
+    watchedSystolic > watchedDiastolic &&
+    sex !== null &&
+    patientBirthDate !== null &&
+    measuredOnIso !== null
+  ) {
+    const [y, m, d] = measuredOnIso.split("-").map(Number)
+    const age = computePediatricAge(patientBirthDate, new Date(y, m - 1, d))
+    if (age.status === "ok" && age.totalMonths !== undefined) {
+      bpResult = classifyBloodPressure({
+        ageYears: Math.floor(age.totalMonths / 12),
+        sex,
+        heightCm: watchedHeightCm,
+        systolic: watchedSystolic,
+        diastolic: watchedDiastolic,
+      })
+    }
   }
 
   const resetForm = () => {
@@ -274,6 +327,44 @@ export function MeasurementForm({
             />
           </FieldContent>
         </Field>
+
+        <Field className="w-full min-w-0">
+          <FieldLabel htmlFor="measurement-sbp">
+            PA sistólica (mmHg)
+          </FieldLabel>
+          <FieldContent>
+            <Input
+              id="measurement-sbp"
+              type="text"
+              inputMode="numeric"
+              placeholder="ex.: 98"
+              className="tabular-nums"
+              {...form.register("systolic_bp")}
+            />
+            <FieldError
+              errors={errors.systolic_bp ? [errors.systolic_bp] : undefined}
+            />
+          </FieldContent>
+        </Field>
+
+        <Field className="w-full min-w-0">
+          <FieldLabel htmlFor="measurement-dbp">
+            PA diastólica (mmHg)
+          </FieldLabel>
+          <FieldContent>
+            <Input
+              id="measurement-dbp"
+              type="text"
+              inputMode="numeric"
+              placeholder="ex.: 60"
+              className="tabular-nums"
+              {...form.register("diastolic_bp")}
+            />
+            <FieldError
+              errors={errors.diastolic_bp ? [errors.diastolic_bp] : undefined}
+            />
+          </FieldContent>
+        </Field>
       </div>
 
       {bmiLabel ? (
@@ -290,6 +381,25 @@ export function MeasurementForm({
           <p className="mt-1 text-xs leading-snug text-muted-foreground">
             IMC calculado a partir de peso e estatura desta medição.
           </p>
+        </div>
+      ) : null}
+
+      {bpResult ? (
+        <div className="rounded-lg border border-border bg-muted/15 px-4 py-3">
+          <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+            Pressão arterial
+          </p>
+          <p className="mt-1 text-2xl font-semibold tracking-tight text-foreground">
+            {bpResult.label}
+          </p>
+          <p className="mt-1 text-xs leading-snug text-muted-foreground">
+            {bpResult.detail}
+          </p>
+          {bpResult.basis === "nenhuma" ? null : (
+            <p className="mt-1 text-xs leading-snug text-muted-foreground">
+              {BP_REFERENCE_SOURCE}
+            </p>
+          )}
         </div>
       ) : null}
 

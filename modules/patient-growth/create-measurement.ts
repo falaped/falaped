@@ -3,7 +3,7 @@ import type { SupabaseClient } from "@supabase/supabase-js"
 import type { CreateMeasurementPayload, Measurement } from "./types"
 
 export const MEASUREMENT_SELECT =
-  "id, profile_id, patient_id, measured_on, weight_grams, length_height_mm, head_circumference_mm, created_at, updated_at"
+  "id, profile_id, patient_id, measured_on, weight_grams, length_height_mm, head_circumference_mm, systolic_bp, diastolic_bp, created_at, updated_at"
 
 /**
  * Creates a patient measurement scoped to the given profile_id (doctor) and
@@ -23,6 +23,8 @@ export async function createMeasurement(
     weight_grams: payload.weight_grams,
     length_height_mm: payload.length_height_mm,
     head_circumference_mm: payload.head_circumference_mm,
+    systolic_bp: payload.systolic_bp,
+    diastolic_bp: payload.diastolic_bp,
   }
 
   const { data, error } = await supabase

@@ -12,6 +12,8 @@ export type Measurement = {
   weight_grams: number | null
   length_height_mm: number | null
   head_circumference_mm: number | null
+  systolic_bp: number | null
+  diastolic_bp: number | null
   created_at: string
   updated_at: string
 }
@@ -25,6 +27,9 @@ export type CreateMeasurementPayload = {
   weight_grams: number | null
   length_height_mm: number | null
   head_circumference_mm: number | null
+  /** Pressão arterial em mmHg — inteiro, sem conversão de unidade. */
+  systolic_bp: number | null
+  diastolic_bp: number | null
 }
 
 /**
@@ -36,4 +41,6 @@ export type UpdateMeasurementPayload = {
   weight_grams?: number | null
   length_height_mm?: number | null
   head_circumference_mm?: number | null
+  systolic_bp?: number | null
+  diastolic_bp?: number | null
 }

@@ -27,6 +27,9 @@ export async function updateMeasurement(
     updates.length_height_mm = payload.length_height_mm
   if (payload.head_circumference_mm !== undefined)
     updates.head_circumference_mm = payload.head_circumference_mm
+  if (payload.systolic_bp !== undefined) updates.systolic_bp = payload.systolic_bp
+  if (payload.diastolic_bp !== undefined)
+    updates.diastolic_bp = payload.diastolic_bp
 
   const { data, error } = await supabase
     .from("patient_measurements")
