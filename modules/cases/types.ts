@@ -25,3 +25,12 @@ export type CaseWithPatient = {
   dashboard_chat_context_summary: string | null
   patient: CasePatient | null
 }
+
+/** Um lembrete/pendência do atendimento (tabela case_reminders). */
+export type CaseReminder = {
+  id: string
+  profile_id: string
+  case_id: string
+  text: string
+  created_at: string
+}

@@ -38,11 +38,17 @@ export function GrowthSection({
         </p>
       </div>
 
-      <MeasurementForm patientId={patient.id} />
+      <MeasurementForm
+        patientId={patient.id}
+        patientSex={patient.sex}
+        patientBirthDate={patient.birth_date}
+      />
 
       {hasMeasurements ? (
         <MeasurementHistoryTable
           patientId={patient.id}
+          patientSex={patient.sex}
+          patientBirthDate={patient.birth_date}
           measurements={measurements}
         />
       ) : (

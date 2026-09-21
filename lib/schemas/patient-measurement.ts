@@ -33,6 +33,29 @@ function optionalAnthropometric(min: number, max: number, message: string) {
 }
 
 /**
+ * Pressão arterial em mmHg: inteiro, sem conversão de unidade. A faixa é a mesma
+ * do CHECK da tabela — validar aqui devolve erro em PT-BR em vez de estourar no
+ * banco. A regra "sistólica maior que diastólica" é do par, não do campo, e mora
+ * no refine cruzado lá embaixo.
+ */
+function optionalBloodPressure(min: number, max: number, message: string) {
+  return z
+    .union([z.string(), z.number()])
+    .optional()
+    .transform((v) => {
+      if (v === undefined) return undefined
+      const s = typeof v === "number" ? String(v) : v
+      return s.trim() === "" ? undefined : s.trim()
+    })
+    .refine((v) => {
+      if (v === undefined) return true
+      const n = Number(v)
+      return Number.isInteger(n) && n >= min && n <= max
+    }, message)
+    .transform((v) => (v === undefined ? undefined : Number(v)))
+}
+
+/**
  * `measured_on`: form sends dd/mm/aaaa; after the client resolver it may also be
  * yyyy-mm-dd. Output is yyyy-mm-dd for Supabase `date`. Rejects future dates by
  * comparing the parsed ISO date against today at local midnight (never `new
@@ -75,15 +98,45 @@ export const createMeasurementSchema = z
       70,
       "Perímetro cefálico deve estar entre 20 e 70 cm.",
     ),
+    systolic_bp: optionalBloodPressure(
+      40,
+      260,
+      "Pressão sistólica deve ser um número inteiro entre 40 e 260 mmHg.",
+    ),
+    diastolic_bp: optionalBloodPressure(
+      20,
+      200,
+      "Pressão diastólica deve ser um número inteiro entre 20 e 200 mmHg.",
+    ),
   })
   .refine(
     (data) =>
       data.weight !== undefined ||
       data.length_height !== undefined ||
-      data.head_circumference !== undefined,
+      data.head_circumference !== undefined ||
+      data.systolic_bp !== undefined ||
+      data.diastolic_bp !== undefined,
     {
-      message: "Informe pelo menos uma medida (peso, estatura ou PC).",
+      message: "Informe pelo menos uma medida (peso, estatura, PC ou pressão).",
       path: ["weight"],
+    },
+  )
+  .refine(
+    (data) =>
+      (data.systolic_bp === undefined) === (data.diastolic_bp === undefined),
+    {
+      message: "Informe as duas pressões, sistólica e diastólica.",
+      path: ["diastolic_bp"],
+    },
+  )
+  .refine(
+    (data) =>
+      data.systolic_bp === undefined ||
+      data.diastolic_bp === undefined ||
+      data.systolic_bp > data.diastolic_bp,
+    {
+      message: "A sistólica precisa ser maior que a diastólica.",
+      path: ["systolic_bp"],
     },
   )
 
@@ -115,15 +168,45 @@ export const updateMeasurementSchema = z
       70,
       "Perímetro cefálico deve estar entre 20 e 70 cm.",
     ),
+    systolic_bp: optionalBloodPressure(
+      40,
+      260,
+      "Pressão sistólica deve ser um número inteiro entre 40 e 260 mmHg.",
+    ),
+    diastolic_bp: optionalBloodPressure(
+      20,
+      200,
+      "Pressão diastólica deve ser um número inteiro entre 20 e 200 mmHg.",
+    ),
   })
   .refine(
     (data) =>
       data.weight !== undefined ||
       data.length_height !== undefined ||
-      data.head_circumference !== undefined,
+      data.head_circumference !== undefined ||
+      data.systolic_bp !== undefined ||
+      data.diastolic_bp !== undefined,
     {
-      message: "Informe pelo menos uma medida (peso, estatura ou PC).",
+      message: "Informe pelo menos uma medida (peso, estatura, PC ou pressão).",
       path: ["weight"],
+    },
+  )
+  .refine(
+    (data) =>
+      (data.systolic_bp === undefined) === (data.diastolic_bp === undefined),
+    {
+      message: "Informe as duas pressões, sistólica e diastólica.",
+      path: ["diastolic_bp"],
+    },
+  )
+  .refine(
+    (data) =>
+      data.systolic_bp === undefined ||
+      data.diastolic_bp === undefined ||
+      data.systolic_bp > data.diastolic_bp,
+    {
+      message: "A sistólica precisa ser maior que a diastólica.",
+      path: ["systolic_bp"],
     },
   )
 

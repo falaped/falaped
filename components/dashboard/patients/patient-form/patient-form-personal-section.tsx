@@ -3,6 +3,7 @@
 import type { FieldValues, UseFormReturn } from "react-hook-form"
 
 import { Input } from "@/components/ui/input"
+import { Textarea } from "@/components/ui/textarea"
 import { PhoneInput } from "@/components/ui/phone-input"
 import {
   Field,
@@ -148,6 +149,45 @@ export function PatientFormPersonalSection({
             </FieldContent>
           </Field>
         </div>
+
+        <Field>
+          <FieldLabel htmlFor="patient-address">Endereço da criança</FieldLabel>
+          <FieldContent>
+            <Input
+              id="patient-address"
+              placeholder="Rua, número, complemento, bairro, cidade"
+              {...form.register("address")}
+            />
+            <FieldError
+              errors={
+                form.formState.errors.address
+                  ? [form.formState.errors.address]
+                  : undefined
+              }
+            />
+          </FieldContent>
+        </Field>
+
+        <Field>
+          <FieldLabel htmlFor="patient-family_notes">
+            Outros familiares
+          </FieldLabel>
+          <FieldContent>
+            <Textarea
+              id="patient-family_notes"
+              placeholder="Nomes de mãe, pai, avós, irmãos"
+              rows={2}
+              {...form.register("family_notes")}
+            />
+            <FieldError
+              errors={
+                form.formState.errors.family_notes
+                  ? [form.formState.errors.family_notes]
+                  : undefined
+              }
+            />
+          </FieldContent>
+        </Field>
       </FieldGroup>
     </FieldSet>
   )

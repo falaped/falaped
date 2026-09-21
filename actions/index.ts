@@ -2,6 +2,10 @@ export {
   setCasePatientIdAction,
   deleteCaseAction,
   updateCaseStatusAction,
+  addCaseReminderAction,
+  type AddCaseReminderResult,
+  deleteCaseReminderAction,
+  type DeleteCaseReminderResult,
   pauseConsultationAction,
   resumeConsultationAction,
   resetConsultationAction,
@@ -29,6 +33,21 @@ export {
   removePatientPhotoAction,
   type RemovePatientPhotoResult,
 } from "./patients"
+export {
+  uploadAttachmentAction,
+  type UploadAttachmentResult,
+  deleteAttachmentAction,
+  type DeleteAttachmentResult,
+  getAttachmentDownloadUrlAction,
+  type GetAttachmentUrlResult,
+  type GetAttachmentDownloadUrlResult,
+} from "./patient-attachments"
+export {
+  createScaleResultAction,
+  type CreateScaleResultResult,
+  deleteScaleResultAction,
+  type DeleteScaleResultResult,
+} from "./patient-scales"
 export {
   createMeasurementAction,
   type CreateMeasurementResult,

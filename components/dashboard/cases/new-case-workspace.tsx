@@ -52,6 +52,10 @@ import {
 } from "@/lib/constants"
 import { CLINICAL_NOTATION_SUMMARY_MESSAGE } from "@/lib/format-clinical-assistant-sections"
 import { ConsultationTimerWidget } from "@/components/dashboard/cases/consultation-timer-widget"
+import { CaseRemindersDialog } from "@/components/dashboard/cases/case-reminders-dialog"
+import { PreviousCaseSummaryDialog } from "@/components/dashboard/cases/previous-case-summary-dialog"
+import type { CaseCarryover } from "@/modules/cases/get-previous-case-carryover"
+import type { CaseReminder } from "@/modules/cases/types"
 
 type WorkspaceMessage = {
   id: string
@@ -520,6 +524,8 @@ export function NewCaseWorkspace({
   endedAt,
   consultationPausedMs,
   consultationPausedAt,
+  reminders = [],
+  previousCarryover = null,
 }: {
   caseId: string
   initialMessages: WorkspaceMessage[]
@@ -535,6 +541,10 @@ export function NewCaseWorkspace({
   endedAt: string | null
   consultationPausedMs: number
   consultationPausedAt: string | null
+  /** Lembretes já escritos neste atendimento. */
+  reminders?: CaseReminder[]
+  /** O que a consulta anterior desta criança deixou; null quando não há. */
+  previousCarryover?: CaseCarryover | null
 }) {
   const router = useRouter()
   const scrollRef = useRef<HTMLDivElement | null>(null)
@@ -837,6 +847,12 @@ export function NewCaseWorkspace({
       aria-label="Área do novo caso"
       className="-m-8 flex h-[calc(100dvh-2rem)] flex-col overflow-hidden bg-sidebar"
     >
+      {previousCarryover && patient ? (
+        <PreviousCaseSummaryDialog
+          carryover={previousCarryover}
+          patientName={patient.name}
+        />
+      ) : null}
       <ConsultationTimerWidget
         caseId={caseId}
         startedAt={startedAt}
@@ -869,6 +885,7 @@ export function NewCaseWorkspace({
           </div>
 
           <div className="flex items-center gap-2">
+            <CaseRemindersDialog caseId={caseId} initialReminders={reminders} />
             <Button asChild variant="outline" size="sm" className={buttonPressFeedbackClass}>
               <Link href="/dashboard/cases/select-patient">Trocar paciente</Link>
             </Button>

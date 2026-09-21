@@ -4,7 +4,7 @@ import { normalizePatientSexFromDb } from "@/modules/patients/patient-sex"
 import type { Patient } from "./types"
 
 const PATIENT_SELECT =
-  "id, profile_id, user_phone, name, birth_date, responsible, contact_phone, sex, legal_guardian, blood_type, gestational_age_weeks, weight, height, head_circumference, allergies, current_medications, medical_history, photo_path, consent_given, consent_at, created_at, updated_at"
+  "id, profile_id, user_phone, name, birth_date, responsible, contact_phone, sex, legal_guardian, blood_type, gestational_age_weeks, weight, height, head_circumference, allergies, current_medications, medical_history, address, family_notes, photo_path, consent_given, consent_at, created_at, updated_at"
 
 export type UpdatePatientPayload = {
   name?: string
@@ -21,6 +21,8 @@ export type UpdatePatientPayload = {
   allergies?: string | null
   current_medications?: string | null
   medical_history?: string | null
+  address?: string | null
+  family_notes?: string | null
 }
 
 /**
@@ -71,6 +73,10 @@ export async function updatePatient(
       payload.current_medications?.trim() || null
   if (payload.medical_history !== undefined)
     updates.medical_history = payload.medical_history?.trim() || null
+  if (payload.address !== undefined)
+    updates.address = payload.address?.trim() || null
+  if (payload.family_notes !== undefined)
+    updates.family_notes = payload.family_notes?.trim() || null
 
   const { data, error } = await supabase
     .from("patients")

@@ -60,6 +60,10 @@ export async function updatePatientAction(
         parsed.data.current_medications ?? null
     if (parsed.data.medical_history !== undefined)
       payload.medical_history = parsed.data.medical_history ?? null
+    if (parsed.data.address !== undefined)
+      payload.address = parsed.data.address ?? null
+    if (parsed.data.family_notes !== undefined)
+      payload.family_notes = parsed.data.family_notes ?? null
 
     await updatePatient(supabase, id, profile.id, payload)
     revalidatePath("/dashboard/patients")

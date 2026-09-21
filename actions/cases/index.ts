@@ -1,6 +1,11 @@
 export { setCasePatientIdAction } from "./set-case-patient-id"
 export { deleteCaseAction } from "./delete-case"
 export { updateCaseStatusAction } from "./update-case-status"
+export { addCaseReminderAction, type AddCaseReminderResult } from "./add-case-reminder"
+export {
+  deleteCaseReminderAction,
+  type DeleteCaseReminderResult,
+} from "./delete-case-reminder"
 export { pauseConsultationAction } from "./pause-consultation"
 export { resumeConsultationAction } from "./resume-consultation"
 export { resetConsultationAction } from "./reset-consultation"

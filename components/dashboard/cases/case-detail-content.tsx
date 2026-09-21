@@ -16,6 +16,12 @@ import { getMedicalCertificatesByCaseId } from "@/modules/medical-certificates/g
 import { getPrescriptionsByCaseId } from "@/modules/prescriptions/get-prescriptions-by-case-id"
 import { getCaseEarningsTotals } from "@/modules/financial-entries/get-case-earnings-totals"
 import { listFinancialEntries } from "@/modules/financial-entries/list-financial-entries"
+import { getScaleResultsByCase } from "@/modules/patient-scales/get-scale-results-by-case"
+import { listAttachmentsByCase } from "@/modules/patient-attachments/list-attachments-by-case"
+import { getPhoneByProfileId } from "@/modules/authenticated-users/get-phone-by-profile-id"
+import { getPreviousCaseCarryover } from "@/modules/cases/get-previous-case-carryover"
+import { listCaseReminders } from "@/modules/cases/list-case-reminders"
+import { computePediatricAge } from "@/lib/compute-pediatric-age"
 import { Separator } from "@/components/ui/separator"
 import { CaseDetailCommandStrip } from "@/components/dashboard/cases/case-detail-command-strip"
 import { CaseDetailHeader } from "@/components/dashboard/cases/case-detail-header"
@@ -28,6 +34,10 @@ import { CasePendingEarningsCard } from "@/components/dashboard/cases/case-pendi
 import { caseDetailMainStackClassName } from "@/components/dashboard/cases/case-detail-workspace"
 import { CaseReport } from "@/components/dashboard/cases/case-report"
 import { ConsultationTimerWidget } from "@/components/dashboard/cases/consultation-timer-widget"
+import { ScalesSection } from "@/components/dashboard/scales/scales-section"
+import { AttachmentsSection } from "@/components/dashboard/attachments/attachments-section"
+import { CaseRemindersCard } from "@/components/dashboard/cases/case-reminders-card"
+import { PreviousCaseSummaryDialog } from "@/components/dashboard/cases/previous-case-summary-dialog"
 
 export async function CaseDetailContent({ id }: { id: string }) {
   const supabase = await createClient()
@@ -42,6 +52,9 @@ export async function CaseDetailContent({ id }: { id: string }) {
     casePrescriptions,
     earningsTotals,
     caseEntries,
+    scaleResults,
+    caseAttachments,
+    caseReminders,
   ] = await Promise.all([
     getCaseById(supabase, id, profile.id),
     profile.report_template_id
@@ -59,6 +72,11 @@ export async function CaseDetailContent({ id }: { id: string }) {
       caseId: id,
       includeVoided: true,
     }).catch(() => []),
+    // Lista vazia em falha, nunca throw: escala é apoio — derrubar a consulta
+    // inteira porque a leitura do histórico falhou seria pior que não mostrá-lo.
+    getScaleResultsByCase(supabase, profile.id, id).catch(() => []),
+    listAttachmentsByCase(supabase, profile.id, id).catch(() => []),
+    listCaseReminders(supabase, profile.id, id).catch(() => []),
   ])
 
   if (!caseDetail) {
@@ -102,7 +120,33 @@ export async function CaseDetailContent({ id }: { id: string }) {
     rawDashboardSummary.length > 0 &&
     contextSummaryDisplay == null
 
+  // Idade em meses inteiros da criança deste caso: filtra quais escalas são
+  // oferecidas. Sem paciente associado, não há escala a aplicar.
+  const caseAgeMonths =
+    computePediatricAge(caseDetail.patient?.birth_date ?? null, new Date())
+      .totalMonths ?? null
+
   const isActive = caseDetail.status === "active"
+
+  // O que a consulta anterior desta criança deixou. Só vale a pena mostrar num
+  // atendimento EM CURSO: abrir um caso antigo para consultar não é começar a
+  // próxima consulta. Falha vira null — nunca derruba a página do caso.
+  const previousCarryover =
+    isActive && caseDetail.patient?.id
+      ? await (async () => {
+          const phone = await getPhoneByProfileId(supabase, profile.id).catch(
+            () => null,
+          )
+          if (!phone) return null
+          return getPreviousCaseCarryover(
+            supabase,
+            profile.id,
+            phone,
+            caseDetail.patient!.id,
+            caseDetail.id,
+          ).catch(() => null)
+        })()
+      : null
   const templateSectionCount = template?.sections?.length ?? 0
 
   const reportBlock =
@@ -181,7 +225,36 @@ export async function CaseDetailContent({ id }: { id: string }) {
           certificates={caseCertificates}
           prescriptions={casePrescriptions}
         />
+        <CaseRemindersCard
+          caseId={id}
+          initialReminders={caseReminders}
+        />
+        {caseDetail.patient ? (
+          <>
+            <ScalesSection
+              patientId={caseDetail.patient.id}
+              caseId={id}
+              ageMonths={caseAgeMonths}
+              results={scaleResults}
+              title="Escalas desta consulta"
+              description="Escalas aplicadas neste atendimento. O registro fica no histórico do paciente."
+            />
+            <AttachmentsSection
+              patientId={caseDetail.patient.id}
+              caseId={id}
+              attachments={caseAttachments}
+              title="Anexos desta consulta"
+              description="Arquivos enviados neste atendimento. Ficam guardados na ficha da criança."
+            />
+          </>
+        ) : null}
       </div>
+      {previousCarryover && caseDetail.patient ? (
+        <PreviousCaseSummaryDialog
+          carryover={previousCarryover}
+          patientName={caseDetail.patient.name}
+        />
+      ) : null}
       <ConsultationTimerWidget
         caseId={id}
         startedAt={caseDetail.started_at}

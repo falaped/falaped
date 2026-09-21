@@ -34,6 +34,7 @@ import {
   SidebarRail,
 } from "@/components/ui/sidebar"
 import { NavUser } from "@/components/nav-user"
+import { ChangelogMenuItem } from "@/components/dashboard/changelog/changelog-dialog"
 
 const navMain = [
   {
@@ -163,6 +164,12 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
                 </Collapsible>
               )
             })}
+          </SidebarMenu>
+        </SidebarGroup>
+
+        <SidebarGroup className="mt-auto">
+          <SidebarMenu>
+            <ChangelogMenuItem />
           </SidebarMenu>
         </SidebarGroup>
       </SidebarContent>
