@@ -186,6 +186,20 @@ export function PatientDetailHero({
                 </p>
               ) : null}
 
+              {patient.address?.trim() ? (
+                <p className="text-sm text-muted-foreground">
+                  Endereço:{" "}
+                  <span className="text-foreground wrap-break-word">{patient.address}</span>
+                </p>
+              ) : null}
+
+              {patient.family_notes?.trim() ? (
+                <p className="text-sm text-muted-foreground">
+                  Familiares:{" "}
+                  <span className="text-foreground wrap-break-word">{patient.family_notes}</span>
+                </p>
+              ) : null}
+
               <p className="text-sm leading-relaxed text-muted-foreground">
                 Medidas e histórico clínico na seção abaixo; use o menu para editar ou registrar novo
                 atendimento.

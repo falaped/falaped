@@ -46,6 +46,8 @@ export function buildEditPatientDefaultValues(patient: Patient) {
     allergies: toFormValue(patient.allergies),
     current_medications: toFormValue(patient.current_medications),
     medical_history: toFormValue(patient.medical_history),
+    address: toFormValue(patient.address),
+    family_notes: toFormValue(patient.family_notes),
   }
 }
 
@@ -64,4 +66,6 @@ export const CREATE_PATIENT_DEFAULT_VALUES = {
   allergies: "",
   current_medications: "",
   medical_history: "",
+  address: "",
+  family_notes: "",
 } as const

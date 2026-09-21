@@ -60,6 +60,8 @@ export async function createPatientAction(
       allergies: parsed.data.allergies ?? null,
       current_medications: parsed.data.current_medications ?? null,
       medical_history: parsed.data.medical_history ?? null,
+      address: parsed.data.address ?? null,
+      family_notes: parsed.data.family_notes ?? null,
     })
     revalidatePath("/dashboard/patients")
     return { ok: true, patientId: patient.id }

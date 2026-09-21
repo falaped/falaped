@@ -115,6 +115,8 @@ export const createPatientSchema = z.object({
   allergies: optionalString,
   current_medications: optionalString,
   medical_history: optionalString,
+  address: optionalString,
+  family_notes: optionalString,
 })
 
 export const updatePatientSchema = z.object({
@@ -161,6 +163,8 @@ export const updatePatientSchema = z.object({
   allergies: optionalString,
   current_medications: optionalString,
   medical_history: optionalString,
+  address: optionalString,
+  family_notes: optionalString,
 })
 
 /**
