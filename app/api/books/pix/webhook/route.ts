@@ -16,6 +16,12 @@ import { getPayment } from "@/modules/payments/get-payment"
 const PAID_STATUSES = ["RECEIVED", "CONFIRMED", "RECEIVED_IN_CASH"]
 
 /**
+ * DORMENTE desde 21/09/2026: o checkout monta o Pix na chave do próprio
+ * recebedor (modules/books/get-book-pix) e a confirmação é manual, pelo
+ * comprovante no WhatsApp. Esta rota fica de pé para quando a conta de
+ * produção da Asaas for aprovada — aí é trocar a chamada em
+ * checkoutLeadBookAction e ligar a fila do webhook no painel.
+ *
  * POST /api/books/pix/webhook — a Asaas avisa que uma cobrança mudou.
  *
  * O corpo do webhook nunca decide nada: ele só diz qual pagamento olhar. Quem

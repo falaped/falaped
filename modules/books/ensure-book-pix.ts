@@ -23,6 +23,9 @@ type Row = {
 }
 
 /**
+ * DORMENTE: caminho da Asaas, substituído por `getBookPix` (Pix direto na
+ * chave do recebedor). Mantido para quando a conta de produção for aprovada.
+ *
  * QR do Pix do livro: reaproveita o que está válido e só gera outro quando não
  * existe ou expirou. Cada QR é de uso único e valor fixo, então gerar à toa
  * deixaria códigos órfãos pagáveis na conta.
