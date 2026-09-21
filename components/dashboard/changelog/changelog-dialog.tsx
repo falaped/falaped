@@ -86,9 +86,10 @@ export function ChangelogMenuItem() {
               "bg-primary/15 text-primary ring-1 ring-primary/50 shadow-sm hover:bg-primary/20 hover:text-primary",
           )}
         >
-          {/* Brilho varrendo a linha. Só enquanto há novidade não vista, e só
-              para quem não pediu menos movimento no sistema: insistir com quem
-              desligou animação é ignorar a preferência, não chamar atenção. */}
+          {/* Brilho varrendo a linha. Este é deslocamento de verdade, então
+              respeita "reduzir movimento" do sistema e some para quem pediu
+              menos animação. O piscar do ícone e do selo, abaixo, é só
+              opacidade — não desloca nada e continua valendo para todos. */}
           {hasUnseen ? (
             <span
               aria-hidden
@@ -97,7 +98,7 @@ export function ChangelogMenuItem() {
           ) : null}
 
           <SparklesIcon
-            className={cn("relative", hasUnseen && "motion-safe:animate-pulse")}
+            className={cn("relative", hasUnseen && "animate-pulse")}
           />
           <span className={cn("relative", hasUnseen && "font-semibold")}>
             Novidades
@@ -112,7 +113,7 @@ export function ChangelogMenuItem() {
               {/* Pulso, não salto: a linha precisa de overflow-hidden para o
                   brilho não vazar, e qualquer animação que desloque o selo o
                   faria ser cortado na borda. Piscar chama atenção sem sair. */}
-              <span className="rounded-full bg-primary px-1.5 py-0.5 text-[10px] font-bold uppercase leading-none tracking-wide text-primary-foreground motion-safe:animate-pulse">
+              <span className="rounded-full bg-primary px-1.5 py-0.5 text-[10px] font-bold uppercase leading-none tracking-wide text-primary-foreground animate-pulse">
                 Novo
               </span>
             </span>
