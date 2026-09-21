@@ -1,4 +1,7 @@
 import { FLACC } from "./flacc"
+import { MCHAT_R } from "./mchat-r"
+import { MCISAAC } from "./mcisaac"
+import { STRONGKIDS } from "./strongkids"
 import { WONG_BAKER } from "./wong-baker"
 import type { ScaleCategory, ScaleDefinition } from "./types"
 
@@ -6,7 +9,13 @@ export type { ScaleCategory, ScaleDefinition, ScaleBand, ScaleItem, ScaleOption,
 export { scoreScale, scoreRange } from "./score-scale"
 
 /** Registro de escalas disponíveis. Escala nova entra aqui e só aqui. */
-export const SCALES: readonly ScaleDefinition[] = [FLACC, WONG_BAKER]
+export const SCALES: readonly ScaleDefinition[] = [
+  FLACC,
+  WONG_BAKER,
+  MCISAAC,
+  MCHAT_R,
+  STRONGKIDS,
+]
 
 /** Rótulo PT-BR de cada categoria, na ordem em que o seletor as agrupa. */
 export const SCALE_CATEGORY_LABELS: Record<ScaleCategory, string> = {
