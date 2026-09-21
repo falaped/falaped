@@ -19,9 +19,11 @@ import { PatientClinicalOverview } from "@/components/dashboard/patients/patient
 import { PatientVaccineCalendarSection } from "@/components/dashboard/patients/patient-vaccine-calendar-section"
 import { PatientDetailTimeline } from "@/components/dashboard/patients/patient-detail-timeline"
 import { GrowthSection } from "@/components/dashboard/patients/growth/growth-section"
+import { ScalesSection } from "@/components/dashboard/scales/scales-section"
 import { deletePatientAction } from "@/actions"
 import type { Patient } from "@/modules/patients/types"
 import type { Measurement } from "@/modules/patient-growth/types"
+import type { ScaleResult } from "@/modules/patient-scales/types"
 import type { CaseForPatient } from "@/modules/cases/get-cases-by-patient-id"
 import type { MedicalCertificateListItem } from "@/modules/medical-certificates/get-medical-certificates-by-profile-id"
 import type { PrescriptionListItem } from "@/modules/prescriptions/types"
@@ -37,6 +39,8 @@ export function PatientDetailView({
   vaccineSus = null,
   vaccineSbim = null,
   takenVaccineItemIds = [],
+  scaleResults = [],
+  ageMonths = null,
 }: {
   patient: Patient
   cases?: CaseForPatient[]
@@ -50,6 +54,10 @@ export function PatientDetailView({
   vaccineSbim?: VaccineScheduleWithItems | null
   /** Reference item ids already marked TAKEN for this patient (VAC-05). */
   takenVaccineItemIds?: string[]
+  /** Histórico de escalas aplicadas, da mais recente para a mais antiga. */
+  scaleResults?: ScaleResult[]
+  /** Idade cronológica em meses inteiros, derivada no servidor; null sem data de nascimento. */
+  ageMonths?: number | null
 }) {
   const router = useRouter()
   const pathname = usePathname()
@@ -146,6 +154,11 @@ export function PatientDetailView({
             takenItemIds={takenVaccineItemIds}
           />
           <GrowthSection patient={patient} measurements={measurements} />
+          <ScalesSection
+            patientId={patient.id}
+            ageMonths={ageMonths}
+            results={scaleResults}
+          />
           <PatientDetailTimeline
             cases={cases}
             certificates={certificates}

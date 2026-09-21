@@ -7,6 +7,8 @@ import { getCasesByPatientId } from "@/modules/cases/get-cases-by-patient-id"
 import { getMedicalCertificatesByPatientId } from "@/modules/medical-certificates/get-medical-certificates-by-patient-id"
 import { getPrescriptionsByPatientId } from "@/modules/prescriptions/get-prescriptions-by-patient-id"
 import { getMeasurementsByPatient } from "@/modules/patient-growth/get-measurements-by-patient"
+import { getScaleResultsByPatient } from "@/modules/patient-scales/get-scale-results-by-patient"
+import { computePediatricAge } from "@/lib/compute-pediatric-age"
 import { getVaccineScheduleWithItems } from "@/modules/vaccines/get-vaccine-schedule-with-items"
 import { getTakenDoseIdsByPatient } from "@/modules/patient-vaccine-doses/get-taken-dose-ids-by-patient"
 import type { VaccineScheduleWithItems } from "@/modules/vaccines/types"
@@ -33,6 +35,7 @@ export async function PatientDetailContent({ id }: { id: string }) {
     measurements,
     vaccines,
     takenVaccineItemIds,
+    scaleResults,
   ] = await Promise.all([
     getCasesByPatientId(supabase, profile.id, patient.id),
     getMedicalCertificatesByPatientId(supabase, profile.id, patient.id),
@@ -41,7 +44,13 @@ export async function PatientDetailContent({ id }: { id: string }) {
     getMeasurementsByPatient(supabase, profile.id, patient.id),
     getVaccineSchedulesSafely(supabase),
     getTakenVaccineDoseIdsSafely(supabase, profile.id, patient.id),
+    getScaleResultsByPatient(supabase, profile.id, patient.id),
   ])
+
+  // Idade em meses inteiros derivada aqui (servidor) e descida como prop: é o
+  // filtro de quais escalas fazem sentido para esta criança.
+  const ageMonths =
+    computePediatricAge(patient.birth_date, new Date()).totalMonths ?? null
 
   return (
     <PatientDetailView
@@ -55,6 +64,8 @@ export async function PatientDetailContent({ id }: { id: string }) {
       vaccineSus={vaccines.sus}
       vaccineSbim={vaccines.sbim}
       takenVaccineItemIds={takenVaccineItemIds}
+      scaleResults={scaleResults}
+      ageMonths={ageMonths}
     />
   )
 }

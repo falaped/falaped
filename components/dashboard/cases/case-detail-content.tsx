@@ -16,6 +16,8 @@ import { getMedicalCertificatesByCaseId } from "@/modules/medical-certificates/g
 import { getPrescriptionsByCaseId } from "@/modules/prescriptions/get-prescriptions-by-case-id"
 import { getCaseEarningsTotals } from "@/modules/financial-entries/get-case-earnings-totals"
 import { listFinancialEntries } from "@/modules/financial-entries/list-financial-entries"
+import { getScaleResultsByCase } from "@/modules/patient-scales/get-scale-results-by-case"
+import { computePediatricAge } from "@/lib/compute-pediatric-age"
 import { Separator } from "@/components/ui/separator"
 import { CaseDetailCommandStrip } from "@/components/dashboard/cases/case-detail-command-strip"
 import { CaseDetailHeader } from "@/components/dashboard/cases/case-detail-header"
@@ -28,6 +30,7 @@ import { CasePendingEarningsCard } from "@/components/dashboard/cases/case-pendi
 import { caseDetailMainStackClassName } from "@/components/dashboard/cases/case-detail-workspace"
 import { CaseReport } from "@/components/dashboard/cases/case-report"
 import { ConsultationTimerWidget } from "@/components/dashboard/cases/consultation-timer-widget"
+import { ScalesSection } from "@/components/dashboard/scales/scales-section"
 
 export async function CaseDetailContent({ id }: { id: string }) {
   const supabase = await createClient()
@@ -42,6 +45,7 @@ export async function CaseDetailContent({ id }: { id: string }) {
     casePrescriptions,
     earningsTotals,
     caseEntries,
+    scaleResults,
   ] = await Promise.all([
     getCaseById(supabase, id, profile.id),
     profile.report_template_id
@@ -59,6 +63,9 @@ export async function CaseDetailContent({ id }: { id: string }) {
       caseId: id,
       includeVoided: true,
     }).catch(() => []),
+    // Lista vazia em falha, nunca throw: escala é apoio — derrubar a consulta
+    // inteira porque a leitura do histórico falhou seria pior que não mostrá-lo.
+    getScaleResultsByCase(supabase, profile.id, id).catch(() => []),
   ])
 
   if (!caseDetail) {
@@ -101,6 +108,12 @@ export async function CaseDetailContent({ id }: { id: string }) {
     caseDetail.origin === "dashboard" &&
     rawDashboardSummary.length > 0 &&
     contextSummaryDisplay == null
+
+  // Idade em meses inteiros da criança deste caso: filtra quais escalas são
+  // oferecidas. Sem paciente associado, não há escala a aplicar.
+  const caseAgeMonths =
+    computePediatricAge(caseDetail.patient?.birth_date ?? null, new Date())
+      .totalMonths ?? null
 
   const isActive = caseDetail.status === "active"
   const templateSectionCount = template?.sections?.length ?? 0
@@ -181,6 +194,16 @@ export async function CaseDetailContent({ id }: { id: string }) {
           certificates={caseCertificates}
           prescriptions={casePrescriptions}
         />
+        {caseDetail.patient ? (
+          <ScalesSection
+            patientId={caseDetail.patient.id}
+            caseId={id}
+            ageMonths={caseAgeMonths}
+            results={scaleResults}
+            title="Escalas desta consulta"
+            description="Escalas aplicadas neste atendimento. O registro fica no histórico do paciente."
+          />
+        ) : null}
       </div>
       <ConsultationTimerWidget
         caseId={id}

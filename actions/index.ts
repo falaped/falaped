@@ -30,6 +30,12 @@ export {
   type RemovePatientPhotoResult,
 } from "./patients"
 export {
+  createScaleResultAction,
+  type CreateScaleResultResult,
+  deleteScaleResultAction,
+  type DeleteScaleResultResult,
+} from "./patient-scales"
+export {
   createMeasurementAction,
   type CreateMeasurementResult,
   updateMeasurementAction,
