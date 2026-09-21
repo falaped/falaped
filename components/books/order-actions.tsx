@@ -2,9 +2,9 @@
 
 import { useTransition } from "react"
 import { toast } from "sonner"
-import { Mail, Send } from "lucide-react"
+import { Mail, Paperclip, Send } from "lucide-react"
 
-import { markBookDeliveredAction, notifyBookProductionAction } from "@/actions/books"
+import { deliverBookEmailAction, markBookDeliveredAction, notifyBookProductionAction } from "@/actions/books"
 import { BkButton, bkButton } from "@/components/books/books-ui"
 
 /**
@@ -49,6 +49,29 @@ export function ResendEmailButton({ bookId, recipient }: { bookId: string; recip
     >
       <Mail className="size-4" strokeWidth={2.6} aria-hidden />
       Reenviar e-mail
+    </BkButton>
+  )
+}
+
+/** Envia o livro pronto por e-mail com o PDF anexado (não é link: o arquivo vai junto). */
+export function DeliverEmailButton({ bookId, delivered }: { bookId: string; delivered: boolean }) {
+  const [pending, startTransition] = useTransition()
+  return (
+    <BkButton
+      variant={delivered ? "secondary" : "primary"}
+      busy={pending}
+      busyLabel="Enviando o PDF…"
+      className="h-11 text-[13px]"
+      onClick={() =>
+        startTransition(async () => {
+          const result = await deliverBookEmailAction(bookId)
+          if (result.ok) toast.success(`Livro enviado para ${result.to}`, { description: "PDF anexado ao e-mail." })
+          else toast.error(result.error)
+        })
+      }
+    >
+      <Paperclip className="size-4" strokeWidth={2.6} aria-hidden />
+      {delivered ? "Enviar PDF por e-mail de novo" : "Enviar PDF por e-mail"}
     </BkButton>
   )
 }

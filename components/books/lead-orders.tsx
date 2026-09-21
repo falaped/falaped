@@ -4,7 +4,7 @@ import { ArrowRight, MessageCircle } from "lucide-react"
 import { claimLeadBookAction } from "@/actions/books"
 import { requireBooksAdmin } from "@/actions/books/require-books-admin"
 import { BrandBlur, Chip, bkButton } from "@/components/books/books-ui"
-import { DeliverPdfButton, ResendEmailButton } from "@/components/books/order-actions"
+import { DeliverEmailButton, DeliverPdfButton, ResendEmailButton } from "@/components/books/order-actions"
 import { createAdminClient } from "@/lib/supabase/server-admin"
 import { bookPriceWithCoupon } from "@/modules/books/constants"
 import { listLeadBooks } from "@/modules/books/list-lead-books"
@@ -110,6 +110,9 @@ export async function LeadOrders() {
               <Chip className={st.className}>{st.label}</Chip>
               {claimed ? (
                 <>
+                  {book.pdf_path && (
+                    <DeliverEmailButton bookId={book.id} delivered={!!book.delivered_at} />
+                  )}
                   {waPdf && <DeliverPdfButton bookId={book.id} href={waPdf} delivered={!!book.delivered_at} />}
                   <Link href={`/books/${book.id}`} className={bkButton("secondary", "h-11 text-[13px]")}>
                     Abrir livro

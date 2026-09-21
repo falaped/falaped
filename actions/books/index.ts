@@ -11,3 +11,4 @@ export { getLeadBookPaymentAction, type LeadBookPaymentResult } from "./get-lead
 export { claimLeadBookAction } from "./claim-lead-book"
 export { notifyBookProductionAction } from "./notify-book-production"
 export { markBookDeliveredAction } from "./mark-book-delivered"
+export { deliverBookEmailAction, type DeliverBookEmailResult } from "./deliver-book-email"

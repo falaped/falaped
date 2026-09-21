@@ -6,9 +6,14 @@ import { createAdminClient } from "@/lib/supabase/server-admin"
 import { markBookPaid } from "@/modules/books/mark-book-paid"
 import { getPayment } from "@/modules/payments/get-payment"
 
-/** Status em que o dinheiro já é do vendedor. Pix vai direto para RECEIVED;
- *  CONFIRMED aparece em conta pessoa física durante o bloqueio cautelar. */
-const PAID_STATUSES = ["RECEIVED", "CONFIRMED"]
+/**
+ * Status em que o dinheiro já é do vendedor. Pix vai direto para RECEIVED;
+ * CONFIRMED aparece em conta pessoa física durante o bloqueio cautelar;
+ * RECEIVED_IN_CASH é a baixa manual do gestor na Asaas — só ele pode dar, e
+ * serve para quando o comprador pagou por fora (Pix direto, dinheiro) e o
+ * livro precisa ser liberado sem mexer no banco.
+ */
+const PAID_STATUSES = ["RECEIVED", "CONFIRMED", "RECEIVED_IN_CASH"]
 
 /**
  * POST /api/books/pix/webhook — a Asaas avisa que uma cobrança mudou.
