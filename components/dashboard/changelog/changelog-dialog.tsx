@@ -17,6 +17,7 @@ import {
 } from "@/components/ui/sidebar"
 import { CHANGELOG, LATEST_RELEASE } from "@/lib/changelog"
 import { formatDate } from "@/lib/formatters"
+import { cn } from "@/lib/utils"
 
 const SEEN_KEY = "falaped:changelog:seen"
 
@@ -69,14 +70,24 @@ export function ChangelogMenuItem() {
   return (
     <>
       <SidebarMenuItem>
-        <SidebarMenuButton tooltip="Novidades" onClick={() => setOpen(true)}>
-          <SparklesIcon />
-          <span>Novidades</span>
+        <SidebarMenuButton
+          tooltip="Novidades"
+          onClick={() => setOpen(true)}
+          className={cn(hasUnseen && "text-primary hover:text-primary")}
+        >
+          {/* A animação só roda enquanto há novidade não vista, e só para quem
+              não pediu menos movimento no sistema — chamar atenção de quem
+              desligou animação é ignorar a preferência, não insistir. */}
+          <SparklesIcon className={cn(hasUnseen && "motion-safe:animate-pulse")} />
+          <span className={cn(hasUnseen && "font-medium")}>Novidades</span>
           {hasUnseen ? (
             <span
-              className="ml-auto h-2 w-2 shrink-0 rounded-full bg-primary"
+              className="relative ml-auto flex h-2 w-2 shrink-0"
               aria-label="Há novidades que você ainda não viu"
-            />
+            >
+              <span className="absolute inline-flex h-full w-full rounded-full bg-primary opacity-75 motion-safe:animate-ping" />
+              <span className="relative inline-flex h-2 w-2 rounded-full bg-primary" />
+            </span>
           ) : null}
         </SidebarMenuButton>
       </SidebarMenuItem>
