@@ -6,8 +6,10 @@ import {
   FileTextIcon,
   FlaskConicalIcon,
   HomeIcon,
+  MagnetIcon,
   MessagesSquareIcon,
   PillIcon,
+  ShieldIcon,
   StethoscopeIcon,
   SyringeIcon,
   TrendingUpIcon,
@@ -29,6 +31,8 @@ export type DashboardNavSection = {
   url: string
   icon: LucideIcon
   items: DashboardNavItem[]
+  /** Só aparece na sidebar para as contas de `ADMIN_EMAILS`. O gate real é server-side. */
+  adminOnly?: boolean
 }
 
 /**
@@ -136,6 +140,27 @@ export const dashboardNav: DashboardNavSection[] = [
         description: "Recebimentos por período, com gráfico e lançamentos.",
         url: "/dashboard/earnings",
         icon: TrendingUpIcon,
+      },
+    ],
+  },
+  {
+    title: "Admin",
+    description: "Uso da plataforma e captação — só para o time do Falaped.",
+    url: "/dashboard/admin",
+    icon: ShieldIcon,
+    adminOnly: true,
+    items: [
+      {
+        title: "Usuários",
+        description: "Todas as contas e o consumo de cada uma.",
+        url: "/dashboard/admin/users",
+        icon: UsersIcon,
+      },
+      {
+        title: "Leads",
+        description: "Cadastros das landings e contatos pelo WhatsApp.",
+        url: "/dashboard/admin/leads",
+        icon: MagnetIcon,
       },
     ],
   },
