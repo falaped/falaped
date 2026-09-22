@@ -12,6 +12,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import { StatTile } from "@/components/dashboard/admin/stat-tile"
+import { documentsTotal } from "@/lib/documents-total"
 import { formatBrazilianPhone, formatDate, formatRelativeTime } from "@/lib/formatters"
 import { getPatientInitials } from "@/lib/get-patient-initials"
 import { cn } from "@/lib/utils"
@@ -58,19 +59,6 @@ const DETAIL_GROUPS: {
   },
 ]
 
-/** Soma dos documentos — é o número que diz se a conta virou rotina ou não. */
-export function documentsTotal(row: ProfileUsageRow): number {
-  return (
-    row.prescriptions +
-    row.certificates +
-    row.referrals +
-    row.reports +
-    row.case_reports +
-    row.exam_requests +
-    row.guidance
-  )
-}
-
 function displayName(row: ProfileUsageRow): string {
   return [row.first_name, row.surname].filter(Boolean).join(" ").trim() || "Sem nome"
 }
@@ -80,7 +68,7 @@ export function AdminUsersGrid({ rows }: { rows: ProfileUsageRow[] }) {
 
   return (
     <>
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+      <div className="flex flex-col gap-3">
         {rows.map((row) => {
           const name = displayName(row)
           const documents = documentsTotal(row)
@@ -106,8 +94,11 @@ export function AdminUsersGrid({ rows }: { rows: ProfileUsageRow[] }) {
                 isDormant && "bg-muted/40",
               )}
             >
-              <CardContent className="flex flex-col gap-4 p-4">
-                <div className="flex items-start gap-3">
+              {/* Uma conta por linha: a identificação fica à esquerda e os números
+                  ocupam a largura restante, alinhados entre as linhas para comparar
+                  duas contas de relance. Abaixo de `lg` isso empilha. */}
+              <CardContent className="flex flex-col gap-4 p-4 lg:flex-row lg:items-center lg:gap-6">
+                <div className="flex min-w-0 items-center gap-3 lg:w-72 lg:shrink-0">
                   <div
                     className={cn(
                       "flex size-10 shrink-0 items-center justify-center rounded-full text-sm font-semibold",
@@ -120,27 +111,31 @@ export function AdminUsersGrid({ rows }: { rows: ProfileUsageRow[] }) {
                     {getPatientInitials(name)}
                   </div>
                   <div className="min-w-0 flex-1">
-                    <p className="truncate font-medium leading-tight">{name}</p>
+                    <div className="flex items-center gap-2">
+                      <p className="truncate font-medium leading-tight">{name}</p>
+                      <Badge variant={row.status === "paid" ? "default" : "secondary"}>
+                        {row.status ?? "sem acesso"}
+                      </Badge>
+                    </div>
                     <p className="truncate text-xs text-muted-foreground">
                       {row.email ?? "sem e-mail"}
                     </p>
+                    <p className="mt-0.5 truncate text-xs text-muted-foreground">
+                      {isDormant
+                        ? "Nunca abriu um caso"
+                        : `Último caso ${formatRelativeTime(row.last_case_at)}`}
+                    </p>
                   </div>
-                  <Badge variant={row.status === "paid" ? "default" : "secondary"}>
-                    {row.status ?? "sem acesso"}
-                  </Badge>
                 </div>
 
-                <div className="grid grid-cols-3 gap-2">
+                <div className="grid flex-1 grid-cols-3 gap-2 sm:grid-cols-6">
                   <StatTile label="Pacientes" value={row.patients} />
                   <StatTile label="Casos" value={row.cases} />
+                  <StatTile label="Consultas" value={row.appointments} />
+                  <StatTile label="Receitas" value={row.prescriptions} />
                   <StatTile label="Documentos" value={documents} />
+                  <StatTile label="Lançamentos" value={row.financial_entries} />
                 </div>
-
-                <p className="text-xs text-muted-foreground">
-                  {isDormant
-                    ? "Nunca abriu um caso"
-                    : `Último caso ${formatRelativeTime(row.last_case_at)}`}
-                </p>
               </CardContent>
             </Card>
           )

@@ -2,10 +2,8 @@ import { UsersIcon } from "lucide-react"
 
 import { requireAdmin } from "@/lib/admin-guard"
 import { listProfileUsage } from "@/modules/admin/list-profile-usage"
-import {
-  AdminUsersGrid,
-  documentsTotal,
-} from "@/components/dashboard/admin/admin-users-grid"
+import { AdminUsersGrid } from "@/components/dashboard/admin/admin-users-grid"
+import { documentsTotal } from "@/lib/documents-total"
 import { StatTile } from "@/components/dashboard/admin/stat-tile"
 
 export const metadata = { title: "Admin · Usuários" }

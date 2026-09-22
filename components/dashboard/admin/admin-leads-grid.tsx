@@ -18,7 +18,7 @@ import { formatBrazilianPhone, formatDateTime, formatRelativeTime } from "@/lib/
 import { cn } from "@/lib/utils"
 import type { LeadOrigin, LeadRow } from "@/modules/admin/list-leads"
 
-export const ORIGIN_META: Record<
+const ORIGIN_META: Record<
   LeadOrigin,
   { label: string; icon: LucideIcon; accent: string }
 > = {
