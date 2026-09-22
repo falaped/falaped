@@ -1,6 +1,6 @@
 "use client"
 
-import { ChevronsUpDown, Link2, LogOut, User } from "lucide-react"
+import { ChevronsUpDown, LayoutTemplateIcon, LogOut, User } from "lucide-react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { useEffect, useState } from "react"
@@ -134,9 +134,15 @@ export function NavUser() {
               </Link>
             </DropdownMenuItem>
             <DropdownMenuItem asChild>
-              <Link href="/dashboard/link-whatsapp">
-                <Link2 />
-                Vincular telefone
+              <Link href="/dashboard/report-templates">
+                <LayoutTemplateIcon />
+                Templates de relatório
+              </Link>
+            </DropdownMenuItem>
+            <DropdownMenuItem asChild>
+              <Link href="/dashboard/prescription-templates">
+                <LayoutTemplateIcon />
+                Templates de receita
               </Link>
             </DropdownMenuItem>
             <DropdownMenuSeparator />
