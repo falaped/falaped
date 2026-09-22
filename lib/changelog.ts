@@ -22,6 +22,30 @@ export type ChangelogRelease = {
 /** Da mais nova para a mais antiga — a primeira é a que abre o modal. */
 export const CHANGELOG: readonly ChangelogRelease[] = [
   {
+    id: "2026-09-22-menu-reorganizado",
+    date: "2026-09-22",
+    title: "Menu reorganizado",
+    summary:
+      "A barra lateral agora tem só quatro menus, sem submenus. O que era submenu virou card dentro da página de cada menu.",
+    entries: [
+      {
+        title: "Quatro menus na barra lateral",
+        description:
+          "Início, Atendimentos, Serviços e Financeiro. Um clique abre a página do menu — nada mais desdobra na lateral.",
+      },
+      {
+        title: "Os submenus viraram cards",
+        description:
+          "Ao entrar em Atendimentos, Serviços ou Financeiro, as opções daquele menu aparecem como cards na tela, cada um com uma linha explicando o que faz.",
+      },
+      {
+        title: "Templates no seu perfil",
+        description:
+          "Templates de relatório e de receita saíram da barra lateral e ficam agora no menu do seu nome, no rodapé, logo abaixo de Perfil. O atalho de vincular telefone, que não era mais usado, foi removido.",
+      },
+    ],
+  },
+  {
     id: "2026-09-21-consulta-pediatrica",
     date: "2026-09-21",
     title: "Consulta pediátrica",
