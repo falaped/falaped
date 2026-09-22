@@ -29,7 +29,7 @@ const DETAIL_GROUPS: {
       { key: "patients", label: "Pacientes" },
       { key: "cases", label: "Casos" },
       { key: "discussions", label: "Discussões" },
-      { key: "appointments", label: "Consultas" },
+      { key: "appointments", label: "Agendamentos" },
     ],
   },
   {
@@ -76,7 +76,7 @@ export function AdminUsersGrid({ rows }: { rows: ProfileUsageRow[] }) {
           const rowMetrics = [
             { label: "Pacientes", value: row.patients },
             { label: "Casos", value: row.cases },
-            { label: "Consultas", value: row.appointments },
+            { label: "Agendamentos", value: row.appointments },
             { label: "Receitas", value: row.prescriptions },
             { label: "Documentos", value: documents },
             { label: "Lançamentos", value: row.financial_entries },
