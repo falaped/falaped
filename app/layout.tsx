@@ -3,6 +3,7 @@ import { Geist, Noto_Sans } from "next/font/google";
 import { ThemeProvider } from "next-themes";
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { MetaPixel } from "@/components/meta-pixel";
 import "./globals.css";
 
 const notoSans = Noto_Sans({ variable: '--font-sans' });
@@ -40,6 +41,7 @@ export default function RootLayout({
           <TooltipProvider>
             {children}
             <Toaster position="top-center" />
+            <MetaPixel />
           </TooltipProvider>
         </ThemeProvider>
       </body>

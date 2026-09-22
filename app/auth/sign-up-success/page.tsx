@@ -7,10 +7,12 @@ import {
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
+import { MetaPixelEvent } from "@/components/meta-pixel";
 
 export default function Page() {
   return (
     <div className="flex flex-col gap-6">
+      <MetaPixelEvent name="CompleteRegistration" />
       <Card>
         <CardHeader>
           <CardTitle className="text-2xl font-semibold tracking-tight">
