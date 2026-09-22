@@ -1,5 +1,6 @@
 import { UsersIcon } from "lucide-react"
 
+import { isAdminEmail } from "@/lib/admin"
 import { requireAdmin } from "@/lib/admin-guard"
 import { listProfileUsage } from "@/modules/admin/list-profile-usage"
 import { AdminUsersGrid } from "@/components/dashboard/admin/admin-users-grid"
@@ -12,7 +13,10 @@ const SEVEN_DAYS_MS = 7 * 24 * 60 * 60 * 1000
 
 export default async function AdminUsersPage() {
   const admin = await requireAdmin()
-  const rows = await listProfileUsage(admin)
+  // As contas do time saem da lista e também dos totais: são teste, não cliente.
+  const rows = (await listProfileUsage(admin)).filter(
+    (row) => !isAdminEmail(row.email),
+  )
 
   const cutoff = Date.now() - SEVEN_DAYS_MS
   const activeCount = rows.filter(
