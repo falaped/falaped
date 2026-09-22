@@ -20,9 +20,19 @@ import {
 import { NavUser } from "@/components/nav-user"
 import { ChangelogMenuItem } from "@/components/dashboard/changelog/changelog-dialog"
 import { dashboardNav } from "@/lib/dashboard-nav"
+import { isAdminEmail } from "@/lib/admin"
+import { createClient } from "@/lib/supabase/client"
 
 export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
   const pathname = usePathname()
+  // Só esconde o menu — cada página de /dashboard/admin tem seu próprio gate no servidor.
+  const [isAdmin, setIsAdmin] = React.useState(false)
+
+  React.useEffect(() => {
+    createClient()
+      .auth.getUser()
+      .then(({ data }) => setIsAdmin(isAdminEmail(data.user?.email)))
+  }, [])
 
   // A seção fica ativa tanto na própria página quanto em qualquer destino dos seus cards.
   const isSectionActive = React.useCallback(
@@ -55,7 +65,9 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
         <SidebarGroup>
           <SidebarGroupLabel>Plataforma</SidebarGroupLabel>
           <SidebarMenu>
-            {dashboardNav.map((section) => (
+            {dashboardNav
+              .filter((section) => !section.adminOnly || isAdmin)
+              .map((section) => (
               <SidebarMenuItem key={section.url}>
                 <SidebarMenuButton
                   asChild
