@@ -1,84 +1,50 @@
+import { MagnetIcon } from "lucide-react"
+
 import { requireAdmin } from "@/lib/admin-guard"
 import { listLeads, type LeadOrigin } from "@/modules/admin/list-leads"
-import { formatDateTime } from "@/lib/formatters"
-import { Badge } from "@/components/ui/badge"
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table"
+import { AdminLeadsGrid } from "@/components/dashboard/admin/admin-leads-grid"
+import { StatTile } from "@/components/dashboard/admin/stat-tile"
 
 export const metadata = { title: "Admin · Leads" }
 
-const ORIGIN_LABEL: Record<LeadOrigin, string> = {
-  site: "Landing",
-  books: "Livros",
-  whatsapp: "WhatsApp",
-}
+const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000
 
 export default async function AdminLeadsPage() {
   const admin = await requireAdmin()
   const leads = await listLeads(admin)
 
-  const byOrigin = (origin: LeadOrigin) =>
+  const countOf = (origin: LeadOrigin) =>
     leads.filter((lead) => lead.origin === origin).length
+  const cutoff = Date.now() - THIRTY_DAYS_MS
+  const recentCount = leads.filter(
+    (lead) => new Date(lead.created_at).getTime() >= cutoff,
+  ).length
 
   return (
     <div className="flex flex-col gap-6">
       <div>
-        <h1 className="text-2xl font-semibold tracking-tight">Leads</h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          {leads.length} lead{leads.length === 1 ? "" : "s"} — {byOrigin("site")} da
-          landing, {byOrigin("books")} dos livros, {byOrigin("whatsapp")} do WhatsApp.
+        <div className="flex items-center gap-2.5">
+          <MagnetIcon className="h-5 w-5 text-muted-foreground" aria-hidden />
+          <h1 className="text-2xl font-semibold tracking-tight">Leads</h1>
+        </div>
+        <p className="mt-1 max-w-2xl text-sm text-muted-foreground">
+          Quem deixou contato nas landings e quem escreveu no WhatsApp sem ter conta.
+          Clique num card para ver tudo e abrir a conversa.
         </p>
       </div>
 
-      {leads.length === 0 ? (
-        <div className="rounded-xl border border-dashed border-border p-8 text-center">
-          <p className="text-sm font-medium">Nenhum lead ainda.</p>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Os cadastros das landings aparecem aqui assim que chegam.
-          </p>
-        </div>
-      ) : (
-        <div className="overflow-x-auto rounded-xl border border-border">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead className="px-4">Origem</TableHead>
-                <TableHead className="px-4">Nome</TableHead>
-                <TableHead className="px-4">E-mail</TableHead>
-                <TableHead className="px-4">WhatsApp</TableHead>
-                <TableHead className="px-4">Detalhe</TableHead>
-                <TableHead className="px-4">Entrada</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {leads.map((lead) => (
-                <TableRow key={`${lead.origin}-${lead.id}`}>
-                  <TableCell className="px-4">
-                    <Badge variant="secondary">{ORIGIN_LABEL[lead.origin]}</Badge>
-                  </TableCell>
-                  <TableCell className="px-4 font-medium">{lead.name || "—"}</TableCell>
-                  <TableCell className="px-4">{lead.email || "—"}</TableCell>
-                  <TableCell className="px-4 whitespace-nowrap">
-                    {lead.phone || "—"}
-                  </TableCell>
-                  <TableCell className="px-4 text-sm text-muted-foreground">
-                    {lead.detail || "—"}
-                  </TableCell>
-                  <TableCell className="px-4 text-sm whitespace-nowrap">
-                    {formatDateTime(lead.created_at)}
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </div>
-      )}
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <StatTile
+          label="Total"
+          value={leads.length}
+          hint={`${recentCount} nos últimos 30 dias`}
+        />
+        <StatTile label="Landing" value={countOf("site")} />
+        <StatTile label="Livros" value={countOf("books")} />
+        <StatTile label="WhatsApp" value={countOf("whatsapp")} />
+      </div>
+
+      <AdminLeadsGrid leads={leads} />
     </div>
   )
 }
