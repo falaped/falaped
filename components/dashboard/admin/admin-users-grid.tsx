@@ -73,6 +73,14 @@ export function AdminUsersGrid({ rows }: { rows: ProfileUsageRow[] }) {
           const name = displayName(row)
           const documents = documentsTotal(row)
           const isDormant = row.last_case_at === null
+          const rowMetrics = [
+            { label: "Pacientes", value: row.patients },
+            { label: "Casos", value: row.cases },
+            { label: "Consultas", value: row.appointments },
+            { label: "Receitas", value: row.prescriptions },
+            { label: "Documentos", value: documents },
+            { label: "Lançamentos", value: row.financial_entries },
+          ].filter((metric) => metric.value > 0)
 
           return (
             <Card
@@ -128,14 +136,24 @@ export function AdminUsersGrid({ rows }: { rows: ProfileUsageRow[] }) {
                   </div>
                 </div>
 
-                <div className="grid flex-1 grid-cols-3 gap-2 sm:grid-cols-6">
-                  <StatTile label="Pacientes" value={row.patients} />
-                  <StatTile label="Casos" value={row.cases} />
-                  <StatTile label="Consultas" value={row.appointments} />
-                  <StatTile label="Receitas" value={row.prescriptions} />
-                  <StatTile label="Documentos" value={documents} />
-                  <StatTile label="Lançamentos" value={row.financial_entries} />
-                </div>
+                {/* Só o que a conta realmente usou: zero não vira card. Uma conta parada
+                    fica sem nenhum, e aí a linha diz isso com todas as letras. */}
+                {rowMetrics.length > 0 ? (
+                  <div className="flex flex-1 flex-wrap gap-2">
+                    {rowMetrics.map((metric) => (
+                      <StatTile
+                        key={metric.label}
+                        label={metric.label}
+                        value={metric.value}
+                        className="w-32"
+                      />
+                    ))}
+                  </div>
+                ) : (
+                  <p className="flex-1 text-sm text-muted-foreground">
+                    Nenhum registro ainda.
+                  </p>
+                )}
               </CardContent>
             </Card>
           )
