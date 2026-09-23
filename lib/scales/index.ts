@@ -1,5 +1,7 @@
 import { APGAR } from "./apgar"
 import { CADERNETA_MILESTONE_SCALES } from "./caderneta-milestones"
+import { CAPD } from "./capd"
+import { COMFORT_B_SCALES } from "./comfort-b"
 import { FLACC } from "./flacc"
 import { GLASGOW_PEDIATRICA } from "./glasgow-pediatrica"
 import { MCHAT_R } from "./mchat-r"
@@ -7,7 +9,9 @@ import { MCHAT_RF } from "./mchat-rf"
 import { MCISAAC } from "./mcisaac"
 import { NIPS } from "./nips"
 import { PEWS } from "./pews"
+import { PIPP } from "./pipp"
 import { PRAM } from "./pram"
+import { RASS } from "./rass"
 import { SILVERMAN_ANDERSEN } from "./silverman-andersen"
 import { STRONGKIDS } from "./strongkids"
 import { TAL_SCALES } from "./tal"
@@ -32,9 +36,13 @@ export const SCALES: readonly ScaleDefinition[] = [
   STRONGKIDS,
   ...CADERNETA_MILESTONE_SCALES,
   PEWS,
+  ...COMFORT_B_SCALES,
+  RASS,
+  CAPD,
   APGAR,
   SILVERMAN_ANDERSEN,
   NIPS,
+  PIPP,
 ]
 
 /** Rótulo PT-BR de cada categoria, na ordem em que o seletor as agrupa. */
