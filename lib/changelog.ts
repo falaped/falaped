@@ -22,6 +22,30 @@ export type ChangelogRelease = {
 /** Da mais nova para a mais antiga — a primeira é a que abre o modal. */
 export const CHANGELOG: readonly ChangelogRelease[] = [
   {
+    id: "2026-09-23-escalas-uti-e-relatorio",
+    date: "2026-09-23",
+    title: "Mais escalas, e escalas no relatório",
+    summary:
+      "Escalas novas para UTI, neonatologia e pronto atendimento, e as escalas aplicadas agora aparecem no relatório do atendimento.",
+    entries: [
+      {
+        title: "Escalas de UTI e neonatologia",
+        description:
+          "Entraram COMFORT-B (em ventilação mecânica e em respiração espontânea), RASS, CAPD para delirium, pSOFA por faixa etária, PIPP para dor no prematuro e Capurro somático, que já mostra a idade gestacional estimada.",
+      },
+      {
+        title: "PECARN no trauma craniano",
+        description:
+          "Responda os achados e a regra indica TC recomendada, observação ou TC não recomendada, com o risco de cada faixa. São duas versões, para menores de 2 anos e para 2 anos ou mais.",
+      },
+      {
+        title: "Escalas no relatório",
+        description:
+          "Ao gerar o relatório, as escalas aplicadas no atendimento entram numa seção própria, logo depois dos dados clínicos, com o resultado e o horário de cada uma. Esse texto não passa pela IA: é exatamente o que ficou registrado.",
+      },
+    ],
+  },
+  {
     id: "2026-09-22-menu-reorganizado",
     date: "2026-09-22",
     title: "Menu reorganizado",
