@@ -60,6 +60,17 @@ export type ScaleDefinition = {
   maxAgeMonths: number | null
   items: readonly ScaleItem[]
   bands: readonly ScaleBand[]
+  /**
+   * O número não diz nada ao médico — a soma é só o jeito de chegar na faixa
+   * (PECARN: achado de alto risco pesa 10, intermediário pesa 1). A tela mostra
+   * só a faixa e o registro guarda escore nulo.
+   */
+  hideScore?: boolean
+  /**
+   * Valor convertido a partir do escore, exibido junto da faixa e gravado na
+   * interpretação (Capurro: escore vira idade gestacional).
+   */
+  describeScore?: (score: number) => string
   /** Procedência do conteúdo clínico (quem validou, qual publicação). */
   source: string
 }
@@ -68,4 +79,6 @@ export type ScaleDefinition = {
 export type ScaleScore = {
   score: number
   band: ScaleBand
+  /** Faixa mais o valor convertido, quando houver. É o texto que fica registrado. */
+  interpretation: string
 }

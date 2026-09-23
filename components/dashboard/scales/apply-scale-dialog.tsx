@@ -141,7 +141,9 @@ export function ApplyScaleDialog({
       })
       if (result.ok) {
         toast.success(
-          `${scale.name}: ${result.score} — ${result.interpretation}`,
+          result.score === null
+            ? `${scale.name}: ${result.interpretation}`
+            : `${scale.name}: ${result.score} — ${result.interpretation}`,
         )
         handleOpenChange(false)
         router.refresh()
@@ -251,7 +253,9 @@ export function ApplyScaleDialog({
                 {preview ? (
                   <>
                     <p className="font-medium">
-                      Escore {preview.score} — {preview.band.label}
+                      {scale.hideScore
+                        ? preview.interpretation
+                        : `Escore ${preview.score} — ${preview.interpretation}`}
                     </p>
                     {preview.band.conduct ? (
                       <p className="mt-1 text-muted-foreground">

@@ -25,6 +25,6 @@ export type CreateScaleResultPayload = {
   case_id: string | null
   scale_key: string
   answers: Record<string, number>
-  score: number
+  score: number | null
   interpretation: string
 }

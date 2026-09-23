@@ -14,7 +14,12 @@ import { createScaleResult } from "@/modules/patient-scales/create-scale-result"
 import { getAuthenticatedUser } from "@/modules/supabase/get-authenticated-user"
 
 export type CreateScaleResultResult =
-  | { ok: true; scaleResultId: string; score: number; interpretation: string }
+  | {
+      ok: true
+      scaleResultId: string
+      score: number | null
+      interpretation: string
+    }
   | { ok: false; error: string }
 
 /**
@@ -62,7 +67,8 @@ export async function createScaleResultAction(
         return { ok: false, error: "Atendimento não encontrado." }
     }
 
-    const { score, band } = scoreScale(scale, parsed.data.answers)
+    const scored = scoreScale(scale, parsed.data.answers)
+    const score = scale.hideScore ? null : scored.score
 
     const result = await createScaleResult(supabase, profile.id, {
       patient_id: parsed.data.patientId,
@@ -70,7 +76,7 @@ export async function createScaleResultAction(
       scale_key: scale.key,
       answers: parsed.data.answers,
       score,
-      interpretation: band.label,
+      interpretation: scored.interpretation,
     })
 
     revalidatePath(`/dashboard/patients/${parsed.data.patientId}`)
@@ -80,7 +86,7 @@ export async function createScaleResultAction(
       ok: true,
       scaleResultId: result.id,
       score,
-      interpretation: band.label,
+      interpretation: scored.interpretation,
     }
   } catch (e) {
     const message =

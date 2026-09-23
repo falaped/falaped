@@ -10,7 +10,7 @@ import type { ScaleDefinition, ScaleScore } from "./types"
  *
  * @param definition Definição da escala.
  * @param answers Respostas por chave de item.
- * @returns Escore somado e a faixa correspondente.
+ * @returns Escore somado, a faixa e o texto de interpretação a registrar.
  * @throws Error `[SCALES]` quando falta resposta, sobra chave ou o valor é inválido.
  */
 export function scoreScale(
@@ -45,7 +45,10 @@ export function scoreScale(
       `[SCALES] Score ${score} falls outside the bands of scale "${definition.key}"`,
     )
 
-  return { score, band }
+  const detail = definition.describeScore?.(score)
+  const interpretation = detail ? `${band.label} — ${detail}` : band.label
+
+  return { score, band, interpretation }
 }
 
 /**
