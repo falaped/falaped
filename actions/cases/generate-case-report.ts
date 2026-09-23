@@ -21,6 +21,11 @@ import {
   formatPatientClinicalSectionContent,
   formatPatientIdentitySectionContent,
 } from "@/modules/report-templates/format-fixed-report-sections"
+import {
+  SCALE_RESULTS_SECTION_NAME,
+  formatScaleResultsSectionContent,
+} from "@/modules/report-templates/format-scale-results-section"
+import { getScaleResultsByCase } from "@/modules/patient-scales/get-scale-results-by-case"
 
 export type GenerateCaseReportResult =
   | { ok: true; reportId: string }
@@ -100,7 +105,7 @@ export async function generateCaseReportAction(
 
     const emptyMsg = "Sem informação registrada."
 
-    const sections: CaseReportSection[] = normalizedSections.map((s, order) => {
+    const sections: Omit<CaseReportSection, "order">[] = normalizedSections.map((s) => {
       let content: string
       if (s.slot === "patient_identity") {
         content = formatPatientIdentitySectionContent(caseDetail.patient)
@@ -113,15 +118,26 @@ export async function generateCaseReportAction(
         name: s.name,
         description: s.description,
         content,
-        order,
       }
     })
+
+    // Escalas entram como texto fixo, sem IA, logo depois dos dados clínicos, e
+    // só quando o atendimento tem alguma. Não vão para o prompt: resultado
+    // clínico que ninguém disse na conversa não deve ser redigido pelo modelo.
+    const scaleResults = await getScaleResultsByCase(supabase, profile.id, caseId)
+    if (scaleResults.length > 0) {
+      sections.splice(2, 0, {
+        name: SCALE_RESULTS_SECTION_NAME,
+        description: "Preenchido automaticamente com as escalas aplicadas no atendimento.",
+        content: formatScaleResultsSectionContent(scaleResults),
+      })
+    }
 
     const reportId = await createCaseReport(supabase, {
       case_id: caseId,
       profile_id: profile.id,
       report_template_id: template.id,
-      sections,
+      sections: sections.map((s, order) => ({ ...s, order })),
       source: "web",
     })
 
