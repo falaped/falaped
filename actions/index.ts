@@ -210,3 +210,13 @@ export {
   sendProspectInviteAction,
   type SendProspectInviteResult,
 } from "./admin"
+export {
+  createExamReadingAction,
+  type CreateExamReadingResult,
+  generateExamReportAction,
+  type GenerateExamReportResult,
+  saveExamReadingReportAction,
+  type SaveExamReadingReportResult,
+  deleteExamReadingAction,
+  type DeleteExamReadingResult,
+} from "./exam-readings"
