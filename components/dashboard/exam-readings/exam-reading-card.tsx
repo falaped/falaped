@@ -272,7 +272,7 @@ export function ExamReadingCard({ reading }: ExamReadingCardProps) {
               onClick={() =>
                 setItems((prev) => [
                   ...prev,
-                  { name: "", value: "", unit: null, reference: null, flag: "unknown", page: 1 },
+                  { name: "", value: "", unit: null, reference: null, flag: "unknown", page: 1, lab_interpretation: null },
                 ])
               }
             >

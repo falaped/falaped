@@ -2,7 +2,7 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   cacheComponents: true,
-  serverExternalPackages: ["pdfkit"],
+  serverExternalPackages: ["pdfkit", "@napi-rs/canvas"],
   // Fontes OFL embutidas no PDF do livro (lidas via fs em runtime).
   outputFileTracingIncludes: {
     "/books/**/*": ["./modules/books/pdf/fonts/**/*"],

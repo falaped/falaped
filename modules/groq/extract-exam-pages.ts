@@ -24,13 +24,16 @@ Para cada analito (linha de resultado) devolva:
 - "reference": faixa de referência IMPRESSA NO LAUDO para esse analito, ou null se não houver. Não use faixas da sua memória.
 - "flag": "low" se o valor está abaixo da faixa impressa, "high" se acima, "normal" se dentro, "unknown" se não há faixa ou não dá para comparar.
 - "page": número da imagem em que a linha aparece (1 = primeira imagem desta mensagem).
+- "lab_interpretation": o que a linha "Interpretação" do BLOCO em que o analito está diz: "normal" se o laudo diz que o resultado está dentro da referência, "altered" se diz que está alterado, null se não há essa linha.
+
+A referência de cada analito é a que está NA MESMA LINHA dele. Quando a célula de referência ocupa duas linhas de texto, copie o texto inteiro. Nunca use a referência da linha de cima ou de baixo. Cada linha do laudo aparece UMA vez na resposta.
 
 Também devolva "exam": {"laboratory": nome do laboratório ou null, "collected_at": data da coleta como impressa ou null, "exam_types": lista dos exames/painéis presentes (ex.: ["Hemograma", "TSH"])}.
 
 Ignore cabeçalhos, rodapés, assinaturas e observações que não sejam resultados. Se uma imagem não for um exame, devolva "items": [] para ela.
 
 Responda APENAS com JSON válido no formato:
-{"exam": {"laboratory": null, "collected_at": null, "exam_types": []}, "items": [{"name": "", "value": "", "unit": null, "reference": null, "flag": "unknown", "page": 1}]}`
+{"exam": {"laboratory": null, "collected_at": null, "exam_types": []}, "items": [{"name": "", "value": "", "unit": null, "reference": null, "flag": "unknown", "page": 1, "lab_interpretation": null}]}`
 
 async function extractBatch(pages: ExamPageImage[]): Promise<unknown> {
   const completion = await getGroq().chat.completions.create({
@@ -62,15 +65,19 @@ async function extractBatch(pages: ExamPageImage[]): Promise<unknown> {
 }
 
 /**
- * Transcreve as páginas de um exame com o modelo de visão do Groq, em lotes de
- * até 3 imagens, e funde tudo numa leitura só (páginas renumeradas no documento).
+ * Transcreve as imagens de um exame com o modelo de visão do Groq, em lotes de
+ * até 3, e funde tudo numa leitura só. `imagesPerPage` diz quantas imagens
+ * consecutivas formam uma página do documento (2 quando a página vai em metades).
  */
-export async function extractExamPages(pages: ExamPageImage[]): Promise<ExtractedExam> {
+export async function extractExamPages(
+  images: ExamPageImage[],
+  imagesPerPage = 1,
+): Promise<ExtractedExam> {
   const batches: ExamPageImage[][] = []
-  for (let i = 0; i < pages.length; i += MAX_IMAGES_PER_REQUEST)
-    batches.push(pages.slice(i, i + MAX_IMAGES_PER_REQUEST))
+  for (let i = 0; i < images.length; i += MAX_IMAGES_PER_REQUEST)
+    batches.push(images.slice(i, i + MAX_IMAGES_PER_REQUEST))
 
   const offsets = batches.map((_, i) => i * MAX_IMAGES_PER_REQUEST)
   const raw = await Promise.all(batches.map(extractBatch))
-  return mergeExtractedBatches(raw, offsets)
+  return mergeExtractedBatches(raw, offsets, imagesPerPage)
 }

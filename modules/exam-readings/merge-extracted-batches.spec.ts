@@ -31,5 +31,31 @@ test("renumera páginas por lote, funde cabeçalho e descarta item inválido", (
   assert.equal(merged.items[0].value, "11.2")
   assert.equal(merged.items[0].page, 2)
   assert.equal(merged.items[1].page, 4)
-  assert.equal(merged.items[1].flag, "unknown")
+  // "alto" não é flag válida → cai em unknown, mas a faixa é legível e 6,1 > 5,7.
+  assert.equal(merged.items[1].flag, "high")
+})
+
+test("metades de página viram página do documento, repetidos somem e o laudo manda no status", () => {
+  const merged = mergeExtractedBatches(
+    [
+      {
+        items: [
+          { name: "C3", value: "1,97", unit: "µmol/L", reference: "Menor que 7,09", flag: "normal", page: 1 },
+          { name: "C3", value: "1,97", unit: "µmol/L", reference: "Menor que 7,09", flag: "normal", page: 1 },
+          { name: "C4-OH", value: "0,16", unit: "µmol/L", reference: "Menor que 0.06", flag: "high", page: 3, lab_interpretation: "normal" },
+        ],
+      },
+      { items: [{ name: "TSH", value: "9", unit: null, reference: "Menor que 8", flag: "normal", page: 2 }] },
+    ],
+    [0, 3],
+    2,
+  )
+  assert.deepEqual(
+    merged.items.map((i) => [i.name, i.page, i.flag]),
+    [
+      ["C3", 1, "normal"],
+      ["C4-OH", 2, "normal"],
+      ["TSH", 3, "high"],
+    ],
+  )
 })

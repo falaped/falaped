@@ -26,6 +26,8 @@ export const examReadingItemSchema = z.object({
   reference: optionalText(120),
   flag: examReadingFlagSchema.catch("unknown"),
   page: z.number().int().min(1).catch(1),
+  /** O que a linha "Interpretação" do bloco do laudo diz sobre o bloco desse analito. */
+  lab_interpretation: z.enum(["normal", "altered"]).nullable().catch(null),
 })
 
 export const examReadingInfoSchema = z.object({

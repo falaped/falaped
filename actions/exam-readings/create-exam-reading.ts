@@ -12,6 +12,7 @@ import {
 import { findOwnedCaseId } from "@/modules/cases/find-owned-case-id"
 import { getPatientById } from "@/modules/patients/get-patient-by-id"
 import { extractExamPages } from "@/modules/groq/extract-exam-pages"
+import { splitPageImage } from "@/modules/exam-readings/split-page-image"
 import { insertExamReading } from "@/modules/exam-readings/insert-exam-reading"
 import { uploadExamReadingPages } from "@/modules/exam-readings/upload-exam-reading-pages"
 import { deleteExamReading } from "@/modules/exam-readings/delete-exam-reading"
@@ -81,13 +82,15 @@ export async function createExamReadingAction(
 
     let extracted
     try {
-      extracted = await extractExamPages(
+      // Cada página vai ao modelo em duas metades: dobra a resolução efetiva.
+      const halves = (
         await Promise.all(
-          pages.map(async (p) => ({
-            mimeType: "image/jpeg",
-            base64: Buffer.from(await p.arrayBuffer()).toString("base64"),
-          })),
-        ),
+          pages.map(async (p) => splitPageImage(Buffer.from(await p.arrayBuffer()))),
+        )
+      ).flat()
+      extracted = await extractExamPages(
+        halves.map((h) => ({ mimeType: "image/jpeg", base64: h.toString("base64") })),
+        2,
       )
     } catch (e) {
       await deleteExamReading(supabase, profile.id, readingId, pagePaths).catch(() => {})
