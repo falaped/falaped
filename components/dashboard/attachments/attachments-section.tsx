@@ -221,6 +221,24 @@ export function AttachmentsSection({
     }
   }
 
+  /** Apaga relatório e exame juntos: o grupo é uma coisa só para o médico. */
+  async function handleDeleteGroup(ids: string[]) {
+    setBusyId(ids[0])
+    try {
+      for (const id of ids) {
+        const result = await deleteAttachmentAction(id)
+        if (!result.ok) {
+          toast.error(getFriendlyToastMessage(result.error))
+          return
+        }
+      }
+      toast.success("Leitura de exames apagada dos anexos.")
+      router.refresh()
+    } finally {
+      setBusyId(null)
+    }
+  }
+
   async function handleDelete(id: string) {
     setBusyId(id)
     try {
@@ -287,16 +305,18 @@ export function AttachmentsSection({
           <ul className="flex flex-col gap-3">
             {groupAttachments(attachments).map((group) => {
               if (group.items.length > 1) {
-                // Grupo da leitura de exames: título do exame (o do arquivo "exam"),
-                // e um link por arquivo dentro do mesmo card.
+                // Grupo da leitura de exames: MESMA linha de um anexo comum, mas à
+                // direita um botão por arquivo (abre em outra aba) e uma lixeira
+                // que apaga o grupo inteiro. Sem caixa dentro de caixa.
                 const exam = group.items.find((a) => a.group_role === "exam") ?? group.items[0]
                 const groupTitle = exam.title?.trim() || exam.file_name
+                const groupBusy = group.items.some((a) => busyId === a.id)
                 return (
                   <li
                     key={group.key}
-                    className="flex flex-col gap-2 rounded-lg border border-border bg-muted/20 p-3"
+                    className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-border p-3"
                   >
-                    <div className="flex items-start gap-3">
+                    <div className="flex min-w-0 flex-1 items-start gap-3">
                       <FlaskConical
                         className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground"
                         aria-hidden
@@ -308,33 +328,37 @@ export function AttachmentsSection({
                         </p>
                       </div>
                     </div>
-                    <ul className="flex flex-col gap-1 pl-7">
+                    <div className="flex shrink-0 items-center gap-1">
                       {group.items.map((attachment) => {
                         const label = attachment.group_role
                           ? GROUP_ROLE_LABEL[attachment.group_role]
                           : attachment.file_name
                         return (
-                          <li
+                          <Button
                             key={attachment.id}
-                            className="flex flex-wrap items-center justify-between gap-2 rounded-md border border-border/60 bg-background px-3 py-1.5"
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleOpen(attachment.id, "inline")}
+                            disabled={groupBusy}
+                            aria-label={`Abrir ${label} de ${groupTitle} em outra aba`}
                           >
-                            <p className="text-sm">
-                              <span className="font-medium">{label}</span>
-                              <span className="text-muted-foreground">
-                                {" "}· {formatBytes(attachment.size_bytes)}
-                              </span>
-                            </p>
-                            <AttachmentActions
-                              attachment={attachment}
-                              label={`${label} de ${groupTitle}`}
-                              busy={busyId === attachment.id}
-                              onOpen={handleOpen}
-                              onDelete={handleDelete}
-                            />
-                          </li>
+                            <ExternalLink className="h-4 w-4" aria-hidden />
+                            {label}
+                          </Button>
                         )
                       })}
-                    </ul>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleDeleteGroup(group.items.map((a) => a.id))}
+                        disabled={groupBusy}
+                        aria-label={`Apagar relatório e exame de ${groupTitle}`}
+                      >
+                        <Trash2 className="h-4 w-4" aria-hidden />
+                      </Button>
+                    </div>
                   </li>
                 )
               }
