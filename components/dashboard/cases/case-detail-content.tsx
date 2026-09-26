@@ -262,8 +262,6 @@ export async function CaseDetailContent({ id }: { id: string }) {
             <ExamReadingsSection
               patientId={caseDetail.patient.id}
               caseId={id}
-              patientName={caseDetail.patient.name}
-              patientBirthDate={caseDetail.patient.birth_date ?? null}
               readings={examReadingsWithPages}
             />
           </>

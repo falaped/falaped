@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation"
 import {
   ChevronDown,
   ExternalLink,
-  FileDown,
+  FolderInput,
   Loader2,
   Plus,
   Sparkles,
@@ -14,10 +14,9 @@ import {
 import { toast } from "sonner"
 
 import {
+  archiveExamReadingAction,
   deleteExamReadingAction,
   generateExamReportAction,
-  generateMedicalReportAction,
-  saveExamReadingReportAction,
 } from "@/actions"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -40,8 +39,6 @@ export type ExamReadingWithPages = ExamReading & { pageUrls: string[] }
 
 type ExamReadingCardProps = {
   reading: ExamReadingWithPages
-  patientName: string
-  patientBirthDate: string | null
 }
 
 const FLAG_LABEL: Record<ExamReadingFlag, string> = {
@@ -53,40 +50,11 @@ const FLAG_LABEL: Record<ExamReadingFlag, string> = {
 
 const FLAG_ORDER: ExamReadingFlag[] = ["normal", "low", "high", "unknown"]
 
-/** Frase fixa no PDF: registro do apoio de IA (Res. CFM 2.454/2026, art. 4º V). */
-const AI_DISCLOSURE =
-  "Relatório elaborado com apoio de inteligência artificial a partir do exame anexado e revisado pelo médico responsável."
-
-function textToHtml(text: string): string {
-  const escape = (s: string) =>
-    s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
-  return text
-    .split(/\n{2,}/)
-    .map((p) => `<p>${escape(p.trim()).replace(/\n/g, "<br>")}</p>`)
-    .join("")
-}
-
-function downloadPdf(base64: string, filename: string) {
-  const blob = new Blob([Uint8Array.from(atob(base64), (c) => c.charCodeAt(0))], {
-    type: "application/pdf",
-  })
-  const url = URL.createObjectURL(blob)
-  const a = document.createElement("a")
-  a.href = url
-  a.download = filename
-  a.click()
-  URL.revokeObjectURL(url)
-}
-
-export function ExamReadingCard({
-  reading,
-  patientName,
-  patientBirthDate,
-}: ExamReadingCardProps) {
+export function ExamReadingCard({ reading }: ExamReadingCardProps) {
   const router = useRouter()
   const [items, setItems] = useState<ExamReadingItem[]>(reading.items)
   const [reportText, setReportText] = useState(reading.report_text ?? "")
-  const [busy, setBusy] = useState<"report" | "pdf" | "delete" | null>(null)
+  const [busy, setBusy] = useState<"report" | "archive" | "delete" | null>(null)
   // Campos fechados por padrão: o médico abre só para corrigir o que a leitura errou.
   const [editing, setEditing] = useState(false)
 
@@ -107,31 +75,16 @@ export function ExamReadingCard({
     }
   }
 
-  async function handleEmitPdf() {
+  async function handleArchive() {
     if (reportText.trim() === "") {
-      toast.error("Gere ou escreva o relatório antes de emitir.")
+      toast.error("Gere ou escreva o relatório antes de salvar.")
       return
     }
-    setBusy("pdf")
+    setBusy("archive")
     try {
-      const saved = await saveExamReadingReportAction({ readingId: reading.id, reportText })
-      if (!saved.ok) {
-        toast.error(getFriendlyToastMessage(saved.error))
-        return
-      }
-      const result = await generateMedicalReportAction({
-        payload: {
-          patientName,
-          birthDate: patientBirthDate ?? undefined,
-          title: "Relatório de exames",
-          bodyHtml: textToHtml(`${reading.title}\n\n${reportText}\n\n${AI_DISCLOSURE}`),
-        },
-        patientId: reading.patient_id,
-        caseId: reading.case_id,
-      })
+      const result = await archiveExamReadingAction({ readingId: reading.id, reportText })
       if (result.ok) {
-        downloadPdf(result.pdfBase64, result.filename)
-        toast.success("Relatório emitido. Download iniciado.")
+        toast.success("Relatório e páginas do exame salvos nos anexos.")
         router.refresh()
       } else toast.error(getFriendlyToastMessage(result.error))
     } finally {
@@ -357,20 +310,21 @@ export function ExamReadingCard({
           />
           <div className="flex flex-wrap items-center justify-between gap-2">
             <p className="text-xs text-muted-foreground">
-              Edite à vontade. O PDF sai com a frase de apoio de IA no final.
+              Edite à vontade. Ao salvar, o PDF do relatório e as páginas do exame
+              vão para os anexos e esta leitura some daqui.
             </p>
             <Button
               type="button"
               size="sm"
-              onClick={handleEmitPdf}
+              onClick={handleArchive}
               disabled={busy !== null}
             >
-              {busy === "pdf" ? (
+              {busy === "archive" ? (
                 <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
               ) : (
-                <FileDown className="h-4 w-4" aria-hidden />
+                <FolderInput className="h-4 w-4" aria-hidden />
               )}
-              Emitir relatório (PDF)
+              Salvar nos anexos
             </Button>
           </div>
         </div>

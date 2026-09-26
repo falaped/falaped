@@ -215,8 +215,8 @@ export {
   type CreateExamReadingResult,
   generateExamReportAction,
   type GenerateExamReportResult,
-  saveExamReadingReportAction,
-  type SaveExamReadingReportResult,
+  archiveExamReadingAction,
+  type ArchiveExamReadingResult,
   deleteExamReadingAction,
   type DeleteExamReadingResult,
 } from "./exam-readings"

@@ -7,9 +7,9 @@ export {
   type GenerateExamReportResult,
 } from "./generate-exam-report"
 export {
-  saveExamReadingReportAction,
-  type SaveExamReadingReportResult,
-} from "./save-exam-reading-report"
+  archiveExamReadingAction,
+  type ArchiveExamReadingResult,
+} from "./archive-exam-reading"
 export {
   deleteExamReadingAction,
   type DeleteExamReadingResult,

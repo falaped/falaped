@@ -35,16 +35,12 @@ import {
 type ExamReadingsSectionProps = {
   patientId: string
   caseId: string
-  patientName: string
-  patientBirthDate: string | null
   readings: ExamReadingWithPages[]
 }
 
 export function ExamReadingsSection({
   patientId,
   caseId,
-  patientName,
-  patientBirthDate,
   readings,
 }: ExamReadingsSectionProps) {
   const router = useRouter()
@@ -149,12 +145,7 @@ export function ExamReadingsSection({
         ) : (
           <div className="flex flex-col gap-4">
             {readings.map((reading) => (
-              <ExamReadingCard
-                key={reading.id}
-                reading={reading}
-                patientName={patientName}
-                patientBirthDate={patientBirthDate}
-              />
+              <ExamReadingCard key={reading.id} reading={reading} />
             ))}
           </div>
         )}
