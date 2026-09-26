@@ -2,7 +2,15 @@
 
 import { useState } from "react"
 import { useRouter } from "next/navigation"
-import { FileDown, Loader2, Plus, Sparkles, Trash2 } from "lucide-react"
+import {
+  ChevronDown,
+  ExternalLink,
+  FileDown,
+  Loader2,
+  Plus,
+  Sparkles,
+  Trash2,
+} from "lucide-react"
 import { toast } from "sonner"
 
 import {
@@ -13,6 +21,11 @@ import {
 } from "@/actions"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { formatDateTime } from "@/lib/formatters"
@@ -74,6 +87,8 @@ export function ExamReadingCard({
   const [items, setItems] = useState<ExamReadingItem[]>(reading.items)
   const [reportText, setReportText] = useState(reading.report_text ?? "")
   const [busy, setBusy] = useState<"report" | "pdf" | "delete" | null>(null)
+  // Campos fechados por padrão: o médico abre só para corrigir o que a leitura errou.
+  const [editing, setEditing] = useState(false)
 
   function updateItem(index: number, patch: Partial<ExamReadingItem>) {
     setItems((prev) => prev.map((it, i) => (i === index ? { ...it, ...patch } : it)))
@@ -137,6 +152,7 @@ export function ExamReadingCard({
     }
   }
 
+  const altered = items.filter((it) => it.flag === "low" || it.flag === "high")
   const info = reading.exam_info
   const infoLine = [
     info.exam_types.length > 0 ? info.exam_types.join(", ") : null,
@@ -173,25 +189,35 @@ export function ExamReadingCard({
         </Button>
       </div>
 
-      <div className="grid gap-4 lg:grid-cols-[minmax(0,2fr)_minmax(0,3fr)]">
-        <div className="flex max-h-[32rem] flex-col gap-2 overflow-y-auto rounded-md border border-border bg-muted/30 p-2">
-          {reading.pageUrls.map((url, i) =>
-            url ? (
-              // eslint-disable-next-line @next/next/no-img-element -- signed URL de curta duração, sem otimização
-              <img
-                key={url}
-                src={url}
-                alt={`Página ${i + 1} do exame ${reading.title}`}
-                className="w-full rounded border border-border bg-white"
-                loading="lazy"
+      <Collapsible open={editing} onOpenChange={setEditing} className="flex flex-col gap-3">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <div className="min-w-0 text-sm">
+            <p className="font-medium">
+              {items.length} resultado{items.length === 1 ? "" : "s"}
+              {altered.length > 0 ? ` · ${altered.length} fora da referência` : ""}
+            </p>
+            {!editing && altered.length > 0 ? (
+              <p className="text-muted-foreground">
+                {altered
+                  .map((it) => `${it.name} ${it.value}${it.unit ? ` ${it.unit}` : ""} (${FLAG_LABEL[it.flag]})`)
+                  .join(" · ")}
+              </p>
+            ) : null}
+          </div>
+          <CollapsibleTrigger asChild>
+            <Button type="button" variant="outline" size="sm">
+              <ChevronDown
+                className={`h-4 w-4 transition-transform ${editing ? "rotate-180" : ""}`}
+                aria-hidden
               />
-            ) : null,
-          )}
+              {editing ? "Fechar campos" : "Abrir para editar"}
+            </Button>
+          </CollapsibleTrigger>
         </div>
 
-        <div className="flex flex-col gap-3">
+        <CollapsibleContent className="flex flex-col gap-3">
           <p className="text-sm text-muted-foreground">
-            Confira cada valor com a página ao lado antes de gerar o relatório. A
+            Confira cada valor com a página do exame antes de gerar o relatório. A
             faixa de referência é a impressa no laudo.
           </p>
           <div className="overflow-x-auto">
@@ -284,7 +310,7 @@ export function ExamReadingCard({
               </tbody>
             </table>
           </div>
-          <div className="flex flex-wrap gap-2">
+          <div>
             <Button
               type="button"
               variant="outline"
@@ -299,21 +325,24 @@ export function ExamReadingCard({
               <Plus className="h-4 w-4" aria-hidden />
               Adicionar linha
             </Button>
-            <Button
-              type="button"
-              size="sm"
-              onClick={handleGenerateReport}
-              disabled={busy !== null || items.length === 0}
-            >
-              {busy === "report" ? (
-                <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
-              ) : (
-                <Sparkles className="h-4 w-4" aria-hidden />
-              )}
-              {reportText ? "Gerar relatório de novo" : "Confirmar e gerar relatório"}
-            </Button>
           </div>
-        </div>
+        </CollapsibleContent>
+      </Collapsible>
+
+      <div>
+        <Button
+          type="button"
+          size="sm"
+          onClick={handleGenerateReport}
+          disabled={busy !== null || items.length === 0}
+        >
+          {busy === "report" ? (
+            <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
+          ) : (
+            <Sparkles className="h-4 w-4" aria-hidden />
+          )}
+          {reportText ? "Gerar relatório de novo" : "Confirmar e gerar relatório"}
+        </Button>
       </div>
 
       {reportText || busy === "report" ? (
@@ -346,6 +375,28 @@ export function ExamReadingCard({
           </div>
         </div>
       ) : null}
+
+      <div className="flex flex-wrap gap-2">
+        {reading.pageUrls.map((url, i) =>
+          url ? (
+            <a
+              key={url}
+              href={url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="group relative block h-24 w-[4.5rem] overflow-hidden rounded border border-border bg-white"
+              aria-label={`Abrir página ${i + 1} do exame ${reading.title} em outra aba`}
+              title={`Página ${i + 1} — abrir em outra aba`}
+            >
+              {/* eslint-disable-next-line @next/next/no-img-element -- signed URL de curta duração, sem otimização */}
+              <img src={url} alt="" className="h-full w-full object-cover object-top" loading="lazy" />
+              <span className="absolute inset-0 flex items-center justify-center bg-black/0 text-white opacity-0 transition group-hover:bg-black/40 group-hover:opacity-100">
+                <ExternalLink className="h-4 w-4" aria-hidden />
+              </span>
+            </a>
+          ) : null,
+        )}
+      </div>
     </div>
   )
 }
