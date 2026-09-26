@@ -14,8 +14,13 @@ export type PatientAttachment = {
   title: string | null
   mime_type: string | null
   size_bytes: number
+  /** Anexos gerados juntos (leitura de exames) compartilham o id; null = avulso. */
+  group_id: string | null
+  group_role: AttachmentGroupRole | null
   created_at: string
 }
+
+export type AttachmentGroupRole = "report" | "exam"
 
 export type CreateAttachmentPayload = {
   patient_id: string
@@ -25,4 +30,6 @@ export type CreateAttachmentPayload = {
   title: string | null
   mime_type: string | null
   size_bytes: number
+  group_id?: string | null
+  group_role?: AttachmentGroupRole | null
 }

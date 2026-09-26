@@ -9,7 +9,8 @@ import { formatDate } from "@/lib/formatters"
 import { getPatientById } from "@/modules/patients/get-patient-by-id"
 import { getExamReadingById } from "@/modules/exam-readings/get-exam-reading-by-id"
 import { deleteExamReading } from "@/modules/exam-readings/delete-exam-reading"
-import { moveExamReadingPageToAttachment } from "@/modules/exam-readings/move-exam-reading-page-to-attachment"
+import { downloadExamReadingPages } from "@/modules/exam-readings/download-exam-reading-pages"
+import { buildExamPagesPdf } from "@/modules/exam-readings/build-exam-pages-pdf"
 import { renderMedicalReportPdfForProfile } from "@/modules/medical-reports/render-medical-report-pdf-for-profile"
 import { createAttachment } from "@/modules/patient-attachments/create-attachment"
 import { uploadAttachmentFile } from "@/modules/patient-attachments/upload-attachment-file"
@@ -35,15 +36,14 @@ function textToHtml(text: string): string {
 }
 
 /**
- * Fecha a leitura: gera o PDF do relatório revisado e o guarda nos ANEXOS do
- * paciente (vinculado ao caso), move as páginas do exame para os anexos
- * também (o exame original é registro clínico e não pode sumir) e apaga a
- * leitura. A seção "Leitura de exames" fica limpa; tudo passa a viver em
- * "Anexos".
+ * Fecha a leitura: gera o PDF do relatório revisado e junta as páginas do
+ * exame num segundo PDF; os dois entram nos ANEXOS do paciente (vinculados ao
+ * caso) como um GRUPO (mesmo group_id, papéis "report" e "exam"), que a lista
+ * de anexos mostra num card só. Depois a leitura é apagada, páginas soltas
+ * incluídas. O exame original é registro clínico: nunca some, só muda de lugar.
  *
- * Ordem importa: PDF primeiro, páginas depois, linha por último. Se algo falha
- * no meio, o que já foi para os anexos fica lá (visível e apagável pelo
- * médico) e a leitura continua na tela para tentar de novo.
+ * Os dois PDFs são montados ANTES de qualquer escrita, e as linhas só entram
+ * depois dos dois uploads: falha no meio não deixa card pela metade.
  */
 export async function archiveExamReadingAction(params: {
   readingId: string
@@ -81,52 +81,48 @@ export async function archiveExamReadingAction(params: {
       today,
     )
 
-    const pdfId = randomUUID()
-    const pdfFile = new File([new Uint8Array(pdf)], `relatorio-exames-${today}.pdf`, {
-      type: "application/pdf",
-    })
-    const pdfPath = await uploadAttachmentFile(
-      supabase,
-      profile.id,
-      patient.id,
-      pdfId,
-      pdfFile,
+    const examPdf = await buildExamPagesPdf(
+      await downloadExamReadingPages(supabase, reading.page_paths),
     )
-    await createAttachment(supabase, profile.id, pdfId, {
-      patient_id: patient.id,
-      case_id: reading.case_id,
-      storage_path: pdfPath,
-      file_name: pdfFile.name,
-      title: `Relatório de exames — ${reading.title}`,
-      mime_type: "application/pdf",
-      size_bytes: pdfFile.size,
-    })
 
-    const total = reading.page_paths.length
-    for (const [i, pagePath] of reading.page_paths.entries()) {
-      const attachmentId = randomUUID()
-      const path = await moveExamReadingPageToAttachment(
-        supabase,
-        profile.id,
-        patient.id,
-        attachmentId,
-        pagePath,
-      )
-      await createAttachment(supabase, profile.id, attachmentId, {
+    const groupId = reading.id
+    const files = [
+      {
+        id: randomUUID(),
+        file: new File([new Uint8Array(pdf)], `relatorio-exames-${today}.pdf`, {
+          type: "application/pdf",
+        }),
+        title: `Relatório de exames — ${reading.title}`,
+        role: "report" as const,
+      },
+      {
+        id: randomUUID(),
+        file: new File([new Uint8Array(examPdf)], `exame-${today}.pdf`, {
+          type: "application/pdf",
+        }),
+        title: reading.title,
+        role: "exam" as const,
+      },
+    ]
+
+    const paths = await Promise.all(
+      files.map((f) => uploadAttachmentFile(supabase, profile.id, patient.id, f.id, f.file)),
+    )
+    for (const [i, f] of files.entries()) {
+      await createAttachment(supabase, profile.id, f.id, {
         patient_id: patient.id,
         case_id: reading.case_id,
-        storage_path: path,
-        file_name: `${i + 1}.jpg`,
-        title: total === 1 ? reading.title : `${reading.title} — página ${i + 1} de ${total}`,
-        mime_type: "image/jpeg",
-        // Tamanho não é lido no move; 0 aparece como "0 B" na lista, e isso é
-        // melhor que um HEAD extra por página só para o rótulo.
-        size_bytes: 0,
+        storage_path: paths[i],
+        file_name: f.file.name,
+        title: f.title,
+        mime_type: "application/pdf",
+        size_bytes: f.file.size,
+        group_id: groupId,
+        group_role: f.role,
       })
     }
 
-    // Páginas já movidas: só a linha sai.
-    await deleteExamReading(supabase, profile.id, reading.id, [])
+    await deleteExamReading(supabase, profile.id, reading.id, reading.page_paths)
 
     revalidatePath(`/dashboard/patients/${patient.id}`)
     if (reading.case_id) revalidatePath(`/dashboard/cases/${reading.case_id}`)

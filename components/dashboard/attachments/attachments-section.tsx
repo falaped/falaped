@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation"
 import {
   Download,
   ExternalLink,
+  FlaskConical,
   Loader2,
   Paperclip,
   Trash2,
@@ -55,6 +56,86 @@ function formatBytes(bytes: number): string {
   if (bytes < 1024) return `${bytes} B`
   if (bytes < 1024 * 1024) return `${Math.round(bytes / 1024)} KB`
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
+}
+
+const GROUP_ROLE_LABEL: Record<NonNullable<PatientAttachment["group_role"]>, string> = {
+  report: "Relatório",
+  exam: "Exame",
+}
+
+/**
+ * Anexos na ordem da lista, mas os que nasceram juntos (leitura de exames,
+ * mesmo group_id) viram UM item com os arquivos dentro. Upload avulso segue só.
+ */
+function groupAttachments(
+  attachments: PatientAttachment[],
+): Array<{ key: string; items: PatientAttachment[] }> {
+  const groups: Array<{ key: string; items: PatientAttachment[] }> = []
+  const byGroup = new Map<string, PatientAttachment[]>()
+  for (const a of attachments) {
+    if (!a.group_id) {
+      groups.push({ key: a.id, items: [a] })
+      continue
+    }
+    const existing = byGroup.get(a.group_id)
+    if (existing) existing.push(a)
+    else {
+      const items = [a]
+      byGroup.set(a.group_id, items)
+      groups.push({ key: a.group_id, items })
+    }
+  }
+  // Dentro do grupo, relatório primeiro.
+  for (const g of groups)
+    g.items.sort((a, b) => (a.group_role === "report" ? -1 : b.group_role === "report" ? 1 : 0))
+  return groups
+}
+
+type AttachmentActionsProps = {
+  attachment: PatientAttachment
+  label: string
+  busy: boolean
+  onOpen: (id: string, mode: "download" | "inline") => void
+  onDelete: (id: string) => void
+}
+
+function AttachmentActions({ attachment, label, busy, onOpen, onDelete }: AttachmentActionsProps) {
+  return (
+    <div className="flex shrink-0 items-center gap-1">
+      {isInlineViewableMimeType(attachment.mime_type) ? (
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          onClick={() => onOpen(attachment.id, "inline")}
+          disabled={busy}
+          aria-label={`Abrir ${label} em outra aba`}
+        >
+          <ExternalLink className="h-4 w-4" aria-hidden />
+        </Button>
+      ) : null}
+      <Button
+        type="button"
+        variant="ghost"
+        size="sm"
+        onClick={() => onOpen(attachment.id, "download")}
+        disabled={busy}
+        aria-label={`Baixar ${label}`}
+      >
+        <Download className="h-4 w-4" aria-hidden />
+      </Button>
+      <Button
+        type="button"
+        variant="ghost"
+        size="sm"
+        onClick={() => onDelete(attachment.id)}
+        disabled={busy}
+        aria-label={`Apagar ${label}`}
+      >
+        <Trash2 className="h-4 w-4" aria-hidden />
+      </Button>
+    </div>
+  )
 }
 
 export function AttachmentsSection({
@@ -204,65 +285,91 @@ export function AttachmentsSection({
           </div>
         ) : (
           <ul className="flex flex-col gap-3">
-            {attachments.map((attachment) => (
-              <li
-                key={attachment.id}
-                className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-border p-3"
-              >
-                <div className="flex min-w-0 flex-1 items-start gap-3">
-                  <Paperclip
-                    className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground"
-                    aria-hidden
-                  />
-                  <div className="min-w-0">
-                    <p className="wrap-break-word font-medium">
-                      {attachment.title?.trim() || attachment.file_name}
-                    </p>
-                    <p className="text-sm text-muted-foreground">
-                      {attachment.title?.trim()
-                        ? `${attachment.file_name} · `
-                        : ""}
-                      {formatBytes(attachment.size_bytes)} ·{" "}
-                      {formatDateTime(attachment.created_at)}
-                    </p>
+            {groupAttachments(attachments).map((group) => {
+              if (group.items.length > 1) {
+                // Grupo da leitura de exames: título do exame (o do arquivo "exam"),
+                // e um link por arquivo dentro do mesmo card.
+                const exam = group.items.find((a) => a.group_role === "exam") ?? group.items[0]
+                const groupTitle = exam.title?.trim() || exam.file_name
+                return (
+                  <li
+                    key={group.key}
+                    className="flex flex-col gap-2 rounded-lg border border-border bg-muted/20 p-3"
+                  >
+                    <div className="flex items-start gap-3">
+                      <FlaskConical
+                        className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground"
+                        aria-hidden
+                      />
+                      <div className="min-w-0">
+                        <p className="wrap-break-word font-medium">{groupTitle}</p>
+                        <p className="text-sm text-muted-foreground">
+                          Leitura de exames · {formatDateTime(exam.created_at)}
+                        </p>
+                      </div>
+                    </div>
+                    <ul className="flex flex-col gap-1 pl-7">
+                      {group.items.map((attachment) => {
+                        const label = attachment.group_role
+                          ? GROUP_ROLE_LABEL[attachment.group_role]
+                          : attachment.file_name
+                        return (
+                          <li
+                            key={attachment.id}
+                            className="flex flex-wrap items-center justify-between gap-2 rounded-md border border-border/60 bg-background px-3 py-1.5"
+                          >
+                            <p className="text-sm">
+                              <span className="font-medium">{label}</span>
+                              <span className="text-muted-foreground">
+                                {" "}· {formatBytes(attachment.size_bytes)}
+                              </span>
+                            </p>
+                            <AttachmentActions
+                              attachment={attachment}
+                              label={`${label} de ${groupTitle}`}
+                              busy={busyId === attachment.id}
+                              onOpen={handleOpen}
+                              onDelete={handleDelete}
+                            />
+                          </li>
+                        )
+                      })}
+                    </ul>
+                  </li>
+                )
+              }
+
+              const attachment = group.items[0]
+              const label = attachment.title?.trim() || attachment.file_name
+              return (
+                <li
+                  key={attachment.id}
+                  className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-border p-3"
+                >
+                  <div className="flex min-w-0 flex-1 items-start gap-3">
+                    <Paperclip
+                      className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground"
+                      aria-hidden
+                    />
+                    <div className="min-w-0">
+                      <p className="wrap-break-word font-medium">{label}</p>
+                      <p className="text-sm text-muted-foreground">
+                        {attachment.title?.trim() ? `${attachment.file_name} · ` : ""}
+                        {formatBytes(attachment.size_bytes)} ·{" "}
+                        {formatDateTime(attachment.created_at)}
+                      </p>
+                    </div>
                   </div>
-                </div>
-                <div className="flex shrink-0 items-center gap-1">
-                  {isInlineViewableMimeType(attachment.mime_type) ? (
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => handleOpen(attachment.id, "inline")}
-                      disabled={busyId === attachment.id}
-                      aria-label={`Abrir ${attachment.title?.trim() || attachment.file_name} em outra aba`}
-                    >
-                      <ExternalLink className="h-4 w-4" aria-hidden />
-                    </Button>
-                  ) : null}
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => handleOpen(attachment.id, "download")}
-                    disabled={busyId === attachment.id}
-                    aria-label={`Baixar ${attachment.title?.trim() || attachment.file_name}`}
-                  >
-                    <Download className="h-4 w-4" aria-hidden />
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => handleDelete(attachment.id)}
-                    disabled={busyId === attachment.id}
-                    aria-label={`Apagar ${attachment.title?.trim() || attachment.file_name}`}
-                  >
-                    <Trash2 className="h-4 w-4" aria-hidden />
-                  </Button>
-                </div>
-              </li>
-            ))}
+                  <AttachmentActions
+                    attachment={attachment}
+                    label={label}
+                    busy={busyId === attachment.id}
+                    onOpen={handleOpen}
+                    onDelete={handleDelete}
+                  />
+                </li>
+              )
+            })}
           </ul>
         )}
       </CardContent>
