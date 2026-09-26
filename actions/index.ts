@@ -204,3 +204,9 @@ export {
   buildBookPdfAction,
   deleteBookAction,
 } from "./books"
+export {
+  updateProspectAction,
+  type UpdateProspectResult,
+  sendProspectInviteAction,
+  type SendProspectInviteResult,
+} from "./admin"
