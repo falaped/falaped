@@ -26,6 +26,7 @@ import {
   CollapsibleTrigger,
 } from "@/components/ui/collapsible"
 import { Input } from "@/components/ui/input"
+import { Skeleton } from "@/components/ui/skeleton"
 import { Textarea } from "@/components/ui/textarea"
 import { formatDateTime } from "@/lib/formatters"
 import { getFriendlyToastMessage } from "@/lib/get-friendly-toast-message"
@@ -298,7 +299,20 @@ export function ExamReadingCard({ reading }: ExamReadingCardProps) {
         </Button>
       </div>
 
-      {reportText || busy === "report" ? (
+      {busy === "report" ? (
+        <div className="flex flex-col gap-2" aria-busy="true" aria-live="polite">
+          <p className="text-sm font-medium">Gerando o rascunho do relatório…</p>
+          <div className="flex flex-col gap-2 rounded-md border border-border p-3">
+            <Skeleton className="h-4 w-1/3" />
+            <Skeleton className="h-4 w-full" />
+            <Skeleton className="h-4 w-11/12" />
+            <Skeleton className="h-4 w-2/3" />
+            <Skeleton className="mt-2 h-4 w-1/4" />
+            <Skeleton className="h-4 w-full" />
+            <Skeleton className="h-4 w-4/5" />
+          </div>
+        </div>
+      ) : reportText ? (
         <div className="flex flex-col gap-2">
           <p className="text-sm font-medium">Rascunho do relatório</p>
           <Textarea

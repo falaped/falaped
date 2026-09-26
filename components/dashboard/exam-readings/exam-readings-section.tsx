@@ -24,6 +24,7 @@ import {
 } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { Skeleton } from "@/components/ui/skeleton"
 import { EXAM_READING_MAX_PAGES } from "@/lib/constants"
 import { filesToExamPages } from "@/lib/exam-reading-pages"
 import { getFriendlyToastMessage } from "@/lib/get-friendly-toast-message"
@@ -48,6 +49,7 @@ export function ExamReadingsSection({
   const [pendingFiles, setPendingFiles] = useState<File[]>([])
   const [title, setTitle] = useState("")
   const [step, setStep] = useState<"idle" | "preparing" | "reading">("idle")
+  const [readingPageCount, setReadingPageCount] = useState(0)
 
   function handleFilesChange(event: React.ChangeEvent<HTMLInputElement>) {
     const files = Array.from(event.target.files ?? [])
@@ -72,7 +74,12 @@ export function ExamReadingsSection({
       formData.set("title", title)
       pages.forEach((page, i) => formData.append("pages", page, `${i + 1}.jpg`))
 
+      // Diálogo fecha aqui: o feedback da leitura passa a ser o card
+      // esqueleto no topo da lista, no lugar onde a leitura vai aparecer.
       setStep("reading")
+      setPendingFiles([])
+      const pageCount = pages.length
+      setReadingPageCount(pageCount)
       const result = await createExamReadingAction(formData)
       if (result.ok) {
         toast.success(
@@ -80,7 +87,6 @@ export function ExamReadingsSection({
             ? `Exame lido: ${result.itemCount} resultado${result.itemCount === 1 ? "" : "s"}. Confira antes de gerar o relatório.`
             : "Exame enviado, mas nenhum resultado foi reconhecido. Confira as páginas.",
         )
-        setPendingFiles([])
         setTitle("")
         router.refresh()
       } else toast.error(getFriendlyToastMessage(result.error))
@@ -131,7 +137,28 @@ export function ExamReadingsSection({
         </div>
       </CardHeader>
       <CardContent>
-        {readings.length === 0 ? (
+        {step === "reading" ? (
+          <div
+            className="mb-4 flex flex-col gap-3 rounded-lg border border-border p-4"
+            aria-busy="true"
+            aria-live="polite"
+          >
+            <div className="flex items-center gap-2 text-sm">
+              <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" aria-hidden />
+              <span className="font-medium">
+                Lendo {readingPageCount} página{readingPageCount === 1 ? "" : "s"} do exame…
+              </span>
+            </div>
+            <Skeleton className="h-4 w-1/3" />
+            <Skeleton className="h-4 w-2/3" />
+            <div className="flex gap-2">
+              {Array.from({ length: Math.min(readingPageCount, 4) }, (_, i) => (
+                <Skeleton key={i} className="h-24 w-[4.5rem]" />
+              ))}
+            </div>
+          </div>
+        ) : null}
+        {readings.length === 0 && step !== "reading" ? (
           <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-border px-6 py-10 text-center">
             <div className="flex h-12 w-12 items-center justify-center rounded-full bg-muted">
               <FlaskConical className="h-6 w-6 text-muted-foreground" aria-hidden />
