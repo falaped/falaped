@@ -108,6 +108,13 @@ export function ExamReadingCard({ reading }: ExamReadingCardProps) {
 
   const altered = items.filter((it) => it.flag === "low" || it.flag === "high")
   const info = reading.exam_info
+  const patientLine = [
+    info.patient_name,
+    info.patient_birth_date ? `nasc. ${info.patient_birth_date}` : info.patient_age,
+    info.patient_sex === "masculino" ? "M" : info.patient_sex === "feminino" ? "F" : null,
+  ]
+    .filter(Boolean)
+    .join(" · ")
   const infoLine = [
     info.exam_types.length > 0 ? info.exam_types.join(", ") : null,
     info.laboratory,
@@ -126,6 +133,9 @@ export function ExamReadingCard({ reading }: ExamReadingCardProps) {
             {reading.page_paths.length} página{reading.page_paths.length === 1 ? "" : "s"} ·{" "}
             {formatDateTime(reading.created_at)}
           </p>
+          {patientLine ? (
+            <p className="text-sm text-muted-foreground">Paciente no laudo: {patientLine}</p>
+          ) : null}
         </div>
         <Button
           type="button"

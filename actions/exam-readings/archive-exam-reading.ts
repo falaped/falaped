@@ -5,10 +5,10 @@ import { format } from "date-fns"
 import { revalidatePath } from "next/cache"
 
 import { createClient } from "@/lib/supabase/server"
-import { formatDate } from "@/lib/formatters"
 import { getPatientById } from "@/modules/patients/get-patient-by-id"
 import { getExamReadingById } from "@/modules/exam-readings/get-exam-reading-by-id"
 import { deleteExamReading } from "@/modules/exam-readings/delete-exam-reading"
+import { resolveExamPatient } from "@/modules/exam-readings/resolve-exam-patient"
 import { downloadExamReadingPages } from "@/modules/exam-readings/download-exam-reading-pages"
 import { buildExamPagesPdf } from "@/modules/exam-readings/build-exam-pages-pdf"
 import { renderMedicalReportPdfForProfile } from "@/modules/medical-reports/render-medical-report-pdf-for-profile"
@@ -70,11 +70,13 @@ export async function archiveExamReadingAction(params: {
     if (!patient) return { ok: false, error: "Paciente não encontrado." }
 
     const today = format(new Date(), "yyyy-MM-dd")
+    // Cabeçalho do PDF com o paciente DO LAUDO; o do caso só no que o laudo não traz.
+    const examPatient = resolveExamPatient(reading.exam_info, patient)
     const pdf = await renderMedicalReportPdfForProfile(
       profile,
       {
-        patientName: patient.name,
-        birthDate: patient.birth_date ? formatDate(patient.birth_date) : undefined,
+        patientName: examPatient.name,
+        birthDate: examPatient.birthDateLabel ?? undefined,
         title: "Relatório de exames",
         bodyHtml: textToHtml(`${reading.title}\n\n${reportText}\n\n${AI_DISCLOSURE}`),
       },

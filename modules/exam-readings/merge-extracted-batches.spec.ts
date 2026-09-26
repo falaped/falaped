@@ -26,6 +26,10 @@ test("renumera páginas por lote, funde cabeçalho e descarta item inválido", (
     laboratory: "Lab A",
     collected_at: "10/09/2026",
     exam_types: ["Hemograma", "TSH"],
+    patient_name: null,
+    patient_birth_date: null,
+    patient_age: null,
+    patient_sex: null,
   })
   assert.equal(merged.items.length, 2)
   assert.equal(merged.items[0].value, "11.2")

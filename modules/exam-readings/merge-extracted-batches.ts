@@ -3,6 +3,10 @@ import {
   extractedExamBatchSchema,
 } from "@/lib/schemas/exam-reading"
 import { computeFlagFromReference } from "@/modules/exam-readings/compute-flag-from-reference"
+import {
+  selectReferenceBand,
+  type BandPatient,
+} from "@/modules/exam-readings/select-reference-band"
 import type { ExamReadingInfo, ExamReadingItem } from "@/modules/exam-readings/types"
 
 export type ExtractedExam = { exam: ExamReadingInfo; items: ExamReadingItem[] }
@@ -29,8 +33,18 @@ export function mergeExtractedBatches(
   rawBatches: unknown[],
   imageOffsets: number[],
   imagesPerPage = 1,
+  /** Idade na coleta e sexo: escolhem a faixa certa quando a célula traz várias. */
+  patient: BandPatient = { ageDays: null, sex: null },
 ): ExtractedExam {
-  const exam: ExamReadingInfo = { laboratory: null, collected_at: null, exam_types: [] }
+  const exam: ExamReadingInfo = {
+    laboratory: null,
+    collected_at: null,
+    exam_types: [],
+    patient_name: null,
+    patient_birth_date: null,
+    patient_age: null,
+    patient_sex: null,
+  }
   const items: ExamReadingItem[] = []
   const seen = new Set<string>()
 
@@ -41,6 +55,10 @@ export function mergeExtractedBatches(
 
     exam.laboratory ??= parsed.data.exam.laboratory
     exam.collected_at ??= parsed.data.exam.collected_at
+    exam.patient_name ??= parsed.data.exam.patient_name
+    exam.patient_birth_date ??= parsed.data.exam.patient_birth_date
+    exam.patient_age ??= parsed.data.exam.patient_age
+    exam.patient_sex ??= parsed.data.exam.patient_sex
     for (const t of parsed.data.exam.exam_types)
       if (t && !exam.exam_types.includes(t)) exam.exam_types.push(t)
 
@@ -53,7 +71,11 @@ export function mergeExtractedBatches(
       if (seen.has(key)) continue
       seen.add(key)
       const page = Math.ceil((item.data.page + offset) / imagesPerPage)
-      items.push({ ...item.data, page, flag: resolveFlag(item.data) })
+      const reference = item.data.reference
+        ? selectReferenceBand(item.data.reference, patient)
+        : null
+      const withBand = { ...item.data, reference }
+      items.push({ ...withBand, page, flag: resolveFlag(withBand) })
     }
   })
 

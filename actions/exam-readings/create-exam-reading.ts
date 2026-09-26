@@ -5,9 +5,6 @@ import { revalidatePath } from "next/cache"
 
 import { createClient } from "@/lib/supabase/server"
 import { env } from "@/lib/env"
-import { computePediatricAge } from "@/lib/compute-pediatric-age"
-import { formatPediatricAge } from "@/lib/format-pediatric-age"
-import { PATIENT_SEX_LABELS } from "@/modules/patients/patient-sex"
 import {
   EXAM_READING_MAX_PAGES,
   EXAM_READING_PAGE_MAX_BYTES,
@@ -94,12 +91,7 @@ export async function createExamReadingAction(
       extracted = await extractExamPages(
         halves.map((h) => ({ mimeType: "image/jpeg", base64: h.toString("base64") })),
         2,
-        {
-          patientAgeLabel: patient.birth_date
-            ? formatPediatricAge(computePediatricAge(patient.birth_date, new Date())) || null
-            : null,
-          patientSex: patient.sex ? PATIENT_SEX_LABELS[patient.sex] : null,
-        },
+        { casePatient: patient },
       )
     } catch (e) {
       await deleteExamReading(supabase, profile.id, readingId, pagePaths).catch(() => {})

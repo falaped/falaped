@@ -3,14 +3,12 @@
 import { revalidatePath } from "next/cache"
 
 import { createClient } from "@/lib/supabase/server"
-import { computePediatricAge } from "@/lib/compute-pediatric-age"
-import { formatPediatricAge } from "@/lib/format-pediatric-age"
 import { confirmExamReadingItemsSchema } from "@/lib/schemas/exam-reading"
 import { zodErrorToUserMessage } from "@/lib/zod-error-message"
-import { PATIENT_SEX_LABELS } from "@/modules/patients/patient-sex"
 import { getPatientById } from "@/modules/patients/get-patient-by-id"
 import { getExamReadingById } from "@/modules/exam-readings/get-exam-reading-by-id"
 import { updateExamReading } from "@/modules/exam-readings/update-exam-reading"
+import { resolveExamPatient } from "@/modules/exam-readings/resolve-exam-patient"
 import { generateExamReport } from "@/modules/groq/generate-exam-report"
 import { getAuthenticatedUser } from "@/modules/supabase/get-authenticated-user"
 
@@ -45,14 +43,14 @@ export async function generateExamReportAction(params: {
     const reading = await getExamReadingById(supabase, profile.id, params.readingId)
     if (!reading) return { ok: false, error: "Leitura não encontrada." }
     const patient = await getPatientById(supabase, reading.patient_id, profile.id)
+    if (!patient) return { ok: false, error: "Paciente não encontrado." }
 
-    const age = patient?.birth_date
-      ? formatPediatricAge(computePediatricAge(patient.birth_date, new Date()))
-      : ""
+    // O paciente do LAUDO manda (nome, nascimento, sexo); o do caso só entra no que faltar.
+    const examPatient = resolveExamPatient(reading.exam_info, patient)
 
     const reportText = await generateExamReport({
-      patientAgeLabel: age || null,
-      patientSex: patient?.sex ? PATIENT_SEX_LABELS[patient.sex] : null,
+      patientAgeLabel: examPatient.ageLabel,
+      patientSex: examPatient.sexLabel,
       examInfo: reading.exam_info,
       items: parsed.data,
     })
