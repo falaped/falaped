@@ -57,6 +57,6 @@ export const DASHBOARD_NEW_CASE_GREETING =
 export const BOOK_ASSETS_BUCKET = "book-assets"
 
 /** Leitura de exames: páginas por exame (imagens ou páginas de PDF, já convertidas em JPEG no browser). */
-export const EXAM_READING_MAX_PAGES = 12
+export const EXAM_READING_MAX_PAGES = 20
 /** Teto por página JÁ comprimida. O browser mira ~2000 px no lado maior; 4 MB é folga, não meta. */
 export const EXAM_READING_PAGE_MAX_BYTES = 4 * 1024 * 1024
