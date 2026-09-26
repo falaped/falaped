@@ -48,8 +48,13 @@ export async function updateSession(request: NextRequest) {
   // books.falaped.com.br é 100% público: só a landing (app/books/lp) e a API do lead.
   // O app interno de livros do pediatra fica em app.falaped.com.br/books.
   const isBooksHost = (request.headers.get("host") ?? "").startsWith("books.");
+  // Webhook da Resend não tem sessão: valida por assinatura Svix na própria rota.
+  const isWebhook = pathname.startsWith("/api/resend/webhook");
   const isBooksPublic =
-    pathname.startsWith("/books/lp") || pathname.startsWith("/api/books/lead") || pathname.startsWith("/api/books/pix");
+    pathname.startsWith("/books/lp") ||
+    pathname.startsWith("/api/books/lead") ||
+    pathname.startsWith("/api/books/pix") ||
+    isWebhook;
   if (isBooksHost) {
     const LP_ALIASES = ["/criar", "/privacidade"];
     const url = request.nextUrl.clone();

@@ -15,6 +15,14 @@ const envSchema = z.object({
   // produção não sai e o gestor vê o erro na tela de pedidos.
   RESEND_API_KEY: z.string().optional(),
   BOOKS_EMAIL_FROM: z.string().default("Falaped Books <livros@contato.falaped.com.br>"),
+  // Convite da prospecção (painel admin). Remetente com nome de pessoa, não de marca:
+  // e-mail frio assinado por alguém recebe mais resposta do que "Falaped <...>".
+  // Sai do subdomínio contato.falaped.com.br porque só ele (e update.) está verificado
+  // na Resend; o raiz falaped.com.br devolve 403. Reply-to continua contato@falaped.com.br.
+  INVITE_EMAIL_FROM: z.string().default("Filipe, CEO do Falaped <filipe@contato.falaped.com.br>"),
+  // Segredo (whsec_…) do webhook da Resend em /api/resend/webhook: entrega, bounce e
+  // reclamação do convite. Sem ele a rota recusa tudo.
+  RESEND_WEBHOOK_SECRET: z.string().optional(),
   // Pix da landing: chave do próprio recebedor, sem intermediário. O QR é
   // montado no app e a confirmação é manual, pelo comprovante no WhatsApp.
   PIX_KEY: z.string().optional(),
