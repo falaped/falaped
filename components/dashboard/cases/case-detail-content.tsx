@@ -160,6 +160,8 @@ export async function CaseDetailContent({ id }: { id: string }) {
       </div>
     )
 
+  // Ordem pedida pelo gestor: relatório, escalas, exames, anexos, documentos,
+  // lembretes, ganhos. Escalas/anexos/exames só existem com paciente vinculado.
   const patientSections: CaseSection[] = caseDetail.patient
     ? [
         {
@@ -178,6 +180,18 @@ export async function CaseDetailContent({ id }: { id: string }) {
           ),
         },
         {
+          key: "exams",
+          title: "Leitura de exames",
+          description: "Exames lidos pela IA neste atendimento.",
+          content: (
+            <ExamReadingsSection
+              patientId={caseDetail.patient.id}
+              caseId={id}
+              readings={examReadingsWithPages}
+            />
+          ),
+        },
+        {
           key: "attachments",
           title: "Anexos da consulta",
           description: "Arquivos enviados neste atendimento.",
@@ -191,18 +205,6 @@ export async function CaseDetailContent({ id }: { id: string }) {
             />
           ),
         },
-        {
-          key: "exams",
-          title: "Leitura de exames",
-          description: "Exames lidos pela IA neste atendimento.",
-          content: (
-            <ExamReadingsSection
-              patientId={caseDetail.patient.id}
-              caseId={id}
-              readings={examReadingsWithPages}
-            />
-          ),
-        },
       ]
     : []
 
@@ -213,6 +215,7 @@ export async function CaseDetailContent({ id }: { id: string }) {
       description: "Relatórios gerados a partir da consulta.",
       content: reportBlock,
     },
+    ...patientSections,
     {
       key: "documents",
       title: "Documentos do caso",
@@ -232,7 +235,6 @@ export async function CaseDetailContent({ id }: { id: string }) {
         <CaseRemindersCard caseId={id} initialReminders={caseReminders} />
       ),
     },
-    ...patientSections,
     ...(caseEntries.length > 0 && earningsTotals != null
       ? [
           {
