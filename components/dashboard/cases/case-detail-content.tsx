@@ -27,6 +27,7 @@ import { CaseDetailHeader } from "@/components/dashboard/cases/case-detail-heade
 import { CaseDetailDocuments } from "@/components/dashboard/cases/case-detail-documents"
 import { CaseSectionCards, type CaseSection } from "@/components/dashboard/cases/case-section-cards"
 import { CaseStatusCard } from "@/components/dashboard/cases/case-status-card"
+import { CaseResumeCard } from "@/components/dashboard/cases/case-resume-card"
 import { CaseEarningsCard } from "@/components/dashboard/cases/case-earnings-card"
 import { CasePendingEarningsCard } from "@/components/dashboard/cases/case-pending-earnings-card"
 import { caseDetailMainStackClassName } from "@/components/dashboard/cases/case-detail-workspace"
@@ -282,6 +283,12 @@ export async function CaseDetailContent({ id }: { id: string }) {
         <CaseSectionCards
           sections={sections}
           leading={
+            // Só o atendimento em curso conduzido no painel tem workspace para retomar.
+            isActive && caseDetail.origin === "dashboard" ? (
+              <CaseResumeCard caseId={id} />
+            ) : null
+          }
+          trailing={
             <CaseStatusCard
               caseId={id}
               status={caseDetail.status}

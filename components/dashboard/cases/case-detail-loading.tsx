@@ -15,15 +15,14 @@ export function CaseDetailLoading() {
         </div>
         <div className="flex flex-wrap gap-2">
           <Skeleton className="h-9 w-24 rounded-md" />
-          <Skeleton className="h-9 w-44 rounded-md" />
-          <Skeleton className="h-9 w-28 rounded-md" />
+          <Skeleton className="h-9 w-32 rounded-md" />
         </div>
       </div>
 
       <div className="space-y-3">
         <Skeleton className="h-7 w-56" />
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          {Array.from({ length: 8 }).map((_, i) => (
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {Array.from({ length: 9 }).map((_, i) => (
             <Skeleton key={i} className="h-28 rounded-xl" />
           ))}
         </div>

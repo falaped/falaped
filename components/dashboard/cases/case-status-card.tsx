@@ -8,8 +8,8 @@ import { CloseCaseWithEarningsDialog } from "@/components/dashboard/cases/close-
 import { ReopenCaseDialog } from "@/components/dashboard/cases/reopen-case-dialog"
 
 /**
- * Card de destaque na grade de registros: encerra o caso ativo (com a etapa de
- * ganhos) ou reabre o encerrado. Mesmos diálogos do menu Ações.
+ * Último card da grade de registros, em amarelo: encerra o caso ativo (com a
+ * etapa de ganhos) ou reabre o encerrado.
  */
 export function CaseStatusCard({
   caseId,
@@ -33,7 +33,7 @@ export function CaseStatusCard({
         aria-haspopup="dialog"
         onClick={() => setOpen(true)}
       >
-        <Card className="h-full bg-primary text-primary-foreground ring-primary transition-colors group-hover:bg-primary/90">
+        <Card className="h-full bg-amber-400 text-amber-950 ring-amber-500 transition-colors group-hover:bg-amber-300">
           <CardHeader className="flex flex-row items-center gap-2.5 space-y-0">
             <Icon className="h-5 w-5" aria-hidden />
             <CardTitle className="text-base font-semibold">
@@ -41,7 +41,7 @@ export function CaseStatusCard({
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-sm text-primary-foreground/80">
+            <p className="text-sm text-amber-950/80">
               {isActive
                 ? "Finaliza o atendimento e registra o que foi cobrado."
                 : "Volta a atender esta criança neste mesmo caso."}

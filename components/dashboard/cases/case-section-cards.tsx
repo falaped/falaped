@@ -62,10 +62,13 @@ export type CaseSection = {
 export function CaseSectionCards({
   sections,
   leading,
+  trailing,
 }: {
   sections: CaseSection[]
-  /** Card extra na primeira posição da grade (ex.: encerrar/reabrir). */
+  /** Card extra na primeira posição da grade (ex.: retomar atendimento). */
   leading?: ReactNode
+  /** Card extra na última posição da grade (ex.: encerrar/reabrir). */
+  trailing?: ReactNode
 }) {
   const router = useRouter()
   const pathname = usePathname()
@@ -81,7 +84,7 @@ export function CaseSectionCards({
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {leading}
         {sections.map((section) => {
           const Icon = ICONS[section.key]
@@ -112,6 +115,7 @@ export function CaseSectionCards({
             </button>
           )
         })}
+        {trailing}
       </div>
       <Sheet open={open != null} onOpenChange={(next) => !next && close()}>
         {open ? (

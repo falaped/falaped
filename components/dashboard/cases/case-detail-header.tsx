@@ -187,8 +187,6 @@ export function CaseDetailHeader({
         </div>
         <CaseDetailHeaderToolbar
           caseId={detail.id}
-          status={detail.status}
-          origin={detail.origin}
           earningsCount={earningsCount}
           earningsTotalCents={earningsTotalCents}
         />
