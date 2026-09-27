@@ -3,6 +3,8 @@
 import { useEffect, useRef, useState } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
+
+import { caseDocumentsHref } from "@/lib/case-documents-href"
 import { toast } from "sonner"
 import { getFriendlyToastMessage } from "@/lib/get-friendly-toast-message"
 import { format } from "date-fns"
@@ -707,6 +709,9 @@ export function MedicalCertificateWizard({
   initialCaseId = null,
 }: MedicalCertificateWizardProps) {
   const router = useRouter()
+  const caseId = initialCaseId?.trim() || null
+  // Nasceu de um caso → volta para o drawer de documentos dele; senão, para a lista.
+  const backHref = caseId ? caseDocumentsHref(caseId) : "/dashboard/medical-certificates"
   const initialPatientAppliedRef = useRef(false)
   const [type, setType] = useState<MedicalCertificateType | null>(null)
   const [dataSource, setDataSource] = useState<"patient" | "manual" | null>(null)
@@ -812,7 +817,7 @@ export function MedicalCertificateWizard({
         ? new Date(`${issuedAt}T12:00:00`).toISOString().slice(0, 10)
         : undefined,
       patientId: selectedPatient?.id ?? null,
-      caseId: initialCaseId?.trim() || null,
+      caseId: caseId,
     })
       .then((result) => {
         if (result.ok) {
@@ -826,7 +831,7 @@ export function MedicalCertificateWizard({
           a.click()
           URL.revokeObjectURL(url)
           toast.success("Atestado gerado. Download iniciado.")
-          router.push("/dashboard/medical-certificates")
+          router.push(backHref)
           router.refresh()
         } else {
           toast.error(getFriendlyToastMessage(result.error))
@@ -964,7 +969,7 @@ export function MedicalCertificateWizard({
 
         <div className="mt-6 flex flex-wrap items-center gap-2">
           <Button variant="ghost" asChild>
-            <Link href="/dashboard/medical-certificates">
+            <Link href={backHref}>
               <ChevronLeft className="mr-2 h-4 w-4" />
               Voltar
             </Link>

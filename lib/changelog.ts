@@ -22,6 +22,35 @@ export type ChangelogRelease = {
 /** Da mais nova para a mais antiga — a primeira é a que abre o modal. */
 export const CHANGELOG: readonly ChangelogRelease[] = [
   {
+    id: "2026-09-27-tela-do-caso",
+    date: "2026-09-27",
+    title: "Nova tela do atendimento",
+    summary:
+      "A tela do caso ficou mais limpa: os dados da criança no topo, as ações do atendimento em destaque e cada registro num card que abre ao lado.",
+    entries: [
+      {
+        title: "Dados da criança no topo",
+        description:
+          "Idade, nascimento, sexo, responsável, telefone e alergias aparecem junto do nome. Clique no nome para abrir a ficha do paciente.",
+      },
+      {
+        title: "Retomar e encerrar em um clique",
+        description:
+          "A seção Atendimento traz Retomar atendimento, para voltar à consulta em curso, e Encerrar ou Reabrir caso, conforme o status.",
+      },
+      {
+        title: "Registros em cards",
+        description:
+          "Relatório, escalas, leitura de exames, anexos, documentos, lembretes e ganhos viram cards. Clique em um para abrir o conteúdo numa gaveta à direita, sem sair da tela.",
+      },
+      {
+        title: "Documentos e ganhos direto do caso",
+        description:
+          "Crie atestado ou receita pela gaveta de Documentos e volte para ela assim que o PDF sair. Na gaveta de Ganhos, lance um valor extra já vinculado ao atendimento.",
+      },
+    ],
+  },
+  {
     id: "2026-09-27-leitura-de-exames",
     date: "2026-09-27",
     title: "Leitura de exames com IA",

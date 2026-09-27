@@ -8,6 +8,7 @@ import { getPrescriptionTemplatesByProfileId } from "@/modules/prescription-temp
 import { getPrescriptionTemplateByIdForProfile } from "@/modules/prescription-templates/get-prescription-template-by-id-for-profile"
 import { PrescriptionWizardWrapper } from "./prescription-wizard-wrapper"
 import { Button } from "@/components/ui/button"
+import { caseDocumentsHref } from "@/lib/case-documents-href"
 import { Separator } from "@/components/ui/separator"
 
 type PageProps = {
@@ -55,7 +56,7 @@ export default async function NewPrescriptionPage({ searchParams }: PageProps) {
         <div>
           <div className="flex items-center gap-2.5">
             <Button variant="ghost" size="icon" asChild aria-label="Voltar">
-              <Link href="/dashboard/prescriptions">
+              <Link href={caseId ? caseDocumentsHref(caseId) : "/dashboard/prescriptions"}>
                 <ChevronLeft className="h-4 w-4" />
               </Link>
             </Button>

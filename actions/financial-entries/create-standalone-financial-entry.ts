@@ -7,6 +7,7 @@ import {
   standaloneFinancialEntrySchema,
   type StandaloneFinancialEntryFormValues,
 } from "@/lib/schemas/financial-entry"
+import { findOwnedCaseId } from "@/modules/cases/find-owned-case-id"
 import { createFinancialEntries } from "@/modules/financial-entries/create-financial-entries"
 import { getAuthenticatedUser } from "@/modules/supabase/get-authenticated-user"
 
@@ -20,10 +21,16 @@ export type CreateStandaloneFinancialEntryResult =
  * Gate de autenticação + gate de assinatura ANTES de ler o payload (T-10-09: a RLS
  * `to authenticated` não impõe assinatura). O valor em reais e a data mascarada são
  * validados aqui, no boundary, pelo schema (T-10-10) — o módulo recebe centavos e ISO.
- * O `profile_id` é estampado a partir da sessão e o `case_id` é sempre nulo.
+ * O `profile_id` é estampado a partir da sessão e o `case_id` é nulo — salvo quando
+ * `caseId` vem preenchido: aí é um lançamento EXTRA num caso (novo procedimento depois
+ * do encerramento, por exemplo), e a posse do caso é verificada antes de gravar, porque
+ * a RLS de financial_entries não olha para public.cases (T-10-23). Não passa pela guarda
+ * D-10 de "caso já faturado": ela protege o fluxo de encerramento, que relança consulta
+ * + procedimentos em bloco; aqui é uma linha só, pedida de propósito.
  */
 export async function createStandaloneFinancialEntryAction(
   data: StandaloneFinancialEntryFormValues,
+  caseId?: string,
 ): Promise<CreateStandaloneFinancialEntryResult> {
   const supabase = await createClient()
   const { profile } = await getAuthenticatedUser(supabase)
@@ -40,9 +47,15 @@ export async function createStandaloneFinancialEntryAction(
   }
 
   try {
+    let ownedCaseId: string | null = null
+    if (caseId != null) {
+      ownedCaseId = await findOwnedCaseId(supabase, caseId, profile.id)
+      if (!ownedCaseId) return { ok: false, error: "Caso inválido para este perfil." }
+    }
+
     const ids = await createFinancialEntries(supabase, profile.id, [
       {
-        case_id: null,
+        case_id: ownedCaseId,
         description: parsed.data.description,
         amount_cents: parsed.data.amount,
         payment_method: parsed.data.payment_method,
@@ -54,6 +67,7 @@ export async function createStandaloneFinancialEntryAction(
       return { ok: false, error: "Não foi possível registrar o lançamento. Tente novamente." }
 
     revalidatePath("/dashboard/earnings")
+    if (ownedCaseId) revalidatePath(`/dashboard/cases/${ownedCaseId}`)
     return { ok: true, entryId }
   } catch (e) {
     const message =

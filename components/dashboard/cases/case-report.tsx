@@ -93,7 +93,6 @@ type CaseReportProps = {
   hasMessages: boolean
   patientName: string
   /** When true, "Gerar relatório" is shown only in the case toolbar; this block lists/edits only. */
-  suppressInternalGenerateButtons?: boolean
 }
 
 function sortSections(sections: CaseReportSection[] | null | undefined): CaseReportSection[] {
@@ -237,7 +236,6 @@ export function CaseReport({
   caseId,
   hasMessages,
   patientName,
-  suppressInternalGenerateButtons = false,
 }: CaseReportProps) {
   const router = useRouter()
   const [selectedReportId, setSelectedReportId] = useState<string | null>(null)
@@ -474,33 +472,6 @@ export function CaseReport({
   )
 
   if (caseReports.length === 0) {
-    if (suppressInternalGenerateButtons) {
-      return (
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-base font-medium">
-              <Sparkles className="h-4 w-4 text-primary" />
-              Relatório do atendimento
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-border px-6 py-12 text-center">
-              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-muted">
-                <FileText className="h-6 w-6 text-muted-foreground" aria-hidden />
-              </div>
-              <p className="mt-4 font-medium text-muted-foreground">
-                Nenhum relatório gerado para este caso
-              </p>
-              <p className="mt-1 max-w-sm text-sm text-muted-foreground/80">
-                Use o botão &quot;Gerar relatório&quot; acima para criar o relatório a partir do
-                histórico de mensagens.
-              </p>
-            </div>
-          </CardContent>
-        </Card>
-      )
-    }
-
     return (
       <Card>
         <CardHeader>
@@ -510,33 +481,44 @@ export function CaseReport({
           </CardTitle>
         </CardHeader>
         <CardContent>
-          {canGenerateReport ? (
-            <Button
-              onClick={handleGenerateReport}
-              disabled={isGenerating}
-            >
-              {isGenerating ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                <Sparkles className="h-4 w-4" />
-              )}
-              <span className="ml-1.5">Gerar relatório</span>
-            </Button>
-          ) : (
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <span className="inline-block">
-                  <Button disabled>
+          {/* Estado vazio no mesmo desenho dos documentos do caso, com o botão no centro. */}
+          <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-border px-6 py-12 text-center">
+            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-muted">
+              <FileText className="h-6 w-6 text-muted-foreground" aria-hidden />
+            </div>
+            <p className="mt-4 font-medium text-muted-foreground">
+              Nenhum relatório gerado para este caso
+            </p>
+            <p className="mt-1 max-w-sm text-sm text-muted-foreground/80">
+              O relatório é montado pela IA a partir do histórico da consulta e do seu modelo.
+            </p>
+            <div className="mt-5">
+              {canGenerateReport ? (
+                <Button onClick={handleGenerateReport} disabled={isGenerating}>
+                  {isGenerating ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
                     <Sparkles className="h-4 w-4" />
-                    <span className="ml-1.5">Gerar relatório</span>
-                  </Button>
-                </span>
-              </TooltipTrigger>
-              <TooltipContent>
-                {generateDisabledReason ?? "Informações insuficientes para gerar o relatório."}
-              </TooltipContent>
-            </Tooltip>
-          )}
+                  )}
+                  <span className="ml-1.5">Gerar relatório</span>
+                </Button>
+              ) : (
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <span className="inline-block">
+                      <Button disabled>
+                        <Sparkles className="h-4 w-4" />
+                        <span className="ml-1.5">Gerar relatório</span>
+                      </Button>
+                    </span>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    {generateDisabledReason ?? "Informações insuficientes para gerar o relatório."}
+                  </TooltipContent>
+                </Tooltip>
+              )}
+            </div>
+          </div>
         </CardContent>
       </Card>
     )
@@ -550,7 +532,7 @@ export function CaseReport({
             <Sparkles className="h-4 w-4 text-primary" />
             Relatório do atendimento
           </CardTitle>
-          {canGenerateReport && !suppressInternalGenerateButtons ? (
+          {canGenerateReport ? (
             <Button
               onClick={handleGenerateReport}
               disabled={isGenerating}

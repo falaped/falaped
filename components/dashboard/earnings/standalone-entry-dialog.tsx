@@ -39,6 +39,10 @@ import { SegmentedToggle } from "@/components/segmented-toggle"
 type StandaloneEntryDialogProps = {
   /** Hoje no fuso da clínica, já formatado dd/MM/yyyy pelo RSC — o cliente nunca deriva datas. */
   todayLabel: string
+  /** Quando presente, o lançamento fica vinculado a este caso em vez de avulso. */
+  caseId?: string
+  triggerVariant?: "default" | "outline"
+  triggerSize?: "default" | "sm"
 }
 
 /**
@@ -49,7 +53,12 @@ type StandaloneEntryDialogProps = {
  * clique no backdrop são bloqueados para que dinheiro digitado não seja descartado em
  * silêncio; o `Cancelar` do rodapé é a saída explícita que descarta.
  */
-export function StandaloneEntryDialog({ todayLabel }: StandaloneEntryDialogProps) {
+export function StandaloneEntryDialog({
+  todayLabel,
+  caseId,
+  triggerVariant = "default",
+  triggerSize = "default",
+}: StandaloneEntryDialogProps) {
   const router = useRouter()
   const [open, setOpen] = useState(false)
   const [isPending, startTransition] = useTransition()
@@ -86,7 +95,7 @@ export function StandaloneEntryDialog({ todayLabel }: StandaloneEntryDialogProps
   const onSubmit = form.handleSubmit(() => {
     const raw = form.getValues()
     startTransition(async () => {
-      const result = await createStandaloneFinancialEntryAction(raw)
+      const result = await createStandaloneFinancialEntryAction(raw, caseId)
       if (!result.ok) {
         toast.error(getFriendlyToastMessage(result.error))
         return
@@ -103,7 +112,9 @@ export function StandaloneEntryDialog({ todayLabel }: StandaloneEntryDialogProps
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger asChild>
-        <Button>Novo lançamento</Button>
+        <Button variant={triggerVariant} size={triggerSize}>
+          Novo lançamento
+        </Button>
       </DialogTrigger>
       <DialogContent
         className="sm:max-w-lg"
@@ -117,7 +128,9 @@ export function StandaloneEntryDialog({ todayLabel }: StandaloneEntryDialogProps
         <DialogHeader>
           <DialogTitle>Novo lançamento</DialogTitle>
           <DialogDescription>
-            Registre um valor recebido que não veio de um caso.
+            {caseId
+              ? "Registre um valor recebido neste atendimento."
+              : "Registre um valor recebido que não veio de um caso."}
           </DialogDescription>
         </DialogHeader>
 
@@ -129,7 +142,7 @@ export function StandaloneEntryDialog({ todayLabel }: StandaloneEntryDialogProps
                 id="entry-description"
                 type="text"
                 autoComplete="off"
-                placeholder="ex.: Consulta particular sem caso"
+                placeholder={caseId ? "ex.: Nebulização" : "ex.: Consulta particular sem caso"}
                 {...form.register("description")}
               />
               <FieldError

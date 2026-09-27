@@ -1,9 +1,19 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import {
+  Card,
+  CardAction,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card"
 import { EarningsTable } from "@/components/dashboard/earnings/earnings-table"
+import { StandaloneEntryDialog } from "@/components/dashboard/earnings/standalone-entry-dialog"
 import { formatCentsToBRL } from "@/lib/formatters"
 import type { FinancialEntryListRow } from "@/modules/financial-entries/list-financial-entries"
 
 type CaseEarningsCardProps = {
+  caseId: string
+  /** Hoje no fuso da clínica, formatado no RSC — o cliente nunca deriva datas. */
+  todayLabel: string
   /** Os lançamentos do caso, anulados INCLUSOS e já ordenados pelo SQL. */
   entries: FinancialEntryListRow[]
   /** Contagem e soma dos NÃO-anulados, somados no servidor (10-04). */
@@ -31,6 +41,8 @@ type CaseEarningsCardProps = {
  * depois de anulações faria o card crescer sem limite dentro da página de detalhe.
  */
 export function CaseEarningsCard({
+  caseId,
+  todayLabel,
   entries,
   count,
   totalCents,
@@ -39,6 +51,14 @@ export function CaseEarningsCard({
     <Card>
       <CardHeader>
         <CardTitle>Ganhos deste atendimento</CardTitle>
+        <CardAction>
+          <StandaloneEntryDialog
+            todayLabel={todayLabel}
+            caseId={caseId}
+            triggerVariant="outline"
+            triggerSize="sm"
+          />
+        </CardAction>
       </CardHeader>
       <div className="max-h-64 overflow-y-auto">
         <EarningsTable entries={entries} hideCaseLink />
