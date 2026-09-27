@@ -111,6 +111,7 @@ export function CaseDetailDocuments({
         <CardDescription>
           Receitas e atestados vinculados a este atendimento.
         </CardDescription>
+        {createButtons}
       </CardHeader>
       <CardContent className="space-y-6">
         {prescriptions.length > 0 ? (
