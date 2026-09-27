@@ -13,6 +13,13 @@ import {
 } from "lucide-react"
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet"
 import { cn } from "@/lib/utils"
 
 // Componentes de ícone não atravessam a fronteira RSC → cliente; o RSC manda o nome.
@@ -26,6 +33,19 @@ const ICONS = {
   earnings: CoinsIcon,
 } as const
 
+// Largura do drawer por seção: relatório e exames mostram páginas/texto longo,
+// os demais são listas curtas. Mesmo prefixo de variante do Sheet para o
+// tailwind-merge substituir o `sm:max-w-sm` padrão.
+const WIDTHS = {
+  report: "data-[side=right]:sm:max-w-5xl",
+  exams: "data-[side=right]:sm:max-w-5xl",
+  documents: "data-[side=right]:sm:max-w-2xl",
+  attachments: "data-[side=right]:sm:max-w-2xl",
+  reminders: "data-[side=right]:sm:max-w-2xl",
+  scales: "data-[side=right]:sm:max-w-2xl",
+  earnings: "data-[side=right]:sm:max-w-2xl",
+} satisfies Record<keyof typeof ICONS, string>
+
 export type CaseSection = {
   key: keyof typeof ICONS
   title: string
@@ -36,7 +56,7 @@ export type CaseSection = {
 
 /**
  * Grade de cards no visual do menu de serviços; clicar num card abre o
- * conteúdo dele logo abaixo da grade (um por vez, clicar de novo fecha).
+ * conteúdo dele num drawer à direita.
  */
 export function CaseSectionCards({ sections }: { sections: CaseSection[] }) {
   const [openKey, setOpenKey] = useState<string | null>(null)
@@ -53,8 +73,9 @@ export function CaseSectionCards({ sections }: { sections: CaseSection[] }) {
               key={section.key}
               type="button"
               className="group h-full text-left"
+              aria-haspopup="dialog"
               aria-expanded={isOpen}
-              onClick={() => setOpenKey(isOpen ? null : section.key)}
+              onClick={() => setOpenKey(section.key)}
             >
               <Card
                 className={cn(
@@ -74,7 +95,17 @@ export function CaseSectionCards({ sections }: { sections: CaseSection[] }) {
           )
         })}
       </div>
-      {open ? <div className="animate-fade-in">{open.content}</div> : null}
+      <Sheet open={open != null} onOpenChange={(next) => !next && setOpenKey(null)}>
+        {open ? (
+          <SheetContent className={cn("w-full overflow-y-auto", WIDTHS[open.key])}>
+            <SheetHeader className="pr-12">
+              <SheetTitle>{open.title}</SheetTitle>
+              <SheetDescription>{open.description}</SheetDescription>
+            </SheetHeader>
+            <div className="px-4 pb-4">{open.content}</div>
+          </SheetContent>
+        ) : null}
+      </Sheet>
     </div>
   )
 }
