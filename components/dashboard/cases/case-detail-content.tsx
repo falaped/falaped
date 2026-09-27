@@ -233,6 +233,22 @@ export async function CaseDetailContent({ id }: { id: string }) {
       ),
     },
     ...patientSections,
+    ...(caseEntries.length > 0 && earningsTotals != null
+      ? [
+          {
+            key: "earnings" as const,
+            title: "Ganhos deste atendimento",
+            description: "Lançamentos financeiros vinculados a este caso.",
+            content: (
+              <CaseEarningsCard
+                entries={caseEntries}
+                count={earningsTotals.count}
+                totalCents={earningsTotals.totalCents}
+              />
+            ),
+          },
+        ]
+      : []),
   ]
 
   return (
@@ -255,13 +271,6 @@ export async function CaseDetailContent({ id }: { id: string }) {
           caseReports={caseReports.map((r) => ({ source: r.source }))}
         />
       </section>
-      {caseEntries.length > 0 && earningsTotals != null ? (
-        <CaseEarningsCard
-          entries={caseEntries}
-          count={earningsTotals.count}
-          totalCents={earningsTotals.totalCents}
-        />
-      ) : null}
       {/* Caso encerrado sem lançamento não-anulado E com a pergunta ainda em aberto:
           convida a lançar. Ancorado no ESTADO e não no evento de encerramento, porque
           três dos quatro caminhos que encerram um caso rodam no servidor (assistente,

@@ -4,6 +4,7 @@ import { useState } from "react"
 import type { ReactNode } from "react"
 import {
   ClipboardListIcon,
+  CoinsIcon,
   FolderOpenIcon,
   MicroscopeIcon,
   NotebookPenIcon,
@@ -22,6 +23,7 @@ const ICONS = {
   scales: ClipboardListIcon,
   attachments: PaperclipIcon,
   exams: MicroscopeIcon,
+  earnings: CoinsIcon,
 } as const
 
 export type CaseSection = {
