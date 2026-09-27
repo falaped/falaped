@@ -1,3 +1,4 @@
+import Link from "next/link"
 import {
   AlertTriangleIcon,
   BabyIcon,
@@ -57,8 +58,6 @@ type CaseDetailHeaderProps = {
   /** Lançamentos não-anulados do caso; `null` = a leitura falhou (S7 bloqueia). */
   earningsCount: number | null
   earningsTotalCents: number | null
-  /** Hoje no fuso da clínica, formatado no RSC — o cliente nunca deriva datas. */
-  todayLabel: string
 }
 
 export function CaseDetailHeader({
@@ -66,7 +65,6 @@ export function CaseDetailHeader({
   photoUrl,
   earningsCount,
   earningsTotalCents,
-  todayLabel,
 }: CaseDetailHeaderProps) {
   const title = getCaseTitle(detail)
 
@@ -110,7 +108,19 @@ export function CaseDetailHeader({
           </Avatar>
           <div className="min-w-0 flex-1">
             <div className="flex flex-wrap items-center gap-2">
-              <h1 className="text-2xl font-semibold tracking-tight">{title}</h1>
+              <h1 className="text-2xl font-semibold tracking-tight">
+                {patient ? (
+                  <Link
+                    href={`/dashboard/patients/${patient.id}`}
+                    className="underline-offset-4 hover:underline"
+                    title="Ver ficha do paciente"
+                  >
+                    {title}
+                  </Link>
+                ) : (
+                  title
+                )}
+              </h1>
               <StatusBadge status={detail.status} />
             </div>
             <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1.5 text-sm text-muted-foreground">
@@ -181,7 +191,6 @@ export function CaseDetailHeader({
           origin={detail.origin}
           earningsCount={earningsCount}
           earningsTotalCents={earningsTotalCents}
-          todayLabel={todayLabel}
         />
       </div>
 

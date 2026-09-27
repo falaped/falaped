@@ -14,21 +14,11 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
 import { deleteCaseAction } from "@/actions"
-import { ReopenCaseDialog } from "@/components/dashboard/cases/reopen-case-dialog"
 import { formatCentsToBRL } from "@/lib/formatters"
-import { cn } from "@/lib/utils"
-import { LockIcon, UnlockIcon, Trash2Icon } from "lucide-react"
+import { Trash2Icon } from "lucide-react"
 
 type CaseDetailActionsProps = {
   caseId: string
-  status: "active" | "closed"
-  /** Vertical stack for popover / narrow menus. */
-  layout?: "inline" | "menu"
-  /**
-   * Abre o fluxo de encerramento, que vive FORA deste componente: o diálogo é irmão do
-   * popover, porque `PopoverContent` desmonta ao fechar e levaria o form com ele.
-   */
-  onRequestCloseCase?: () => void
   /**
    * Lançamentos NÃO-anulados do caso e quanto somam. `> 0` = aviso do que a exclusão vai
    * APAGAR junto (a FK é `on delete cascade`). `null` = a leitura falhou, e aí a exclusão
@@ -38,17 +28,14 @@ type CaseDetailActionsProps = {
   earningsTotalCents?: number | null
 }
 
+/** Excluir caso: o único destrutivo do cabeçalho; encerrar/reabrir vivem no card de status. */
 export function CaseDetailActions({
   caseId,
-  status,
-  layout = "inline",
-  onRequestCloseCase,
   earningsCount = 0,
   earningsTotalCents = 0,
 }: CaseDetailActionsProps) {
   const router = useRouter()
   const [isPendingDelete, startTransitionDelete] = useTransition()
-  const [reopenOpen, setReopenOpen] = useState(false)
   const [deleteOpen, setDeleteOpen] = useState(false)
   const [deleteError, setDeleteError] = useState<string | null>(null)
 
@@ -65,8 +52,6 @@ export function CaseDetailActions({
     })
   }
 
-  const menu = layout === "menu"
-
   // `financial_entries.case_id` é `on delete cascade`: apagar o caso APAGA os lançamentos
   // dele. Então este bloco não bloqueia mais — ele AVISA o que vai ser destruído, porque
   // é irreversível e sai dos totais do painel, inclusive de meses já fechados.
@@ -78,49 +63,11 @@ export function CaseDetailActions({
   const hasEarnings = earningsCount !== null && earningsCount > 0
 
   return (
-    <div
-      className={cn(
-        menu ? "flex w-full flex-col gap-2" : "flex flex-wrap items-center gap-2",
-      )}
-    >
-      {status === "active" ? (
-        <Button
-          variant="outline"
-          size="sm"
-          className={cn("gap-2", menu && "w-full justify-start")}
-          onClick={onRequestCloseCase}
-        >
-          <LockIcon className="h-4 w-4" />
-          Encerrar caso
-        </Button>
-      ) : (
-        <>
-          <Button
-            variant="outline"
-            size="sm"
-            className={cn("gap-2", menu && "w-full justify-start")}
-            onClick={() => setReopenOpen(true)}
-          >
-            <UnlockIcon className="h-4 w-4" />
-            Reabrir caso
-          </Button>
-          <ReopenCaseDialog
-            caseId={caseId}
-            open={reopenOpen}
-            onOpenChange={setReopenOpen}
-          />
-        </>
-      )}
-
       <AlertDialog open={deleteOpen} onOpenChange={(open) => { setDeleteOpen(open); if (!open) setDeleteError(null); }}>
         <AlertDialogTrigger asChild>
           <Button
             variant="outline"
-            size="sm"
-            className={cn(
-              "gap-2 text-destructive hover:bg-destructive/10 hover:text-destructive",
-              menu && "w-full justify-start",
-            )}
+            className="gap-2 text-destructive hover:bg-destructive/10 hover:text-destructive"
             disabled={isPendingDelete}
           >
             <Trash2Icon className="h-4 w-4" />
@@ -179,6 +126,5 @@ export function CaseDetailActions({
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </div>
   )
 }

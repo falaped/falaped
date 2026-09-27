@@ -20,13 +20,6 @@ export function CaseDetailLoading() {
         </div>
       </div>
 
-      <div className="flex flex-wrap gap-2">
-        <Skeleton className="h-10 w-44 rounded-md" />
-        <Skeleton className="h-10 w-40 rounded-md" />
-        <Skeleton className="h-10 w-40 rounded-md" />
-        <Skeleton className="h-10 w-36 rounded-md" />
-      </div>
-
       <div className="space-y-3">
         <Skeleton className="h-7 w-56" />
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">

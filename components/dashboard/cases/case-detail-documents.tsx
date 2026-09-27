@@ -1,9 +1,10 @@
 import Link from "next/link"
-import { Download, FileCheck, FolderOpen, Pill } from "lucide-react"
+import { Download, FileCheck, FileTextIcon, FolderOpen, Pill } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import {
   Card,
+  CardAction,
   CardContent,
   CardDescription,
   CardHeader,
@@ -24,15 +25,48 @@ const CERTIFICATE_TYPE_LABELS: Record<MedicalCertificateType, string> = {
 }
 
 type CaseDetailDocumentsProps = {
+  caseId: string
+  /** Sem paciente não há como emitir documento: os botões de criar somem. */
+  patientId: string | null
   certificates: MedicalCertificateListItem[]
   prescriptions: PrescriptionListItem[]
 }
 
+function CreateDocumentButtons({
+  caseId,
+  patientId,
+}: {
+  caseId: string
+  patientId: string | null
+}) {
+  if (!patientId) return null
+  const query = new URLSearchParams({ caseId, patientId }).toString()
+  return (
+    <CardAction className="flex flex-wrap gap-2">
+      <Button variant="outline" size="sm" className="gap-1.5" asChild>
+        <Link href={`/dashboard/medical-certificates/new?${query}`}>
+          <FileTextIcon className="size-4" aria-hidden />
+          Novo atestado
+        </Link>
+      </Button>
+      <Button variant="outline" size="sm" className="gap-1.5" asChild>
+        <Link href={`/dashboard/prescriptions/new?${query}`}>
+          <Pill className="size-4" aria-hidden />
+          Nova receita
+        </Link>
+      </Button>
+    </CardAction>
+  )
+}
+
 export function CaseDetailDocuments({
+  caseId,
+  patientId,
   certificates,
   prescriptions,
 }: CaseDetailDocumentsProps) {
   const hasAny = certificates.length > 0 || prescriptions.length > 0
+  const createButtons = <CreateDocumentButtons caseId={caseId} patientId={patientId} />
 
   if (!hasAny) {
     return (
@@ -44,6 +78,7 @@ export function CaseDetailDocuments({
           <CardDescription>
             Receitas e atestados gerados a partir deste atendimento aparecem aqui.
           </CardDescription>
+          {createButtons}
         </CardHeader>
         <CardContent>
           <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-border px-6 py-12 text-center">
@@ -57,8 +92,9 @@ export function CaseDetailDocuments({
               Nenhum documento vinculado a este caso
             </p>
             <p className="mt-1 max-w-sm text-sm text-muted-foreground/80">
-              Use os botões acima para criar uma nova receita ou atestado; eles serão
-              associados a este atendimento.
+              {patientId
+                ? "Use os botões acima para criar uma nova receita ou atestado; eles serão associados a este atendimento."
+                : "Associe um paciente ao caso para emitir receita ou atestado."}
             </p>
           </div>
         </CardContent>

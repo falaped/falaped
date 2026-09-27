@@ -24,7 +24,6 @@ import { getPreviousCaseCarryover } from "@/modules/cases/get-previous-case-carr
 import { listCaseReminders } from "@/modules/cases/list-case-reminders"
 import { computePediatricAge } from "@/lib/compute-pediatric-age"
 import { CaseDetailHeader } from "@/components/dashboard/cases/case-detail-header"
-import { CaseDetailQuickActions } from "@/components/dashboard/cases/case-detail-quick-actions"
 import { CaseDetailDocuments } from "@/components/dashboard/cases/case-detail-documents"
 import { CaseSectionCards, type CaseSection } from "@/components/dashboard/cases/case-section-cards"
 import { CaseStatusCard } from "@/components/dashboard/cases/case-status-card"
@@ -143,7 +142,6 @@ export async function CaseDetailContent({ id }: { id: string }) {
           ).catch(() => null)
         })()
       : null
-  const templateSectionCount = template?.sections?.length ?? 0
 
   const reportBlock =
     template != null ? (
@@ -153,7 +151,6 @@ export async function CaseDetailContent({ id }: { id: string }) {
         caseId={id}
         hasMessages={messages.length > 0}
         patientName={caseDetail.patient?.name ?? "Paciente não associado"}
-        suppressInternalGenerateButtons
       />
     ) : (
       <div className="rounded-xl border border-dashed border-border p-6 text-center text-sm text-muted-foreground">
@@ -223,6 +220,8 @@ export async function CaseDetailContent({ id }: { id: string }) {
       description: "Receitas e atestados deste atendimento.",
       content: (
         <CaseDetailDocuments
+          caseId={id}
+          patientId={caseDetail.patient?.id ?? null}
           certificates={caseCertificates}
           prescriptions={casePrescriptions}
         />
@@ -263,15 +262,6 @@ export async function CaseDetailContent({ id }: { id: string }) {
         photoUrl={casePhotoUrl}
         earningsCount={earningsTotals?.count ?? null}
         earningsTotalCents={earningsTotals?.totalCents ?? null}
-        todayLabel={todayLabel}
-      />
-      <CaseDetailQuickActions
-        caseId={id}
-        patient={caseDetail.patient}
-        hasMessages={messages.length > 0}
-        templateSectionCount={templateSectionCount}
-        hasTemplate={template != null}
-        caseReports={caseReports.map((r) => ({ source: r.source }))}
       />
       {/* Caso encerrado sem lançamento não-anulado E com a pergunta ainda em aberto:
           convida a lançar. Ancorado no ESTADO e não no evento de encerramento, porque
