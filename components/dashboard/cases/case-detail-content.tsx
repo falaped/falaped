@@ -27,6 +27,7 @@ import { CaseDetailHeader } from "@/components/dashboard/cases/case-detail-heade
 import { CaseDetailQuickActions } from "@/components/dashboard/cases/case-detail-quick-actions"
 import { CaseDetailDocuments } from "@/components/dashboard/cases/case-detail-documents"
 import { CaseSectionCards, type CaseSection } from "@/components/dashboard/cases/case-section-cards"
+import { CaseStatusCard } from "@/components/dashboard/cases/case-status-card"
 import { CaseEarningsCard } from "@/components/dashboard/cases/case-earnings-card"
 import { CasePendingEarningsCard } from "@/components/dashboard/cases/case-pending-earnings-card"
 import { caseDetailMainStackClassName } from "@/components/dashboard/cases/case-detail-workspace"
@@ -288,7 +289,16 @@ export async function CaseDetailContent({ id }: { id: string }) {
       ) : null}
       <section className="flex flex-col gap-3">
         <h2 className="text-lg font-semibold tracking-tight">Registros do atendimento</h2>
-        <CaseSectionCards sections={sections} />
+        <CaseSectionCards
+          sections={sections}
+          leading={
+            <CaseStatusCard
+              caseId={id}
+              status={caseDetail.status}
+              todayLabel={todayLabel}
+            />
+          }
+        />
       </section>
       {previousCarryover && caseDetail.patient ? (
         <PreviousCaseSummaryDialog

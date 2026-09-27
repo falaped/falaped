@@ -58,13 +58,21 @@ export type CaseSection = {
  * Grade de cards no visual do menu de serviços; clicar num card abre o
  * conteúdo dele num drawer à direita.
  */
-export function CaseSectionCards({ sections }: { sections: CaseSection[] }) {
+export function CaseSectionCards({
+  sections,
+  leading,
+}: {
+  sections: CaseSection[]
+  /** Card extra na primeira posição da grade (ex.: encerrar/reabrir). */
+  leading?: ReactNode
+}) {
   const [openKey, setOpenKey] = useState<string | null>(null)
   const open = sections.find((section) => section.key === openKey) ?? null
 
   return (
     <div className="flex flex-col gap-4">
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        {leading}
         {sections.map((section) => {
           const Icon = ICONS[section.key]
           const isOpen = section.key === openKey

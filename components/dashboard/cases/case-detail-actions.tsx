@@ -5,7 +5,6 @@ import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import {
   AlertDialog,
-  AlertDialogAction,
   AlertDialogCancel,
   AlertDialogContent,
   AlertDialogDescription,
@@ -14,7 +13,8 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
-import { updateCaseStatusAction, deleteCaseAction } from "@/actions"
+import { deleteCaseAction } from "@/actions"
+import { ReopenCaseDialog } from "@/components/dashboard/cases/reopen-case-dialog"
 import { formatCentsToBRL } from "@/lib/formatters"
 import { cn } from "@/lib/utils"
 import { LockIcon, UnlockIcon, Trash2Icon } from "lucide-react"
@@ -47,18 +47,10 @@ export function CaseDetailActions({
   earningsTotalCents = 0,
 }: CaseDetailActionsProps) {
   const router = useRouter()
-  const [isPendingStatus, startTransitionStatus] = useTransition()
   const [isPendingDelete, startTransitionDelete] = useTransition()
   const [reopenOpen, setReopenOpen] = useState(false)
   const [deleteOpen, setDeleteOpen] = useState(false)
   const [deleteError, setDeleteError] = useState<string | null>(null)
-
-  function handleReopenCase() {
-    startTransitionStatus(async () => {
-      const result = await updateCaseStatusAction(caseId, "active")
-      if (result.ok) setReopenOpen(false)
-    })
-  }
 
   function handleDeleteCase() {
     setDeleteError(null)
@@ -96,41 +88,28 @@ export function CaseDetailActions({
           variant="outline"
           size="sm"
           className={cn("gap-2", menu && "w-full justify-start")}
-          disabled={isPendingStatus}
           onClick={onRequestCloseCase}
         >
           <LockIcon className="h-4 w-4" />
           Encerrar caso
         </Button>
       ) : (
-        <AlertDialog open={reopenOpen} onOpenChange={setReopenOpen}>
-          <AlertDialogTrigger asChild>
-            <Button
-              variant="outline"
-              size="sm"
-              className={cn("gap-2", menu && "w-full justify-start")}
-              disabled={isPendingStatus}
-            >
-              <UnlockIcon className="h-4 w-4" />
-              Reabrir caso
-            </Button>
-          </AlertDialogTrigger>
-          <AlertDialogContent>
-            <AlertDialogHeader>
-              <AlertDialogTitle>Reabrir este caso?</AlertDialogTitle>
-              <AlertDialogDescription>
-                Ao reabrir este caso, o outro caso ativo (se houver) será
-                encerrado. Deseja continuar?
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel>Cancelar</AlertDialogCancel>
-              <AlertDialogAction onClick={handleReopenCase}>
-                Reabrir
-              </AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
+        <>
+          <Button
+            variant="outline"
+            size="sm"
+            className={cn("gap-2", menu && "w-full justify-start")}
+            onClick={() => setReopenOpen(true)}
+          >
+            <UnlockIcon className="h-4 w-4" />
+            Reabrir caso
+          </Button>
+          <ReopenCaseDialog
+            caseId={caseId}
+            open={reopenOpen}
+            onOpenChange={setReopenOpen}
+          />
+        </>
       )}
 
       <AlertDialog open={deleteOpen} onOpenChange={(open) => { setDeleteOpen(open); if (!open) setDeleteError(null); }}>

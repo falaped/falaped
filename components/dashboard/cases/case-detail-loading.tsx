@@ -30,7 +30,7 @@ export function CaseDetailLoading() {
       <div className="space-y-3">
         <Skeleton className="h-7 w-56" />
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          {Array.from({ length: 7 }).map((_, i) => (
+          {Array.from({ length: 8 }).map((_, i) => (
             <Skeleton key={i} className="h-28 rounded-xl" />
           ))}
         </div>
