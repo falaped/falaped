@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import Link from "next/link"
-import { MoreHorizontal } from "lucide-react"
+import { MessageSquareIcon, MoreHorizontal } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import {
@@ -12,10 +12,12 @@ import {
 } from "@/components/ui/popover"
 import { CaseDetailActions } from "@/components/dashboard/cases/case-detail-actions"
 import { CloseCaseWithEarningsDialog } from "@/components/dashboard/cases/close-case-with-earnings-dialog"
+import type { CaseOrigin } from "@/modules/cases/types"
 
 type CaseDetailHeaderToolbarProps = {
   caseId: string
   status: "active" | "closed"
+  origin: CaseOrigin
   /** Lançamentos não-anulados do caso; `null` = a leitura falhou (S7 bloqueia). */
   earningsCount: number | null
   earningsTotalCents: number | null
@@ -26,6 +28,7 @@ type CaseDetailHeaderToolbarProps = {
 export function CaseDetailHeaderToolbar({
   caseId,
   status,
+  origin,
   earningsCount,
   earningsTotalCents,
   todayLabel,
@@ -38,6 +41,15 @@ export function CaseDetailHeaderToolbar({
       <Button variant="outline" asChild>
         <Link href="/dashboard/cases">Voltar</Link>
       </Button>
+      {/* Só o atendimento em curso conduzido no painel tem workspace para retomar. */}
+      {status === "active" && origin === "dashboard" ? (
+        <Button asChild className="gap-2">
+          <Link href={`/dashboard/cases/new/${caseId}`}>
+            <MessageSquareIcon className="h-4 w-4" aria-hidden />
+            Retomar atendimento
+          </Link>
+        </Button>
+      ) : null}
       <Popover open={actionsOpen} onOpenChange={setActionsOpen}>
         <PopoverTrigger asChild>
           <Button

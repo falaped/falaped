@@ -11,7 +11,6 @@ import { getCaseReports } from "@/modules/cases/get-case-report"
 import { getReportTemplateById } from "@/modules/report-templates/get-report-template-by-id"
 import { getDefaultReportTemplate } from "@/modules/report-templates/get-default-report-template"
 import { normalizeReportTemplateSections } from "@/modules/report-templates/fixed-template-sections"
-import { formatDashboardChatContextSummaryForDisplay } from "@/modules/dashboard/format-dashboard-chat-context-summary-for-display"
 import { getMedicalCertificatesByCaseId } from "@/modules/medical-certificates/get-medical-certificates-by-case-id"
 import { getPrescriptionsByCaseId } from "@/modules/prescriptions/get-prescriptions-by-case-id"
 import { getCaseEarningsTotals } from "@/modules/financial-entries/get-case-earnings-totals"
@@ -24,13 +23,19 @@ import { getPhoneByProfileId } from "@/modules/authenticated-users/get-phone-by-
 import { getPreviousCaseCarryover } from "@/modules/cases/get-previous-case-carryover"
 import { listCaseReminders } from "@/modules/cases/list-case-reminders"
 import { computePediatricAge } from "@/lib/compute-pediatric-age"
-import { Separator } from "@/components/ui/separator"
-import { CaseDetailCommandStrip } from "@/components/dashboard/cases/case-detail-command-strip"
+import {
+  ClipboardListIcon,
+  FolderOpenIcon,
+  MicroscopeIcon,
+  NotebookPenIcon,
+  PaperclipIcon,
+  SparklesIcon,
+} from "lucide-react"
+
 import { CaseDetailHeader } from "@/components/dashboard/cases/case-detail-header"
 import { CaseDetailQuickActions } from "@/components/dashboard/cases/case-detail-quick-actions"
 import { CaseDetailDocuments } from "@/components/dashboard/cases/case-detail-documents"
-import { CasePatientBlock } from "@/components/dashboard/cases/case-patient-block"
-import { CaseDetailStateCard } from "@/components/dashboard/cases/case-detail-state-card"
+import { CaseSectionCards, type CaseSection } from "@/components/dashboard/cases/case-section-cards"
 import { CaseEarningsCard } from "@/components/dashboard/cases/case-earnings-card"
 import { CasePendingEarningsCard } from "@/components/dashboard/cases/case-pending-earnings-card"
 import { caseDetailMainStackClassName } from "@/components/dashboard/cases/case-detail-workspace"
@@ -118,20 +123,6 @@ export async function CaseDetailContent({ id }: { id: string }) {
       : null
 
   const messages = caseDetail.messages
-  const lastMessage =
-    messages.length > 0 ? messages[messages.length - 1] : null
-  const rawDashboardSummary =
-    caseDetail.dashboard_chat_context_summary?.trim() ?? ""
-  const contextSummaryDisplay =
-    caseDetail.origin === "dashboard"
-      ? formatDashboardChatContextSummaryForDisplay(
-          caseDetail.dashboard_chat_context_summary,
-        )
-      : null
-  const clinicalSummaryDisplayUnavailable =
-    caseDetail.origin === "dashboard" &&
-    rawDashboardSummary.length > 0 &&
-    contextSummaryDisplay == null
 
   // Idade em meses inteiros da criança deste caso: filtra quais escalas são
   // oferecidas. Sem paciente associado, não há escala a aplicar.
@@ -178,72 +169,14 @@ export async function CaseDetailContent({ id }: { id: string }) {
       </div>
     )
 
-  return (
-    <div className={caseDetailMainStackClassName}>
-      <CaseDetailHeader
-        detail={caseDetail}
-        earningsCount={earningsTotals?.count ?? null}
-        earningsTotalCents={earningsTotals?.totalCents ?? null}
-        todayLabel={todayLabel}
-      />
-      <CasePatientBlock patient={caseDetail.patient} photoUrl={casePhotoUrl} />
-      <Separator />
-      <CaseDetailCommandStrip
-        caseId={id}
-        status={caseDetail.status}
-        origin={caseDetail.origin}
-      />
-      <div>
-        <CaseDetailQuickActions
-          caseId={id}
-          patient={caseDetail.patient}
-          hasMessages={messages.length > 0}
-          templateSectionCount={templateSectionCount}
-          hasTemplate={template != null}
-          caseReports={caseReports.map((r) => ({ source: r.source }))}
-        />
-      </div>
-      <div className="flex flex-col gap-6">
-        <CaseDetailStateCard
-          startedAt={caseDetail.started_at}
-          isActive={isActive}
-          messageCount={messages.length}
-          lastMessageAt={lastMessage?.created_at ?? null}
-          contextSummaryDisplay={contextSummaryDisplay}
-          clinicalSummaryDisplayUnavailable={clinicalSummaryDisplayUnavailable}
-        />
-        {caseEntries.length > 0 && earningsTotals != null ? (
-          <CaseEarningsCard
-            entries={caseEntries}
-            count={earningsTotals.count}
-            totalCents={earningsTotals.totalCents}
-          />
-        ) : null}
-        {/* Caso encerrado sem lançamento não-anulado E com a pergunta ainda em aberto:
-            convida a lançar. Ancorado no ESTADO e não no evento de encerramento, porque
-            três dos quatro caminhos que encerram um caso rodam no servidor (assistente,
-            novo atendimento sobre o ativo, chamada direta) e nunca puderam abrir o
-            diálogo. `earnings_prompted_at` preenchido = o médico já respondeu (lançou ou
-            dispensou como cortesia) e a pergunta é UMA VEZ por caso — sem essa condição a
-            cortesia deixava o card para sempre na tela. `earningsTotals == null` = leitura
-            falhou → não convida, para não arriscar duplicata. */}
-        {!isActive &&
-        earningsTotals != null &&
-        earningsTotals.count === 0 &&
-        caseDetail.earnings_prompted_at == null ? (
-          <CasePendingEarningsCard caseId={id} todayLabel={todayLabel} />
-        ) : null}
-        {reportBlock}
-        <CaseDetailDocuments
-          certificates={caseCertificates}
-          prescriptions={casePrescriptions}
-        />
-        <CaseRemindersCard
-          caseId={id}
-          initialReminders={caseReminders}
-        />
-        {caseDetail.patient ? (
-          <>
+  const patientSections: CaseSection[] = caseDetail.patient
+    ? [
+        {
+          key: "scales",
+          icon: ClipboardListIcon,
+          title: "Escalas da consulta",
+          description: "Escalas aplicadas neste atendimento.",
+          content: (
             <ScalesSection
               patientId={caseDetail.patient.id}
               caseId={id}
@@ -252,6 +185,14 @@ export async function CaseDetailContent({ id }: { id: string }) {
               title="Escalas desta consulta"
               description="Escalas aplicadas neste atendimento. O registro fica no histórico do paciente."
             />
+          ),
+        },
+        {
+          key: "attachments",
+          icon: PaperclipIcon,
+          title: "Anexos da consulta",
+          description: "Arquivos enviados neste atendimento.",
+          content: (
             <AttachmentsSection
               patientId={caseDetail.patient.id}
               caseId={id}
@@ -259,14 +200,101 @@ export async function CaseDetailContent({ id }: { id: string }) {
               title="Anexos desta consulta"
               description="Arquivos enviados neste atendimento. Ficam guardados na ficha da criança."
             />
+          ),
+        },
+        {
+          key: "exams",
+          icon: MicroscopeIcon,
+          title: "Leitura de exames",
+          description: "Exames lidos pela IA neste atendimento.",
+          content: (
             <ExamReadingsSection
               patientId={caseDetail.patient.id}
               caseId={id}
               readings={examReadingsWithPages}
             />
-          </>
-        ) : null}
-      </div>
+          ),
+        },
+      ]
+    : []
+
+  const sections: CaseSection[] = [
+    {
+      key: "report",
+      icon: SparklesIcon,
+      title: "Relatório do atendimento",
+      description: "Relatórios gerados a partir da consulta.",
+      content: reportBlock,
+    },
+    {
+      key: "documents",
+      icon: FolderOpenIcon,
+      title: "Documentos do caso",
+      description: "Receitas e atestados deste atendimento.",
+      content: (
+        <CaseDetailDocuments
+          certificates={caseCertificates}
+          prescriptions={casePrescriptions}
+        />
+      ),
+    },
+    {
+      key: "reminders",
+      icon: NotebookPenIcon,
+      title: "Lembretes e pendências",
+      description: "O que retomar na próxima consulta.",
+      content: (
+        <CaseRemindersCard caseId={id} initialReminders={caseReminders} />
+      ),
+    },
+    ...patientSections,
+  ]
+
+  return (
+    <div className={caseDetailMainStackClassName}>
+      <CaseDetailHeader
+        detail={caseDetail}
+        photoUrl={casePhotoUrl}
+        earningsCount={earningsTotals?.count ?? null}
+        earningsTotalCents={earningsTotals?.totalCents ?? null}
+        todayLabel={todayLabel}
+      />
+      <section className="flex flex-col gap-3">
+        <h2 className="text-lg font-semibold tracking-tight">Ações</h2>
+        <CaseDetailQuickActions
+          caseId={id}
+          patient={caseDetail.patient}
+          hasMessages={messages.length > 0}
+          templateSectionCount={templateSectionCount}
+          hasTemplate={template != null}
+          caseReports={caseReports.map((r) => ({ source: r.source }))}
+        />
+      </section>
+      {caseEntries.length > 0 && earningsTotals != null ? (
+        <CaseEarningsCard
+          entries={caseEntries}
+          count={earningsTotals.count}
+          totalCents={earningsTotals.totalCents}
+        />
+      ) : null}
+      {/* Caso encerrado sem lançamento não-anulado E com a pergunta ainda em aberto:
+          convida a lançar. Ancorado no ESTADO e não no evento de encerramento, porque
+          três dos quatro caminhos que encerram um caso rodam no servidor (assistente,
+          novo atendimento sobre o ativo, chamada direta) e nunca puderam abrir o
+          diálogo. `earnings_prompted_at` preenchido = o médico já respondeu (lançou ou
+          dispensou como cortesia) e a pergunta é UMA VEZ por caso — sem essa condição a
+          cortesia deixava o card para sempre na tela. `earningsTotals == null` = leitura
+          falhou → não convida, para não arriscar duplicata. */}
+      {!isActive &&
+      earningsTotals != null &&
+      earningsTotals.count === 0 &&
+      caseDetail.earnings_prompted_at == null ? (
+        <CasePendingEarningsCard caseId={id} todayLabel={todayLabel} />
+      ) : null}
+      <section className="flex flex-col gap-3">
+        <h2 className="text-lg font-semibold tracking-tight">Registros do atendimento</h2>
+        <CaseSectionCards sections={sections} />
+      </section>
       {previousCarryover && caseDetail.patient ? (
         <PreviousCaseSummaryDialog
           carryover={previousCarryover}
