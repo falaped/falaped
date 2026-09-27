@@ -241,6 +241,8 @@ export async function CaseDetailContent({ id }: { id: string }) {
             description: "Lançamentos financeiros vinculados a este caso.",
             content: (
               <CaseEarningsCard
+                caseId={id}
+                todayLabel={todayLabel}
                 entries={caseEntries}
                 count={earningsTotals.count}
                 totalCents={earningsTotals.totalCents}
