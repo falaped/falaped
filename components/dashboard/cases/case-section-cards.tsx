@@ -2,6 +2,7 @@
 
 import { useState } from "react"
 import type { ReactNode } from "react"
+import { usePathname, useRouter, useSearchParams } from "next/navigation"
 import {
   ClipboardListIcon,
   CoinsIcon,
@@ -66,8 +67,17 @@ export function CaseSectionCards({
   /** Card extra na primeira posição da grade (ex.: encerrar/reabrir). */
   leading?: ReactNode
 }) {
-  const [openKey, setOpenKey] = useState<string | null>(null)
+  const router = useRouter()
+  const pathname = usePathname()
+  const searchParams = useSearchParams()
+  // `?open=<key>`: os fluxos de novo atestado/receita voltam com o drawer já aberto.
+  const [openKey, setOpenKey] = useState<string | null>(searchParams.get("open"))
   const open = sections.find((section) => section.key === openKey) ?? null
+
+  function close() {
+    setOpenKey(null)
+    if (searchParams.has("open")) router.replace(pathname, { scroll: false })
+  }
 
   return (
     <div className="flex flex-col gap-4">
@@ -103,7 +113,7 @@ export function CaseSectionCards({
           )
         })}
       </div>
-      <Sheet open={open != null} onOpenChange={(next) => !next && setOpenKey(null)}>
+      <Sheet open={open != null} onOpenChange={(next) => !next && close()}>
         {open ? (
           <SheetContent className={cn("w-full overflow-y-auto", WIDTHS[open.key])}>
             <SheetHeader className="pr-12">

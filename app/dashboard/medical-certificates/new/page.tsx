@@ -6,6 +6,7 @@ import { getAuthenticatedUser } from "@/modules/supabase/get-authenticated-user"
 import { getPatientsByProfileId } from "@/modules/patients/get-patients-by-profile-id"
 import { MedicalCertificateWizardWrapper } from "./medical-certificate-wizard-wrapper"
 import { Button } from "@/components/ui/button"
+import { caseDocumentsHref } from "@/lib/case-documents-href"
 import { Separator } from "@/components/ui/separator"
 
 type PageProps = {
@@ -37,7 +38,7 @@ export default async function NewMedicalCertificatePage({
         <div>
           <div className="flex items-center gap-2.5">
             <Button variant="ghost" size="icon" asChild aria-label="Voltar">
-              <Link href="/dashboard/medical-certificates">
+              <Link href={caseId ? caseDocumentsHref(caseId) : "/dashboard/medical-certificates"}>
                 <ChevronLeft className="h-4 w-4" />
               </Link>
             </Button>

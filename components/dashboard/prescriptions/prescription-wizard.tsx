@@ -2,6 +2,8 @@
 
 import { useState, useEffect, useRef } from "react"
 import { useRouter, usePathname } from "next/navigation"
+
+import { caseDocumentsHref } from "@/lib/case-documents-href"
 import { toast } from "sonner"
 import { getFriendlyToastMessage } from "@/lib/get-friendly-toast-message"
 import { format } from "date-fns"
@@ -109,6 +111,9 @@ export function PrescriptionWizard({
   blankMode = false,
 }: PrescriptionWizardProps) {
   const router = useRouter()
+  const caseId = initialCaseId?.trim() || null
+  // Nasceu de um caso → volta para o drawer de documentos dele; senão, para a lista.
+  const backHref = caseId ? caseDocumentsHref(caseId) : "/dashboard/prescriptions"
   const pathname = usePathname()
   const prevPathnameRef = useRef(pathname)
   const initialPatientFromUrlApplied = useRef(false)
@@ -326,7 +331,7 @@ export function PrescriptionWizard({
       payload: { ...payload, birthDate: birthDate.trim() || undefined },
       issuedAt: issuedAt ? new Date(issuedAt + "T12:00:00").toISOString().slice(0, 10) : undefined,
       patientId: selectedPatient?.id ?? null,
-      caseId: initialCaseId?.trim() || null,
+      caseId: caseId,
     })
       .then((result) => {
         if (result.ok) {
@@ -344,7 +349,7 @@ export function PrescriptionWizard({
               ? "Receituário gerado. Download iniciado."
               : "Receita gerada. Download iniciado.",
           )
-          router.push("/dashboard/prescriptions")
+          router.push(backHref)
           router.refresh()
         } else {
           toast.error(getFriendlyToastMessage(result.error))
