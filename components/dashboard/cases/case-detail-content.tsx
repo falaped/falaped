@@ -260,17 +260,14 @@ export async function CaseDetailContent({ id }: { id: string }) {
         earningsTotalCents={earningsTotals?.totalCents ?? null}
         todayLabel={todayLabel}
       />
-      <section className="flex flex-col gap-3">
-        <h2 className="text-lg font-semibold tracking-tight">Ações</h2>
-        <CaseDetailQuickActions
-          caseId={id}
-          patient={caseDetail.patient}
-          hasMessages={messages.length > 0}
-          templateSectionCount={templateSectionCount}
-          hasTemplate={template != null}
-          caseReports={caseReports.map((r) => ({ source: r.source }))}
-        />
-      </section>
+      <CaseDetailQuickActions
+        caseId={id}
+        patient={caseDetail.patient}
+        hasMessages={messages.length > 0}
+        templateSectionCount={templateSectionCount}
+        hasTemplate={template != null}
+        caseReports={caseReports.map((r) => ({ source: r.source }))}
+      />
       {/* Caso encerrado sem lançamento não-anulado E com a pergunta ainda em aberto:
           convida a lançar. Ancorado no ESTADO e não no evento de encerramento, porque
           três dos quatro caminhos que encerram um caso rodam no servidor (assistente,
