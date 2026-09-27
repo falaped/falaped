@@ -14,7 +14,7 @@ export function CaseResumeCard({ caseId }: { caseId: string }) {
         </CardHeader>
         <CardContent>
           <p className="text-sm text-primary-foreground/80">
-            Volta ao workspace com o assistente e a transcrição da consulta.
+            Volta ao workspace da consulta.
           </p>
         </CardContent>
       </Card>

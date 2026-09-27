@@ -8,8 +8,8 @@ import { CloseCaseWithEarningsDialog } from "@/components/dashboard/cases/close-
 import { ReopenCaseDialog } from "@/components/dashboard/cases/reopen-case-dialog"
 
 /**
- * Último card da grade de registros, em cinza claro: encerra o caso ativo (com a
- * etapa de ganhos) ou reabre o encerrado.
+ * Card em cinza claro na seção Atendimento: encerra o caso ativo (com a etapa
+ * de ganhos) ou reabre o encerrado.
  */
 export function CaseStatusCard({
   caseId,

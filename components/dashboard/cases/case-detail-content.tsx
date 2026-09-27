@@ -279,23 +279,22 @@ export async function CaseDetailContent({ id }: { id: string }) {
         <CasePendingEarningsCard caseId={id} todayLabel={todayLabel} />
       ) : null}
       <section className="flex flex-col gap-3">
+        <h2 className="text-lg font-semibold tracking-tight">Atendimento</h2>
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {/* Só o atendimento em curso conduzido no painel tem workspace para retomar. */}
+          {isActive && caseDetail.origin === "dashboard" ? (
+            <CaseResumeCard caseId={id} />
+          ) : null}
+          <CaseStatusCard
+            caseId={id}
+            status={caseDetail.status}
+            todayLabel={todayLabel}
+          />
+        </div>
+      </section>
+      <section className="flex flex-col gap-3">
         <h2 className="text-lg font-semibold tracking-tight">Registros do atendimento</h2>
-        <CaseSectionCards
-          sections={sections}
-          leading={
-            // Só o atendimento em curso conduzido no painel tem workspace para retomar.
-            isActive && caseDetail.origin === "dashboard" ? (
-              <CaseResumeCard caseId={id} />
-            ) : null
-          }
-          trailing={
-            <CaseStatusCard
-              caseId={id}
-              status={caseDetail.status}
-              todayLabel={todayLabel}
-            />
-          }
-        />
+        <CaseSectionCards sections={sections} />
       </section>
       {previousCarryover && caseDetail.patient ? (
         <PreviousCaseSummaryDialog
