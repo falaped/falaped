@@ -1,15 +1,31 @@
 "use client"
 
 import { useState } from "react"
-import type { ComponentType, ReactNode } from "react"
-import type { LucideProps } from "lucide-react"
+import type { ReactNode } from "react"
+import {
+  ClipboardListIcon,
+  FolderOpenIcon,
+  MicroscopeIcon,
+  NotebookPenIcon,
+  PaperclipIcon,
+  SparklesIcon,
+} from "lucide-react"
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { cn } from "@/lib/utils"
 
+// Componentes de ícone não atravessam a fronteira RSC → cliente; o RSC manda o nome.
+const ICONS = {
+  report: SparklesIcon,
+  documents: FolderOpenIcon,
+  reminders: NotebookPenIcon,
+  scales: ClipboardListIcon,
+  attachments: PaperclipIcon,
+  exams: MicroscopeIcon,
+} as const
+
 export type CaseSection = {
-  key: string
-  icon: ComponentType<LucideProps>
+  key: keyof typeof ICONS
   title: string
   description: string
   /** Conteúdo (RSC ou cliente) mostrado abaixo da grade quando o card está aberto. */
@@ -28,7 +44,7 @@ export function CaseSectionCards({ sections }: { sections: CaseSection[] }) {
     <div className="flex flex-col gap-4">
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {sections.map((section) => {
-          const Icon = section.icon
+          const Icon = ICONS[section.key]
           const isOpen = section.key === openKey
           return (
             <button

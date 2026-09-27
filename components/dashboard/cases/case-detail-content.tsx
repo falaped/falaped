@@ -23,15 +23,6 @@ import { getPhoneByProfileId } from "@/modules/authenticated-users/get-phone-by-
 import { getPreviousCaseCarryover } from "@/modules/cases/get-previous-case-carryover"
 import { listCaseReminders } from "@/modules/cases/list-case-reminders"
 import { computePediatricAge } from "@/lib/compute-pediatric-age"
-import {
-  ClipboardListIcon,
-  FolderOpenIcon,
-  MicroscopeIcon,
-  NotebookPenIcon,
-  PaperclipIcon,
-  SparklesIcon,
-} from "lucide-react"
-
 import { CaseDetailHeader } from "@/components/dashboard/cases/case-detail-header"
 import { CaseDetailQuickActions } from "@/components/dashboard/cases/case-detail-quick-actions"
 import { CaseDetailDocuments } from "@/components/dashboard/cases/case-detail-documents"
@@ -173,7 +164,6 @@ export async function CaseDetailContent({ id }: { id: string }) {
     ? [
         {
           key: "scales",
-          icon: ClipboardListIcon,
           title: "Escalas da consulta",
           description: "Escalas aplicadas neste atendimento.",
           content: (
@@ -189,7 +179,6 @@ export async function CaseDetailContent({ id }: { id: string }) {
         },
         {
           key: "attachments",
-          icon: PaperclipIcon,
           title: "Anexos da consulta",
           description: "Arquivos enviados neste atendimento.",
           content: (
@@ -204,7 +193,6 @@ export async function CaseDetailContent({ id }: { id: string }) {
         },
         {
           key: "exams",
-          icon: MicroscopeIcon,
           title: "Leitura de exames",
           description: "Exames lidos pela IA neste atendimento.",
           content: (
@@ -221,14 +209,12 @@ export async function CaseDetailContent({ id }: { id: string }) {
   const sections: CaseSection[] = [
     {
       key: "report",
-      icon: SparklesIcon,
       title: "Relatório do atendimento",
       description: "Relatórios gerados a partir da consulta.",
       content: reportBlock,
     },
     {
       key: "documents",
-      icon: FolderOpenIcon,
       title: "Documentos do caso",
       description: "Receitas e atestados deste atendimento.",
       content: (
@@ -240,7 +226,6 @@ export async function CaseDetailContent({ id }: { id: string }) {
     },
     {
       key: "reminders",
-      icon: NotebookPenIcon,
       title: "Lembretes e pendências",
       description: "O que retomar na próxima consulta.",
       content: (
