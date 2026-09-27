@@ -18,6 +18,8 @@ import { getCaseEarningsTotals } from "@/modules/financial-entries/get-case-earn
 import { listFinancialEntries } from "@/modules/financial-entries/list-financial-entries"
 import { getScaleResultsByCase } from "@/modules/patient-scales/get-scale-results-by-case"
 import { listAttachmentsByCase } from "@/modules/patient-attachments/list-attachments-by-case"
+import { listExamReadingsByCase } from "@/modules/exam-readings/list-exam-readings-by-case"
+import { getExamReadingPageUrls } from "@/modules/exam-readings/get-exam-reading-page-urls"
 import { getPhoneByProfileId } from "@/modules/authenticated-users/get-phone-by-profile-id"
 import { getPreviousCaseCarryover } from "@/modules/cases/get-previous-case-carryover"
 import { listCaseReminders } from "@/modules/cases/list-case-reminders"
@@ -36,6 +38,7 @@ import { CaseReport } from "@/components/dashboard/cases/case-report"
 import { ConsultationTimerWidget } from "@/components/dashboard/cases/consultation-timer-widget"
 import { ScalesSection } from "@/components/dashboard/scales/scales-section"
 import { AttachmentsSection } from "@/components/dashboard/attachments/attachments-section"
+import { ExamReadingsSection } from "@/components/dashboard/exam-readings/exam-readings-section"
 import { CaseRemindersCard } from "@/components/dashboard/cases/case-reminders-card"
 import { PreviousCaseSummaryDialog } from "@/components/dashboard/cases/previous-case-summary-dialog"
 
@@ -55,6 +58,7 @@ export async function CaseDetailContent({ id }: { id: string }) {
     scaleResults,
     caseAttachments,
     caseReminders,
+    caseExamReadings,
   ] = await Promise.all([
     getCaseById(supabase, id, profile.id),
     profile.report_template_id
@@ -77,6 +81,7 @@ export async function CaseDetailContent({ id }: { id: string }) {
     getScaleResultsByCase(supabase, profile.id, id).catch(() => []),
     listAttachmentsByCase(supabase, profile.id, id).catch(() => []),
     listCaseReminders(supabase, profile.id, id).catch(() => []),
+    listExamReadingsByCase(supabase, profile.id, id).catch(() => []),
   ])
 
   if (!caseDetail) {
@@ -94,6 +99,14 @@ export async function CaseDetailContent({ id }: { id: string }) {
   const casePhotoUrl = await getPatientPhotoSignedUrl(
     supabase,
     caseDetail.patient?.photo_path ?? null,
+  )
+
+  // Páginas dos exames lidos: signed URLs inline, resolvidas aqui e nunca persistidas.
+  const examReadingsWithPages = await Promise.all(
+    caseExamReadings.map(async (reading) => ({
+      ...reading,
+      pageUrls: await getExamReadingPageUrls(supabase, reading.page_paths),
+    })),
   )
 
   const template =
@@ -245,6 +258,11 @@ export async function CaseDetailContent({ id }: { id: string }) {
               attachments={caseAttachments}
               title="Anexos desta consulta"
               description="Arquivos enviados neste atendimento. Ficam guardados na ficha da criança."
+            />
+            <ExamReadingsSection
+              patientId={caseDetail.patient.id}
+              caseId={id}
+              readings={examReadingsWithPages}
             />
           </>
         ) : null}

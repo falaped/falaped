@@ -4,6 +4,9 @@ const envSchema = z.object({
   NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
   GROQ_API_KEY: z.string().optional(),
   GROQ_ASSISTANT_MODEL: z.string().default("openai/gpt-oss-120b"),
+  // Modelo com VISÃO do Groq: transcreve as páginas do exame (leitura de exames).
+  // Único modelo de visão do Groq hoje; 3 imagens por chamada, 2.048 tokens cada.
+  GROQ_VISION_MODEL: z.string().default("qwen/qwen3.8-27b"),
   NEXT_PUBLIC_SUPABASE_URL: z.url("NEXT_PUBLIC_SUPABASE_URL must be a valid URL"),
   NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: z
     .string()
