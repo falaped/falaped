@@ -22,6 +22,35 @@ export type ChangelogRelease = {
 /** Da mais nova para a mais antiga — a primeira é a que abre o modal. */
 export const CHANGELOG: readonly ChangelogRelease[] = [
   {
+    id: "2026-09-27-leitura-de-exames",
+    date: "2026-09-27",
+    title: "Leitura de exames com IA",
+    summary:
+      "Envie as fotos ou o PDF de um exame dentro do atendimento: a IA transcreve os resultados, você confere e o relatório sai como rascunho para revisar.",
+    entries: [
+      {
+        title: "Envie o exame na consulta",
+        description:
+          "Na seção Leitura de exames do atendimento, escolha fotos (JPG, PNG) ou o PDF do laudo, até 20 páginas. A leitura leva alguns segundos e as páginas ficam guardadas só para você.",
+      },
+      {
+        title: "Confira antes de gerar",
+        description:
+          "Cada resultado aparece com valor, unidade, faixa de referência do laboratório e status. A faixa é sempre a impressa no laudo, escolhida pela idade e pelo sexo do paciente que consta no exame. Abra os campos para corrigir o que a leitura errou, remover ou acrescentar linhas.",
+      },
+      {
+        title: "Rascunho do relatório de exames",
+        description:
+          "Com os resultados conferidos, a IA redige um rascunho com os exames avaliados, os resultados alterados, os dentro da referência, uma interpretação cautelosa para a idade e sugestões. O texto é editável e o PDF sai com o registro de que houve apoio de IA revisado por você.",
+      },
+      {
+        title: "Tudo vai para os anexos",
+        description:
+          "Ao salvar, o relatório em PDF e o exame com todas as páginas entram juntos nos anexos do paciente, num card só com um link para cada. A seção de leitura fica limpa para o próximo exame.",
+      },
+    ],
+  },
+  {
     id: "2026-09-23-escalas-uti-e-relatorio",
     date: "2026-09-23",
     title: "Mais escalas, e escalas no relatório",
