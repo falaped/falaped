@@ -16,6 +16,8 @@ export const metadata: Metadata = {
   metadataBase: new URL(defaultUrl),
   title: "@falaped - IA para pediatras",
   description: "Falaped te auxilia no seu dia a dia como pediatra",
+  // App logado fica fora do Google; a landing de books reabilita no próprio layout.
+  robots: { index: false, follow: false },
 };
 
 const geistSans = Geist({
