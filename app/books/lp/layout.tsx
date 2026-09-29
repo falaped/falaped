@@ -10,6 +10,7 @@ export const metadata: Metadata = {
   title: "Falaped Books — o livro que a sua criança vai pedir para ler de novo",
   description:
     "Livro infantil ilustrado de 20 páginas onde a sua criança é a protagonista, com o rosto e o nome dela em cada página. Uma história para cada fase da infância, em PDF, entregue na hora.",
+  robots: { index: true, follow: true },
   openGraph: { title: "Falaped Books", description: "Um livro ilustrado onde a sua criança é a protagonista.", type: "website" },
 }
 
