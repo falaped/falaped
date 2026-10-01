@@ -69,7 +69,7 @@ async function parseJsonReply(raw: string): Promise<unknown> {
 }
 
 async function extractHeader(first: ExamPageImage) {
-  const completion = await getGroq().chat.completions.create({
+  const completion = await getGroq("exam-pages").chat.completions.create({
     model: env.GROQ_VISION_MODEL,
     temperature: 0,
     max_tokens: HEADER_MAX_COMPLETION_TOKENS,
@@ -92,7 +92,7 @@ async function extractHeader(first: ExamPageImage) {
 }
 
 async function extractBatch(pages: ExamPageImage[]): Promise<unknown> {
-  const completion = await getGroq().chat.completions.create({
+  const completion = await getGroq("exam-pages").chat.completions.create({
     model: env.GROQ_VISION_MODEL,
     temperature: 0,
     max_tokens: EXTRACTION_MAX_COMPLETION_TOKENS,

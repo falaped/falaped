@@ -210,6 +210,8 @@ export {
   type SendProspectInviteResult,
   updateAccountAccessAction,
   type UpdateAccountAccessResult,
+  addSubscriptionPaymentAction,
+  type AddSubscriptionPaymentResult,
 } from "./admin"
 export {
   createExamReadingAction,

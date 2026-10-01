@@ -37,7 +37,7 @@ export async function classifyQuestionIntentByAi(input: {
   })
 
   try {
-    const completion = await getGroq().chat.completions.create({
+    const completion = await getGroq("classify-question").chat.completions.create({
       model: CLASSIFY_MODEL,
       temperature: 0,
       max_tokens: INTENT_MAX_COMPLETION_TOKENS,

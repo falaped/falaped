@@ -4,7 +4,7 @@ import type { StoryCompletion } from "@/modules/books/story/generate-story"
 
 /** Adaptador Groq para a geração da história: JSON mode, temperatura moderada para variar sem inventar. */
 export const groqStoryCompletion: StoryCompletion = async (system, user) => {
-  const completion = await getGroq().chat.completions.create({
+  const completion = await getGroq("books-story").chat.completions.create({
     model: env.GROQ_ASSISTANT_MODEL,
     temperature: 0.6,
     max_tokens: 8000,

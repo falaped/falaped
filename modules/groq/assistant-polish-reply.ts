@@ -45,7 +45,7 @@ export async function polishAssistantReplyForDisplay(input: {
   })
 
   try {
-    const completion = await getGroq().chat.completions.create({
+    const completion = await getGroq("polish-reply").chat.completions.create({
       model: POLISH_MODEL,
       temperature: 0,
       max_tokens: POLISH_MAX_COMPLETION_TOKENS,

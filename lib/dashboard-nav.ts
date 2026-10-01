@@ -152,14 +152,14 @@ export const dashboardNav: DashboardNavSection[] = [
     adminOnly: true,
     items: [
       {
-        title: "Usuários",
-        description: "Todas as contas e o consumo de cada uma.",
+        title: "Clientes",
+        description: "Contas, pagamento, atividade e consumo de cada uma.",
         url: "/dashboard/admin/users",
         icon: UsersIcon,
       },
       {
         title: "Leads",
-        description: "Cadastros das landings e contatos pelo WhatsApp.",
+        description: "Cadastros que chegaram pelas páginas do Falaped.",
         url: "/dashboard/admin/leads",
         icon: MagnetIcon,
       },

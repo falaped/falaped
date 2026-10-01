@@ -55,7 +55,7 @@ export async function extractActionsByLlm(userMessage: string): Promise<Extracte
   if (!text) return { actions: ["CHAT"], source: "fallback" }
 
   try {
-    const completion = await getGroq().chat.completions.create({
+    const completion = await getGroq("assistant-actions").chat.completions.create({
       model: MODEL,
       temperature: 0,
       max_tokens: MAX_COMPLETION_TOKENS,
