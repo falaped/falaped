@@ -15,6 +15,7 @@ import {
   MinusIcon,
   MousePointerClickIcon,
   SendIcon,
+  SparklesIcon,
   type LucideIcon,
 } from "lucide-react"
 
@@ -44,6 +45,11 @@ const PAGE_SIZE = 60
 
 const CHIPS: Record<string, { label: string; icon: LucideIcon; match: (p: ProspectRow, now: Date) => boolean }> = {
   novos: { label: "Não contatados", icon: CircleDashedIcon, match: (p) => funnelStage(p) === "novo" },
+  recentes: {
+    label: "Entraram nos últimos 7 dias",
+    icon: SparklesIcon,
+    match: (p, now) => now.getTime() - new Date(p.created_at).getTime() <= 7 * 86_400_000,
+  },
   quentes: { label: "Quentes", icon: FlameIcon, match: (p, now) => temperature(p, now)?.temp === "quente" },
   abriu: {
     label: "Abriu e não respondeu",
