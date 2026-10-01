@@ -65,10 +65,10 @@ const CHANNEL: Record<string, string> = { email: "E-mail", whatsapp: "WhatsApp",
 export default async function AdminFunnelPage({
   searchParams,
 }: {
-  searchParams: Promise<{ etapa?: string; ver?: string; cidade?: string; q?: string; todos?: string }>
+  searchParams: Promise<{ etapa?: string; ver?: string; cidade?: string; canal?: string; q?: string; todos?: string }>
 }) {
   const admin = await requireAdmin()
-  const { etapa, ver, cidade, q, todos } = await searchParams
+  const { etapa, ver, cidade, canal, q, todos } = await searchParams
   const now = new Date()
   const stage = FUNNEL_STAGES.includes(etapa as FunnelStage) ? (etapa as FunnelStage) : null
   const chip = ver && ver in CHIPS ? ver : null
@@ -85,6 +85,8 @@ export default async function AdminFunnelPage({
         (!stage || funnelStage(p) === stage) &&
         (!chip || CHIPS[chip].match(p, now)) &&
         (!cidade || p.city === cidade) &&
+        (canal !== "whatsapp" || !!whatsappDigits(p.phone)) &&
+        (canal !== "email" || !!p.email) &&
         (!query || `${p.full_name} ${p.clinic ?? ""} ${p.email ?? ""}`.toLowerCase().includes(query)),
     )
     .sort((a, b) => funnelRank(a, now) - funnelRank(b, now) || a.full_name.localeCompare(b.full_name, "pt-BR"))
@@ -92,7 +94,7 @@ export default async function AdminFunnelPage({
 
   const href = (patch: Record<string, string | null>) => {
     const params = new URLSearchParams()
-    const current = { etapa: stage, ver: chip, cidade: cidade ?? null, q: q ?? null, ...patch }
+    const current = { etapa: stage, ver: chip, cidade: cidade ?? null, canal: canal ?? null, q: q ?? null, ...patch }
     for (const [k, v] of Object.entries(current)) if (v) params.set(k, v)
     const s = params.toString()
     return s ? `/dashboard/admin/funil?${s}` : "/dashboard/admin/funil"
