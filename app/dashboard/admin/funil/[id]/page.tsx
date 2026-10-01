@@ -66,12 +66,23 @@ const LEAD_SOURCE: Record<string, string> = {
   beta_signup: "lista do beta",
 }
 
+const TOOL_NAME: Record<string, string> = {
+  "curva-de-crescimento-oms": "curva de crescimento",
+  "percentil-imc-infantil": "percentil de IMC",
+  "calculadora-dose-pediatrica": "calculadora de dose",
+  "calendario-vacinal-2026": "calendário vacinal",
+}
+
+/** "ferramenta:<slug>" vem do "Receba em PDF" das ferramentas da landing. */
+const leadSourceLabel = (s: string) =>
+  s.startsWith("ferramenta:") ? `PDF da ${TOOL_NAME[s.slice(11)] ?? s.slice(11)}` : (LEAD_SOURCE[s] ?? s)
+
 /** Uma linha da linha do tempo: o que aconteceu e o detalhe (modelo, motivo, texto da nota). */
 function eventText(e: ProspectEvent): { title: string; sub: string | null } {
   const base = EVENT[e.kind]
   if (e.kind === "nota") return { title: e.detail ?? "Nota", sub: null }
   if (e.kind === "etapa") return { title: `Etapa: ${e.detail ?? ""}`, sub: null }
-  if (e.kind === "lead") return { title: base.label, sub: e.detail ? (LEAD_SOURCE[e.detail] ?? e.detail) : null }
+  if (e.kind === "lead") return { title: base.label, sub: e.detail ? leadSourceLabel(e.detail) : null }
   if (e.kind === "captado") return { title: e.detail ? `Captado em ${e.detail}` : base.label, sub: null }
   return { title: base.label, sub: e.detail }
 }
@@ -152,7 +163,7 @@ export default async function AdminLeadPage({ params }: { params: Promise<{ id: 
     p.sources.length ? { k: "Fontes", v: p.sources.join(", ") } : null,
     p.rqe ? { k: "RQE", v: p.rqe } : null,
     p.site_emails.length ? { k: "E-mails do site", v: p.site_emails.join(", ") } : null,
-    p.lead_at ? { k: "Landing", v: `${formatDate(p.lead_at)}${p.lead_source ? `, ${LEAD_SOURCE[p.lead_source] ?? p.lead_source}` : ""}` } : null,
+    p.lead_at ? { k: "Landing", v: `${formatDate(p.lead_at)}${p.lead_source ? `, ${leadSourceLabel(p.lead_source)}` : ""}` } : null,
   ] as ({ k: string; v: React.ReactNode } | null)[]).filter((f) => f !== null)
   const links = [
     p.profile_url ? { href: p.profile_url, label: p.profile_url.includes("doctoralia") ? "Doctoralia" : "Perfil", icon: ExternalLinkIcon } : null,
