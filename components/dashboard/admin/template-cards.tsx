@@ -17,11 +17,10 @@ function Stat({ value, label, bar }: { value: string; label: string; bar?: numbe
     <div>
       <p className="text-[17px] font-semibold tabular-nums">{value}</p>
       <p className="text-xs text-muted-foreground">{label}</p>
-      {bar !== undefined ? (
-        <div className="mt-1.5 h-1 overflow-hidden rounded-full bg-muted">
-          <div className="h-full rounded-full bg-emerald-600" style={{ width: `${bar}%` }} />
-        </div>
-      ) : null}
+      {/* A barra ocupa a mesma altura em todo cartão, com ou sem taxa, para as linhas alinharem. */}
+      <div className={cn("mt-1.5 h-1 overflow-hidden rounded-full", bar !== undefined && "bg-muted")}>
+        {bar !== undefined ? <div className="h-full rounded-full bg-emerald-600" style={{ width: `${bar}%` }} /> : null}
+      </div>
     </div>
   )
 }
@@ -50,7 +49,7 @@ export function TemplateCards({ templates, moment, bestId }: { templates: Messag
             <article
               key={t.id}
               className={cn(
-                "flex flex-col gap-3 rounded-2xl bg-card p-5 shadow-xs ring-1 ring-foreground/10",
+                "flex h-full flex-col gap-3 rounded-2xl bg-card p-5 shadow-xs ring-1 ring-foreground/10",
                 best && "ring-2 ring-emerald-500/50",
               )}
             >
@@ -59,9 +58,10 @@ export function TemplateCards({ templates, moment, bestId }: { templates: Messag
                 {best ? <Pill tone="green">Melhor abertura</Pill> : null}
               </div>
               <h3 className="text-[15px] font-semibold">{t.name}</h3>
-              {t.subject ? <p className="-mt-2 text-[13px] text-muted-foreground">Assunto: {t.subject}</p> : null}
-              <p className="line-clamp-3 text-[13px] leading-relaxed text-muted-foreground">{t.body}</p>
-              <div className="grid grid-cols-3 gap-3 border-t pt-3">
+              {/* Linha do assunto sempre presente (vazia no WhatsApp) e corpo com 3 linhas fixas: tudo na mesma altura. */}
+              <p className="-mt-2 min-h-5 truncate text-[13px] text-muted-foreground">{t.subject ? `Assunto: ${t.subject}` : ""}</p>
+              <p className="line-clamp-3 min-h-[3lh] text-[13px] leading-relaxed text-muted-foreground">{t.body}</p>
+              <div className="mt-auto grid grid-cols-3 gap-3 border-t pt-3">
                 {t.channel === "email" ? (
                   <>
                     <Stat value={String(s.sent)} label={s.sent === 1 ? "enviado" : "enviados"} />
@@ -70,8 +70,9 @@ export function TemplateCards({ templates, moment, bestId }: { templates: Messag
                   </>
                 ) : (
                   <>
-                    <Stat value={String(s.sent)} label={s.sent === 1 ? "aberto no WhatsApp" : "abertos no WhatsApp"} />
+                    <Stat value={String(s.sent)} label={s.sent === 1 ? "envio" : "envios"} />
                     <Stat value={String(s.replied)} label="responderam" />
+                    <div />
                   </>
                 )}
               </div>
