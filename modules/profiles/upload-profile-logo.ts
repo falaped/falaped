@@ -9,7 +9,7 @@ const MAX_SIZE_BYTES = 2 * 1024 * 1024 // 2MB
 export type UploadProfileLogoKind = "full" | "short"
 
 /**
- * Uploads a profile logo to storage and returns the public URL.
+ * Uploads a profile logo to storage and returns the public URL (versioned with `?v=`).
  * Rejects if file type or size is invalid. Overwrites existing file at same path.
  */
 export async function uploadProfileLogo(
@@ -41,5 +41,8 @@ export async function uploadProfileLogo(
   const {
     data: { publicUrl },
   } = supabase.storage.from(PROFILE_LOGOS_BUCKET).getPublicUrl(path)
-  return publicUrl
+  // O path é sempre o mesmo por tipo e o Storage serve com max-age=3600: sem a
+  // versão na URL, navegador e CDN seguem entregando a logo antiga por até 1 h
+  // (na tela do perfil e no fetch dos PDFs).
+  return `${publicUrl}?v=${Date.now()}`
 }

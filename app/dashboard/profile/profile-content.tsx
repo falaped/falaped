@@ -67,6 +67,10 @@ const THEME_OPTIONS: { value: "light" | "dark" | "system"; label: string; icon: 
   { value: "system", label: "Sistema", icon: Laptop },
 ]
 
+/** Espelho das regras de `uploadProfileLogo`, para validar antes do upload. */
+const LOGO_TYPES = ["image/png", "image/jpeg", "image/webp"]
+const LOGO_MAX_BYTES = 2 * 1024 * 1024
+
 /** Sentinel for "no template" in Select (Radix does not allow value=""). */
 const REPORT_TEMPLATE_NONE_VALUE = "__none__"
 
@@ -206,7 +210,19 @@ export function ProfileContent({
   ) {
     const file = e.target.files?.[0]
     if (!file) return
+    const label = kind === "full" ? "Logo completa" : "Logo curta"
     setLogoError(null)
+    // Mesmas regras do servidor, checadas antes de enviar para o erro ser imediato e claro.
+    if (!LOGO_TYPES.includes(file.type)) {
+      setLogoError(`${label}: use PNG, JPEG ou WebP (o arquivo enviado é ${file.type || "de outro tipo"}).`)
+      e.target.value = ""
+      return
+    }
+    if (file.size > LOGO_MAX_BYTES) {
+      setLogoError(`${label}: o arquivo tem ${(file.size / 1024 / 1024).toFixed(1).replace(".", ",")} MB e o máximo é 2 MB.`)
+      e.target.value = ""
+      return
+    }
     if (kind === "full") setLogoFullLoading(true)
     else setLogoShortLoading(true)
     try {
@@ -215,10 +231,11 @@ export function ProfileContent({
       formData.set("file", file)
       const result = await uploadProfileLogoAction(formData)
       if (result.ok) {
-        toast.success("Logo enviada.")
+        toast.success(`${label} atualizada.`)
       } else {
-        setLogoError(result.error)
-        toast.error(getFriendlyToastMessage(result.error))
+        const message = getFriendlyToastMessage(result.error)
+        setLogoError(`${label}: ${message}`)
+        toast.error(message)
       }
     } finally {
       if (kind === "full") setLogoFullLoading(false)
@@ -237,7 +254,7 @@ export function ProfileContent({
         router.refresh()
         return
       }
-      setLogoError(result.error)
+      setLogoError(getFriendlyToastMessage(result.error))
       toast.error(getFriendlyToastMessage(result.error))
     } finally {
       setLogoClearLoading(null)
