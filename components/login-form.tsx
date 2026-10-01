@@ -27,6 +27,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
+import { authErrorMessage } from "@/lib/auth-error-message";
 
 export function LoginForm({
   className,
@@ -52,9 +53,7 @@ export function LoginForm({
       if (error) throw error;
       router.push("/dashboard");
     } catch (error: unknown) {
-      setApiError(
-        error instanceof Error ? error.message : "Ocorreu um erro."
-      );
+      setApiError(authErrorMessage(error));
     }
   };
 

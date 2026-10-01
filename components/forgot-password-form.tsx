@@ -26,6 +26,7 @@ import { Input } from "@/components/ui/input";
 import Link from "next/link";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
+import { authErrorMessage } from "@/lib/auth-error-message";
 
 export function ForgotPasswordForm({
   className,
@@ -53,9 +54,7 @@ export function ForgotPasswordForm({
       if (error) throw error;
       setSuccess(true);
     } catch (error: unknown) {
-      setApiError(
-        error instanceof Error ? error.message : "Ocorreu um erro."
-      );
+      setApiError(authErrorMessage(error));
     }
   };
 

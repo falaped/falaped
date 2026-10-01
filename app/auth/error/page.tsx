@@ -10,18 +10,15 @@ async function ErrorContent({
 }) {
   const params = await searchParams;
 
+  // O `error` da URL vem cru do Supabase (em inglês); só serve para escolher a frase.
+  const isExpired = /expired|invalid/i.test(params?.error ?? "");
+
   return (
-    <>
-      {params?.error ? (
-        <p className="text-sm text-muted-foreground">
-          Código do erro: {params.error}
-        </p>
-      ) : (
-        <p className="text-sm text-muted-foreground">
-          Ocorreu um erro não especificado.
-        </p>
-      )}
-    </>
+    <p className="text-sm text-muted-foreground">
+      {isExpired
+        ? "O link expirou ou já foi usado. Peça um novo e abra em seguida."
+        : "Não foi possível concluir agora. Tente de novo em instantes."}
+    </p>
   );
 }
 
