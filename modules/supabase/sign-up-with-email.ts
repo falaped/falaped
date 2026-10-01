@@ -36,5 +36,12 @@ export async function signUpWithEmail(
       emailRedirectTo: payload.emailRedirectTo ?? undefined,
     },
   });
+  // O trigger de cadastro (handle_new_auth_user) só falha na prática pelo
+  // telefone único em profiles; o Supabase devolve isso como erro genérico.
+  if (error?.message === "Database error saving new user") {
+    throw new Error(
+      "Este telefone já está cadastrado em outra conta. Entre com ela ou use outro número."
+    );
+  }
   if (error) throw error;
 }
