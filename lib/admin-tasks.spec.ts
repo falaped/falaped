@@ -57,3 +57,10 @@ test("resumo junta os tipos em uma frase", () => {
   assert.equal(summarizeTasks([t1, t2, lead]), "2 clientes pagaram e ainda não usaram e chegou 1 lead novo.")
   assert.equal(summarizeTasks([]), "Nada pendente hoje. Bom momento para prospectar.")
 })
+
+test("whatsappDigits escolhe o celular quando o campo tem vários números", () => {
+  assert.equal(whatsappDigits("(31) 2180-7593, (31) 99528-0803"), "5531995280803")
+  assert.equal(whatsappDigits("(31) 3291-7260"), "553132917260")
+  assert.equal(whatsappDigits("553194773759"), "553194773759")
+  assert.equal(whatsappDigits("123"), null)
+})

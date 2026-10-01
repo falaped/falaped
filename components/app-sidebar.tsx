@@ -13,6 +13,7 @@ import {
   SidebarGroupLabel,
   SidebarHeader,
   SidebarMenu,
+  SidebarMenuBadge,
   SidebarMenuButton,
   SidebarMenuItem,
   SidebarRail,
@@ -22,6 +23,7 @@ import { ChangelogMenuItem } from "@/components/dashboard/changelog/changelog-di
 import { dashboardNav } from "@/lib/dashboard-nav"
 import { isAdminEmail } from "@/lib/admin"
 import { createClient } from "@/lib/supabase/client"
+import { countNewLeadsAction } from "@/actions"
 
 export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
   const pathname = usePathname()
@@ -33,6 +35,13 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
       .auth.getUser()
       .then(({ data }) => setIsAdmin(isAdminEmail(data.user?.email)))
   }, [])
+
+  // Aviso de lead novo: só roda para admin, e o action também barra quem não é.
+  const [newLeads, setNewLeads] = React.useState(0)
+  React.useEffect(() => {
+    if (!isAdmin) return
+    countNewLeadsAction().then((r) => setNewLeads(r.ok ? r.count : 0))
+  }, [isAdmin, pathname])
 
   // A seção fica ativa tanto na própria página quanto em qualquer destino dos seus cards.
   const isSectionActive = React.useCallback(
@@ -79,6 +88,14 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
                     <span>{section.title}</span>
                   </Link>
                 </SidebarMenuButton>
+                {section.adminOnly && newLeads > 0 ? (
+                  <SidebarMenuBadge
+                    className="bg-orange-600 text-white peer-data-[active=true]/menu-button:text-white"
+                    aria-label={`${newLeads} ${newLeads === 1 ? "lead novo" : "leads novos"}`}
+                  >
+                    {newLeads}
+                  </SidebarMenuBadge>
+                ) : null}
               </SidebarMenuItem>
             ))}
           </SidebarMenu>

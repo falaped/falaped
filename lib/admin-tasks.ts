@@ -52,12 +52,21 @@ const ago = (iso: string, now: Date) => {
   return n === 0 ? "hoje" : `há ${plural(n, "dia", "dias")}`
 }
 
-/** Telefone em dígitos com DDI 55: aceita "553191234567", "31 91234-5678", "(31) 91234-5678". */
-export function whatsappDigits(phone: string | null | undefined): string | null {
-  const digits = (phone ?? "").replace(/\D/g, "")
+/** Um número em dígitos com DDI 55: aceita "553191234567", "31 91234-5678", "(31) 91234-5678". */
+function oneNumber(phone: string): string | null {
+  const digits = phone.replace(/\D/g, "")
   if (digits.length === 12 || digits.length === 13) return digits.startsWith("55") ? digits : null
   if (digits.length === 10 || digits.length === 11) return `55${digits}`
   return null
+}
+
+/**
+ * Celular para o WhatsApp. A captação traz vários números no mesmo campo
+ * ("(31) 2180-7593, (31) 99528-0803"): fica o primeiro celular (9 depois do DDD), senão o primeiro válido.
+ */
+export function whatsappDigits(phone: string | null | undefined): string | null {
+  const numbers = (phone ?? "").split(/[,;/|]|\s+e\s+/).map(oneNumber).filter((n): n is string => n !== null)
+  return numbers.find((n) => n.length === 13 && n[4] === "9") ?? numbers[0] ?? null
 }
 
 export function whatsappHref(phone: string | null | undefined, text: string): string | null {
@@ -182,7 +191,7 @@ export function leadTask(lead: LeadRow, sender: string, now: Date = new Date()):
     name,
     pill: { label: "Lead · landing", tone: "gray" },
     why: ["Preencheu o formulário ", { b: when }, lead.detail ? ` pela campanha ${lead.detail}.` : "."],
-    href: "/dashboard/admin/leads",
+    href: `/dashboard/admin/funil/${lead.id}`,
     action: contact(
       "Dar boas-vindas",
       lead.phone,
@@ -218,7 +227,7 @@ export function prospectTask(p: ProspectRow, sender: string): AdminTask | null {
     name,
     pill: clicked ? { label: "Quente", tone: "red" } : { label: "Abriu o convite", tone: "amber" },
     why: [clicked ? "Clicou no link do convite" : "Abriu o convite", " e ", { b: "ainda não respondeu" }, p.city ? `. ${p.city}.` : "."],
-    href: "/dashboard/admin/prospects",
+    href: `/dashboard/admin/funil/${p.id}`,
     action: contact(
       "Chamar no WhatsApp",
       p.phone,

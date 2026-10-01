@@ -2,19 +2,23 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { LayoutDashboardIcon, MagnetIcon, SendIcon, UsersIcon } from "lucide-react"
+import { ChartLineIcon, FilterIcon, LayoutDashboardIcon, MailsIcon, UsersIcon } from "lucide-react"
 
 import { cn } from "@/lib/utils"
 
 const LINKS = [
   { href: "/dashboard/admin", label: "Painel", icon: LayoutDashboardIcon, exact: true },
+  { href: "/dashboard/admin/funil", label: "Funil", icon: FilterIcon },
   { href: "/dashboard/admin/users", label: "Clientes", icon: UsersIcon },
-  { href: "/dashboard/admin/leads", label: "Leads", icon: MagnetIcon },
-  { href: "/dashboard/admin/prospects", label: "Prospecção", icon: SendIcon },
+  { href: "/dashboard/admin/uso", label: "Uso", icon: ChartLineIcon },
+  { href: "/dashboard/admin/mensagens", label: "Mensagens", icon: MailsIcon },
 ]
 
-/** Abas do admin em controle segmentado: a sidebar só leva à seção, daqui se navega entre as telas. */
-export function AdminNav() {
+/**
+ * Abas do admin em controle segmentado: a sidebar só leva à seção, daqui se navega entre as telas.
+ * `newLeads` vira o aviso no Funil: leads da landing ainda sem contato (só admin vê esta barra).
+ */
+export function AdminNav({ newLeads = 0 }: { newLeads?: number }) {
   const pathname = usePathname()
   return (
     <nav className="flex w-fit gap-1 rounded-xl bg-muted p-1" aria-label="Admin">
@@ -37,6 +41,14 @@ export function AdminNav() {
           >
             <Icon className="size-4" aria-hidden />
             {link.label}
+            {link.label === "Funil" && newLeads > 0 ? (
+              <span
+                className="rounded-full bg-orange-600 px-1.5 text-[11px] font-semibold leading-[18px] text-white tabular-nums"
+                aria-label={`${newLeads} ${newLeads === 1 ? "lead novo" : "leads novos"}`}
+              >
+                {newLeads}
+              </span>
+            ) : null}
           </Link>
         )
       })}

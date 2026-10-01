@@ -27,8 +27,8 @@ import {
 
 import { requireAdmin } from "@/lib/admin-guard"
 import { ADMIN_SENDER } from "@/lib/admin-sender"
-import { accountDisplayName, activityState, paymentState } from "@/lib/account-health"
-import { accountTask, whatsappHref, type TaskKind } from "@/lib/admin-tasks"
+import { ACTIVITY_LABEL, PAYMENT_LABEL, accountDisplayName, activityState, paymentState } from "@/lib/account-health"
+import { accountTask, type TaskKind } from "@/lib/admin-tasks"
 import { documentsTotal } from "@/lib/documents-total"
 import {
   formatBytes,
@@ -42,7 +42,9 @@ import { cn } from "@/lib/utils"
 import { getProspectByProfile } from "@/modules/admin/get-prospect-by-profile"
 import { listProfileUsage, type ProfileUsageRow } from "@/modules/admin/list-profile-usage"
 import { listSubscriptionPayments } from "@/modules/admin/list-subscription-payments"
-import { INVITE_EARLY_PRICE } from "@/modules/admin/emails/invite-email"
+import { EARLY_PRICE, recipientValues, type MessageMoment } from "@/lib/message-template"
+import { listMessageTemplates } from "@/modules/admin/list-message-templates"
+import { EmailComposerButton, WhatsappMenu } from "@/components/dashboard/admin/whatsapp-menu"
 import { AccountAccessForm } from "@/components/dashboard/admin/account-access-form"
 import { GradientCard, Initials, PanelCard, WHATSAPP_BUTTON } from "@/components/dashboard/admin/admin-ui"
 import { ActivityPill, PaymentPill } from "@/components/dashboard/admin/health-badges"
@@ -92,6 +94,18 @@ const EMAIL_STATUS_TEXT: Record<string, string> = {
   reclamou: "Marcou o convite como spam",
 }
 
+/** Mensagem sugerida no WhatsApp/e-mail da ficha, pela pendência da conta. */
+const TASK_MOMENT: Record<TaskKind, MessageMoment> = {
+  "pagou-sem-uso": "ajuda",
+  "teste-acabando": "teste-acabando",
+  "teste-acabou": "teste-acabando",
+  "teste-sem-uso": "ajuda",
+  renovacao: "pagamento",
+  parada: "reativacao",
+  lead: "boas-vindas",
+  quente: "follow-up",
+}
+
 type Event = { at: string; icon: LucideIcon; tone: "blue" | "green" | "gray"; text: string }
 
 export default async function AdminClientPage({ params }: { params: Promise<{ id: string }> }) {
@@ -99,10 +113,11 @@ export default async function AdminClientPage({ params }: { params: Promise<{ id
   const { id } = await params
 
   // ponytail: lê todas as contas e pega uma; view por id quando a base passar de centenas.
-  const [rows, payments, prospect] = await Promise.all([
+  const [rows, payments, prospect, templates] = await Promise.all([
     listProfileUsage(admin),
     listSubscriptionPayments(admin, id),
     getProspectByProfile(admin, id),
+    listMessageTemplates(admin),
   ])
   const row = rows.find((r) => r.profile_id === id)
   if (!row) notFound()
@@ -113,8 +128,25 @@ export default async function AdminClientPage({ params }: { params: Promise<{ id
   const activity = activityState(row.last_activity_at, now)
   const task = accountTask(row, ADMIN_SENDER, now)
   const docs = documentsTotal(row)
-  const greeting = `Oi, ${row.first_name ?? name}! Aqui é o ${ADMIN_SENDER}, do Falaped. Tudo bem?`
-  const wa = whatsappHref(row.phone, greeting)
+  const send = {
+    recipient: { profileId: row.profile_id },
+    name,
+    email: row.email,
+    phone: row.phone,
+    templates,
+    values: recipientValues(
+      { title: null, name: row.first_name ?? name, city: prospect?.city ?? null, trialDaysLeft: payment.state === "trial" ? payment.daysLeft : null },
+      ADMIN_SENDER,
+    ),
+    context: [
+      `Trate por "${row.first_name ?? name}".`,
+      `${name}, cliente do Falaped desde ${formatDate(row.created_at)}.`,
+      `Assinatura: ${PAYMENT_LABEL[payment.state]}${payment.daysLeft != null ? ` (${payment.daysLeft} dias)` : ""}. Atividade: ${ACTIVITY_LABEL[activity]}.`,
+      `${row.patients} pacientes, ${row.cases} atendimentos, ${docs} documentos.`,
+      task ? `Pendência: ${task.why.map((p) => (typeof p === "string" ? p : p.b)).join("")}` : "",
+    ].join("\n"),
+    defaultMoment: task ? TASK_MOMENT[task.kind] : ("ajuda" as MessageMoment),
+  }
 
   const steps = [
     { label: "Criou a conta", icon: UserPlusIcon, done: true, detail: formatDate(row.created_at).slice(0, 5) },
@@ -205,22 +237,8 @@ export default async function AdminClientPage({ params }: { params: Promise<{ id
           </div>
         </div>
         <div className="flex gap-2">
-          {wa ? (
-            <Button asChild className={WHATSAPP_BUTTON}>
-              <a href={wa} target="_blank" rel="noreferrer">
-                <MessageCircleIcon aria-hidden />
-                WhatsApp
-              </a>
-            </Button>
-          ) : null}
-          {row.email ? (
-            <Button asChild variant="outline" className="bg-card">
-              <a href={`mailto:${row.email}`}>
-                <MailIcon aria-hidden />
-                E-mail
-              </a>
-            </Button>
-          ) : null}
+          <WhatsappMenu {...send} />
+          <EmailComposerButton {...send} className="bg-card" />
         </div>
       </GradientCard>
 
@@ -343,7 +361,7 @@ export default async function AdminClientPage({ params }: { params: Promise<{ id
             icon={CreditCardIcon}
             title="Assinatura"
             description={lastPayment?.note ?? (payment.state === "trial" ? "Teste grátis" : "Pagamento manual")}
-            action={<PaymentDialog profileId={row.profile_id} name={name} defaultAmount={INVITE_EARLY_PRICE.toFixed(2).replace(".", ",")} />}
+            action={<PaymentDialog profileId={row.profile_id} name={name} defaultAmount={EARLY_PRICE.toFixed(2).replace(".", ",")} />}
           >
             {payment.daysLeft !== null && payment.daysLeft >= 0 ? (
               <>

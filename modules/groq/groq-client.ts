@@ -18,6 +18,7 @@ export type AiFeature =
   | "transcription"
   | "assistant-actions"
   | "books-story"
+  | "message-draft"
 
 const clients = new Map<AiFeature, Groq>()
 

@@ -8,6 +8,13 @@ const nextConfig: NextConfig = {
     "/books/**/*": ["./modules/books/pdf/fonts/**/*"],
     "/api/books/**/*": ["./modules/books/pdf/fonts/**/*"],
   },
+  // Leads e Prospecção viraram uma tela só: o Funil.
+  async redirects() {
+    return [
+      { source: "/dashboard/admin/leads", destination: "/dashboard/admin/funil", permanent: true },
+      { source: "/dashboard/admin/prospects", destination: "/dashboard/admin/funil", permanent: true },
+    ];
+  },
   experimental: {
     serverActions: {
       bodySizeLimit: "25mb",

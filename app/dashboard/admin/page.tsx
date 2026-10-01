@@ -7,9 +7,9 @@ import { ADMIN_SENDER } from "@/lib/admin-sender"
 import { activityState, type ActivityState } from "@/lib/account-health"
 import { accountTask, leadTask, prospectTask, summarizeTasks, type AdminTask, type TaskGroup } from "@/lib/admin-tasks"
 import { formatRelativeTime } from "@/lib/formatters"
+import { isFollowUpDue } from "@/lib/funnel"
 import { createClient } from "@/lib/supabase/server"
 import { cn } from "@/lib/utils"
-import { listLeads } from "@/modules/admin/list-leads"
 import { listProfileUsage } from "@/modules/admin/list-profile-usage"
 import { listProspects } from "@/modules/admin/list-prospects"
 import { PageHero, PanelCard } from "@/components/dashboard/admin/admin-ui"
@@ -42,17 +42,20 @@ function greeting(now: Date): string {
 export default async function AdminDashboardPage() {
   const admin = await requireAdmin()
   const session = await createClient()
-  const [{ data: auth }, usage, leads, prospects] = await Promise.all([
+  const [{ data: auth }, usage, prospects] = await Promise.all([
     session.auth.getUser(),
     listProfileUsage(admin),
-    listLeads(admin),
     listProspects(admin),
   ])
 
   const now = new Date()
   const me = usage.find((r) => r.email?.toLowerCase() === auth.user?.email?.toLowerCase())
   const clients = usage.filter((r) => !isAdminEmail(r.email))
-  const siteLeads = leads.filter((l) => l.origin === "site")
+  // Lead da landing vive no funil; sem contato e sem conta ainda é "dar boas-vindas".
+  const siteLeads = prospects
+    .filter((p) => p.lead_at)
+    .map((p) => ({ id: p.id, name: p.full_name, email: p.email, phone: p.phone, detail: null, created_at: p.lead_at!, pending: p.status === "novo" && !p.profile_id }))
+    .sort((a, b) => b.created_at.localeCompare(a.created_at))
 
   const hot = prospects
     .map((p) => prospectTask(p, ADMIN_SENDER))
@@ -60,13 +63,11 @@ export default async function AdminDashboardPage() {
     .sort((a, b) => (a.pill.label === "Quente" ? -1 : 0) - (b.pill.label === "Quente" ? -1 : 0))
   const tasks: AdminTask[] = [
     ...clients.map((r) => accountTask(r, ADMIN_SENDER, now)),
-    ...siteLeads.map((l) => leadTask(l, ADMIN_SENDER, now)),
+    ...siteLeads.filter((l) => l.pending).map((l) => leadTask(l, ADMIN_SENDER, now)),
     ...hot.slice(0, HOT_LIMIT),
   ].filter((t): t is AdminTask => t !== null)
 
-  const dueFollowUps = prospects.filter(
-    (p) => p.next_contact_at && new Date(p.next_contact_at) <= now && p.status !== "fechou" && p.status !== "descartado",
-  ).length
+  const dueFollowUps = prospects.filter((p) => isFollowUpDue(p, now)).length
 
   const health = HEALTH.map((h) => ({ ...h, value: clients.filter((r) => activityState(r.last_activity_at, now) === h.key).length }))
   const funnel = [
@@ -74,9 +75,9 @@ export default async function AdminDashboardPage() {
     { label: "Contatados", value: prospects.filter((p) => p.status !== "novo").length },
     {
       label: "Abriram",
-      value: prospects.filter((p) => p.email_status === "aberto" || p.email_status === "clicou" || p.status === "respondeu" || p.status === "fechou").length,
+      value: prospects.filter((p) => p.opened_at || p.status === "respondeu" || p.profile_id).length,
     },
-    { label: "Responderam", value: prospects.filter((p) => p.status === "respondeu" || p.status === "fechou").length },
+    { label: "Responderam", value: prospects.filter((p) => p.replied_at || p.status === "respondeu" || p.profile_id).length },
     { label: "Criaram conta", value: prospects.filter((p) => p.profile_id).length },
   ]
   const recentLeads = siteLeads.filter((l) => now.getTime() - new Date(l.created_at).getTime() <= 30 * DAY_MS)
@@ -129,7 +130,7 @@ export default async function AdminDashboardPage() {
                         {dueFollowUps} {dueFollowUps === 1 ? "prospect com follow-up vencido" : "prospects com follow-up vencido"}
                       </p>
                       <Button asChild variant="outline">
-                        <Link href="/dashboard/admin/prospects">Abrir na prospecção</Link>
+                        <Link href="/dashboard/admin/funil?ver=vencido">Abrir no funil</Link>
                       </Button>
                     </li>
                   ) : null}
@@ -185,7 +186,7 @@ export default async function AdminDashboardPage() {
           description="últimos 30 dias"
           action={
             <Button asChild variant="ghost" size="sm">
-              <Link href="/dashboard/admin/leads">Ver todos</Link>
+              <Link href="/dashboard/admin/funil?ver=landing">Ver no funil</Link>
             </Button>
           }
         >
@@ -200,7 +201,9 @@ export default async function AdminDashboardPage() {
             <ul className="mt-3 divide-y text-[13px]">
               {recentLeads.slice(0, 4).map((l) => (
                 <li key={l.id} className="flex justify-between gap-3 py-2">
-                  <span className="truncate">{l.name || l.email || l.phone || "Sem nome"}</span>
+                  <Link href={`/dashboard/admin/funil/${l.id}`} className="truncate hover:underline">
+                    {l.name || l.email || l.phone || "Sem nome"}
+                  </Link>
                   <span className="shrink-0 text-muted-foreground">{formatRelativeTime(l.created_at)}</span>
                 </li>
               ))}
