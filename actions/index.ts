@@ -81,7 +81,6 @@ export {
 } from "./availability"
 export {
   deleteMyAccountAction,
-  updateStatusAction,
   updateProfileAction,
   uploadProfileLogoAction,
   clearProfileLogoAction,
@@ -209,6 +208,8 @@ export {
   type UpdateProspectResult,
   sendProspectInviteAction,
   type SendProspectInviteResult,
+  updateAccountAccessAction,
+  type UpdateAccountAccessResult,
 } from "./admin"
 export {
   createExamReadingAction,

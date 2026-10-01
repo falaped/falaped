@@ -11,7 +11,9 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
+import { AccountAccessForm } from "@/components/dashboard/admin/account-access-form"
 import { StatTile } from "@/components/dashboard/admin/stat-tile"
+import { effectiveStatus, isInTrial } from "@/lib/account-status"
 import { documentsTotal } from "@/lib/documents-total"
 import { formatBrazilianPhone, formatDate, formatRelativeTime } from "@/lib/formatters"
 import { getPatientInitials } from "@/lib/get-patient-initials"
@@ -59,12 +61,22 @@ const DETAIL_GROUPS: {
   },
 ]
 
+/** Rótulo do status como os gates enxergam: trial em andamento aparece com a data de fim. */
+function accessLabel(row: ProfileUsageRow): string {
+  if (row.status === "unpaid" && isInTrial(row.trial_ends_at)) {
+    return `trial até ${formatDate(row.trial_ends_at)}`
+  }
+  return row.status ?? "sem acesso"
+}
+
 function displayName(row: ProfileUsageRow): string {
   return [row.first_name, row.surname].filter(Boolean).join(" ").trim() || "Sem nome"
 }
 
 export function AdminUsersGrid({ rows }: { rows: ProfileUsageRow[] }) {
-  const [selected, setSelected] = React.useState<ProfileUsageRow | null>(null)
+  // Guarda o id, não a linha: depois do router.refresh() o detalhe já lê a linha nova.
+  const [selectedId, setSelectedId] = React.useState<string | null>(null)
+  const selected = rows.find((row) => row.profile_id === selectedId) ?? null
 
   return (
     <>
@@ -87,11 +99,11 @@ export function AdminUsersGrid({ rows }: { rows: ProfileUsageRow[] }) {
               key={row.profile_id}
               role="button"
               tabIndex={0}
-              onClick={() => setSelected(row)}
+              onClick={() => setSelectedId(row.profile_id)}
               onKeyDown={(event) => {
                 if (event.key === "Enter" || event.key === " ") {
                   event.preventDefault()
-                  setSelected(row)
+                  setSelectedId(row.profile_id)
                 }
               }}
               // O Card do projeto marca a borda com `ring`, não com `border`: o realce de
@@ -121,8 +133,14 @@ export function AdminUsersGrid({ rows }: { rows: ProfileUsageRow[] }) {
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2">
                       <p className="truncate font-medium leading-tight">{name}</p>
-                      <Badge variant={row.status === "paid" ? "default" : "secondary"}>
-                        {row.status ?? "sem acesso"}
+                      <Badge
+                        variant={
+                          effectiveStatus(row.status, row.trial_ends_at) === "paid"
+                            ? "default"
+                            : "secondary"
+                        }
+                      >
+                        {accessLabel(row)}
                       </Badge>
                     </div>
                     <p className="truncate text-xs text-muted-foreground">
@@ -160,7 +178,7 @@ export function AdminUsersGrid({ rows }: { rows: ProfileUsageRow[] }) {
         })}
       </div>
 
-      <Dialog open={selected !== null} onOpenChange={(open) => !open && setSelected(null)}>
+      <Dialog open={selected !== null} onOpenChange={(open) => !open && setSelectedId(null)}>
         <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-2xl">
           {selected ? (
             <>
@@ -178,7 +196,7 @@ export function AdminUsersGrid({ rows }: { rows: ProfileUsageRow[] }) {
                     Situação
                   </p>
                   <p className="mt-0.5">
-                    {selected.status ?? "sem acesso"}
+                    {accessLabel(selected)}
                     {selected.whatsapp_linked_at
                       ? ` · WhatsApp vinculado em ${formatDate(selected.whatsapp_linked_at)}`
                       : " · WhatsApp não vinculado"}
@@ -209,6 +227,12 @@ export function AdminUsersGrid({ rows }: { rows: ProfileUsageRow[] }) {
                   </p>
                 </div>
               </div>
+
+              {/* key: o form reinicia com os valores da conta aberta (e após o refresh). */}
+              <AccountAccessForm
+                key={`${selected.profile_id}:${selected.status}:${selected.trial_ends_at}`}
+                row={selected}
+              />
 
               {DETAIL_GROUPS.map((group) => (
                 <div key={group.title}>

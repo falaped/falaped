@@ -47,8 +47,9 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
-import { deleteMyAccountAction, updateStatusAction, updateProfileAction, uploadProfileLogoAction, clearProfileLogoAction } from "@/actions"
-import type { AuthenticatedUserStatus } from "@/modules/authenticated-users/update-authenticated-user-status"
+import { deleteMyAccountAction, updateProfileAction, uploadProfileLogoAction, clearProfileLogoAction } from "@/actions"
+import { isInTrial } from "@/lib/account-status"
+import { formatDate } from "@/lib/formatters"
 import type { AuthenticatedUserResult } from "@/modules/supabase/get-authenticated-user"
 import type { ReportTemplateOption } from "@/modules/report-templates/get-report-templates-by-profile-id"
 import { z } from "zod"
@@ -59,12 +60,6 @@ import {
 import { formatCentsToInputValue } from "@/lib/money"
 import { ProcedureCatalogCard } from "@/components/dashboard/profile/procedure-catalog-card"
 import type { ProcedureCatalogItemOption } from "@/modules/procedure-catalog/list-procedure-catalog-items"
-
-const STATUS_OPTIONS: { value: AuthenticatedUserStatus; label: string }[] = [
-  { value: "paid", label: "Pago" },
-  { value: "unpaid", label: "Não pago" },
-  { value: "blocked", label: "Bloqueado" },
-]
 
 const THEME_OPTIONS: { value: "light" | "dark" | "system"; label: string; icon: typeof Sun }[] = [
   { value: "light", label: "Claro", icon: Sun },
@@ -80,6 +75,15 @@ type ProfileContentProps = AuthenticatedUserResult & {
   procedureCatalogItems: ProcedureCatalogItemOption[]
 }
 
+/** Frase do card Plano a partir do status já resolvido pelo trial. */
+function planLabel(status: string | null | undefined, trialEndsAt: string | null | undefined): string {
+  if (status === "blocked") return "Conta bloqueada."
+  if (status === "paid" && isInTrial(trialEndsAt)) return `Teste grátis até ${formatDate(trialEndsAt)}.`
+  if (status === "paid") return "Assinatura ativa."
+  if (trialEndsAt) return `Seu teste grátis terminou em ${formatDate(trialEndsAt)}.`
+  return "Acesso ainda não liberado."
+}
+
 export function ProfileContent({
   profile,
   reportTemplateOptions,
@@ -90,11 +94,6 @@ export function ProfileContent({
   const [mounted, setMounted] = useState(false)
   const [deleteLoading, setDeleteLoading] = useState(false)
   const [deleteError, setDeleteError] = useState<string | null>(null)
-  const [statusValue, setStatusValue] = useState<AuthenticatedUserStatus>(
-    (profile.status as AuthenticatedUserStatus) ?? "unpaid"
-  )
-  const [statusUpdating, setStatusUpdating] = useState(false)
-  const [statusError, setStatusError] = useState<string | null>(null)
   const [profileError, setProfileError] = useState<string | null>(null)
   const [logoFullLoading, setLogoFullLoading] = useState(false)
   const [logoShortLoading, setLogoShortLoading] = useState(false)
@@ -126,23 +125,6 @@ export function ProfileContent({
       ),
     },
   })
-
-  async function handleStatusChange(newStatus: AuthenticatedUserStatus) {
-    setStatusError(null)
-    setStatusUpdating(true)
-    try {
-      const result = await updateStatusAction(newStatus)
-      if (result.ok) {
-        setStatusValue(newStatus)
-        toast.success("Status atualizado.")
-        return
-      }
-      setStatusError(result.error)
-      toast.error(getFriendlyToastMessage(result.error))
-    } finally {
-      setStatusUpdating(false)
-    }
-  }
 
   async function handleUseGeolocation() {
     if (!navigator.geolocation) {
@@ -818,34 +800,12 @@ export function ProfileContent({
             <CardTitle>Plano</CardTitle>
           </div>
           <CardDescription>
-            Status da sua assinatura. Em breve você poderá fazer upgrade e
-            gerenciar seu plano aqui.
+            Situação da sua conta. Para assinar ou tirar dúvidas, fale com a
+            gente pelo contato@falaped.com.br.
           </CardDescription>
         </CardHeader>
-        <CardContent className="grid gap-4 sm:grid-cols-2">
-          <Select
-            value={statusValue}
-            onValueChange={(value) =>
-              handleStatusChange(value as AuthenticatedUserStatus)
-            }
-            disabled={statusUpdating}
-          >
-            <SelectTrigger id="account-status" className="w-full max-w-xs">
-              <SelectValue placeholder="Status" />
-            </SelectTrigger>
-            <SelectContent>
-              {STATUS_OPTIONS.map((opt) => (
-                <SelectItem key={opt.value} value={opt.value}>
-                  {opt.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          {statusError && (
-            <p className="text-sm text-destructive" role="alert">
-              {statusError}
-            </p>
-          )}
+        <CardContent>
+          <p className="text-sm">{planLabel(profile.status, profile.trial_ends_at)}</p>
         </CardContent>
       </Card>
 

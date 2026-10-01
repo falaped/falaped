@@ -10,6 +10,7 @@ export type ProfileUsageRow = {
   created_at: string
   status: string | null
   whatsapp_linked_at: string | null
+  trial_ends_at: string | null
   last_case_at: string | null
   patients: number
   cases: number
