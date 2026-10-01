@@ -83,3 +83,12 @@ export function funnelRank(row: FunnelRow, now: Date = new Date()): number {
   if (isFollowUpDue(row, now)) return 1
   return t ? TEMP_RANK[t.temp] : 4
 }
+
+const GENERIC_EMAIL = /^(contato|info|sac|atendimento|recepcao|agendamento|secretaria|adm|financeiro|comercial|faleconosco|marcacao|clinica|consultorio|ouvidoria)/
+
+/** E-mail de clínica: caixa genérica (contato@, sac@…) ou o mesmo e-mail em mais de uma pessoa. */
+export function isClinicEmail(email: string | null, shared: ReadonlySet<string>): boolean {
+  if (!email) return false
+  const e = email.trim().toLowerCase()
+  return shared.has(e) || GENERIC_EMAIL.test(e)
+}

@@ -58,6 +58,8 @@ export function FunnelToolbar({ cities }: { cities: string[] }) {
         <option value="">Todos os canais</option>
         <option value="whatsapp">Com WhatsApp</option>
         <option value="email">Com e-mail</option>
+        <option value="email-pessoal">E-mail pessoal</option>
+        <option value="email-clinica">E-mail de clínica</option>
       </select>
     </>
   )

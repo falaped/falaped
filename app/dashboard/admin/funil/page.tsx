@@ -2,6 +2,7 @@ import { Suspense } from "react"
 import Link from "next/link"
 import {
   AlarmClockIcon,
+  CircleDashedIcon,
   BadgeCheckIcon,
   ChevronRightIcon,
   FlameIcon,
@@ -25,6 +26,7 @@ import {
   STAGE_LABEL,
   funnelRank,
   funnelStage,
+  isClinicEmail,
   isFollowUpDue,
   temperature,
   type FunnelStage,
@@ -41,6 +43,7 @@ export const metadata = { title: "Admin · Funil" }
 const PAGE_SIZE = 60
 
 const CHIPS: Record<string, { label: string; icon: LucideIcon; match: (p: ProspectRow, now: Date) => boolean }> = {
+  novos: { label: "Não contatados", icon: CircleDashedIcon, match: (p) => funnelStage(p) === "novo" },
   quentes: { label: "Quentes", icon: FlameIcon, match: (p, now) => temperature(p, now)?.temp === "quente" },
   abriu: {
     label: "Abriu e não respondeu",
@@ -77,6 +80,8 @@ export default async function AdminFunnelPage({
   const all = await listProspects(admin)
   const stageCount = (s: FunnelStage) => all.filter((p) => funnelStage(p) === s).length
   const chipCount = (key: string) => all.filter((p) => CHIPS[key].match(p, now)).length
+  const emails = all.map((p) => p.email?.trim().toLowerCase()).filter((e): e is string => !!e)
+  const shared = new Set(emails.filter((e, i) => emails.indexOf(e) !== i))
   const cities = [...new Set(all.map((p) => p.city).filter((c): c is string => !!c))].sort((a, b) => a.localeCompare(b, "pt-BR"))
 
   const visible = all
@@ -87,6 +92,8 @@ export default async function AdminFunnelPage({
         (!cidade || p.city === cidade) &&
         (canal !== "whatsapp" || !!whatsappDigits(p.phone)) &&
         (canal !== "email" || !!p.email) &&
+        (canal !== "email-pessoal" || (!!p.email && !isClinicEmail(p.email, shared))) &&
+        (canal !== "email-clinica" || isClinicEmail(p.email, shared)) &&
         (!query || `${p.full_name} ${p.clinic ?? ""} ${p.email ?? ""}`.toLowerCase().includes(query)),
     )
     .sort((a, b) => funnelRank(a, now) - funnelRank(b, now) || a.full_name.localeCompare(b.full_name, "pt-BR"))

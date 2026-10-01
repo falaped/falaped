@@ -1,7 +1,7 @@
 import { test } from "node:test"
 import assert from "node:assert/strict"
 
-import { funnelRank, funnelStage, isFollowUpDue, temperature } from "@/lib/funnel"
+import { funnelRank, funnelStage, isClinicEmail, isFollowUpDue, temperature } from "@/lib/funnel"
 
 const now = new Date("2026-10-01T12:00:00Z")
 const daysAgo = (n: number) => new Date(now.getTime() - n * 86_400_000).toISOString()
@@ -51,4 +51,13 @@ test("follow-up vencido só nas etapas manuais e ordem da lista", () => {
   assert.equal(funnelRank(due, now), 1)
   assert.equal(funnelRank({ ...base, opened_at: daysAgo(5) }, now), 2)
   assert.equal(funnelRank(base, now), 3)
+})
+
+test("e-mail de clínica: caixa genérica ou compartilhado", () => {
+  const shared = new Set(["bambinigestao@gmail.com"])
+  assert.equal(isClinicEmail("Contato@clinicadacidade.com.br", shared), true)
+  assert.equal(isClinicEmail("sac@servcor.com", shared), true)
+  assert.equal(isClinicEmail("bambinigestao@gmail.com", shared), true)
+  assert.equal(isClinicEmail("dra.marcelle@gmail.com", shared), false)
+  assert.equal(isClinicEmail(null, shared), false)
 })
