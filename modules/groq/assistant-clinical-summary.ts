@@ -57,7 +57,7 @@ async function generateCaseClinicalSummaryOnce(
 
   let completion: Awaited<ReturnType<Groq["chat"]["completions"]["create"]>>
   try {
-    completion = await getGroq().chat.completions.create({
+    completion = await getGroq("clinical-summary").chat.completions.create({
       model: CLINICAL_SUMMARY_MODEL,
       temperature: 0.25,
       max_tokens: SUMMARY_MAX_COMPLETION_TOKENS,

@@ -26,13 +26,13 @@ const DOMAIN_VOCABULARY_HINT = `${WHISPER_DOMAIN_TERMS.join(", ")}.`
 export const TRANSCRIPTION_REJECTED_UNUSABLE = "TRANSCRIPTION_REJECTED_UNUSABLE"
 
 export async function transcribeAudioFile(file: File): Promise<string> {
-  const transcription = await getGroq().audio.transcriptions.create({
+  const transcription = await getGroq("transcription", TRANSCRIPTION_MODEL).audio.transcriptions.create({
     file,
     model: TRANSCRIPTION_MODEL,
     language: "pt",
     prompt: DOMAIN_VOCABULARY_HINT,
     temperature: 0,
-    response_format: "json",
+    response_format: "verbose_json",
   })
 
   const text = (transcription.text ?? "").trim()

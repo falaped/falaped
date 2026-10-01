@@ -37,7 +37,7 @@ ${currentContent || "(empty)"}
 
 Return only the improved section text, nothing else.`
 
-  const completion = await getGroq().chat.completions.create({
+  const completion = await getGroq("improve-section").chat.completions.create({
     model: REPORT_IMPROVEMENT_MODEL,
     messages: [
       { role: "system", content: systemPrompt },

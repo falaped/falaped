@@ -42,7 +42,7 @@ export async function generateGuardianQuestionSuggestions(input: {
     patientGrammarHint: input.patientGrammarHint ?? null,
   })
 
-  const completion = await getGroq().chat.completions.create({
+  const completion = await getGroq("guardian-questions").chat.completions.create({
     model: GUARDIAN_QUESTIONS_MODEL,
     temperature: 0.35,
     max_tokens: 500,

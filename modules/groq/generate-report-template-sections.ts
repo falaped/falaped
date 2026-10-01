@@ -48,7 +48,7 @@ ${trimmed}
 
 Return the JSON object with "suggestedName" and "sections" as described in the system message.`
 
-  const completion = await getGroq().chat.completions.create({
+  const completion = await getGroq("report-sections").chat.completions.create({
     model: TEMPLATE_GENERATION_MODEL,
     messages: [
       { role: "system", content: systemPrompt },

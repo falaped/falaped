@@ -50,7 +50,7 @@ async function generateOnce(
 
   let completion: Awaited<ReturnType<Groq["chat"]["completions"]["create"]>>
   try {
-    completion = await getGroq().chat.completions.create({
+    completion = await getGroq("carryover-summary").chat.completions.create({
       model: CARRYOVER_MODEL,
       temperature: 0.2,
       max_tokens: CARRYOVER_MAX_COMPLETION_TOKENS,

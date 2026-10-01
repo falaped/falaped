@@ -1,6 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
 
-export const PROSPECT_STATUSES = ["novo", "contatado", "respondeu", "fechou", "descartado"] as const
+/** Etapas gravadas. "Em teste" e "Cliente" saem do perfil vinculado (ver `funnelStage`). */
+export const PROSPECT_STATUSES = ["novo", "contatado", "respondeu", "perdido"] as const
 export type ProspectStatus = (typeof PROSPECT_STATUSES)[number]
 
 export const CONTACT_CHANNELS = ["email", "whatsapp", "telefone"] as const
@@ -37,6 +38,13 @@ export type ProspectRow = {
   rating: string | null
   reviews: string | null
   status: ProspectStatus
+  lost_reason: string | null
+  origin: "captacao" | "landing" | "manual"
+  lead_at: string | null
+  lead_source: string | null
+  replied_at: string | null
+  opened_at: string | null
+  clicked_at: string | null
   notes: string
   invited_at: string | null
   invite_count: number
@@ -47,6 +55,7 @@ export type ProspectRow = {
   resend_email_id: string | null
   profile_id: string | null
   profile: ProspectProfile | null
+  created_at: string
   updated_at: string
 }
 

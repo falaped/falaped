@@ -205,11 +205,21 @@ export {
 } from "./books"
 export {
   updateProspectAction,
+  type UpdateProspectInput,
   type UpdateProspectResult,
-  sendProspectInviteAction,
-  type SendProspectInviteResult,
+  addProspectNoteAction,
+  recordProspectTouchAction,
+  undoProspectTouchAction,
+  recordProfileWhatsappAction,
+  sendMessageEmailAction,
+  saveMessageTemplateAction,
+  draftMessageWithAiAction,
+  importProspectsAction,
+  countNewLeadsAction,
   updateAccountAccessAction,
   type UpdateAccountAccessResult,
+  addSubscriptionPaymentAction,
+  type AddSubscriptionPaymentResult,
 } from "./admin"
 export {
   createExamReadingAction,

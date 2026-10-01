@@ -44,7 +44,7 @@ Responda APENAS em JSON válido: {"report": "texto do relatório"}`
 
 /** Redige o rascunho do relatório de exames com o modelo de texto do assistente. */
 export async function generateExamReport(input: GenerateExamReportInput): Promise<string> {
-  const completion = await getGroq().chat.completions.create({
+  const completion = await getGroq("exam-report").chat.completions.create({
     model: env.GROQ_ASSISTANT_MODEL,
     temperature: 0.2,
     max_tokens: REPORT_MAX_COMPLETION_TOKENS,

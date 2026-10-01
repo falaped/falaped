@@ -66,7 +66,7 @@ export function AccountAccessForm({ row }: { row: ProfileUsageRow }) {
   }
 
   return (
-    <div className="grid gap-3 rounded-lg border p-3 sm:grid-cols-[1fr_1fr_auto] sm:items-end">
+    <div className="flex flex-col gap-3">
       <div className="grid gap-1.5">
         <Label htmlFor="access-status">Status</Label>
         <Select value={status} onValueChange={(value) => setStatus(value as AuthenticatedUserStatus)}>
@@ -96,8 +96,8 @@ export function AccountAccessForm({ row }: { row: ProfileUsageRow }) {
           onChange={(event) => setTrialEnd(event.target.value)}
         />
       </div>
-      <Button onClick={save} disabled={saving}>
-        {saving ? "Salvando…" : "Salvar"}
+      <Button variant="outline" onClick={save} disabled={saving}>
+        {saving ? "Salvando…" : "Salvar acesso"}
       </Button>
     </div>
   )

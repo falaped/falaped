@@ -100,7 +100,7 @@ export async function generateAssistantCaseChat(
       "A última entrada em messages é a mensagem atual do médico. Trate-a como foco principal da resposta.",
   })
 
-  const completion = await getGroq().chat.completions.create({
+  const completion = await getGroq("case-chat").chat.completions.create({
     model: ASSISTANT_CHAT_MODEL,
     temperature: resolveTemperature(input),
     max_tokens: CHAT_MAX_COMPLETION_TOKENS,
