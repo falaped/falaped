@@ -13,6 +13,7 @@ import os
 import re
 import subprocess
 import sys
+import time
 import zipfile
 from concurrent.futures import ThreadPoolExecutor
 
@@ -35,9 +36,11 @@ def download(month: str, name: str) -> str:
     if not os.path.exists(path):
         # O servidor da Receita trava conexões longas: aborta se ficar 30 s parado e retoma do byte onde parou.
         cmd = ["curl", "-sf", "-C", "-", "--speed-limit", "20000", "--speed-time", "30", "-u", f"{SHARE}:", "-o", path + ".part", f"{DAV}/{month}/{name}"]
-        for _ in range(200):
+        # Poucas tentativas com pausa: a Receita bloqueia o IP quando é martelada.
+        for _ in range(20):
             if subprocess.run(cmd).returncode == 0:
                 break
+            time.sleep(30)
         else:
             raise RuntimeError(f"download de {name} não terminou")
         os.rename(path + ".part", path)
