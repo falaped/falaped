@@ -19,7 +19,15 @@ function plusOneMonth(date: string): string {
 }
 
 /** Lança um pagamento manual: valor, quando pagou e até quando vale. */
-export function PaymentForm({ profileId, defaultAmount }: { profileId: string; defaultAmount: string }) {
+export function PaymentForm({
+  profileId,
+  defaultAmount,
+  onDone,
+}: {
+  profileId: string
+  defaultAmount: string
+  onDone?: () => void
+}) {
   const router = useRouter()
   const [amount, setAmount] = React.useState(defaultAmount)
   const [paidAt, setPaidAt] = React.useState(today)
@@ -50,13 +58,14 @@ export function PaymentForm({ profileId, defaultAmount }: { profileId: string; d
       toast.success("Pagamento lançado.")
       setNote("")
       router.refresh()
+      onDone?.()
     } finally {
       setSaving(false)
     }
   }
 
   return (
-    <form onSubmit={save} className="grid gap-3 sm:grid-cols-[8rem_1fr_1fr] sm:items-end">
+    <form onSubmit={save} className="grid gap-3 sm:grid-cols-3 sm:items-end">
       <div className="grid gap-1.5">
         <Label htmlFor="pay-amount">Valor (R$)</Label>
         <Input id="pay-amount" inputMode="decimal" value={amount} onChange={(e) => setAmount(e.target.value)} />
@@ -78,13 +87,13 @@ export function PaymentForm({ profileId, defaultAmount }: { profileId: string; d
         <Input id="pay-until" type="date" value={validUntil} onChange={(e) => setValidUntil(e.target.value)} />
       </div>
       <Input
-        className="sm:col-span-2"
+        className="sm:col-span-3"
         placeholder="Observação (ex.: Pix, preço de fundador)"
         value={note}
         onChange={(e) => setNote(e.target.value)}
         aria-label="Observação"
       />
-      <Button type="submit" disabled={saving || !paidAt || !validUntil}>
+      <Button type="submit" className="sm:col-span-3" disabled={saving || !paidAt || !validUntil}>
         {saving ? "Lançando…" : "Lançar pagamento"}
       </Button>
     </form>

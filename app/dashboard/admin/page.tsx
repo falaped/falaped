@@ -1,145 +1,215 @@
 import Link from "next/link"
-import { ArrowRightIcon } from "lucide-react"
+import { ActivityIcon, FilterIcon, ListChecksIcon, MagnetIcon, SendIcon } from "lucide-react"
 
 import { isAdminEmail } from "@/lib/admin"
 import { requireAdmin } from "@/lib/admin-guard"
-import { accountDisplayName, activityState, attentionReasons, paymentState } from "@/lib/account-health"
+import { ADMIN_SENDER } from "@/lib/admin-sender"
+import { activityState, type ActivityState } from "@/lib/account-health"
+import { accountTask, leadTask, prospectTask, summarizeTasks, type AdminTask, type TaskGroup } from "@/lib/admin-tasks"
 import { formatRelativeTime } from "@/lib/formatters"
+import { createClient } from "@/lib/supabase/server"
 import { cn } from "@/lib/utils"
 import { listLeads } from "@/modules/admin/list-leads"
 import { listProfileUsage } from "@/modules/admin/list-profile-usage"
 import { listProspects } from "@/modules/admin/list-prospects"
+import { PageHero, PanelCard } from "@/components/dashboard/admin/admin-ui"
+import { TaskRow } from "@/components/dashboard/admin/task-row"
+import { Button } from "@/components/ui/button"
 
 export const metadata = { title: "Admin · Painel" }
 
 const DAY_MS = 24 * 60 * 60 * 1000
-/** Lead da landing fica na fila por duas semanas: depois disso já é prospecção comum. */
-const NEW_LEAD_DAYS = 14
+const HOT_LIMIT = 5
 
-type Task = { key: string; who: string; why: string; href: string; when?: string }
+const GROUPS: { key: TaskGroup; label: string; bar: string }[] = [
+  { key: "agora", label: "Agora", bar: "bg-orange-600" },
+  { key: "semana", label: "Esta semana", bar: "bg-amber-500" },
+  { key: "prospeccao", label: "Prospecção", bar: "bg-primary" },
+]
+
+const HEALTH: { key: ActivityState; label: string; color: string }[] = [
+  { key: "ativo", label: "Ativas (7 dias)", color: "bg-emerald-500" },
+  { key: "esfriando", label: "Esfriando", color: "bg-amber-500" },
+  { key: "parado", label: "Paradas", color: "bg-orange-600" },
+  { key: "nunca-usou", label: "Nunca usaram", color: "bg-neutral-300 dark:bg-neutral-600" },
+]
+
+function greeting(now: Date): string {
+  const hour = Number(now.toLocaleString("en-US", { hour: "numeric", hour12: false, timeZone: "America/Sao_Paulo" }))
+  return hour < 12 ? "Bom dia" : hour < 18 ? "Boa tarde" : "Boa noite"
+}
 
 export default async function AdminDashboardPage() {
   const admin = await requireAdmin()
-  const [usage, leads, prospects] = await Promise.all([listProfileUsage(admin), listLeads(admin), listProspects(admin)])
+  const session = await createClient()
+  const [{ data: auth }, usage, leads, prospects] = await Promise.all([
+    session.auth.getUser(),
+    listProfileUsage(admin),
+    listLeads(admin),
+    listProspects(admin),
+  ])
 
-  const now = Date.now()
+  const now = new Date()
+  const me = usage.find((r) => r.email?.toLowerCase() === auth.user?.email?.toLowerCase())
   const clients = usage.filter((r) => !isAdminEmail(r.email))
   const siteLeads = leads.filter((l) => l.origin === "site")
-  const dueProspects = prospects.filter(
-    (p) => p.next_contact_at && new Date(p.next_contact_at).getTime() <= now && p.status !== "fechou" && p.status !== "descartado",
-  )
 
-  const clientTasks: Task[] = clients.flatMap((r) => {
-    const reasons = attentionReasons(r)
-    return reasons.length
-      ? [{ key: r.profile_id, who: accountDisplayName(r), why: reasons.join(" · "), href: `/dashboard/admin/users/${r.profile_id}` }]
-      : []
-  })
-  const leadTasks: Task[] = siteLeads
-    .filter((l) => now - new Date(l.created_at).getTime() <= NEW_LEAD_DAYS * DAY_MS)
-    .map((l) => ({
-      key: l.id,
-      who: l.name || l.email || l.phone || "Sem nome",
-      why: l.detail ? `Pela landing · ${l.detail}` : "Pela landing",
-      href: "/dashboard/admin/leads",
-      when: formatRelativeTime(l.created_at),
-    }))
-  const prospectTasks: Task[] = dueProspects
-    .sort((a, b) => a.next_contact_at!.localeCompare(b.next_contact_at!))
-    .map((p) => ({
-      key: p.id,
-      who: [p.title, p.name].filter(Boolean).join(" "),
-      why: `Follow-up${p.city ? ` · ${p.city}` : ""}${p.email_status === "aberto" || p.email_status === "clicou" ? ` · ${p.email_status} o convite` : ""}`,
-      href: "/dashboard/admin/prospects",
-      when: `venceu ${formatRelativeTime(p.next_contact_at)}`,
-    }))
+  const hot = prospects
+    .map((p) => prospectTask(p, ADMIN_SENDER))
+    .filter((t): t is AdminTask => t !== null)
+    .sort((a, b) => (a.pill.label === "Quente" ? -1 : 0) - (b.pill.label === "Quente" ? -1 : 0))
+  const tasks: AdminTask[] = [
+    ...clients.map((r) => accountTask(r, ADMIN_SENDER, now)),
+    ...siteLeads.map((l) => leadTask(l, ADMIN_SENDER, now)),
+    ...hot.slice(0, HOT_LIMIT),
+  ].filter((t): t is AdminTask => t !== null)
 
-  const totals = [
-    { label: "Ativas na semana", value: clients.filter((r) => activityState(r.last_activity_at) === "ativo").length, of: clients.length },
-    { label: "Pagas", value: clients.filter((r) => ["em-dia", "vencendo", "vencido"].includes(paymentState(r).state)).length },
-    { label: "Em teste", value: clients.filter((r) => paymentState(r).state === "trial").length },
-    { label: "Leads em 30 dias", value: siteLeads.filter((l) => now - new Date(l.created_at).getTime() <= 30 * DAY_MS).length },
-    { label: "Prospects a contatar", value: prospects.filter((p) => p.status === "novo").length, of: prospects.length },
+  const dueFollowUps = prospects.filter(
+    (p) => p.next_contact_at && new Date(p.next_contact_at) <= now && p.status !== "fechou" && p.status !== "descartado",
+  ).length
+
+  const health = HEALTH.map((h) => ({ ...h, value: clients.filter((r) => activityState(r.last_activity_at, now) === h.key).length }))
+  const funnel = [
+    { label: "Captados", value: prospects.length },
+    { label: "Contatados", value: prospects.filter((p) => p.status !== "novo").length },
+    {
+      label: "Abriram",
+      value: prospects.filter((p) => p.email_status === "aberto" || p.email_status === "clicou" || p.status === "respondeu" || p.status === "fechou").length,
+    },
+    { label: "Responderam", value: prospects.filter((p) => p.status === "respondeu" || p.status === "fechou").length },
+    { label: "Criaram conta", value: prospects.filter((p) => p.profile_id).length },
   ]
-
-  const taskCount = clientTasks.length + leadTasks.length + prospectTasks.length
+  const recentLeads = siteLeads.filter((l) => now.getTime() - new Date(l.created_at).getTime() <= 30 * DAY_MS)
+  const leadsToday = recentLeads.filter((l) => now.getTime() - new Date(l.created_at).getTime() <= DAY_MS).length
 
   return (
-    <div className="flex flex-col gap-12">
-      <header className="flex flex-col gap-1">
-        <p className="text-sm text-muted-foreground capitalize">
-          {new Date().toLocaleDateString("pt-BR", { weekday: "long", day: "numeric", month: "long", timeZone: "America/Sao_Paulo" })}
-        </p>
-        <h1 className="text-3xl font-semibold tracking-tight">
-          {taskCount === 0 ? "Nada pendente hoje" : `${taskCount} ${taskCount === 1 ? "coisa" : "coisas"} para fazer hoje`}
-        </h1>
-      </header>
+    <div className="flex flex-col gap-5">
+      <PageHero
+        context={now.toLocaleDateString("pt-BR", { weekday: "long", day: "numeric", month: "long", timeZone: "America/Sao_Paulo" }).replace(/^./, (c) => c.toUpperCase())}
+        title={`${greeting(now)}${me?.first_name ? `, ${me.first_name}` : ""}`}
+      >
+        {summarizeTasks(tasks)}
+      </PageHero>
 
-      <dl className="grid grid-cols-2 gap-x-8 gap-y-6 sm:grid-cols-5">
-        {totals.map((t) => (
-          <div key={t.label} className="border-t pt-3">
-            <dt className="text-xs font-medium tracking-wide text-muted-foreground uppercase">{t.label}</dt>
-            <dd className="mt-1 flex items-baseline gap-1.5">
-              <span className={cn("text-4xl font-semibold tabular-nums tracking-tight", t.value === 0 && "text-muted-foreground/40")}>
-                {t.value}
-              </span>
-              {t.of !== undefined ? <span className="text-sm text-muted-foreground tabular-nums">de {t.of}</span> : null}
-            </dd>
+      <PanelCard
+        icon={ListChecksIcon}
+        iconTone="amber"
+        title="Para fazer hoje"
+        description="Por urgência. Cada linha já traz a ação certa."
+        bodyClassName="px-0 pb-1"
+      >
+        {tasks.length === 0 && dueFollowUps === 0 ? (
+          <p className="border-t px-5 py-8 text-center text-sm text-muted-foreground">
+            Nenhuma pendência. Todas as contas estão em dia e usando.
+          </p>
+        ) : (
+          GROUPS.map((group) => {
+            const items = tasks.filter((t) => t.group === group.key)
+            const isProspect = group.key === "prospeccao"
+            if (items.length === 0 && !(isProspect && dueFollowUps > 0)) return null
+            return (
+              <div key={group.key} className="pb-1">
+                <p className="flex items-center gap-2 px-5 pt-3 pb-2 text-[13px] font-semibold">
+                  <span className={cn("h-3.5 w-[3px] rounded-full", group.bar)} aria-hidden />
+                  {group.label}
+                  <span className="font-medium text-muted-foreground">
+                    {isProspect ? `${items.length} abriram o convite · ${dueFollowUps} follow-ups vencidos` : items.length}
+                  </span>
+                </p>
+                <ul>
+                  {items.map((task) => (
+                    <TaskRow key={task.key} task={task} primary={group.key === "agora"} />
+                  ))}
+                  {isProspect && dueFollowUps > 0 ? (
+                    <li className="grid grid-cols-[36px_minmax(0,1fr)_auto] items-center gap-3.5 border-t px-5 py-3">
+                      <span className="flex size-9 items-center justify-center rounded-[10px] bg-muted text-muted-foreground">
+                        <SendIcon className="size-4" aria-hidden />
+                      </span>
+                      <p className="text-[13px] text-muted-foreground">
+                        {dueFollowUps} {dueFollowUps === 1 ? "prospect com follow-up vencido" : "prospects com follow-up vencido"}
+                      </p>
+                      <Button asChild variant="outline">
+                        <Link href="/dashboard/admin/prospects">Abrir na prospecção</Link>
+                      </Button>
+                    </li>
+                  ) : null}
+                </ul>
+              </div>
+            )
+          })
+        )}
+      </PanelCard>
+
+      <div className="grid gap-5 lg:grid-cols-3">
+        <PanelCard icon={ActivityIcon} title="Saúde das contas" description={`${clients.length} clientes`}>
+          <div className="mb-4 flex h-2.5 gap-0.5 overflow-hidden rounded-full bg-muted">
+            {health
+              .filter((h) => h.value > 0)
+              .map((h) => (
+                <span key={h.key} className={h.color} style={{ flex: h.value }} />
+              ))}
           </div>
-        ))}
-      </dl>
+          <dl className="grid grid-cols-[1fr_auto] gap-x-3 gap-y-2 text-[13px]">
+            {health.map((h) => (
+              <div key={h.key} className="contents">
+                <dt className="flex items-center gap-2 text-muted-foreground">
+                  <span className={cn("size-2 rounded-[3px]", h.color)} aria-hidden />
+                  {h.label}
+                </dt>
+                <dd className="text-right font-semibold tabular-nums">{h.value}</dd>
+              </div>
+            ))}
+          </dl>
+        </PanelCard>
 
-      <div className="grid gap-12 lg:grid-cols-3">
-        <TaskList title="Clientes" empty="Todas as contas em dia e usando." tasks={clientTasks} more={{ href: "/dashboard/admin/users?ver=atencao", label: "Ver clientes" }} />
-        <TaskList title="Leads novos" empty={`Nenhum lead nos últimos ${NEW_LEAD_DAYS} dias.`} tasks={leadTasks} more={{ href: "/dashboard/admin/leads", label: "Ver leads" }} />
-        <TaskList title="Follow-ups vencidos" empty="Nenhum follow-up vencido." tasks={prospectTasks} limit={8} more={{ href: "/dashboard/admin/prospects", label: "Ver prospecção" }} />
+        <PanelCard icon={FilterIcon} title="Funil de prospecção" description={`${prospects.length} pediatras captados`}>
+          <div className="flex flex-col gap-2.5">
+            {funnel.map((step) => (
+              <div key={step.label} className="grid grid-cols-[96px_1fr_40px] items-center gap-2.5 text-[13px]">
+                <span className="text-muted-foreground">{step.label}</span>
+                <div className="h-5 overflow-hidden rounded-md bg-primary/8">
+                  <div
+                    className="h-full min-w-1 rounded-md bg-gradient-to-r from-primary to-primary/60"
+                    style={{ width: `${funnel[0].value ? (step.value / funnel[0].value) * 100 : 0}%` }}
+                  />
+                </div>
+                <span className="text-right font-semibold tabular-nums">{step.value}</span>
+              </div>
+            ))}
+          </div>
+        </PanelCard>
+
+        <PanelCard
+          icon={MagnetIcon}
+          title="Leads da landing"
+          description="últimos 30 dias"
+          action={
+            <Button asChild variant="ghost" size="sm">
+              <Link href="/dashboard/admin/leads">Ver todos</Link>
+            </Button>
+          }
+        >
+          <p className="flex items-baseline gap-2">
+            <span className="text-[26px] font-semibold tracking-tight tabular-nums">{recentLeads.length}</span>
+            <span className="text-[13px] text-muted-foreground">
+              {recentLeads.length === 1 ? "lead" : "leads"}
+              {leadsToday > 0 ? `, ${leadsToday} hoje` : ""}
+            </span>
+          </p>
+          {recentLeads.length > 0 ? (
+            <ul className="mt-3 divide-y text-[13px]">
+              {recentLeads.slice(0, 4).map((l) => (
+                <li key={l.id} className="flex justify-between gap-3 py-2">
+                  <span className="truncate">{l.name || l.email || l.phone || "Sem nome"}</span>
+                  <span className="shrink-0 text-muted-foreground">{formatRelativeTime(l.created_at)}</span>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className="mt-2 text-[13px] text-muted-foreground">Nenhum lead nos últimos 30 dias.</p>
+          )}
+        </PanelCard>
       </div>
     </div>
-  )
-}
-
-function TaskList({
-  title,
-  empty,
-  tasks,
-  limit,
-  more,
-}: {
-  title: string
-  empty: string
-  tasks: Task[]
-  limit?: number
-  more: { href: string; label: string }
-}) {
-  const shown = limit ? tasks.slice(0, limit) : tasks
-  return (
-    <section className="flex flex-col">
-      <h2 className="flex items-baseline justify-between border-b pb-2">
-        <span className="text-xs font-medium tracking-wide text-muted-foreground uppercase">{title}</span>
-        <span className="text-sm tabular-nums text-muted-foreground">{tasks.length}</span>
-      </h2>
-      {shown.length === 0 ? (
-        <p className="py-4 text-sm text-muted-foreground">{empty}</p>
-      ) : (
-        <ul className="divide-y">
-          {shown.map((t) => (
-            <li key={t.key}>
-              <Link href={t.href} className="group flex flex-col gap-0.5 py-3">
-                <span className="flex items-baseline justify-between gap-3">
-                  <span className="font-medium group-hover:underline">{t.who}</span>
-                  {t.when ? <span className="shrink-0 text-xs text-muted-foreground">{t.when}</span> : null}
-                </span>
-                <span className="text-sm text-muted-foreground">{t.why}</span>
-              </Link>
-            </li>
-          ))}
-        </ul>
-      )}
-      <Link href={more.href} className="mt-2 inline-flex w-fit items-center gap-1 text-sm text-muted-foreground hover:text-foreground">
-        {more.label}
-        {limit && tasks.length > limit ? ` (+${tasks.length - limit})` : ""}
-        <ArrowRightIcon className="size-3.5" aria-hidden />
-      </Link>
-    </section>
   )
 }
