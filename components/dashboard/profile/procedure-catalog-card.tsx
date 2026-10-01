@@ -2,7 +2,7 @@
 
 import { useRef, useState, useTransition } from "react"
 import { useRouter } from "next/navigation"
-import { PencilIcon, Trash2Icon } from "lucide-react"
+import { Loader2Icon, PencilIcon, Trash2Icon } from "lucide-react"
 import { toast } from "sonner"
 
 import {
@@ -67,6 +67,10 @@ function asErrors(message: string | null) {
 export function ProcedureCatalogCard({ items }: ProcedureCatalogCardProps) {
   const router = useRouter()
   const [isPending, startTransition] = useTransition()
+  // Qual ação está no banco agora, para o spinner aparecer só no botão clicado.
+  const [busy, setBusy] = useState<"add" | "edit" | "remove" | null>(null)
+  const pendingAction = isPending ? busy : null
+  const spinner = <Loader2Icon className="mr-2 h-4 w-4 animate-spin" />
   // Lista local; quando o RSC manda uma nova (após o refresh), ela substitui a local.
   const [list, setList] = useState(items)
   const [prevItems, setPrevItems] = useState(items)
@@ -105,6 +109,7 @@ export function ProcedureCatalogCard({ items }: ProcedureCatalogCardProps) {
     setAddError(issue)
     if (issue) return
 
+    setBusy("add")
     startTransition(async () => {
       const result = await createProcedureCatalogItemAction({
         name: addName,
@@ -127,11 +132,19 @@ export function ProcedureCatalogCard({ items }: ProcedureCatalogCardProps) {
     })
   }
 
+  // O card fica dentro do <form> do perfil: Enter aqui salvaria o perfil, não o procedimento.
+  function submitAddOnEnter(e: React.KeyboardEvent<HTMLInputElement>) {
+    if (e.key !== "Enter") return
+    e.preventDefault()
+    if (!isPending) handleAdd()
+  }
+
   function handleSaveEdit(id: string) {
     const issue = firstIssue(editName, editPrice)
     setEditError(issue)
     if (issue) return
 
+    setBusy("edit")
     startTransition(async () => {
       const result = await updateProcedureCatalogItemAction(id, {
         name: editName,
@@ -156,6 +169,7 @@ export function ProcedureCatalogCard({ items }: ProcedureCatalogCardProps) {
   }
 
   function handleRemove(id: string) {
+    setBusy("remove")
     startTransition(async () => {
       const result = await deleteProcedureCatalogItemAction(id)
       if (!result.ok) {
@@ -176,8 +190,7 @@ export function ProcedureCatalogCard({ items }: ProcedureCatalogCardProps) {
           <div className="px-4 py-6 text-center">
             <p className="text-sm font-medium">Nenhum procedimento cadastrado.</p>
             <p className="mt-1 text-sm text-muted-foreground">
-              Cadastre os procedimentos que você cobra além da consulta (ex.:
-              frenectomia, laserterapia).
+              Adicione o primeiro na linha abaixo.
             </p>
           </div>
         )}
@@ -196,6 +209,10 @@ export function ProcedureCatalogCard({ items }: ProcedureCatalogCardProps) {
                   onChange={(e) => setEditName(e.target.value)}
                   onKeyDown={(e) => {
                     if (e.key === "Escape") discardEditing()
+                    if (e.key === "Enter") {
+                      e.preventDefault()
+                      if (!isPending) handleSaveEdit(item.id)
+                    }
                   }}
                 />
                 <Input
@@ -210,6 +227,10 @@ export function ProcedureCatalogCard({ items }: ProcedureCatalogCardProps) {
                   onChange={(e) => setEditPrice(e.target.value)}
                   onKeyDown={(e) => {
                     if (e.key === "Escape") discardEditing()
+                    if (e.key === "Enter") {
+                      e.preventDefault()
+                      if (!isPending) handleSaveEdit(item.id)
+                    }
                   }}
                 />
                 <Button
@@ -218,7 +239,7 @@ export function ProcedureCatalogCard({ items }: ProcedureCatalogCardProps) {
                   disabled={isPending}
                   onClick={() => handleSaveEdit(item.id)}
                 >
-                  {isPending ? "Salvando…" : "Salvar procedimento"}
+                  {pendingAction === "edit" ? <>{spinner}Salvando…</> : "Salvar"}
                 </Button>
                 <Button
                   type="button"
@@ -227,7 +248,7 @@ export function ProcedureCatalogCard({ items }: ProcedureCatalogCardProps) {
                   disabled={isPending}
                   onClick={discardEditing}
                 >
-                  Descartar edição
+                  Cancelar
                 </Button>
               </div>
               <FieldError errors={asErrors(editError?.message ?? null)} />
@@ -281,6 +302,7 @@ export function ProcedureCatalogCard({ items }: ProcedureCatalogCardProps) {
               aria-invalid={addError?.field === "name"}
               value={addName}
               onChange={(e) => setAddName(e.target.value)}
+              onKeyDown={submitAddOnEnter}
             />
             <Input
               className="w-32 tabular-nums"
@@ -292,9 +314,10 @@ export function ProcedureCatalogCard({ items }: ProcedureCatalogCardProps) {
               aria-invalid={addError?.field === "price"}
               value={addPrice}
               onChange={(e) => setAddPrice(e.target.value)}
+              onKeyDown={submitAddOnEnter}
             />
             <Button type="button" size="sm" disabled={isPending} onClick={handleAdd}>
-              {isPending ? "Adicionando…" : "Adicionar"}
+              {pendingAction === "add" ? <>{spinner}Adicionando…</> : "Adicionar"}
             </Button>
           </div>
           <FieldError errors={asErrors(addError?.message ?? null)} />
@@ -323,7 +346,7 @@ export function ProcedureCatalogCard({ items }: ProcedureCatalogCardProps) {
               disabled={isPending}
               onClick={() => removing && handleRemove(removing.id)}
             >
-              {isPending ? "Removendo…" : "Remover"}
+              {pendingAction === "remove" ? <>{spinner}Removendo…</> : "Remover"}
             </Button>
           </AlertDialogFooter>
         </AlertDialogContent>

@@ -1,138 +1,73 @@
 import { Card, CardContent, CardHeader } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
 
+function SectionSkeleton({ children }: { children: React.ReactNode }) {
+  return (
+    <Card>
+      <CardHeader>
+        <div className="flex items-center gap-2">
+          <Skeleton className="size-8 rounded-lg" />
+          <Skeleton className="h-5 w-44" />
+        </div>
+        <Skeleton className="mt-1 h-4 w-full max-w-xl" />
+      </CardHeader>
+      <CardContent>{children}</CardContent>
+    </Card>
+  )
+}
+
+function FieldSkeleton() {
+  return (
+    <div className="space-y-2">
+      <Skeleton className="h-4 w-20" />
+      <Skeleton className="h-9 w-full" />
+    </div>
+  )
+}
+
+/** Espelha o layout de `ProfileContent`: identidade, dados, marca, relatório e valores. */
 export function ProfileLoading() {
   return (
-    <div className="flex flex-col gap-8 max-w-4xl w-full">
-      {/* Informações do perfil */}
-      <Card>
-        <CardHeader>
-          <div className="flex items-center gap-2">
-            <Skeleton className="h-5 w-5 rounded" />
-            <Skeleton className="h-6 w-48" />
-          </div>
-          <Skeleton className="mt-1 h-4 w-full max-w-md" />
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid gap-4 sm:grid-cols-2">
-            <div className="space-y-2">
-              <Skeleton className="h-4 w-12" />
-              <Skeleton className="h-9 w-full" />
-            </div>
-            <div className="space-y-2">
-              <Skeleton className="h-4 w-16" />
-              <Skeleton className="h-9 w-full" />
-            </div>
-          </div>
-          <div className="space-y-2">
-            <Skeleton className="h-4 w-14" />
-            <Skeleton className="h-9 w-full" />
-          </div>
-          <div className="grid gap-4 sm:grid-cols-2">
-            <div className="space-y-2">
-              <Skeleton className="h-4 w-8" />
-              <Skeleton className="h-9 w-full" />
-            </div>
-            <div className="space-y-2">
-              <Skeleton className="h-4 w-8" />
-              <Skeleton className="h-9 w-full" />
-            </div>
-          </div>
-          <div className="space-y-2">
-            <Skeleton className="h-4 w-32" />
-            <Skeleton className="h-9 w-full" />
-          </div>
-          <div className="space-y-2">
-            <Skeleton className="h-4 w-10" />
-            <Skeleton className="h-9 w-full" />
-          </div>
-          <div className="space-y-2">
-            <Skeleton className="h-4 w-36" />
-            <Skeleton className="h-10 w-full max-w-xs" />
-          </div>
-          <Skeleton className="h-9 w-20" />
-        </CardContent>
-      </Card>
-
-      {/* Logos */}
-      <Card>
-        <CardHeader>
-          <div className="flex items-center gap-2">
-            <Skeleton className="h-5 w-5 rounded" />
-            <Skeleton className="h-6 w-20" />
-          </div>
-          <Skeleton className="mt-1 h-4 w-full max-w-sm" />
-        </CardHeader>
-        <CardContent className="grid gap-6 sm:grid-cols-4">
-          <div className="space-y-3">
-            <Skeleton className="h-4 w-24" />
-            <div className="flex flex-col gap-3">
-              <Skeleton className="aspect-square max-w-[200px] w-full rounded-lg" />
-              <div className="flex gap-2">
-                <Skeleton className="h-8 w-16" />
-                <Skeleton className="h-8 w-20" />
-              </div>
-            </div>
-          </div>
-          <div className="space-y-3">
-            <Skeleton className="h-4 w-20" />
-            <div className="flex flex-col gap-3">
-              <Skeleton className="aspect-square max-w-[200px] w-full rounded-lg" />
-              <div className="flex gap-2">
-                <Skeleton className="h-8 w-16" />
-                <Skeleton className="h-8 w-20" />
-              </div>
-            </div>
+    <div className="flex w-full max-w-4xl flex-col gap-6" aria-busy aria-label="Carregando perfil">
+      <Card className="gap-0 overflow-hidden py-0">
+        <div className="h-16 bg-muted/40" />
+        <CardContent className="-mt-8 flex items-end gap-4 pb-6">
+          <Skeleton className="size-20 rounded-2xl border-4 border-card" />
+          <div className="space-y-2 pb-1">
+            <Skeleton className="h-5 w-48" />
+            <Skeleton className="h-4 w-64" />
           </div>
         </CardContent>
       </Card>
 
-      {/* Aparência */}
-      <Card>
-        <CardHeader>
-          <Skeleton className="h-6 w-24" />
-          <Skeleton className="mt-1 h-4 w-full max-w-md" />
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-3 gap-3">
-            {[1, 2, 3].map((i) => (
-              <Skeleton key={i} className="h-[72px] rounded-lg" />
-            ))}
-          </div>
-        </CardContent>
-      </Card>
+      <SectionSkeleton>
+        <div className="grid gap-4 sm:grid-cols-2">
+          {[1, 2, 3, 4, 5, 6].map((i) => (
+            <FieldSkeleton key={i} />
+          ))}
+        </div>
+      </SectionSkeleton>
 
-      {/* Plano */}
-      <Card>
-        <CardHeader>
-          <div className="flex items-center gap-2">
-            <Skeleton className="h-5 w-5 rounded" />
-            <Skeleton className="h-6 w-14" />
-          </div>
-          <Skeleton className="mt-1 h-4 w-full max-w-md" />
-        </CardHeader>
-        <CardContent className="grid gap-4 sm:grid-cols-2">
-          <Skeleton className="h-10 w-full max-w-xs" />
-        </CardContent>
-      </Card>
+      <SectionSkeleton>
+        <div className="grid gap-6 sm:grid-cols-[2fr_1fr]">
+          <Skeleton className="aspect-[3/1] w-full rounded-xl" />
+          <Skeleton className="aspect-square w-full max-w-40 rounded-xl" />
+        </div>
+        <Skeleton className="mt-6 h-36 w-full rounded-xl" />
+      </SectionSkeleton>
 
-      {/* Zona de perigo */}
-      <section className="space-y-2">
-        <Skeleton className="h-7 w-40" />
-        <Skeleton className="h-4 w-full max-w-sm" />
-        <Card className="border-destructive/50 bg-destructive/5">
-          <CardHeader>
-            <div className="flex items-center gap-2">
-              <Skeleton className="h-5 w-5 rounded" />
-              <Skeleton className="h-6 w-56" />
-            </div>
-            <Skeleton className="mt-1 h-4 w-full max-w-lg" />
-          </CardHeader>
-          <CardContent className="space-y-3">
-            <Skeleton className="h-9 w-48" />
-          </CardContent>
-        </Card>
-      </section>
+      <SectionSkeleton>
+        <div className="max-w-md">
+          <FieldSkeleton />
+        </div>
+      </SectionSkeleton>
+
+      <SectionSkeleton>
+        <div className="max-w-xs">
+          <FieldSkeleton />
+        </div>
+        <Skeleton className="mt-6 h-28 w-full rounded-lg" />
+      </SectionSkeleton>
     </div>
   )
 }
