@@ -2,6 +2,7 @@ import { Suspense } from "react"
 import Link from "next/link"
 import {
   AlarmClockIcon,
+  CircleDashedIcon,
   BadgeCheckIcon,
   ChevronRightIcon,
   FlameIcon,
@@ -14,6 +15,7 @@ import {
   MinusIcon,
   MousePointerClickIcon,
   SendIcon,
+  SparklesIcon,
   type LucideIcon,
 } from "lucide-react"
 
@@ -25,6 +27,7 @@ import {
   STAGE_LABEL,
   funnelRank,
   funnelStage,
+  isClinicEmail,
   isFollowUpDue,
   temperature,
   type FunnelStage,
@@ -41,6 +44,12 @@ export const metadata = { title: "Admin · Funil" }
 const PAGE_SIZE = 60
 
 const CHIPS: Record<string, { label: string; icon: LucideIcon; match: (p: ProspectRow, now: Date) => boolean }> = {
+  novos: { label: "Não contatados", icon: CircleDashedIcon, match: (p) => funnelStage(p) === "novo" },
+  recentes: {
+    label: "Entraram nos últimos 7 dias",
+    icon: SparklesIcon,
+    match: (p, now) => now.getTime() - new Date(p.created_at).getTime() <= 7 * 86_400_000,
+  },
   quentes: { label: "Quentes", icon: FlameIcon, match: (p, now) => temperature(p, now)?.temp === "quente" },
   abriu: {
     label: "Abriu e não respondeu",
@@ -65,10 +74,10 @@ const CHANNEL: Record<string, string> = { email: "E-mail", whatsapp: "WhatsApp",
 export default async function AdminFunnelPage({
   searchParams,
 }: {
-  searchParams: Promise<{ etapa?: string; ver?: string; cidade?: string; q?: string; todos?: string }>
+  searchParams: Promise<{ etapa?: string; ver?: string; cidade?: string; canal?: string; q?: string; todos?: string }>
 }) {
   const admin = await requireAdmin()
-  const { etapa, ver, cidade, q, todos } = await searchParams
+  const { etapa, ver, cidade, canal, q, todos } = await searchParams
   const now = new Date()
   const stage = FUNNEL_STAGES.includes(etapa as FunnelStage) ? (etapa as FunnelStage) : null
   const chip = ver && ver in CHIPS ? ver : null
@@ -77,6 +86,8 @@ export default async function AdminFunnelPage({
   const all = await listProspects(admin)
   const stageCount = (s: FunnelStage) => all.filter((p) => funnelStage(p) === s).length
   const chipCount = (key: string) => all.filter((p) => CHIPS[key].match(p, now)).length
+  const emails = all.map((p) => p.email?.trim().toLowerCase()).filter((e): e is string => !!e)
+  const shared = new Set(emails.filter((e, i) => emails.indexOf(e) !== i))
   const cities = [...new Set(all.map((p) => p.city).filter((c): c is string => !!c))].sort((a, b) => a.localeCompare(b, "pt-BR"))
 
   const visible = all
@@ -85,6 +96,10 @@ export default async function AdminFunnelPage({
         (!stage || funnelStage(p) === stage) &&
         (!chip || CHIPS[chip].match(p, now)) &&
         (!cidade || p.city === cidade) &&
+        (canal !== "whatsapp" || !!whatsappDigits(p.phone)) &&
+        (canal !== "email" || !!p.email) &&
+        (canal !== "email-pessoal" || (!!p.email && !isClinicEmail(p.email, shared))) &&
+        (canal !== "email-clinica" || isClinicEmail(p.email, shared)) &&
         (!query || `${p.full_name} ${p.clinic ?? ""} ${p.email ?? ""}`.toLowerCase().includes(query)),
     )
     .sort((a, b) => funnelRank(a, now) - funnelRank(b, now) || a.full_name.localeCompare(b.full_name, "pt-BR"))
@@ -92,7 +107,7 @@ export default async function AdminFunnelPage({
 
   const href = (patch: Record<string, string | null>) => {
     const params = new URLSearchParams()
-    const current = { etapa: stage, ver: chip, cidade: cidade ?? null, q: q ?? null, ...patch }
+    const current = { etapa: stage, ver: chip, cidade: cidade ?? null, canal: canal ?? null, q: q ?? null, ...patch }
     for (const [k, v] of Object.entries(current)) if (v) params.set(k, v)
     const s = params.toString()
     return s ? `/dashboard/admin/funil?${s}` : "/dashboard/admin/funil"

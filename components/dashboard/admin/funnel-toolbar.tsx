@@ -4,7 +4,7 @@ import * as React from "react"
 import { usePathname, useRouter, useSearchParams } from "next/navigation"
 import { SearchIcon } from "lucide-react"
 
-/** Busca (Enter) e cidade (ao trocar) viram ?q= e ?cidade=, mantendo etapa e filtro. */
+/** Busca (Enter), cidade e canal (ao trocar) viram ?q=, ?cidade= e ?canal=, mantendo etapa e filtro. */
 export function FunnelToolbar({ cities }: { cities: string[] }) {
   const router = useRouter()
   const pathname = usePathname()
@@ -48,6 +48,18 @@ export function FunnelToolbar({ cities }: { cities: string[] }) {
             {c}
           </option>
         ))}
+      </select>
+      <select
+        aria-label="Canal"
+        value={params.get("canal") ?? ""}
+        onChange={(e) => go("canal", e.target.value)}
+        className="h-9 rounded-lg bg-card px-3 text-sm ring-1 ring-border outline-none focus:ring-2 focus:ring-primary"
+      >
+        <option value="">Todos os canais</option>
+        <option value="whatsapp">Com WhatsApp</option>
+        <option value="email">Com e-mail</option>
+        <option value="email-pessoal">E-mail pessoal</option>
+        <option value="email-clinica">E-mail de clínica</option>
       </select>
     </>
   )

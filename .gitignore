@@ -60,3 +60,5 @@ ds-bundle/
 .mcp.json
 # Cached research fetches
 .env*
+/scripts/prospects/data/
+__pycache__/
