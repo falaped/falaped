@@ -25,7 +25,7 @@ function FieldSkeleton() {
   )
 }
 
-/** Espelha o layout de `ProfileContent`: identidade, dados, marca, relatório e valores. */
+/** Espelha o layout de `ProfileContent`: identidade, dados (com cidade), marca com prévias, relatório e valores. */
 export function ProfileLoading() {
   return (
     <div className="flex w-full max-w-4xl flex-col gap-6" aria-busy aria-label="Carregando perfil">
@@ -45,6 +45,7 @@ export function ProfileLoading() {
           {[1, 2, 3, 4, 5, 6].map((i) => (
             <FieldSkeleton key={i} />
           ))}
+          <Skeleton className="h-36 w-full rounded-xl sm:col-span-2" />
         </div>
       </SectionSkeleton>
 
@@ -53,7 +54,10 @@ export function ProfileLoading() {
           <Skeleton className="aspect-[3/1] w-full rounded-xl" />
           <Skeleton className="aspect-square w-full max-w-40 rounded-xl" />
         </div>
-        <Skeleton className="mt-6 h-36 w-full rounded-xl" />
+        <div className="mt-6 grid gap-6 sm:grid-cols-[2fr_1fr]">
+          <Skeleton className="h-40 w-full rounded-xl" />
+          <Skeleton className="h-12 w-full rounded-lg" />
+        </div>
       </SectionSkeleton>
 
       <SectionSkeleton>

@@ -10,6 +10,7 @@ import { getFriendlyToastMessage } from "@/lib/get-friendly-toast-message"
 import {
   AlertTriangleIcon,
   BadgeCheckIcon,
+  ChevronsUpDownIcon,
   BanknoteIcon,
   FileTextIcon,
   ImageIcon,
@@ -168,7 +169,7 @@ function TextField({
           aria-invalid={!!error}
           {...form.register(name)}
         />
-        {description ? <FieldDescription>{description}</FieldDescription> : null}
+        {description ? <FieldDescription className="text-xs text-muted-foreground/80">{description}</FieldDescription> : null}
         <FieldError errors={error ? [error] : undefined} />
       </FieldContent>
     </Field>
@@ -202,7 +203,7 @@ function LogoSlot({
     <div className="flex flex-col gap-3">
       <div>
         <p className="text-sm font-medium">{title}</p>
-        <p className="text-xs text-muted-foreground">{hint}</p>
+        <p className="text-xs text-muted-foreground/80">{hint}</p>
       </div>
       <button
         type="button"
@@ -526,13 +527,38 @@ export function ProfileContent({
         <SectionHeader
           icon={StethoscopeIcon}
           title="Dados profissionais"
-          description="Seu nome, CRM e RQE saem impressos em receitas, atestados, pedidos de exame e relatórios. Escreva como estão no seu carimbo."
+          description="Seu nome, CRM, RQE e cidade saem impressos em receitas, atestados, pedidos de exame e relatórios. Escreva como estão no seu carimbo."
         />
         <CardContent className="grid gap-4 sm:grid-cols-2">
           <TextField form={form} name="first_name" label="Nome" placeholder="Ex.: Mariana" />
           <TextField form={form} name="surname" label="Sobrenome" placeholder="Ex.: Souza Lima" />
           <TextField form={form} name="crm" label="CRM" placeholder="Ex.: 12345 MG" description="Número e estado, como no carimbo." />
           <TextField form={form} name="rqe" label="RQE" placeholder="Ex.: 6789" description="Registro de especialista. Deixe em branco se não tiver." />
+          <div className="rounded-xl border bg-muted/20 p-4 sm:col-span-2">
+            <div className="mb-1 flex flex-wrap items-center justify-between gap-2">
+              <div className="flex items-center gap-2">
+                <MapPin className="size-4 text-muted-foreground" />
+                <p className="text-sm font-medium">Onde você atende</p>
+              </div>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={handleUseGeolocation}
+                disabled={geoLoading}
+              >
+                {geoLoading ? <Loader2Icon className="mr-2 size-4 animate-spin" /> : <MapPin className="mr-2 size-4" />}
+                {geoLoading ? "Buscando…" : "Usar minha localização"}
+              </Button>
+            </div>
+            <p className="mb-4 text-xs text-muted-foreground/80">
+              A cidade sai junto da data nos documentos.
+            </p>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <TextField form={form} name="default_location_city" label="Cidade" placeholder="Ex.: Belo Horizonte" />
+              <TextField form={form} name="default_location_state" label="Estado" placeholder="Ex.: Minas Gerais" />
+            </div>
+          </div>
           <TextField
             form={form}
             name="email"
@@ -552,7 +578,7 @@ export function ProfileContent({
         <SectionHeader
           icon={PaletteIcon}
           title="Sua marca nos documentos"
-          description="Cada documento que você gera sai com a sua cara. A logo completa vai no cabeçalho de receitas, atestados, pedidos de exame, orientações, encaminhamentos e relatórios. A logo curta aparece no menu do Falaped."
+          description="Cada documento que você gera sai com a sua cara. A logo completa vai no cabeçalho de receitas, atestados, pedidos de exame, orientações, encaminhamentos e relatórios. A logo curta aparece no menu do Falaped. Veja as duas prévias logo abaixo."
         />
         <CardContent className="flex flex-col gap-6">
           <input
@@ -598,66 +624,69 @@ export function ProfileContent({
             />
           </div>
 
-          <div className="rounded-xl border bg-muted/20 p-4">
-            <div className="mb-1 flex flex-wrap items-center justify-between gap-2">
-              <div className="flex items-center gap-2">
-                <MapPin className="size-4 text-muted-foreground" />
-                <p className="text-sm font-medium">Onde você atende</p>
-              </div>
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={handleUseGeolocation}
-                disabled={geoLoading}
-              >
-                {geoLoading ? <Loader2Icon className="mr-2 size-4 animate-spin" /> : <MapPin className="mr-2 size-4" />}
-                {geoLoading ? "Buscando…" : "Usar minha localização"}
-              </Button>
-            </div>
-            <p className="mb-4 text-xs text-muted-foreground">
-              A cidade sai junto da data nos documentos. Dá para trocar em cada documento.
-            </p>
-            <div className="grid gap-4 sm:grid-cols-2">
-              <TextField form={form} name="default_location_city" label="Cidade" placeholder="Ex.: Belo Horizonte" />
-              <TextField form={form} name="default_location_state" label="Estado" placeholder="Ex.: Minas Gerais" />
-            </div>
-          </div>
-
-          {/* Prévia: junta logo, nome, registro e cidade como o médico vai ver no papel. */}
-          <div>
-            <p className="mb-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
-              Prévia do documento
-            </p>
-            <div className="rounded-xl border bg-white p-5 text-neutral-900 shadow-sm">
-              <div className="flex items-center justify-between gap-4 border-b border-neutral-200 pb-4">
-                <div className="flex h-12 max-w-[50%] items-center">
-                  {fullLogo ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img src={fullLogo} alt="" className="max-h-12 w-auto object-contain" />
-                  ) : (
-                    <span className="flex items-center gap-1.5 text-xs text-neutral-400">
-                      <ImageIcon className="size-4" /> Sua logo aqui
-                    </span>
-                  )}
+          {/* Prévias com as logos que existem de verdade: documento usa só a completa, menu só a curta. */}
+          <div className="grid gap-6 sm:grid-cols-[2fr_1fr]">
+            <div>
+              <p className="mb-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                Nos documentos
+              </p>
+              <div className="rounded-xl border bg-white p-5 text-neutral-900 shadow-sm">
+                <div className="flex items-center justify-between gap-4 border-b border-neutral-200 pb-4">
+                  <div className="flex h-12 max-w-[50%] items-center">
+                    {fullLogo ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={fullLogo} alt="" className="max-h-12 w-auto object-contain" />
+                    ) : (
+                      <span className="flex items-center gap-1.5 text-xs text-neutral-400">
+                        <ImageIcon className="size-4" /> Sem logo
+                      </span>
+                    )}
+                  </div>
+                  <div className="min-w-0 text-right">
+                    <p className="truncate text-sm font-semibold">{fullName || "Seu nome"}</p>
+                    <p className="truncate text-xs text-neutral-500">{credentials || "CRM"}</p>
+                  </div>
                 </div>
-                <div className="min-w-0 text-right">
-                  <p className="truncate text-sm font-semibold">{fullName || "Seu nome"}</p>
-                  <p className="truncate text-xs text-neutral-500">{credentials || "CRM"}</p>
+                <div className="space-y-1.5 pt-4" aria-hidden>
+                  <div className="h-2 w-3/4 rounded bg-neutral-100" />
+                  <div className="h-2 w-2/3 rounded bg-neutral-100" />
+                  <div className="h-2 w-1/2 rounded bg-neutral-100" />
                 </div>
+                <p className="pt-4 text-right text-xs text-neutral-500">
+                  {place || "Cidade - Estado"}
+                </p>
               </div>
-              <div className="space-y-1.5 pt-4" aria-hidden>
-                <div className="h-2 w-3/4 rounded bg-neutral-100" />
-                <div className="h-2 w-2/3 rounded bg-neutral-100" />
-                <div className="h-2 w-1/2 rounded bg-neutral-100" />
-              </div>
-              <p className="pt-4 text-right text-xs text-neutral-500">
-                {place || "Cidade - Estado"}
+              <p className="mt-2 text-xs text-muted-foreground/80">
+                {fullLogo
+                  ? "Uma aproximação. A posição de cada item muda um pouco entre os tipos de documento."
+                  : shortLogo
+                    ? "Os documentos usam a logo completa. Só com a curta, eles saem sem logo no cabeçalho."
+                    : "Envie a logo completa para ela aparecer no cabeçalho dos documentos."}
               </p>
             </div>
-            <p className="mt-2 text-xs text-muted-foreground">
-              Uma aproximação. A posição de cada item muda um pouco entre os tipos de documento.
-            </p>
+            <div>
+              <p className="mb-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                No menu do Falaped
+              </p>
+              <div className="flex items-center gap-2 rounded-lg border bg-sidebar p-2 text-sidebar-foreground">
+                <span className="flex size-8 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-white text-sm font-medium text-neutral-900">
+                  {shortLogo ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={shortLogo} alt="" className="size-6 object-contain" />
+                  ) : (
+                    initials(firstName, surname)
+                  )}
+                </span>
+                <span className="grid min-w-0 flex-1 text-left text-sm leading-tight">
+                  <span className="truncate font-medium">{fullName || "Seu nome"}</span>
+                  <span className="truncate text-xs text-muted-foreground">{profile.email}</span>
+                </span>
+                <ChevronsUpDownIcon className="size-4 shrink-0 opacity-50" />
+              </div>
+              <p className="mt-2 text-xs text-muted-foreground/80">
+                {shortLogo ? "Assim você aparece no canto do menu." : "Sem logo curta, o menu mostra suas iniciais."}
+              </p>
+            </div>
           </div>
         </CardContent>
       </Card>
