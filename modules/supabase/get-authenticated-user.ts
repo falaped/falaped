@@ -1,5 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import type { Profile } from "@/modules/profiles/types";
+import type { Profile } from "@/modules/profiles/types"
+import { effectiveStatus } from "@/lib/account-status";
 
 export type { Profile };
 
@@ -19,6 +20,7 @@ export type AuthenticatedUserRow = {
   profile_id: string
   whatsapp_linked_at: string | null
   linked_phone_status: boolean
+  trial_ends_at: string | null
 }
 
 
@@ -46,7 +48,7 @@ export async function getAuthenticatedUser(
   const { data: profileData, error: profileError } = await supabase
     .from("profiles")
     .select(
-      "id, auth_user_id, phone, first_name, surname, email, crm, rqe, logo_url_full, logo_url_short, social_media_handle, website, report_template_id, default_location_state, default_location_city, consultation_price_cents, authenticated_users(id, phone, status, profile_id, whatsapp_linked_at, linked_phone_status)"
+      "id, auth_user_id, phone, first_name, surname, email, crm, rqe, logo_url_full, logo_url_short, social_media_handle, website, report_template_id, default_location_state, default_location_city, consultation_price_cents, authenticated_users(id, phone, status, profile_id, whatsapp_linked_at, linked_phone_status, trial_ends_at)"
     )
     .eq("auth_user_id", user.id)
     .maybeSingle();
@@ -61,6 +63,9 @@ export async function getAuthenticatedUser(
     ...profileFields,
     ...(row ?? {}),
     id: profileFields.id,
+    // ponytail: trial vira "paid" aqui para os ~88 gates `status !== "paid"` não mudarem;
+    // separar quando houver cobrança de verdade. No banco a conta continua "unpaid".
+    status: effectiveStatus(row?.status, row?.trial_ends_at),
   } as AuthenticatedUserProfile;
 
   return { profile };
