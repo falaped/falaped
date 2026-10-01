@@ -44,6 +44,11 @@ function firstIssue(name: string, price: string) {
   }
 }
 
+/** Catálogo em ordem de nome, como o RSC entrega — mantém a lista local igual à do servidor. */
+function sortByName(list: ProcedureCatalogItemOption[]) {
+  return [...list].sort((a, b) => a.name.localeCompare(b.name, "pt-BR"))
+}
+
 /** `FieldError` espera objetos com `message`. */
 function asErrors(message: string | null) {
   return message ? [{ message }] : undefined
@@ -54,12 +59,21 @@ function asErrors(message: string | null) {
  *
  * Estado e actions PRÓPRIOS — não entra no `useForm` do perfil: gate diferente (estes
  * actions exigem assinatura, o de perfil não), actions diferentes e ciclo de vida
- * diferente. A lista inicial vem do RSC; cada mutação faz `router.refresh()` porque o
- * `revalidatePath` do action sozinho não basta com `cacheComponents` ligado.
+ * diferente. A lista inicial vem do RSC; cada mutação atualiza a lista local na hora
+ * (o `router.refresh()` re-renderiza o Perfil inteiro e demorava para mostrar o item) e
+ * dispara o refresh em segundo plano, porque o `revalidatePath` do action sozinho não
+ * basta com `cacheComponents` ligado. Quando o refresh chega, a lista volta a ser a do RSC.
  */
 export function ProcedureCatalogCard({ items }: ProcedureCatalogCardProps) {
   const router = useRouter()
   const [isPending, startTransition] = useTransition()
+  // Lista local; quando o RSC manda uma nova (após o refresh), ela substitui a local.
+  const [list, setList] = useState(items)
+  const [prevItems, setPrevItems] = useState(items)
+  if (items !== prevItems) {
+    setPrevItems(items)
+    setList(items)
+  }
   const addNameRef = useRef<HTMLInputElement>(null)
 
   const [addName, setAddName] = useState("")
@@ -100,6 +114,10 @@ export function ProcedureCatalogCard({ items }: ProcedureCatalogCardProps) {
         toast.error(getFriendlyToastMessage(result.error))
         return
       }
+      const parsed = procedureCatalogItemSchema.parse({ name: addName, price: addPrice })
+      setList((prev) =>
+        sortByName([...prev, { id: result.itemId, name: parsed.name, price_cents: parsed.price }]),
+      )
       setAddName("")
       setAddPrice("")
       toast.success("Procedimento adicionado.")
@@ -123,6 +141,14 @@ export function ProcedureCatalogCard({ items }: ProcedureCatalogCardProps) {
         toast.error(getFriendlyToastMessage(result.error))
         return
       }
+      const parsed = procedureCatalogItemSchema.parse({ name: editName, price: editPrice })
+      setList((prev) =>
+        sortByName(
+          prev.map((item) =>
+            item.id === id ? { ...item, name: parsed.name, price_cents: parsed.price } : item,
+          ),
+        ),
+      )
       setEditingId(null)
       toast.success("Procedimento atualizado.")
       router.refresh()
@@ -136,6 +162,7 @@ export function ProcedureCatalogCard({ items }: ProcedureCatalogCardProps) {
         toast.error(getFriendlyToastMessage(result.error))
         return
       }
+      setList((prev) => prev.filter((item) => item.id !== id))
       setRemoving(null)
       toast.success("Procedimento removido.")
       router.refresh()
@@ -145,7 +172,7 @@ export function ProcedureCatalogCard({ items }: ProcedureCatalogCardProps) {
   return (
     <div className="flex flex-col gap-2">
       <div className="divide-border divide-y overflow-hidden rounded-lg border border-border">
-        {items.length === 0 && (
+        {list.length === 0 && (
           <div className="px-4 py-6 text-center">
             <p className="text-sm font-medium">Nenhum procedimento cadastrado.</p>
             <p className="mt-1 text-sm text-muted-foreground">
@@ -155,7 +182,7 @@ export function ProcedureCatalogCard({ items }: ProcedureCatalogCardProps) {
           </div>
         )}
 
-        {items.map((item) =>
+        {list.map((item) =>
           editingId === item.id ? (
             <div key={item.id} className="flex flex-col gap-2 px-4 py-3">
               <div className="flex flex-wrap items-center gap-3">

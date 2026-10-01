@@ -622,6 +622,11 @@ export function ProfileContent({
             <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
               Procedimentos
             </span>
+            <p className="text-sm text-muted-foreground">
+              Cadastre o que você cobra além da consulta, como frenectomia ou
+              laserterapia. Ao encerrar um atendimento, esses procedimentos aparecem
+              para você marcar o que foi feito, e o valor entra no seu financeiro.
+            </p>
             <ProcedureCatalogCard items={procedureCatalogItems} />
           </div>
         </CardContent>
