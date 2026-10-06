@@ -25,11 +25,15 @@ alter table public.message_templates add constraint message_templates_moment_che
 -- Modelos de indicação. {indicado_por} = prospects.referred_by.
 insert into public.message_templates (moment, channel, name, subject, body) values
 ('indicacao', 'whatsapp', 'Indicação · primeiro contato', null,
-'Oi, {tratamento}! Aqui é o {remetente}, CEO do Falaped.
-Quem me passou seu contato foi a {indicado_por}, que achou que você ia gostar de conhecer o que estamos fazendo.
-O Falaped é uma IA que transcreve a consulta pediátrica e já entrega evolução, receita e atestado prontos.
+'Oi, {tratamento}! A {indicado_por} me passou seu contato e achou que você ia gostar de conhecer o Falaped.
 
-Posso te mostrar em 15 minutos? Se quiser conhecer antes: {link}
+Sou o {remetente}, CEO. O Falaped é um assistente de IA feito para o consultório pediátrico:
+
+• Você grava um áudio ou digita o que viu na consulta, e a IA organiza tudo: evolução, receita, atestado e pedido de exame saem prontos para você revisar
+• Mais de 20 escalas pediátricas (M-CHAT-R, PEWS, FLACC, Glasgow, Apgar…), já filtradas pela idade da criança e incluídas no relatório
+• Lê laudos de exame por foto e, na consulta seguinte, te mostra o resumo da anterior e o que ficou pendente
+
+Que tal uma chamada de vídeo rápida, de alguns minutinhos, para eu te apresentar? Você escolhe o melhor horário. Se quiser conhecer antes: {link}
 
 E deixei no site ferramentas gratuitas para o dia a dia (dose pediátrica, curva de crescimento, calendário vacinal), sem custo: https://falaped.com.br/ferramentas'),
 ('indicacao', 'whatsapp', 'Indicação · follow-up', null,
