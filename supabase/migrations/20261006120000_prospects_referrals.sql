@@ -27,15 +27,15 @@ insert into public.message_templates (moment, channel, name, subject, body) valu
 ('indicacao', 'whatsapp', 'Indicação · primeiro contato', null,
 'Oi, {tratamento}! A {indicado_por} me passou seu contato e achou que você ia gostar de conhecer o Falaped.
 
-Sou o {remetente}, CEO. O Falaped é um assistente de IA feito para o consultório pediátrico:
+Sou o {remetente}, CEO do Falaped. Criamos um assistente de IA para o consultório pediátrico:
 
-• Você grava um áudio ou digita o que viu na consulta, e a IA organiza tudo: evolução, receita, atestado e pedido de exame saem prontos para você revisar
-• Mais de 20 escalas pediátricas (M-CHAT-R, PEWS, FLACC, Glasgow, Apgar…), já filtradas pela idade da criança e incluídas no relatório
-• Lê laudos de exame por foto e, na consulta seguinte, te mostra o resumo da anterior e o que ficou pendente
+• Você grava um áudio ou digita o que observou na consulta, e a IA deixa evolução, receita, atestado e pedido de exame prontos para revisar.
+• Você aplica mais de 20 escalas pediátricas (M-CHAT-R, PEWS, FLACC, Glasgow, Apgar e outras), já filtradas pela idade da criança, e o resultado entra no relatório.
+• A IA lê laudos de exame por foto e, na consulta seguinte, mostra o resumo da anterior e o que ficou pendente.
 
-Que tal uma chamada de vídeo rápida, de alguns minutinhos, para eu te apresentar? Você escolhe o melhor horário. Se quiser conhecer antes: {link}
+Que tal uma chamada de vídeo rápida, de alguns minutinhos, para eu apresentar o Falaped? Você escolhe o melhor horário. Se quiser conhecer antes: {link}
 
-E deixei no site ferramentas gratuitas para o dia a dia (dose pediátrica, curva de crescimento, calendário vacinal), sem custo: https://falaped.com.br/ferramentas'),
+Também deixei no site ferramentas gratuitas para o dia a dia, como calculadora de dose, curva de crescimento e calendário vacinal: https://falaped.com.br/ferramentas'),
 ('indicacao', 'whatsapp', 'Indicação · follow-up', null,
 'Oi, {tratamento}! Aqui é o {remetente}, do Falaped, por indicação da {indicado_por}.
 Conseguiu ver minha mensagem? Os {dias_teste} dias grátis continuam reservados para você.
