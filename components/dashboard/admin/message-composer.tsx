@@ -74,9 +74,9 @@ export function MessageComposer({
     (t: MessageTemplate | undefined) => {
       setTemplateId(t?.id ?? null)
       setSubject(t?.subject ? renderTemplate(t.subject, values) : "")
-      setBody(t ? renderTemplate(t.body, values) : "")
+      setBody(t ? renderTemplate(t.body, values, channel) : "")
     },
-    [values],
+    [values, channel],
   )
 
   // Ao abrir ou trocar de momento, começa pelo primeiro modelo daquele momento.
@@ -179,7 +179,7 @@ export function MessageComposer({
                         : `${t.stats.sent} ${t.stats.sent === 1 ? "envio" : "envios"}`}
                     </span>
                   </span>
-                  <span className="mt-0.5 line-clamp-1 text-xs text-muted-foreground">{renderTemplate(t.body, values)}</span>
+                  <span className="mt-0.5 line-clamp-1 text-xs text-muted-foreground">{renderTemplate(t.body, values, channel)}</span>
                 </button>
               ))}
             </div>

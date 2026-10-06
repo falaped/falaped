@@ -62,11 +62,17 @@ export const TEMPLATE_VARS = {
 export type TemplateVar = keyof typeof TEMPLATE_VARS
 export type TemplateValues = Record<TemplateVar, string>
 
-/** Troca {variavel} pelo valor; o que não é variável conhecida fica como está. */
-export function renderTemplate(text: string, values: TemplateValues): string {
-  return text.replace(/\{([a-z_]+)\}/g, (match, key: string) =>
+/**
+ * Troca {variavel} pelo valor; o que não é variável conhecida fica como está. No WhatsApp, os links
+ * do site ganham `?utm_source=whatsapp`: um endereço fixo cuja prévia (imagem) o WhatsApp já guardou,
+ * em vez de montar na hora e mandar o cartão vazio. No e-mail a UTM entra na montagem do HTML.
+ */
+export function renderTemplate(text: string, values: TemplateValues, channel?: MessageChannel): string {
+  const filled = text.replace(/\{([a-z_]+)\}/g, (match, key: string) =>
     key in values ? values[key as TemplateVar] : match,
   )
+  if (channel !== "whatsapp") return filled
+  return filled.replace(/https:\/\/(?:www\.)?falaped\.com\.br[^\s?#]*?(?=[.,;:!)]*(?:\s|$))/g, (url) => `${url}?utm_source=whatsapp`)
 }
 
 /** Valores para uma pessoa: "Dr. Marcos", "Marcos", cidade (Minas se faltar), dias que faltam do teste e quem indicou. */

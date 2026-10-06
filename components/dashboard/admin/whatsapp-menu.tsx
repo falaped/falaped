@@ -59,7 +59,7 @@ export function WhatsappMenu(props: Props) {
               {wa
                 .filter((t) => t.moment === m)
                 .map((t) => {
-                  const body = renderTemplate(t.body, props.values)
+                  const body = renderTemplate(t.body, props.values, "whatsapp")
                   return (
                     <DropdownMenuItem
                       key={t.id}
@@ -130,7 +130,7 @@ export function WhatsappQuickSend({ label, templateName, ...props }: Props & { l
   const t = ofMoment.find((x) => x.name === templateName) ?? ofMoment[0]
   if (!t || !canSend) return null
   return (
-    <Button className={WHATSAPP_BUTTON} onClick={() => send({ templateId: t.id, moment: t.moment, body: renderTemplate(t.body, props.values), label: t.name })}>
+    <Button className={WHATSAPP_BUTTON} onClick={() => send({ templateId: t.id, moment: t.moment, body: renderTemplate(t.body, props.values, "whatsapp"), label: t.name })}>
       <MessageCircleIcon aria-hidden />
       {label}
     </Button>
