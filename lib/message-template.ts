@@ -2,6 +2,7 @@
 
 export const MESSAGE_MOMENTS = [
   "convite",
+  "indicacao",
   "follow-up",
   "boas-vindas",
   "ajuda",
@@ -15,8 +16,18 @@ export type MessageMoment = (typeof MESSAGE_MOMENTS)[number]
 export const LEAD_MOMENTS: readonly MessageMoment[] = ["convite", "follow-up", "boas-vindas"]
 export const CLIENT_MOMENTS: readonly MessageMoment[] = ["boas-vindas", "ajuda", "teste-acabando", "pagamento", "reativacao"]
 
+/**
+ * Momentos que valem para a pessoa. Indicação (`indicado_por` preenchido) só recebe os modelos de
+ * indicação, para toda mensagem dizer quem indicou; os outros leads nunca recebem esses modelos.
+ */
+export function momentsFor(isLead: boolean, values: Pick<TemplateValues, "indicado_por">): readonly MessageMoment[] {
+  if (!isLead) return CLIENT_MOMENTS
+  return values.indicado_por ? ["indicacao"] : LEAD_MOMENTS
+}
+
 export const MOMENT_LABEL: Record<MessageMoment, string> = {
   convite: "Convite frio",
+  indicacao: "Indicação",
   "follow-up": "Follow-up",
   "boas-vindas": "Boas-vindas",
   ajuda: "Ajuda para começar",
@@ -46,6 +57,7 @@ export const TEMPLATE_VARS = {
   preco_cheio: brl(PLAN_PRICE),
   preco_fundador: brl(EARLY_PRICE),
   link: SITE_URL,
+  indicado_por: "Dra. Gabriela Marinho",
 } as const
 export type TemplateVar = keyof typeof TEMPLATE_VARS
 export type TemplateValues = Record<TemplateVar, string>
@@ -57,9 +69,9 @@ export function renderTemplate(text: string, values: TemplateValues): string {
   )
 }
 
-/** Valores para uma pessoa: "Dr. Marcos", "Marcos", cidade (Minas se faltar) e dias que faltam do teste. */
+/** Valores para uma pessoa: "Dr. Marcos", "Marcos", cidade (Minas se faltar), dias que faltam do teste e quem indicou. */
 export function recipientValues(
-  person: { title: string | null; name: string; city: string | null; trialDaysLeft?: number | null },
+  person: { title: string | null; name: string; city: string | null; trialDaysLeft?: number | null; referredBy?: string | null },
   sender: string,
 ): TemplateValues {
   const first = person.name.trim().split(/\s+/)[0] || person.name
@@ -71,5 +83,6 @@ export function recipientValues(
     cidade: person.city || "Minas",
     remetente: sender,
     dias_restantes: d == null ? "poucos dias" : d <= 0 ? "hoje" : d === 1 ? "1 dia" : `${d} dias`,
+    indicado_por: person.referredBy?.trim() ?? "",
   }
 }

@@ -8,6 +8,7 @@ const daysAgo = (n: number) => new Date(now.getTime() - n * 86_400_000).toISOStr
 const base = {
   status: "contatado" as const,
   profile: null,
+  referred_by: null,
   clicked_at: null,
   opened_at: null,
   replied_at: null,
@@ -60,4 +61,11 @@ test("e-mail de clínica: caixa genérica ou compartilhado", () => {
   assert.equal(isClinicEmail("bambinigestao@gmail.com", shared), true)
   assert.equal(isClinicEmail("dra.marcelle@gmail.com", shared), false)
   assert.equal(isClinicEmail(null, shared), false)
+})
+
+test("indicação é sempre quente, até virar cliente ou perdido", () => {
+  const ref = { ...base, referred_by: "Dra. Gabriela Marinho" }
+  assert.deepEqual(temperature(ref, now), { temp: "quente", reason: "indicação da Dra. Gabriela Marinho" })
+  assert.equal(funnelRank(ref, now), 0)
+  assert.equal(temperature({ ...ref, status: "perdido" }, now), null)
 })

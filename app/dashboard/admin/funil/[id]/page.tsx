@@ -10,6 +10,7 @@ import {
   FlameIcon,
   GitCommitHorizontalIcon,
   GlobeIcon,
+  HandshakeIcon,
   HistoryIcon,
   MailCheckIcon,
   MailIcon,
@@ -48,6 +49,7 @@ export const metadata = { title: "Admin · Lead" }
 const EVENT: Record<ProspectEventKind, { icon: LucideIcon; label: string; tone?: "blue" | "green" | "red" }> = {
   captado: { icon: RadarIcon, label: "Captado" },
   lead: { icon: GlobeIcon, label: "Preencheu o formulário da landing", tone: "green" },
+  indicacao: { icon: HandshakeIcon, label: "Indicação", tone: "green" },
   email: { icon: SendIcon, label: "E-mail enviado", tone: "blue" },
   whatsapp: { icon: MessageCircleIcon, label: "WhatsApp aberto", tone: "green" },
   telefone: { icon: PhoneIcon, label: "Ligação", tone: "blue" },
@@ -83,16 +85,36 @@ function eventText(e: ProspectEvent): { title: string; sub: string | null } {
   if (e.kind === "nota") return { title: e.detail ?? "Nota", sub: null }
   if (e.kind === "etapa") return { title: `Etapa: ${e.detail ?? ""}`, sub: null }
   if (e.kind === "lead") return { title: base.label, sub: e.detail ? leadSourceLabel(e.detail) : null }
+  if (e.kind === "indicacao") return { title: e.detail ? `Indicação da ${e.detail}` : base.label, sub: null }
   if (e.kind === "captado") return { title: e.detail ? `Captado em ${e.detail}` : base.label, sub: null }
   return { title: base.label, sub: e.detail }
 }
 
-type Alert = { icon: LucideIcon; title: string; detail: string; moment: MessageMoment; action: string } | null
+type Alert = { icon: LucideIcon; title: string; detail: string; moment: MessageMoment; action: string; templateName?: string } | null
 
 /** O que pede atenção nesta pessoa agora, em ordem de urgência, e a mensagem certa para isso. */
 function alertFor(p: ProspectRow, stage: FunnelStage, now: Date): Alert {
   if (stage === "cliente" || stage === "perdido" || stage === "em-teste") return null
   const t = temperature(p, now)
+  // Indicação só recebe modelos de indicação (toda mensagem diz quem indicou).
+  if (p.referred_by && stage === "novo")
+    return {
+      icon: HandshakeIcon,
+      title: `Indicação da ${p.referred_by} e ainda não recebeu contato`,
+      detail: "Indicação direta é o lead mais quente do funil. A mensagem já diz quem indicou.",
+      moment: "indicacao",
+      action: "Chamar pela indicação",
+      templateName: "Indicação · primeiro contato",
+    }
+  if (p.referred_by && isFollowUpDue(p, now))
+    return {
+      icon: AlarmClockIcon,
+      title: `Follow-up venceu ${formatRelativeTime(p.next_contact_at!)}`,
+      detail: `Lembre que foi indicação da ${p.referred_by}.`,
+      moment: "indicacao",
+      action: "Mandar follow-up",
+      templateName: "Indicação · follow-up",
+    }
   if (stage === "novo" && p.lead_at && t?.temp === "quente")
     return {
       icon: GlobeIcon,
@@ -136,13 +158,18 @@ export default async function AdminLeadPage({ params }: { params: Promise<{ id: 
   const stage = funnelStage(p)
   const temp = temperature(p, now)
   const alert = alertFor(p, stage, now)
-  const values = recipientValues({ title: p.title, name: p.name, city: p.city }, ADMIN_SENDER)
-  const defaultMoment: MessageMoment = alert?.moment ?? (p.invited_at ? "follow-up" : p.lead_at ? "boas-vindas" : "convite")
+  const values = recipientValues({ title: p.title, name: p.name, city: p.city, referredBy: p.referred_by }, ADMIN_SENDER)
+  const defaultMoment: MessageMoment =
+    alert?.moment ?? (p.referred_by ? "indicacao" : p.invited_at ? "follow-up" : p.lead_at ? "boas-vindas" : "convite")
   const context = [
     `Trate por "${values.tratamento}".`,
     `${p.full_name}${p.city ? `, ${p.city}` : ""}${p.clinic ? `, ${p.clinic}` : ""}.`,
     `Etapa: ${STAGE_LABEL[stage]}${temp?.reason ? `; ${temp.reason}` : ""}.`,
-    p.lead_at ? "Deixou contato no site do Falaped." : "Captado em lista de pediatras (Doctoralia/Google Maps), nunca pediu contato.",
+    p.referred_by
+      ? `Indicação direta da ${p.referred_by}${p.referral_group ? ` (${p.referral_group})` : ""}. A mensagem precisa dizer que foi indicação dela.`
+      : p.lead_at
+        ? "Deixou contato no site do Falaped."
+        : "Captado em lista de pediatras (Doctoralia/Google Maps), nunca pediu contato.",
     ...p.events.slice(0, 8).map((e) => `${formatDate(e.created_at)}: ${eventText(e).title}${eventText(e).sub ? ` (${eventText(e).sub})` : ""}`),
   ].join("\n")
   const send = {
@@ -163,6 +190,7 @@ export default async function AdminLeadPage({ params }: { params: Promise<{ id: 
     p.sources.length ? { k: "Fontes", v: p.sources.join(", ") } : null,
     p.rqe ? { k: "RQE", v: p.rqe } : null,
     p.site_emails.length ? { k: "E-mails do site", v: p.site_emails.join(", ") } : null,
+    p.referred_by ? { k: "Indicação", v: [p.referred_by, p.referral_group].filter(Boolean).join(" · ") } : null,
     p.lead_at ? { k: "Landing", v: `${formatDate(p.lead_at)}${p.lead_source ? `, ${leadSourceLabel(p.lead_source)}` : ""}` } : null,
   ] as ({ k: string; v: React.ReactNode } | null)[]).filter((f) => f !== null)
   const links = [
@@ -192,7 +220,7 @@ export default async function AdminLeadPage({ params }: { params: Promise<{ id: 
             <div className="mt-2.5 flex flex-wrap items-center gap-1.5">
               <StagePill stage={stage} />
               {temp ? <TemperaturePill temp={temp.temp} /> : null}
-              <Pill tone="gray" dot={false}>{p.lead_at ? "Veio pela landing" : p.origin === "manual" ? "Cadastro manual" : "Captação"}</Pill>
+              <Pill tone="gray" dot={false}>{p.referred_by ? `Indicação da ${p.referred_by}` : p.lead_at ? "Veio pela landing" : p.origin === "manual" ? "Cadastro manual" : "Captação"}</Pill>
             </div>
           </div>
         </div>
@@ -231,7 +259,7 @@ export default async function AdminLeadPage({ params }: { params: Promise<{ id: 
             <p className="text-[15px] font-semibold">{alert.title}</p>
             <p className="text-[13px] text-amber-800/80 dark:text-amber-300/80">{alert.detail}</p>
           </div>
-          <WhatsappQuickSend {...send} defaultMoment={alert.moment} label={alert.action} />
+          <WhatsappQuickSend {...send} defaultMoment={alert.moment} label={alert.action} templateName={alert.templateName} />
         </GradientCard>
       ) : null}
 

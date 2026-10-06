@@ -3,7 +3,7 @@ import type { SupabaseClient } from "@supabase/supabase-js"
 import { attachProfiles, type ProspectRow } from "@/modules/admin/list-prospects"
 
 export type ProspectEventKind =
-  | "captado" | "lead" | "email" | "whatsapp" | "telefone" | "nota" | "etapa"
+  | "captado" | "lead" | "indicacao" | "email" | "whatsapp" | "telefone" | "nota" | "etapa"
   | "entregue" | "aberto" | "clicou" | "bounce" | "reclamou"
 
 export type ProspectEvent = { id: number; kind: ProspectEventKind; detail: string | null; created_at: string }

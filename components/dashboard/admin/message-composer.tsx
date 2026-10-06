@@ -7,10 +7,9 @@ import { toast } from "sonner"
 
 import { draftMessageWithAiAction, sendMessageEmailAction } from "@/actions"
 import {
-  CLIENT_MOMENTS,
-  LEAD_MOMENTS,
   MESSAGE_MOMENTS,
   MOMENT_LABEL,
+  momentsFor,
   renderTemplate,
   type MessageChannel,
   type MessageMoment,
@@ -62,7 +61,7 @@ export function MessageComposer({
   const router = useRouter()
   const { send: sendWhatsapp } = useWhatsappSend(recipient, phone)
   const ofChannel = templates.filter((t) => t.channel === channel)
-  const allowed = "prospectId" in recipient ? LEAD_MOMENTS : CLIENT_MOMENTS
+  const allowed = momentsFor("prospectId" in recipient, values)
   const moments = MESSAGE_MOMENTS.filter((m) => allowed.includes(m) && ofChannel.some((t) => t.moment === m))
   const [moment, setMoment] = React.useState<MessageMoment>(moments.includes(defaultMoment) ? defaultMoment : (moments[0] ?? defaultMoment))
   const [templateId, setTemplateId] = React.useState<string | null>(null)
