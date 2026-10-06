@@ -25,9 +25,10 @@ alter table public.message_templates add constraint message_templates_moment_che
 -- Modelos de indicação. {indicado_por} = prospects.referred_by.
 insert into public.message_templates (moment, channel, name, subject, body) values
 ('indicacao', 'whatsapp', 'Indicação · primeiro contato', null,
-'Oi, {tratamento}! Aqui é o {remetente}, CEO do Falaped. Quem me passou seu contato foi a {indicado_por}, que achou que você ia gostar de conhecer o que estamos fazendo.
+'Oi, {tratamento}! Aqui é o {remetente}, CEO do Falaped.
+Quem me passou seu contato foi a {indicado_por}, que achou que você ia gostar de conhecer o que estamos fazendo.
 O Falaped é uma IA que transcreve a consulta pediátrica e já entrega evolução, receita e atestado prontos.
-Por ser indicação dela, libero {dias_teste} dias grátis para você testar.
+
 Posso te mostrar em 15 minutos? Se quiser conhecer antes: {link}
 
 E deixei no site ferramentas gratuitas para o dia a dia (dose pediátrica, curva de crescimento, calendário vacinal), sem custo: https://falaped.com.br/ferramentas'),
