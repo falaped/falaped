@@ -63,7 +63,7 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
           <SidebarMenuItem className="my-4 flex justify-center items-center">
             <SidebarMenuButton size="lg" asChild>
               <Link href="/dashboard">
-                <Image src="/full-logo.svg" alt="Logo FALAPED" width={150} height={48} />
+                <Image src="/full-logo.svg" alt="Logo FALAPED" width={150} height={48} loading="eager" className="h-12 w-auto" />
               </Link>
             </SidebarMenuButton>
           </SidebarMenuItem>

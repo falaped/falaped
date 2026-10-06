@@ -43,6 +43,7 @@ export function IllustratedNotice({
             alt={imageAlt}
             width={800}
             height={600}
+            loading="eager"
             className="h-auto max-h-[38svh] w-auto max-w-full mix-blend-multiply"
           />
           {stickers.map((sticker) => (
