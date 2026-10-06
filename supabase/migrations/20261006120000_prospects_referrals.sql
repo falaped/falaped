@@ -36,13 +36,13 @@ Sou o {remetente}, CEO do Falaped. Criamos um assistente de IA para o consultór
 Que tal uma chamada de vídeo rápida, de alguns minutinhos, para eu apresentar o Falaped? Você escolhe o melhor horário.
 Se quiser conhecer antes: {link}
 
-Também deixei no site ferramentas gratuitas para o dia a dia, como calculadora de dose, curva de crescimento e calendário vacinal: https://falaped.com.br/ferramentas'),
+Também deixei no site ferramentas gratuitas para o dia a dia, como calculadora de dose, curva de crescimento e calendário vacinal: https://www.falaped.com.br/ferramentas'),
 ('indicacao', 'whatsapp', 'Indicação · follow-up', null,
 'Oi, {tratamento}! Aqui é o {remetente}, do Falaped. Escrevi há alguns dias, por indicação da {indicado_por}, e queria saber se você conseguiu ver a mensagem.
 
 Uma chamada de vídeo de alguns minutinhos é suficiente para você ver na prática como o Falaped organiza a consulta, filtra as escalas pela idade da criança e deixa os documentos prontos para revisar. Você escolhe o melhor horário.
 
-Enquanto isso, as ferramentas gratuitas do site ficam à sua disposição: https://falaped.com.br/ferramentas'),
+Enquanto isso, as ferramentas gratuitas do site ficam à sua disposição: https://www.falaped.com.br/ferramentas'),
 ('indicacao', 'email', 'Indicação · relato', '{tratamento}, a {indicado_por} me passou seu contato',
 'Olá, {tratamento},
 
@@ -58,6 +58,6 @@ Criamos o Falaped, assistente de IA para o consultório pediátrico, para tirar 
 
 Que tal uma chamada de vídeo rápida, de alguns minutinhos, para eu apresentar o Falaped? É só responder este e-mail com o melhor dia e horário para você. Se preferir conhecer antes, está tudo em {link}
 
-Também deixei no site ferramentas gratuitas para o dia a dia do consultório, como calculadora de dose pediátrica, curva de crescimento da OMS, percentil de IMC e calendário vacinal 2026: https://falaped.com.br/ferramentas
+Também deixei no site ferramentas gratuitas para o dia a dia do consultório, como calculadora de dose pediátrica, curva de crescimento da OMS, percentil de IMC e calendário vacinal 2026: https://www.falaped.com.br/ferramentas
 
 P.S.: Se não for o momento, responda "não", e eu não escrevo de novo.');

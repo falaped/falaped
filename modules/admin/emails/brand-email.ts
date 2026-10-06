@@ -5,7 +5,9 @@ const PAPER = "#f3f5f9"
 const MUTED = "#667085"
 const FONT = "-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif"
 const HEAVY = "'Arial Black',Impact,'Helvetica Neue',Arial,sans-serif"
-const SITE = "https://falaped.com.br"
+const SITE = "https://www.falaped.com.br"
+/** Links do site, com ou sem www, ganham UTM. */
+const SITE_LINK = /^https:\/\/(www\.)?falaped\.com\.br/
 const UTM = "utm_source=email&utm_medium=admin&utm_campaign=mensagens"
 
 const escapeHtml = (v: string) =>
@@ -28,7 +30,7 @@ const logoHtml = () => {
 /** Links soltos no texto viram <a>; o do site ganha UTM para medir o clique. */
 const linkify = (html: string) =>
   html.replace(/https?:\/\/[^\s<]+/g, (url) => {
-    const href = url.startsWith(SITE) ? `${url}${url.includes("?") ? "&" : "?"}${UTM}` : url
+    const href = SITE_LINK.test(url) ? `${url}${url.includes("?") ? "&" : "?"}${UTM}` : url
     return `<a href="${href}" style="color:${INK};font-weight:700">${url.replace(/^https?:\/\//, "")}</a>`
   })
 

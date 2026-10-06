@@ -50,7 +50,7 @@ export default function BooksLandingLayout({ children }: { children: React.React
               </a>
             </li>
             <li>
-              <a href="https://falaped.com.br" target="_blank" rel="noreferrer" className="underline decoration-secondary decoration-2 underline-offset-4">
+              <a href="https://www.falaped.com.br" target="_blank" rel="noreferrer" className="underline decoration-secondary decoration-2 underline-offset-4">
                 Falaped para pediatras
               </a>
             </li>

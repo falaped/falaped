@@ -43,7 +43,7 @@ export type MessageChannel = (typeof MESSAGE_CHANNELS)[number]
 export const TRIAL_DAYS = 15
 export const PLAN_PRICE = 149.99
 export const EARLY_PRICE = 49.99
-export const SITE_URL = "https://falaped.com.br"
+export const SITE_URL = "https://www.falaped.com.br"
 
 const brl = (v: number) => `R$ ${v.toFixed(2).replace(".", ",")}`
 
