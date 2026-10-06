@@ -7,6 +7,7 @@ import {
   ChevronRightIcon,
   FlameIcon,
   GlobeIcon,
+  HandshakeIcon,
   MailCheckIcon,
   MailIcon,
   MailOpenIcon,
@@ -34,7 +35,7 @@ import {
 } from "@/lib/funnel"
 import { cn } from "@/lib/utils"
 import { listProspects, type EmailStatus, type ProspectRow } from "@/modules/admin/list-prospects"
-import { Initials, PageHero } from "@/components/dashboard/admin/admin-ui"
+import { GradientCard, IconChip, Initials, PageHero } from "@/components/dashboard/admin/admin-ui"
 import { STAGE_DOT, StagePill, TemperaturePill } from "@/components/dashboard/admin/funnel-badges"
 import { FunnelToolbar } from "@/components/dashboard/admin/funnel-toolbar"
 import { ImportProspectsDialog } from "@/components/dashboard/admin/import-prospects-dialog"
@@ -44,6 +45,7 @@ export const metadata = { title: "Admin · Funil" }
 const PAGE_SIZE = 60
 
 const CHIPS: Record<string, { label: string; icon: LucideIcon; match: (p: ProspectRow, now: Date) => boolean }> = {
+  indicacoes: { label: "Indicações", icon: HandshakeIcon, match: (p) => !!p.referred_by },
   novos: { label: "Não contatados", icon: CircleDashedIcon, match: (p) => funnelStage(p) === "novo" },
   recentes: {
     label: "Entraram nos últimos 7 dias",
@@ -100,7 +102,7 @@ export default async function AdminFunnelPage({
         (canal !== "email" || !!p.email) &&
         (canal !== "email-pessoal" || (!!p.email && !isClinicEmail(p.email, shared))) &&
         (canal !== "email-clinica" || isClinicEmail(p.email, shared)) &&
-        (!query || `${p.full_name} ${p.clinic ?? ""} ${p.email ?? ""}`.toLowerCase().includes(query)),
+        (!query || `${p.full_name} ${p.clinic ?? ""} ${p.referral_group ?? ""} ${p.email ?? ""}`.toLowerCase().includes(query)),
     )
     .sort((a, b) => funnelRank(a, now) - funnelRank(b, now) || a.full_name.localeCompare(b.full_name, "pt-BR"))
   const shown = todos ? visible : visible.slice(0, PAGE_SIZE)
@@ -112,6 +114,15 @@ export default async function AdminFunnelPage({
     const s = params.toString()
     return s ? `/dashboard/admin/funil?${s}` : "/dashboard/admin/funil"
   }
+
+  const referrals = all.filter((p) => p.referred_by)
+  const referrers = [...new Set(referrals.map((p) => p.referred_by!))]
+  const referralGroups = [...new Set(referrals.map((p) => p.referral_group).filter((g): g is string => !!g))].map((g) => ({
+    name: g,
+    total: referrals.filter((p) => p.referral_group === g).length,
+    fresh: referrals.filter((p) => p.referral_group === g && funnelStage(p) === "novo").length,
+  }))
+  const referralFresh = referrals.filter((p) => funnelStage(p) === "novo").length
 
   const hot = chipCount("quentes")
   const due = chipCount("vencido")
@@ -129,6 +140,48 @@ export default async function AdminFunnelPage({
           <ImportProspectsDialog />
         </div>
       </div>
+
+      {referrals.length > 0 ? (
+        <GradientCard className="flex flex-col gap-4 px-6 py-5">
+          <div className="flex flex-wrap items-center gap-4">
+            <IconChip icon={HandshakeIcon} />
+            <div className="min-w-0 flex-1">
+              <h2 className="text-[17px] font-semibold tracking-tight">Indicações diretas</h2>
+              <p className="text-[13px] text-muted-foreground">
+                {referrals.length} {referrals.length === 1 ? "pediatra indicado" : "pediatras indicados"} por {referrers.join(", ")}
+                {referralFresh > 0 ? `, ${referralFresh} ainda sem contato` : ", todos já contatados"}. Toda mensagem diz quem indicou.
+              </p>
+            </div>
+            <Link
+              href={href({ ver: chip === "indicacoes" ? null : "indicacoes", q: null, todos: null })}
+              className="flex h-9 items-center rounded-lg bg-foreground px-4 text-sm font-medium text-background transition-opacity hover:opacity-90"
+            >
+              {chip === "indicacoes" ? "Ver todo o funil" : "Ver indicações"}
+            </Link>
+          </div>
+          {referralGroups.length > 0 ? (
+            <div className="flex flex-wrap gap-2">
+              {referralGroups.map((g) => {
+                const on = chip === "indicacoes" && q === g.name
+                return (
+                  <Link
+                    key={g.name}
+                    href={href({ ver: "indicacoes", q: on ? null : g.name, todos: null })}
+                    aria-current={on ? "page" : undefined}
+                    className={cn(
+                      "flex h-8 items-center gap-1.5 rounded-full px-3.5 text-[13px] ring-1 transition-colors",
+                      on ? "bg-foreground text-background ring-foreground" : "bg-card ring-border hover:ring-primary/60",
+                    )}
+                  >
+                    {g.name}
+                    <span className="opacity-60 tabular-nums">{g.fresh > 0 ? `${g.fresh}/${g.total}` : g.total}</span>
+                  </Link>
+                )
+              })}
+            </div>
+          ) : null}
+        </GradientCard>
+      ) : null}
 
       <div className="grid grid-cols-3 gap-3 xl:grid-cols-6">
         {FUNNEL_STAGES.map((s) => {
@@ -223,7 +276,7 @@ export default async function AdminFunnelPage({
                 const invite = p.email_status ? INVITE[p.email_status] : null
                 const InviteIcon = invite?.icon ?? MinusIcon
                 const isDue = isFollowUpDue(p, now)
-                const sub = [p.clinic, p.city].filter(Boolean).join(" · ")
+                const sub = [p.referral_group ?? p.clinic, p.city].filter(Boolean).join(" · ")
                 return (
                   <tr key={p.id} className="relative border-b transition-colors last:border-0 hover:bg-primary/5">
                     <td className="py-3 pr-3 pl-5 whitespace-normal!">
@@ -238,6 +291,12 @@ export default async function AdminFunnelPage({
                           </Link>
                           <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
                             <span className="truncate">{sub || p.email || "sem dados"}</span>
+                            {p.referred_by ? (
+                              <span className="flex shrink-0 items-center gap-0.5 rounded bg-orange-500/12 px-1.5 text-[11px] font-medium text-orange-700 dark:text-orange-400">
+                                <HandshakeIcon className="size-3" aria-hidden />
+                                Indicação
+                              </span>
+                            ) : null}
                             {p.lead_at ? <span className="shrink-0 rounded bg-muted px-1.5 text-[11px] font-medium">Landing</span> : null}
                             {p.profile_id ? (
                               <span className="flex shrink-0 items-center gap-0.5 rounded bg-primary/12 px-1.5 text-[11px] font-medium text-primary-ink">

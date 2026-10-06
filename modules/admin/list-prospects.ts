@@ -39,7 +39,10 @@ export type ProspectRow = {
   reviews: string | null
   status: ProspectStatus
   lost_reason: string | null
-  origin: "captacao" | "landing" | "manual"
+  origin: "captacao" | "landing" | "manual" | "indicacao"
+  /** Quem indicou; preenchido = indicação direta (seção própria no funil, sempre quente). */
+  referred_by: string | null
+  referral_group: string | null
   lead_at: string | null
   lead_source: string | null
   replied_at: string | null

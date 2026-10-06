@@ -3,7 +3,7 @@
 import * as React from "react"
 import { ChevronDownIcon, MailIcon, MessageCircleIcon, SparklesIcon } from "lucide-react"
 
-import { CLIENT_MOMENTS, LEAD_MOMENTS, MESSAGE_MOMENTS, MOMENT_LABEL, renderTemplate, type MessageMoment, type TemplateValues } from "@/lib/message-template"
+import { MESSAGE_MOMENTS, MOMENT_LABEL, momentsFor, renderTemplate, type MessageMoment, type TemplateValues } from "@/lib/message-template"
 import { cn } from "@/lib/utils"
 import type { MessageTemplate } from "@/modules/admin/list-message-templates"
 import { WHATSAPP_BUTTON } from "@/components/dashboard/admin/admin-ui"
@@ -36,7 +36,7 @@ export function WhatsappMenu(props: Props) {
   const [composer, setComposer] = React.useState(false)
   const wa = props.templates.filter((t) => t.channel === "whatsapp")
   // Momento sugerido primeiro, depois a ordem natural.
-  const allowed = "prospectId" in props.recipient ? LEAD_MOMENTS : CLIENT_MOMENTS
+  const allowed = momentsFor("prospectId" in props.recipient, props.values)
   const moments = [props.defaultMoment, ...MESSAGE_MOMENTS.filter((m) => m !== props.defaultMoment)].filter(
     (m) => allowed.includes(m) && wa.some((t) => t.moment === m),
   )
@@ -59,7 +59,7 @@ export function WhatsappMenu(props: Props) {
               {wa
                 .filter((t) => t.moment === m)
                 .map((t) => {
-                  const body = renderTemplate(t.body, props.values)
+                  const body = renderTemplate(t.body, props.values, "whatsapp")
                   return (
                     <DropdownMenuItem
                       key={t.id}
@@ -123,13 +123,14 @@ export function EmailComposerButton({ className, label = "E-mail", ...props }: P
   )
 }
 
-/** Ação direta do alerta: manda o primeiro modelo de WhatsApp do momento sugerido. */
-export function WhatsappQuickSend({ label, ...props }: Props & { label: string }) {
+/** Ação direta do alerta: manda o modelo de WhatsApp com esse nome no momento sugerido, senão o primeiro dele. */
+export function WhatsappQuickSend({ label, templateName, ...props }: Props & { label: string; templateName?: string }) {
   const { send, canSend } = useWhatsappSend(props.recipient, props.phone)
-  const t = props.templates.find((x) => x.channel === "whatsapp" && x.moment === props.defaultMoment)
+  const ofMoment = props.templates.filter((x) => x.channel === "whatsapp" && x.moment === props.defaultMoment)
+  const t = ofMoment.find((x) => x.name === templateName) ?? ofMoment[0]
   if (!t || !canSend) return null
   return (
-    <Button className={WHATSAPP_BUTTON} onClick={() => send({ templateId: t.id, moment: t.moment, body: renderTemplate(t.body, props.values), label: t.name })}>
+    <Button className={WHATSAPP_BUTTON} onClick={() => send({ templateId: t.id, moment: t.moment, body: renderTemplate(t.body, props.values, "whatsapp"), label: t.name })}>
       <MessageCircleIcon aria-hidden />
       {label}
     </Button>

@@ -2,6 +2,7 @@ import Link from "next/link"
 import {
   CreditCardIcon,
   HandIcon,
+  HandshakeIcon,
   HourglassIcon,
   LifeBuoyIcon,
   RepeatIcon,
@@ -21,6 +22,7 @@ export const metadata = { title: "Admin · Mensagens" }
 
 const MOMENT_ICON: Record<MessageMoment, LucideIcon> = {
   convite: SendIcon,
+  indicacao: HandshakeIcon,
   "follow-up": RepeatIcon,
   "boas-vindas": HandIcon,
   ajuda: LifeBuoyIcon,

@@ -21,7 +21,7 @@ export const TEMPERATURE_LABEL: Record<Temperature, string> = { quente: "Quente"
 
 type FunnelRow = Pick<
   ProspectRow,
-  "status" | "profile" | "clicked_at" | "opened_at" | "replied_at" | "lead_at" | "last_channel" | "last_contact_at" | "next_contact_at"
+  "status" | "profile" | "referred_by" | "clicked_at" | "opened_at" | "replied_at" | "lead_at" | "last_channel" | "last_contact_at" | "next_contact_at"
 >
 
 /** Etapa do funil: com conta, a etapa vem do perfil (pago = cliente); sem conta, do que o admin marcou. */
@@ -35,13 +35,14 @@ const daysSince = (iso: string | null, now: Date) =>
 const ago = (days: number) => (days <= 0 ? "hoje" : days === 1 ? "ontem" : `há ${days} dias`)
 
 /**
- * Temperatura automática. Quente: clicou, respondeu, veio da landing ou criou conta em até 14 dias.
+ * Temperatura automática. Quente: indicação direta (sempre), ou clicou, respondeu, veio da landing ou criou conta em até 14 dias.
  * Morna: abriu o e-mail ou recebeu WhatsApp em até 30 dias. O resto é fria.
  * Cliente e perdido não têm temperatura (null).
  */
 export function temperature(row: FunnelRow, now: Date = new Date()): { temp: Temperature; reason: string | null } | null {
   const stage = funnelStage(row)
   if (stage === "cliente" || stage === "perdido") return null
+  if (row.referred_by) return { temp: "quente", reason: `indicação da ${row.referred_by}` }
 
   const hot: [string | null, string][] = [
     [row.replied_at, "respondeu"],
