@@ -25,9 +25,18 @@ alter table public.message_templates add constraint message_templates_moment_che
 -- Modelos de indicação. {indicado_por} = prospects.referred_by.
 insert into public.message_templates (moment, channel, name, subject, body) values
 ('indicacao', 'whatsapp', 'Indicação · primeiro contato', null,
-'Oi, {tratamento}! Aqui é o {remetente}, CEO do Falaped. Quem me passou seu contato foi a {indicado_por}, que achou que você ia gostar de conhecer o que estamos fazendo. O Falaped é uma IA que escuta a consulta pediátrica e já entrega evolução, receita e atestado prontos para você revisar. Por ser indicação dela, libero {dias_teste} dias grátis para você testar. Posso te mostrar em 15 minutos?'),
+'Oi, {tratamento}! Aqui é o {remetente}, CEO do Falaped. Quem me passou seu contato foi a {indicado_por}, que achou que você ia gostar de conhecer o que estamos fazendo.
+O Falaped é uma IA que transcreve a consulta pediátrica e já entrega evolução, receita e atestado prontos.
+Por ser indicação dela, libero {dias_teste} dias grátis para você testar.
+Posso te mostrar em 15 minutos? Se quiser conhecer antes: {link}
+
+E deixei no site ferramentas gratuitas para o dia a dia (dose pediátrica, curva de crescimento, calendário vacinal), sem custo: https://falaped.com.br/ferramentas'),
 ('indicacao', 'whatsapp', 'Indicação · follow-up', null,
-'Oi, {tratamento}! Aqui é o {remetente}, do Falaped, por indicação da {indicado_por}. Conseguiu ver minha mensagem? Os {dias_teste} dias grátis continuam reservados para você, e te mostro em 15 minutos como funciona na sua rotina.'),
+'Oi, {tratamento}! Aqui é o {remetente}, do Falaped, por indicação da {indicado_por}.
+Conseguiu ver minha mensagem? Os {dias_teste} dias grátis continuam reservados para você.
+Posso te mostrar em 15 minutos como funciona. Se quiser conhecer antes: {link}
+
+Enquanto isso, as ferramentas gratuitas do site (dose pediátrica, curva de crescimento, calendário vacinal) ficam liberadas pra você: https://falaped.com.br/ferramentas'),
 ('indicacao', 'email', 'Indicação · relato', '{tratamento}, a {indicado_por} me passou seu contato',
 'Olá, {tratamento},
 
@@ -42,6 +51,8 @@ Por ser indicação da {indicado_por}, você entra direto na versão inicial:
 • {dias_teste} dias grátis, sem cartão.
 • Fechando dentro desses {dias_teste} dias, o plano sai por {preco_fundador} por mês em vez de {preco_cheio}, e o valor fica enquanto a assinatura durar.
 
-Se fizer sentido para o seu consultório, responda este e-mail dizendo que tem interesse. Eu mesmo faço o seu cadastro e mostro a plataforma em 15 minutos.
+Se fizer sentido para o seu consultório, responda este e-mail dizendo que tem interesse. Eu mesmo faço o seu cadastro e mostro a plataforma em 15 minutos. Se preferir conhecer antes, está tudo em {link}
+
+E um presente, independente do convite: deixei no site ferramentas gratuitas para o dia a dia do consultório, como calculadora de dose pediátrica, curva de crescimento da OMS, percentil de IMC e calendário vacinal 2026. Pode usar à vontade, sem custo: https://falaped.com.br/ferramentas
 
 P.S.: Se não for o momento, responda "não" que eu não escrevo de novo.');
