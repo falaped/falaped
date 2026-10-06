@@ -46,7 +46,9 @@ function panel(doc: PDFKit.PDFDocument, y: number, height: number) {
   star(doc, W / 2, y + 5, 7)
 }
 
-function drawDedication(doc: PDFKit.PDFDocument, childName: string, dedication: string) {
+function drawDedication(doc: PDFKit.PDFDocument, childName: string, rawDedication: string) {
+  // O textarea do navegador manda \r\n; o pdfkit só quebra no \n e desenha o \r como um quadradinho.
+  const dedication = rawDedication.replace(/\r\n?/g, "\n")
   const pw = W - 2 * MARGIN
   const pad = 26
   const textWidth = pw - 2 * pad
