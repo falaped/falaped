@@ -1,6 +1,7 @@
 import { Suspense } from "react"
 import { AppSidebar } from "@/components/app-sidebar"
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar"
+import { DesktopOnlyNotice } from "@/components/dashboard/desktop-only-notice"
 
 export default function DashboardLayout({
   children,
@@ -9,7 +10,11 @@ export default function DashboardLayout({
 }) {
   return (
     <Suspense fallback={<div className="flex min-h-screen items-center justify-center bg-background">Carregando...</div>}>
-      <SidebarProvider>
+      {/* ponytail: bloqueio por CSS abaixo de lg até existir layout mobile */}
+      <div className="lg:hidden">
+        <DesktopOnlyNotice />
+      </div>
+      <SidebarProvider className="max-lg:hidden">
         <AppSidebar />
         <SidebarInset>
 
