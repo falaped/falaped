@@ -5,7 +5,6 @@ import Link from "next/link"
 import {
   ArrowUpIcon,
   CheckIcon,
-  ChevronDownIcon,
   FileTextIcon,
   HistoryIcon,
   InfoIcon,
@@ -20,9 +19,9 @@ import {
 } from "lucide-react"
 import { toast } from "sonner"
 import { cn } from "@/lib/utils"
-import { formatBrazilianPhone, formatDate, formatTime } from "@/lib/formatters"
+import { formatDate, formatTime } from "@/lib/formatters"
 import { computePediatricAge } from "@/lib/compute-pediatric-age"
-import { formatPediatricAgeShort } from "@/lib/format-pediatric-age"
+import { formatPediatricAgeFull, formatPediatricAgeShort } from "@/lib/format-pediatric-age"
 import { getPatientInitials } from "@/lib/get-patient-initials"
 import { getFriendlyToastMessage } from "@/lib/get-friendly-toast-message"
 import { useAudioRecorder } from "@/hooks/use-audio-recorder"
@@ -283,42 +282,6 @@ function AssistantStatus({ children }: { children: React.ReactNode }) {
       </span>
       {children}
     </div>
-  )
-}
-
-/** Na consulta a alergia é botão com nome: vê-se sem hover, e o clique abre a lista. */
-function AllergyButton({ allergies, patientId }: { allergies: string[]; patientId: string }) {
-  return (
-    <Popover>
-      <PopoverTrigger asChild>
-        <button
-          type="button"
-          className="flex h-7 items-center gap-1.5 rounded-full bg-destructive pr-2.5 pl-2 text-label font-semibold text-destructive-foreground shadow-xs"
-        >
-          <TriangleAlertIcon className="size-3.5" aria-hidden />
-          Alergia
-          <span className="num grid size-4 place-items-center rounded-full bg-card/25 text-[11px]">{allergies.length}</span>
-          <ChevronDownIcon className="size-3.5" aria-hidden />
-        </button>
-      </PopoverTrigger>
-      <PopoverContent align="start" className="w-72 border-danger-border p-3">
-        <p className="text-caption font-medium text-danger-text">Alergias registradas</p>
-        <ul className="mt-2 flex flex-col gap-1.5">
-          {allergies.map((allergy) => (
-            <li key={allergy} className="flex items-start gap-2 font-semibold">
-              <span className="mt-2 size-1.5 shrink-0 rounded-full bg-destructive" aria-hidden />
-              {allergy}
-            </li>
-          ))}
-        </ul>
-        <Link
-          href={`/dashboard/patients/${patientId}/editar`}
-          className="mt-3 block border-t border-border pt-2 text-caption text-primary-ink hover:underline"
-        >
-          Editar na ficha
-        </Link>
-      </PopoverContent>
-    </Popover>
   )
 }
 
@@ -929,6 +892,7 @@ export function NewCaseWorkspace({
   const age = patient?.birth_date
     ? formatPediatricAgeShort(computePediatricAge(patient.birth_date))
     : null
+  const fullAge = formatPediatricAgeFull(patient?.birth_date ?? null, new Date())
   const todayMeasurement =
     measurements.findLast((m) => m.measured_on === todayIso) ?? null
   const panelSubtitle = [patient?.name ?? "Paciente não associado", age].filter(Boolean).join(" · ")
@@ -946,33 +910,15 @@ export function NewCaseWorkspace({
           </AvatarFallback>
         </Avatar>
         <div className="min-w-0">
-          <div className="flex flex-wrap items-center gap-2">
-            <h1 className="truncate font-display text-section font-semibold">
-              {patient?.name ?? "Paciente não associado"}
-            </h1>
-            {age ? <Badge variant="secondary" className="num">{age}</Badge> : null}
-            {allergies.length ? (
-              <AllergyButton allergies={allergies} patientId={patient!.id} />
-            ) : null}
-          </div>
+          <h1 className="truncate font-display text-section font-semibold">
+            {patient?.name ?? "Paciente não associado"}
+          </h1>
           {patient ? (
             <p className="truncate text-caption text-muted-foreground">
-              {[
-                patient.responsible?.trim() || null,
-                patient.contact_phone ? (
-                  <span key="phone" className="num">{formatBrazilianPhone(patient.contact_phone)}</span>
-                ) : null,
-                <Link key="chart" href={`/dashboard/patients/${patient.id}`} className="text-primary-ink hover:underline">
-                  Ver ficha
-                </Link>,
-              ]
-                .filter(Boolean)
-                .map((part, index) => (
-                  <span key={index}>
-                    {index ? " · " : ""}
-                    {part}
-                  </span>
-                ))}
+              {fullAge ? <span className="num">{fullAge} · </span> : null}
+              <Link href={`/dashboard/patients/${patient.id}`} className="text-primary-ink hover:underline">
+                Ver ficha
+              </Link>
             </p>
           ) : null}
         </div>
@@ -1168,6 +1114,8 @@ export function NewCaseWorkspace({
           documents={documents}
           todayMeasurement={todayMeasurement}
           reminders={reminders}
+          allergies={allergies}
+          patientId={patient?.id ?? null}
         />
       </div>
 

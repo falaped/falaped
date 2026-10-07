@@ -3,8 +3,10 @@ import {
   FlaskConicalIcon,
   PillIcon,
   SendIcon,
+  TriangleAlertIcon,
   type LucideIcon,
 } from "lucide-react"
+import Link from "next/link"
 
 import { CaseRemindersDialog } from "@/components/dashboard/cases/case-reminders-dialog"
 import type { CaseReminder } from "@/modules/cases/types"
@@ -58,12 +60,17 @@ export function ConsultRail({
   documents,
   todayMeasurement,
   reminders,
+  allergies,
+  patientId,
 }: {
   caseId: string
   documents: ConsultDocuments
   /** Medida registrada hoje, se houver. */
   todayMeasurement: Measurement | null
   reminders: CaseReminder[]
+  /** Alergias da ficha, uma por item; vazio quando não há. */
+  allergies: string[]
+  patientId: string | null
 }) {
   const rows = [
     ...documents.prescriptions.map((p) => {
@@ -91,6 +98,26 @@ export function ConsultRail({
   return (
     <aside className="flex flex-col gap-5 overflow-auto border-l border-border bg-muted px-4 py-5">
       <h2 className="font-display text-section font-semibold">Nesta consulta</h2>
+      {allergies.length ? (
+        <section className="rounded-xl border border-danger-border bg-danger-soft p-3" aria-label="Alergias">
+          <div className="flex items-center gap-2">
+            <span className="grid size-6 shrink-0 place-items-center rounded-full bg-destructive text-destructive-foreground" aria-hidden>
+              <TriangleAlertIcon className="size-3.5" />
+            </span>
+            <h3 className="font-semibold text-danger-text">{allergies.length === 1 ? "Alergia" : "Alergias"}</h3>
+            {patientId ? (
+              <Link href={`/dashboard/patients/${patientId}/editar`} className="ml-auto text-caption text-danger-text hover:underline">
+                Editar
+              </Link>
+            ) : null}
+          </div>
+          <ul className="mt-2 flex flex-col gap-0.5 pl-8 text-label font-medium">
+            {allergies.map((allergy) => (
+              <li key={allergy}>{allergy}</li>
+            ))}
+          </ul>
+        </section>
+      ) : null}
       <Section title="Documentos">
         {rows.length ? (
           <ul className="flex flex-col gap-1.5">
