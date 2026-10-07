@@ -1,7 +1,6 @@
 import Link from "next/link"
-import { FileCheckIcon, MessageSquareIcon, Pill } from "lucide-react"
+import { FileCheckIcon, Pill } from "lucide-react"
 
-import { Badge } from "@/components/ui/badge"
 import {
   Card,
   CardContent,
@@ -10,7 +9,6 @@ import {
   CardTitle,
 } from "@/components/ui/card"
 import { formatDate } from "@/lib/formatters"
-import type { CaseForPatient } from "@/modules/cases/get-cases-by-patient-id"
 import type { MedicalCertificateListItem } from "@/modules/medical-certificates/get-medical-certificates-by-profile-id"
 import type { PrescriptionListItem } from "@/modules/prescriptions/types"
 
@@ -22,13 +20,8 @@ const CERTIFICATE_TYPE_LABELS: Record<string, string> = {
 }
 
 type PatientDetailTimelineProps = {
-  cases: CaseForPatient[]
   certificates: MedicalCertificateListItem[]
   prescriptions: PrescriptionListItem[]
-}
-
-function sortCasesByDateDesc(cases: CaseForPatient[]): CaseForPatient[] {
-  return [...cases].sort((a, b) => b.started_at.localeCompare(a.started_at))
 }
 
 function sortCertificatesByDateDesc(
@@ -42,71 +35,14 @@ function sortPrescriptionsByDateDesc(items: PrescriptionListItem[]): Prescriptio
 }
 
 export function PatientDetailTimeline({
-  cases,
   certificates,
   prescriptions,
 }: PatientDetailTimelineProps) {
-  const sortedCases = sortCasesByDateDesc(cases)
   const sortedCerts = sortCertificatesByDateDesc(certificates)
   const sortedRx = sortPrescriptionsByDateDesc(prescriptions)
 
   return (
     <div className="space-y-10">
-      <section className="space-y-4" aria-labelledby="patient-atendimentos-heading">
-        <div>
-          <h2
-            id="patient-atendimentos-heading"
-            className="text-lg font-semibold tracking-tight text-foreground"
-          >
-            Atendimentos
-          </h2>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Casos do painel ou de outros canais vinculados a este paciente, do mais
-            recente ao mais antigo.
-          </p>
-        </div>
-
-        {sortedCases.length === 0 ? (
-          <div className="rounded-xl border border-dashed border-border bg-muted/5 p-8 text-center">
-            <p className="text-sm font-medium text-muted-foreground">Nenhum atendimento vinculado</p>
-            <p className="mt-1 text-sm text-muted-foreground">
-              Quando um caso for associado a este paciente, ele aparecerá nesta lista.
-            </p>
-          </div>
-        ) : (
-          <ul className="space-y-2">
-            {sortedCases.map((c) => (
-              <li key={c.id}>
-                <Link
-                  href={`/dashboard/cases/${c.id}`}
-                  className="flex flex-col gap-2 rounded-lg border border-border bg-card px-4 py-3 shadow-xs transition-colors hover:bg-muted/30 sm:flex-row sm:items-center sm:justify-between"
-                >
-                  <div className="flex min-w-0 flex-wrap items-center gap-2">
-                    <MessageSquareIcon
-                      className="h-4 w-4 shrink-0 text-muted-foreground"
-                      aria-hidden
-                    />
-                    <span className="text-sm font-medium text-foreground">
-                      Atendimento · {formatDate(c.started_at)}
-                    </span>
-                    {c.status === "active" ? (
-                      <Badge variant="default" className="text-xs">
-                        Ativo
-                      </Badge>
-                    ) : (
-                      <Badge variant="secondary" className="text-xs">
-                        Encerrado
-                      </Badge>
-                    )}
-                  </div>
-                  <span className="shrink-0 text-sm text-primary sm:text-end">Abrir caso →</span>
-                </Link>
-              </li>
-            ))}
-          </ul>
-        )}
-      </section>
-
       <section className="space-y-6" aria-labelledby="patient-documentos-heading">
         <div>
           <h2

@@ -35,7 +35,8 @@ import {
 
 type ExamReadingsSectionProps = {
   patientId: string
-  caseId: string
+  /** Consulta em que o exame foi lido; ausente quando a leitura é feita pela ficha. */
+  caseId?: string
   readings: ExamReadingWithPages[]
 }
 
@@ -70,7 +71,7 @@ export function ExamReadingsSection({
       }
       const formData = new FormData()
       formData.set("patientId", patientId)
-      formData.set("caseId", caseId)
+      if (caseId) formData.set("caseId", caseId)
       formData.set("title", title)
       pages.forEach((page, i) => formData.append("pages", page, `${i + 1}.jpg`))
 

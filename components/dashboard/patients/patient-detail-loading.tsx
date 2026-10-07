@@ -1,50 +1,39 @@
 import { Skeleton } from "@/components/ui/skeleton"
 
+/** Suspense fallback da Ficha: cabeçalho com abas e as faixas do Resumo. */
 export function PatientDetailLoading() {
   return (
-    <div className="flex flex-col gap-8">
-      <div className="w-full overflow-hidden rounded-xl border border-border">
-        <div className="border-b border-border bg-muted/20 p-5 sm:p-6">
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between sm:gap-6">
-            <div className="order-1 flex w-full shrink-0 justify-end gap-2 sm:order-2 sm:w-auto">
-              <Skeleton className="h-9 w-20" />
-              <Skeleton className="h-9 w-9" />
+    <div aria-busy="true" aria-label="Carregando ficha">
+      <div className="-mx-8 -mt-8 border-b border-border bg-card">
+        <div className="max-w-[1440px] px-8 pt-6">
+          <Skeleton className="mb-2 h-8 w-20 rounded-md" />
+          <div className="flex items-start gap-4">
+            <Skeleton className="size-14 rounded-full" />
+            <div className="flex-1 space-y-2">
+              <Skeleton className="h-8 w-64 rounded-md" />
+              <Skeleton className="h-4 w-96 rounded-md" />
             </div>
-            <div className="order-2 flex min-w-0 flex-1 flex-col gap-5 sm:order-1 sm:flex-row sm:items-start sm:gap-6">
-              <Skeleton className="h-20 w-20 shrink-0 rounded-full sm:h-24 sm:w-24" />
-              <div className="min-w-0 flex-1 space-y-3">
-                <Skeleton className="h-9 w-64 max-w-full" />
-                <div className="flex flex-wrap gap-2">
-                  <Skeleton className="h-6 w-40 rounded-full" />
-                  <Skeleton className="h-6 w-24 rounded-full" />
-                  <Skeleton className="h-6 w-36 rounded-full" />
-                  <Skeleton className="h-8 w-48 max-w-full rounded-full" />
-                  <Skeleton className="h-8 w-44 max-w-full rounded-full" />
-                </div>
-                <Skeleton className="h-4 w-full max-w-lg" />
-              </div>
-            </div>
+            <Skeleton className="h-9 w-72 rounded-lg" />
+          </div>
+          <div className="mt-5 flex gap-5 pb-2.5">
+            {[64, 48, 88, 96, 64, 64, 96, 56, 64].map((width, index) => (
+              <Skeleton key={index} className="h-5 rounded-md" style={{ width }} />
+            ))}
           </div>
         </div>
       </div>
-
-      <div className="space-y-4">
-        <Skeleton className="h-6 w-48" />
-        <Skeleton className="h-4 w-full max-w-md" />
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-          <Skeleton className="h-28 rounded-lg" />
-          <Skeleton className="h-28 rounded-lg" />
-          <Skeleton className="h-28 rounded-lg" />
-          <Skeleton className="h-28 rounded-lg" />
+      <div className="flex max-w-[1440px] flex-col gap-6 pt-8">
+        <div className="grid grid-cols-5 divide-x divide-border rounded-xl border border-border bg-card">
+          {Array.from({ length: 5 }).map((_, index) => (
+            <div key={index} className="space-y-2 px-5 py-4">
+              <Skeleton className="h-3 w-20 rounded-md" />
+              <Skeleton className="h-6 w-24 rounded-md" />
+            </div>
+          ))}
         </div>
-      </div>
-
-      <div className="space-y-4">
-        <Skeleton className="h-6 w-56" />
-        <Skeleton className="h-4 w-full max-w-lg" />
-        <div className="space-y-4 pl-2">
-          <Skeleton className="h-20 w-full rounded-lg" />
-          <Skeleton className="h-20 w-full rounded-lg" />
+        <div className="grid gap-5 lg:grid-cols-[1.4fr_1fr]">
+          <Skeleton className="h-72 rounded-xl" />
+          <Skeleton className="h-56 rounded-xl" />
         </div>
       </div>
     </div>
