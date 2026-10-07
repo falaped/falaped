@@ -127,31 +127,37 @@ export function ConsultAttachmentsPanel({
         </button>
 
         {file ? (
-          <div className="flex items-center gap-3 rounded-xl border border-primary bg-primary-soft/50 p-3">
-            <span className="grid size-10 shrink-0 place-items-center rounded-lg bg-card text-primary-ink-strong">
-              {file.type.startsWith("image/") ? <ImageIcon className="size-5" aria-hidden /> : <FileTextIcon className="size-5" aria-hidden />}
-            </span>
-            <div className="min-w-0 flex-1">
-              <Input
-                autoFocus
-                value={title}
-                maxLength={120}
-                onChange={(e) => setTitle(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && handleUpload()}
-                aria-label="Nome do anexo"
-                className="h-8 bg-card font-medium"
-              />
-              <p className="mt-1 truncate text-caption text-subtle-foreground">
-                {file.name} · {formatBytes(file.size)}
-              </p>
+          <div className="flex flex-col gap-4 rounded-xl border border-primary bg-primary-soft/40 p-4">
+            <div className="flex items-center gap-3">
+              <span className="grid size-10 shrink-0 place-items-center rounded-lg bg-card text-primary-ink-strong">
+                {file.type.startsWith("image/") ? <ImageIcon className="size-5" aria-hidden /> : <FileTextIcon className="size-5" aria-hidden />}
+              </span>
+              <div className="min-w-0 flex-1">
+                <p className="truncate font-medium">{file.name}</p>
+                <p className="text-caption text-subtle-foreground">{formatBytes(file.size)}</p>
+              </div>
+              <Button variant="ghost" size="sm" onClick={() => setFile(null)} disabled={uploading}>
+                <XIcon data-icon="inline-start" />
+                Cancelar
+              </Button>
             </div>
-            <Button size="sm" onClick={handleUpload} disabled={uploading}>
-              {uploading ? <Loader2Icon data-icon="inline-start" className="animate-spin" /> : null}
-              {uploading ? "Enviando…" : "Anexar"}
-            </Button>
-            <Button variant="ghost" size="icon-xs" aria-label="Cancelar" onClick={() => setFile(null)} disabled={uploading}>
-              <XIcon />
-            </Button>
+            <div className="flex items-end gap-2">
+              <label className="flex flex-1 flex-col gap-1.5">
+                <span className="text-label font-medium">Nome do anexo</span>
+                <Input
+                  autoFocus
+                  value={title}
+                  maxLength={120}
+                  onChange={(e) => setTitle(e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && handleUpload()}
+                  className="bg-card"
+                />
+              </label>
+              <Button onClick={handleUpload} disabled={uploading}>
+                {uploading ? <Loader2Icon data-icon="inline-start" className="animate-spin" /> : <UploadIcon data-icon="inline-start" />}
+                {uploading ? "Enviando…" : "Anexar"}
+              </Button>
+            </div>
           </div>
         ) : null}
 

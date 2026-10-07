@@ -26,7 +26,7 @@ import {
   deleteExamReadingAction,
   generateExamReportAction,
 } from "@/actions"
-import { DocStep, PanelFooter } from "@/components/dashboard/cases/consult-document"
+import { ChoiceChip, DocStep, PanelFooter } from "@/components/dashboard/cases/consult-document"
 import type { ExamReadingWithPages } from "@/components/dashboard/exam-readings/exam-reading-card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -72,17 +72,16 @@ export function ConsultExamReadingPanel({
         <div className="flex flex-wrap items-center gap-1.5 border-b border-border px-6 py-2.5">
           <span className="text-caption text-subtle-foreground">Em aberto nesta consulta:</span>
           {readings.map((r) => (
-            <Button
+            <ChoiceChip
               key={r.id}
-              variant={reading?.id === r.id ? "secondary" : "ghost"}
-              size="xs"
+              selected={reading?.id === r.id}
               onClick={() => {
                 setUploading(false)
                 setPickedId(r.id)
               }}
             >
               {r.title}
-            </Button>
+            </ChoiceChip>
           ))}
         </div>
       ) : null}
@@ -171,25 +170,32 @@ function UploadStep({ patientId, caseId, onRead }: { patientId: string; caseId: 
               <Skeleton className="h-4 w-1/2" />
             </div>
           ) : files.length ? (
-            <div className="flex items-center gap-3 rounded-xl border border-border p-3">
-              <span className="grid size-10 shrink-0 place-items-center rounded-lg bg-primary-soft text-primary-ink-strong">
-                <FileImageIcon className="size-5" aria-hidden />
-              </span>
-              <div className="min-w-0 flex-1">
+            <div className="flex flex-col gap-4 rounded-xl border border-border p-4">
+              <div className="flex items-center gap-3">
+                <span className="grid size-10 shrink-0 place-items-center rounded-lg bg-primary-soft text-primary-ink-strong">
+                  <FileImageIcon className="size-5" aria-hidden />
+                </span>
+                <div className="min-w-0 flex-1">
+                  <p className="truncate font-medium">{files.map((f) => f.name).join(", ")}</p>
+                  <p className="text-caption text-subtle-foreground">{plural(files.length, "arquivo", "arquivos")} pronto para ler</p>
+                </div>
+                <Button variant="outline" size="sm" onClick={() => inputRef.current?.click()} disabled={step !== "idle"}>
+                  <RefreshCwIcon data-icon="inline-start" />
+                  Trocar arquivo
+                </Button>
+              </div>
+              <label className="flex flex-col gap-1.5">
+                <span className="text-label font-medium">Nome do exame</span>
                 <Input
                   autoFocus
                   value={title}
                   maxLength={120}
                   onChange={(e) => setTitle(e.target.value)}
                   onKeyDown={(e) => e.key === "Enter" && handleRead()}
-                  placeholder="Nome do exame. Ex.: Hemograma de setembro"
-                  className="h-8 font-medium"
+                  placeholder="Ex.: Hemograma de setembro"
                 />
-                <p className="mt-1 truncate text-caption text-subtle-foreground">{files.map((f) => f.name).join(", ")}</p>
-              </div>
-              <Button variant="ghost" size="sm" onClick={() => inputRef.current?.click()} disabled={step !== "idle"}>
-                Trocar
-              </Button>
+                <span className="text-caption text-subtle-foreground">Para reconhecer o exame depois, nos anexos.</span>
+              </label>
             </div>
           ) : (
             <button
