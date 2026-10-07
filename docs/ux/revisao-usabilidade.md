@@ -16,7 +16,7 @@ Escala de severidade: 1 cosmético · 2 menor (atrasa ou irrita) · 3 maior (pod
 
 | # | Tela | Problema | Heurística | Correção |
 |---|---|---|---|---|
-| 1 | Consulta, Receita emitida, Escala, Ler exame (cabeçalho) | A alergia aparece só como símbolo e o nome do remédio só no hover. É justamente a tela onde o assistente sugere medicamentos. No tablet não existe hover. | Prevenção de erro; informação crítica não pode depender de hover | Na Consulta, a alergia vai por extenso, em vermelho: "Alergia: amoxicilina". Os símbolos ficam para listas e cartões. Regra na ficha: **onde se prescreve ou se conversa com o assistente, a alergia aparece escrita**. |
+| 1 ✔ | Consulta, Receita emitida, Escala, Ler exame (cabeçalho) | A alergia aparece só como símbolo e o nome do remédio só no hover. É justamente a tela onde o assistente sugere medicamentos. No tablet não existe hover. | Prevenção de erro; informação crítica não pode depender de hover | Na Consulta, a alergia vai por extenso, em vermelho: "Alergia: amoxicilina". Os símbolos ficam para listas e cartões. Regra na ficha: **onde se prescreve ou se conversa com o assistente, a alergia aparece escrita**. |
 | 2 | Consultas, Pacientes, Buscar paciente, Início | Com a Helena em consulta, continuam ativos "Iniciar consulta", "Atender" e "↵ Iniciar". O app só permite uma consulta aberta por vez, e a tela não diz o que acontece com a da Helena. | Prevenção de erro; visibilidade do estado | Com consulta aberta, essas ações abrem uma confirmação curta: "A consulta da Helena ainda está aberta." Opções: [Voltar à consulta da Helena] ou [Encerrar a da Helena e atender Miguel]. Nada fecha sem o médico ver. |
 | 3 | Escala | O escore e a interpretação ("Baixo risco") aparecem com 3 de 20 itens respondidos. | Correspondência com o mundo real; prevenção de erro clínico | Antes do fim, mostrar "3 de 20 respondidos" e "escore parcial: 2". A interpretação só aparece quando todos os itens estiverem respondidos. "Registrar na consulta" fica desabilitado até lá, com o motivo escrito. |
 | 4 | Escala | A resposta marcada (Sim/Não) só muda um azul bem claro. Fica difícil conferir as respostas antes de registrar. | Visibilidade do estado; contraste | Resposta marcada com fundo azul cheio e ícone de check. A não marcada fica com contorno. |
@@ -50,10 +50,9 @@ Conferi no código as telas que mostram alertas. Nenhum deles precisa de tabela 
 | Sem medida recente | `patient-growth` (medidas) |
 | Ficha incompleta | campos vazios do paciente |
 | Sem valor lançado | `financial-entries` × consultas encerradas |
-| Retorno marcado/vencido | `appointments` do tipo `retorno` |
 | Lembrete da última consulta | resumo de continuidade (`generate-case-carryover-summary`) |
 
-**Uma dúvida para o gestor:** existe `app/dashboard/agenda` e o módulo `appointments`, com status e tipo `retorno`, mas a agenda não aparece no menu. Se ela não está em uso, o alerta "Retorno marcado/vencido" sai das telas.
+**Agenda:** não está em uso (confirmado pelo gestor em 08/10/2026). Os alertas de retorno saíram das telas.
 
 ## O que passou bem
 
@@ -62,3 +61,7 @@ Conferi no código as telas que mostram alertas. Nenhum deles precisa de tabela 
 - **Reconhecer em vez de lembrar**: a última consulta e os lembretes aparecem no topo da consulta, a busca tem os recentes e a receita traz o peso da consulta.
 - **Erros com saída**: o telefone incompleto diz o que falta; consulta encerrada pode ser reaberta; receita emitida pode ser baixada de novo.
 - **Texto**: segue o guia de escrita, sem jargão de sistema ("caso", "workspace").
+
+## Aplicado em 08/10/2026
+
+Os itens 1 a 5 e os itens 7, 8, 9 e 10 já estão no protótipo. No item 1, o gestor preferiu um botão "Alergia 1" que abre a lista, em vez do texto por extenso. Os itens 6, 11 e 12 são comportamentos (abrir o símbolo com toque, aviso ao sair sem salvar, fechar o encerramento sem perder nada) e entram direto no código na Etapa 5.
