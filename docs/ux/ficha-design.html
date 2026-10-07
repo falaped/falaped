@@ -430,24 +430,143 @@
 
   <!-- SOBREPOSIÇÕES -->
   <section class="doc-sec">
-    <h2 class="t-section">Painel, janela, menu e aviso</h2>
-    <p class="doc-lead">Um fundo só para tudo que sobrepõe (escurecer 30%, sem desfoque) e uma sombra por nível. Hoje são três fundos diferentes.</p>
-    <div class="grid gap-5 md:grid-cols-[1.4fr_1fr]">
-      <div class="relative h-72 overflow-hidden rounded-xl border border-border bg-background">
+    <h2 class="t-section">Sobreposições: qual usar quando</h2>
+    <p class="doc-lead">Hoje o app tem 23 telas com Dialog, 31 com AlertDialog, 11 com Sheet (o "drawer" lateral), 6 com Popover e 267 avisos (toast). Cada um ganha um papel e todos usam o mesmo fundo escurecido, a mesma família de sombra e o mesmo cabeçalho.</p>
+    <div class="card overflow-hidden">
+      <table class="w-full text-body">
+        <thead class="bg-muted text-label text-muted-foreground"><tr><th class="px-4 py-2.5 text-left font-medium">Componente</th><th class="px-4 text-left font-medium">Quando usar</th><th class="px-4 text-left font-medium">Exemplo no Falaped</th><th class="px-4 text-left font-medium">Não usar para</th></tr></thead>
+        <tbody class="divide-y divide-border">
+          <tr><td class="px-4 py-3 font-semibold">Sheet (drawer)</td><td class="px-4">Tarefa com conteúdo, sem perder a tela de trás</td><td class="px-4 text-muted-foreground">Emitir receita na consulta, documentos do caso, agenda</td><td class="px-4 text-muted-foreground">Confirmação de uma linha</td></tr>
+          <tr><td class="px-4 py-3 font-semibold">Dialog</td><td class="px-4">Formulário curto (até 3 campos) ou uma escolha</td><td class="px-4 text-muted-foreground">Valor da consulta, vincular WhatsApp</td><td class="px-4 text-muted-foreground">Fluxos longos (vira Sheet ou página)</td></tr>
+          <tr><td class="px-4 py-3 font-semibold">AlertDialog</td><td class="px-4">Só o que não tem volta</td><td class="px-4 text-muted-foreground">Excluir paciente com histórico</td><td class="px-4 text-muted-foreground">O que dá para desfazer: use toast com "Desfazer"</td></tr>
+          <tr><td class="px-4 py-3 font-semibold">Popover</td><td class="px-4">Escolha rápida presa a um botão ou campo</td><td class="px-4 text-muted-foreground">Data, filtro da lista, combobox de medicamento</td><td class="px-4 text-muted-foreground">Formulário com botão salvar</td></tr>
+          <tr><td class="px-4 py-3 font-semibold">DropdownMenu</td><td class="px-4">Lista de ações de um item</td><td class="px-4 text-muted-foreground">"⋯" da consulta: relatório, baixar, reabrir, excluir</td><td class="px-4 text-muted-foreground">Navegação principal</td></tr>
+          <tr><td class="px-4 py-3 font-semibold">Toast (Sonner)</td><td class="px-4">Resultado de uma ação, sem interromper</td><td class="px-4 text-muted-foreground">"Receita emitida", "Lançamento anulado · Desfazer"</td><td class="px-4 text-muted-foreground">Erro de campo (fica no campo) ou alerta clínico</td></tr>
+          <tr><td class="px-4 py-3 font-semibold">Tooltip</td><td class="px-4">Nome de botão só com ícone</td><td class="px-4 text-muted-foreground">Ícones do cabeçalho da consulta</td><td class="px-4 text-muted-foreground">Informação que o médico precisa ler</td></tr>
+          <tr><td class="px-4 py-3 font-semibold">Command (⌘K)</td><td class="px-4">Ir direto a um paciente ou ação</td><td class="px-4 text-muted-foreground">Buscar paciente no menu</td><td class="px-4 text-muted-foreground">Substituir filtros de lista</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="mt-6 grid gap-4 md:grid-cols-4">
+      <div class="card-sunken p-4"><div class="t-card">Fundo</div><p class="mt-1 text-muted-foreground">Um só: <code class="doc-k">foreground / 30%</code>, sem desfoque. Hoje são <span class="num">black/80</span>, <span class="num">black/10</span> e <span class="num">black/10</span> com blur.</p></div>
+      <div class="card-sunken p-4"><div class="t-card">Sombra e raio</div><p class="mt-1 text-muted-foreground">Dialog e Sheet: <code class="doc-k">shadow-lg</code>, raio 16 (Sheet só nos cantos soltos). Popover, menu, toast: <code class="doc-k">shadow-md</code>, raio 12.</p></div>
+      <div class="card-sunken p-4"><div class="t-card">Cabeçalho e rodapé</div><p class="mt-1 text-muted-foreground">Título 15/22 semibold e fechar à direita. Rodapé fixo com a ação principal à direita e Cancelar em ghost.</p></div>
+      <div class="card-sunken p-4"><div class="t-card">Teclado</div><p class="mt-1 text-muted-foreground">Esc fecha, o foco entra no primeiro campo e volta ao botão que abriu. O texto "Close" vira "Fechar".</p></div>
+    </div>
+  </section>
+
+  <section class="doc-sec">
+    <h2 class="t-section">Sheet e Dialog</h2>
+    <p class="doc-lead">O Sheet abre à direita com três larguras: 420 (formulário), 560 (documentos), 720 (relatório e exames, texto longo). O Dialog tem 480 ou 640.</p>
+    <div class="grid gap-5 lg:grid-cols-[1.5fr_1fr]">
+      <div class="relative h-80 overflow-hidden rounded-xl border border-border bg-background">
+        <div class="absolute inset-0 p-5"><div class="t-page">Helena Duarte</div><div class="mt-3 h-16 rounded-xl bg-card"></div><div class="mt-3 h-24 rounded-xl bg-card"></div></div>
         <div class="absolute inset-0" style="background:oklch(0.21 0.012 255.41 / 0.3)"></div>
-        <div class="absolute inset-y-0 right-0 flex w-3/5 flex-col bg-card shadow-lg">
-          <div class="flex items-center border-b border-border px-5 py-4"><span class="t-card">Nova receita · Helena</span><span class="ml-auto text-subtle-foreground">✕</span></div>
-          <div class="flex-1 space-y-3 p-5"><div class="flex gap-2"><span class="badge badge-neutral num">Peso 12,4 kg</span><span class="badge badge-clinical">⚠ amoxicilina</span></div><div class="card p-3"><div class="font-semibold">Azitromicina 200 mg/5 mL</div><div class="text-caption text-muted-foreground num">3,1 mL · 1x ao dia · 3 dias</div></div></div>
-          <div class="flex items-center gap-2 border-t border-border px-5 py-3"><button class="btn btn-ghost btn-sm">Ver prévia</button><button class="btn btn-primary btn-sm ml-auto">Emitir e imprimir</button></div>
+        <div class="absolute inset-y-0 right-0 flex w-[60%] flex-col rounded-l-2xl bg-card shadow-lg">
+          <div class="flex items-center gap-2 border-b border-border px-5 py-4"><div><div class="t-card">Nova receita</div><div class="text-caption text-subtle-foreground">Helena · 2a 3m · 12,4 kg</div></div><button class="btn btn-ghost btn-sm ml-auto" aria-label="Fechar">✕</button></div>
+          <div class="flex-1 space-y-3 p-5"><span class="badge badge-clinical">⚠ Alergia: amoxicilina</span><div class="card p-3"><div class="font-semibold">Azitromicina 200 mg/5 mL</div><div class="text-caption text-muted-foreground num">3,1 mL · 1x ao dia · 3 dias</div></div></div>
+          <div class="flex items-center gap-2 border-t border-border px-5 py-3"><button class="btn btn-ghost btn-sm">Ver prévia</button><button class="btn btn-ghost btn-sm ml-auto">Cancelar</button><button class="btn btn-primary btn-sm">Emitir e imprimir</button></div>
         </div>
       </div>
       <div class="flex flex-col gap-4">
-        <div class="w-56 rounded-xl border border-border bg-card p-1 shadow-md">
-          <div class="rounded-md bg-accent px-2.5 py-1.5">Ver relatório</div><div class="px-2.5 py-1.5">Baixar documentos</div><div class="px-2.5 py-1.5">Reabrir consulta</div><div class="my-1 h-px bg-border"></div><div class="px-2.5 py-1.5 text-danger-text">Excluir</div>
+        <div class="rounded-2xl border border-border bg-card shadow-lg">
+          <div class="px-5 pt-5"><div class="t-card">Valor da consulta</div><p class="text-muted-foreground">Fica salvo para as próximas.</p></div>
+          <div class="px-5 py-4"><input class="input num" value="R$ 350,00"></div>
+          <div class="flex justify-end gap-2 border-t border-border px-5 py-3"><button class="btn btn-ghost btn-sm">Cancelar</button><button class="btn btn-primary btn-sm">Salvar</button></div>
         </div>
-        <div class="flex w-80 items-center gap-3 rounded-xl border border-border bg-card p-3 shadow-lg"><span class="grid size-6 place-items-center rounded-full bg-success-soft text-success-text text-caption">✓</span><span>Lançamento anulado</span><button class="btn btn-link btn-sm ml-auto">Desfazer</button></div>
-        <div class="w-fit rounded-md bg-foreground px-2.5 py-1 text-caption text-background">Encerrar consulta</div>
+        <div class="rounded-2xl border border-border bg-card p-5 shadow-lg">
+          <div class="t-card">Excluir Miguel Santos?</div>
+          <p class="mt-1 text-muted-foreground">Some com 5 consultas e 12 documentos. Não dá para desfazer.</p>
+          <div class="mt-4 flex justify-end gap-2"><button class="btn btn-secondary btn-sm">Cancelar</button><button class="btn btn-sm border border-danger-border bg-danger-soft text-danger-text hover:bg-danger-border">Excluir paciente</button></div>
+        </div>
+        <p class="text-caption text-subtle-foreground">No AlertDialog, a confirmação usa o vermelho suave. Assim o vermelho cheio continua sendo só da alergia. O botão diz o que faz ("Excluir paciente"), nunca "Confirmar" ou "OK".</p>
       </div>
+    </div>
+  </section>
+
+  <section class="doc-sec">
+    <h2 class="t-section">Popover, menus, toast e tooltip</h2>
+    <p class="doc-lead">Tudo que flutua pequeno tem raio 12, contorno, <code class="doc-k">shadow-md</code> e itens de 32 px. O toast não é colorido inteiro: só o ícone carrega a cor do status.</p>
+    <div class="grid gap-5 md:grid-cols-3">
+      <div class="space-y-2">
+        <div class="doc-k">DropdownMenu · ContextMenu</div>
+        <div class="w-60 rounded-xl border border-border bg-popover p-1 shadow-md">
+          <div class="flex h-8 items-center rounded-md bg-accent px-2.5">Ver relatório</div>
+          <div class="flex h-8 items-center px-2.5">Baixar documentos <span class="ml-auto text-caption text-subtle-foreground">⌘D</span></div>
+          <div class="flex h-8 items-center px-2.5">Reabrir consulta</div>
+          <div class="my-1 h-px bg-border"></div>
+          <div class="flex h-8 items-center px-2.5 text-danger-text">Excluir</div>
+        </div>
+      </div>
+      <div class="space-y-2">
+        <div class="doc-k">Popover · Select · Combobox</div>
+        <div class="input flex items-center justify-between">Amoxicilina <span class="text-subtle-foreground">▾</span></div>
+        <div class="w-full rounded-xl border border-border bg-popover p-1 shadow-md">
+          <div class="px-2.5 py-1.5 text-caption text-subtle-foreground">Mais usados</div>
+          <div class="flex h-8 items-center rounded-md bg-accent px-2.5">Azitromicina 200 mg/5 mL <span class="ml-auto text-primary-ink">✓</span></div>
+          <div class="flex h-8 items-center px-2.5">Amoxicilina 250 mg/5 mL <span class="badge badge-clinical ml-auto h-5">alergia</span></div>
+          <div class="flex h-8 items-center px-2.5">Ibuprofeno 50 mg/mL</div>
+        </div>
+      </div>
+      <div class="space-y-3">
+        <div class="doc-k">Toast (Sonner) · canto inferior direito</div>
+        <div class="flex items-center gap-3 rounded-xl border border-border bg-popover p-3 shadow-md"><span class="grid size-6 shrink-0 place-items-center rounded-full bg-success-soft text-caption text-success-text">✓</span><span>Receita emitida</span></div>
+        <div class="flex items-center gap-3 rounded-xl border border-border bg-popover p-3 shadow-md"><span class="grid size-6 shrink-0 place-items-center rounded-full bg-accent text-caption text-muted-foreground">↺</span><span>Lançamento anulado</span><button class="btn btn-link btn-sm ml-auto">Desfazer</button></div>
+        <div class="flex items-start gap-3 rounded-xl border border-border bg-popover p-3 shadow-md"><span class="grid size-6 shrink-0 place-items-center rounded-full bg-danger-soft text-caption text-danger-text">!</span><div><div>Não foi possível gerar o PDF</div><div class="text-caption text-muted-foreground">Verifique a conexão e tente de novo.</div></div><button class="btn btn-secondary btn-xs ml-auto">Tentar de novo</button></div>
+        <div class="flex items-center gap-3"><div class="rounded-md bg-foreground px-2.5 py-1 text-caption text-background">Encerrar consulta</div><span class="doc-k">tooltip · 500 ms</span></div>
+      </div>
+    </div>
+    <ul class="mt-5 grid gap-x-8 gap-y-1 text-muted-foreground md:grid-cols-2 list-disc pl-5">
+      <li>Toast de sucesso some em 4 s; de erro fica 8 s e diz o que fazer. Hoje são 173 <code class="doc-k">toast.error</code>: revisar o texto na Etapa 5.</li>
+      <li>Ação que dá para desfazer (anular, arquivar, remover documento) usa toast com "Desfazer" em vez de AlertDialog.</li>
+      <li>Erro de formulário nunca vai para o toast: fica embaixo do campo.</li>
+      <li>Máximo de 3 toasts empilhados; o Sonner usa <code class="doc-k">richColors</code> desligado.</li>
+    </ul>
+  </section>
+
+  <section class="doc-sec">
+    <h2 class="t-section">Demais componentes</h2>
+    <p class="doc-lead">Todos os 31 de <code class="doc-k">components/ui</code>, com a regra de cada um. Os números são quantos arquivos usam o componente hoje.</p>
+    <div class="grid gap-5 md:grid-cols-3">
+      <div class="card space-y-3 p-5">
+        <div class="t-card">Calendar · DatePicker</div>
+        <div class="grid grid-cols-7 gap-1 text-center text-caption num">
+          <span class="text-subtle-foreground">D</span><span class="text-subtle-foreground">S</span><span class="text-subtle-foreground">T</span><span class="text-subtle-foreground">Q</span><span class="text-subtle-foreground">Q</span><span class="text-subtle-foreground">S</span><span class="text-subtle-foreground">S</span>
+          <span class="grid h-8 place-items-center rounded-lg text-subtle-foreground">4</span><span class="grid h-8 place-items-center rounded-lg ring-1 ring-inset ring-border-strong font-semibold">5</span><span class="grid h-8 place-items-center rounded-lg bg-primary font-semibold text-primary-foreground">6</span><span class="grid h-8 place-items-center rounded-lg hover:bg-accent">7</span><span class="grid h-8 place-items-center rounded-lg">8</span><span class="grid h-8 place-items-center rounded-lg">9</span><span class="grid h-8 place-items-center rounded-lg text-subtle-foreground">10</span>
+        </div>
+        <p class="text-caption text-subtle-foreground">Hoje com contorno, selecionado em azul cheio, fim de semana em cinza. Data de nascimento aceita digitar (dd/mm/aaaa), sem obrigar a navegar anos.</p>
+      </div>
+      <div class="card space-y-3 p-5">
+        <div class="t-card">Avatar</div>
+        <div class="flex items-center gap-2"><span class="grid size-10 place-items-center rounded-full bg-primary-soft font-semibold text-primary-ink-strong">HD</span><span class="grid size-8 place-items-center rounded-full bg-muted text-label font-semibold text-muted-foreground">MS</span><span class="grid size-8 place-items-center rounded-full bg-muted text-label font-semibold text-muted-foreground">LP</span></div>
+        <p class="text-caption text-subtle-foreground">Iniciais por padrão: azul suave no paciente em foco, cinza nas listas. Foto da criança só quando o médico enviou, nunca em lista pública.</p>
+      </div>
+      <div class="card space-y-3 p-5">
+        <div class="t-card">Collapsible</div>
+        <div class="rounded-lg border border-border"><div class="flex h-9 items-center px-3 font-medium">Antecedentes <span class="ml-auto text-subtle-foreground">▾</span></div><div class="border-t border-border px-3 py-2 text-muted-foreground">Prematuro 35 sem · bronquiolite aos 6m</div></div>
+        <p class="text-caption text-subtle-foreground">Para seção secundária da ficha. Título 14 medium e seta à direita; abre sem animação de altura.</p>
+      </div>
+    </div>
+    <div class="mt-5 card overflow-hidden">
+      <table class="w-full text-body">
+        <thead class="bg-muted text-label text-muted-foreground"><tr><th class="px-4 py-2.5 text-left font-medium">Componente</th><th class="px-4 text-left font-medium">Uso</th><th class="px-4 text-left font-medium">Regra na 2.0</th></tr></thead>
+        <tbody class="divide-y divide-border">
+          <tr><td class="px-4 py-2.5 font-medium">Button</td><td class="px-4 num">133</td><td class="px-4 text-muted-foreground">Seção Botões. Ganha hover, clique, alturas 28–40 e a variante Excluir discreta.</td></tr>
+          <tr><td class="px-4 py-2.5 font-medium">Card</td><td class="px-4 num">83</td><td class="px-4 text-muted-foreground">Três superfícies (destaque, comum, apoio); raio 12.</td></tr>
+          <tr><td class="px-4 py-2.5 font-medium">Input · Textarea · Field · Label · InputGroup · PhoneInput</td><td class="px-4 num">40 · 16 · 27 · 17 · 1 · 2</td><td class="px-4 text-muted-foreground">Seção Campos. Placeholder em <code class="doc-k">subtle-foreground</code>; textarea da consulta em 16/26.</td></tr>
+          <tr><td class="px-4 py-2.5 font-medium">Separator</td><td class="px-4 num">39</td><td class="px-4 text-muted-foreground">Só <code class="doc-k">border</code>. Antes de pôr um, tentar espaço (24 entre grupos).</td></tr>
+          <tr><td class="px-4 py-2.5 font-medium">Skeleton</td><td class="px-4 num">28</td><td class="px-4 text-muted-foreground"><code class="doc-k">bg-accent</code> pulsando, no formato do conteúdo final.</td></tr>
+          <tr><td class="px-4 py-2.5 font-medium">Table</td><td class="px-4 num">26</td><td class="px-4 text-muted-foreground">Cabeçalho em <code class="doc-k">muted</code> 13 medium sem caixa alta; linha 44, hover <code class="doc-k">accent</code>; números à direita e tabulares.</td></tr>
+          <tr><td class="px-4 py-2.5 font-medium">Badge</td><td class="px-4 num">24</td><td class="px-4 text-muted-foreground">Seis papéis fixos (seção Selos); raio 6, não pílula.</td></tr>
+          <tr><td class="px-4 py-2.5 font-medium">Select · Combobox · Command</td><td class="px-4 num">14 · 1 · 4</td><td class="px-4 text-muted-foreground">Gatilho igual ao Input; lista igual ao Popover; marcado com ✓ em <code class="doc-k">primary-ink</code>.</td></tr>
+          <tr><td class="px-4 py-2.5 font-medium">Checkbox</td><td class="px-4 num">9</td><td class="px-4 text-muted-foreground">Contorno <code class="doc-k">subtle-foreground</code> (hoje 2,1:1), marcado em azul cheio.</td></tr>
+          <tr><td class="px-4 py-2.5 font-medium">Tabs</td><td class="px-4 num">4</td><td class="px-4 text-muted-foreground">Sublinhado (seção Campos), contador em cinza, pendência em selo amarelo.</td></tr>
+          <tr><td class="px-4 py-2.5 font-medium">Sidebar</td><td class="px-4 num">4</td><td class="px-4 text-muted-foreground">Seção Padrões: logo empilhada, ativo em <code class="doc-k">sidebar-accent</code>, recolhido com a compacta.</td></tr>
+          <tr><td class="px-4 py-2.5 font-medium">RichTextEditor</td><td class="px-4 num">3</td><td class="px-4 text-muted-foreground">Texto 16/26, títulos em Lexend; corrigir os <code class="doc-k">hsl(var(--…))</code> que quebram com oklch.</td></tr>
+          <tr><td class="px-4 py-2.5 font-medium">Breadcrumb · ContextMenu</td><td class="px-4 num">0 · 0</td><td class="px-4 text-muted-foreground">Sem uso. Breadcrumb entra se o protótipo pedir; ContextMenu sai.</td></tr>
+        </tbody>
+      </table>
     </div>
   </section>
 
