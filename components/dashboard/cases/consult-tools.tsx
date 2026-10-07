@@ -25,6 +25,7 @@ import type { ExamReadingWithPages } from "@/components/dashboard/exam-readings/
 import { MeasurementForm } from "@/components/dashboard/patients/growth/measurement-form"
 import { ScalesSection } from "@/components/dashboard/scales/scales-section"
 import { Button } from "@/components/ui/button"
+import { cn } from "@/lib/utils"
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet"
 import type { PatientAttachment } from "@/modules/patient-attachments/types"
 import type { ExamCatalogItem } from "@/modules/exam-catalog/types"
@@ -44,6 +45,9 @@ const SHEET_TITLE: Record<SheetKind, string> = {
   measure: "Registrar medidas",
   attachment: "Anexos",
 }
+
+/** Documentos levam a folha ao lado (protótipo a6): painel bem mais largo que os outros. */
+const DOCUMENT_KINDS: SheetKind[] = ["prescription", "certificate", "exam-request", "referral"]
 
 const TOOLS: Array<[SheetKind, string, LucideIcon]> = [
   ["prescription", "Receita", PillIcon],
@@ -124,7 +128,14 @@ export function ConsultTools({
 
       {patient ? (
         <Sheet open={sheet !== null} onOpenChange={(next) => !next && setSheet(null)}>
-          <SheetContent className="gap-0 rounded-l-2xl bg-card data-[side=right]:w-[max(45vw,560px)] data-[side=right]:sm:max-w-none">
+          <SheetContent
+            className={cn(
+              "gap-0 rounded-l-2xl bg-card data-[side=right]:sm:max-w-none",
+              DOCUMENT_KINDS.includes(sheet ?? lastSheet)
+                ? "data-[side=right]:w-[min(1120px,92vw)] lg:data-[side=right]:w-[min(1120px,82vw)]"
+                : "data-[side=right]:w-[max(45vw,560px)]",
+            )}
+          >
             <SheetHeader className="border-b border-border px-6 py-4">
               <SheetTitle className="font-display text-section font-semibold">{title}</SheetTitle>
               <SheetDescription className="text-caption text-subtle-foreground">{subtitle}</SheetDescription>
@@ -155,10 +166,11 @@ export function ConsultTools({
                 patient={patient}
                 catalog={documentData.examCatalog}
                 panels={documentData.examPanels}
+                doctor={documentData.doctor}
                 onDone={onDone}
               />
             ) : null}
-            {sheet === "referral" ? <ConsultReferralPanel caseId={caseId} patient={patient} onDone={onDone} /> : null}
+            {sheet === "referral" ? <ConsultReferralPanel caseId={caseId} patient={patient} doctor={documentData.doctor} onDone={onDone} /> : null}
             {sheet === "scale" ? (
               <PanelBody>
                 <ScalesSection

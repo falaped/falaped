@@ -1,7 +1,13 @@
 "use client"
 
+import { EyeIcon, LinkIcon, PlusIcon } from "lucide-react"
 import { toast } from "sonner"
 
+import type { ConsultDoctor } from "@/components/dashboard/cases/consult-prescription-panel"
+import { Button } from "@/components/ui/button"
+import { computePediatricAge } from "@/lib/compute-pediatric-age"
+import { formatPediatricAge } from "@/lib/format-pediatric-age"
+import { formatDate } from "@/lib/formatters"
 import { getFriendlyToastMessage } from "@/lib/get-friendly-toast-message"
 import { cn } from "@/lib/utils"
 
@@ -15,6 +21,140 @@ export function PanelBody({ className, children }: { className?: string; childre
 /** Rodapé fixo dos painéis: ações secundárias à esquerda, a principal com `ml-auto`. */
 export function PanelFooter({ children }: { children: React.ReactNode }) {
   return <div className="flex shrink-0 items-center gap-2 border-t border-border px-6 py-3">{children}</div>
+}
+
+/**
+ * Painel de documento (protótipo a6/a7): formulário em passos à esquerda e a folha ao vivo
+ * à direita. Abaixo de lg a prévia some e o formulário ocupa tudo.
+ */
+export function DocLayout({ form, preview }: { form: React.ReactNode; preview: React.ReactNode }) {
+  return (
+    <div className="grid min-h-0 flex-1 lg:grid-cols-[minmax(0,1fr)_400px]">
+      <div className="flex flex-col gap-7 overflow-auto px-6 py-6">{form}</div>
+      <div className="hidden overflow-auto border-l border-border bg-muted px-6 py-6 lg:block">
+        <p className="mb-3 flex items-center gap-2 text-caption text-subtle-foreground">
+          <EyeIcon className="size-3.5" aria-hidden />
+          Prévia · muda enquanto você preenche
+        </p>
+        {preview}
+      </div>
+    </div>
+  )
+}
+
+/** Passo numerado do formulário: deixa claro o que vem primeiro. */
+export function DocStep({
+  n,
+  title,
+  aside,
+  children,
+}: {
+  n: number
+  title: string
+  aside?: React.ReactNode
+  children: React.ReactNode
+}) {
+  return (
+    <section className="flex flex-col gap-3">
+      <div className="flex items-center gap-2.5">
+        <span className="num grid size-6 place-items-center rounded-full bg-primary-soft text-caption font-semibold text-primary-ink-strong">
+          {n}
+        </span>
+        <h3 className="font-display text-title font-semibold">{title}</h3>
+        {aside ? <div className="ml-auto text-caption text-subtle-foreground">{aside}</div> : null}
+      </div>
+      {children}
+    </section>
+  )
+}
+
+/** Selo de valor que veio da consulta ou da ficha: o médico só confere. */
+export function FromBadge({ children = "da consulta" }: { children?: React.ReactNode }) {
+  return (
+    <span className="inline-flex items-center gap-1 rounded-full border border-primary-soft-border bg-primary-soft px-2 py-0.5 text-caption font-normal text-primary-ink-strong">
+      <LinkIcon className="size-3" aria-hidden />
+      {children}
+    </span>
+  )
+}
+
+/** Atalho "+ Algo" que revela um campo opcional. */
+export function AddFieldButton({ onClick, children }: { onClick: () => void; children: React.ReactNode }) {
+  return (
+    <Button variant="ghost" size="sm" className="w-fit text-muted-foreground" onClick={onClick}>
+      <PlusIcon data-icon="inline-start" />
+      {children}
+    </Button>
+  )
+}
+
+/** Pílula de escolha (modelo, painel, especialidade). */
+export function ChoiceChip({
+  selected = false,
+  onClick,
+  children,
+}: {
+  selected?: boolean
+  onClick: () => void
+  children: React.ReactNode
+}) {
+  return (
+    <button
+      type="button"
+      aria-pressed={selected}
+      onClick={onClick}
+      className={cn(
+        "inline-flex h-8 items-center gap-1 rounded-full border px-3 text-label",
+        selected ? "border-primary bg-primary-soft font-semibold text-primary-ink-strong" : "border-border hover:bg-accent",
+      )}
+    >
+      {children}
+    </button>
+  )
+}
+
+/**
+ * Folha A4 em miniatura com o cabeçalho e a assinatura do pediatra.
+ * ponytail: só a prévia segue o protótipo; o PDF do falaped-kit ainda tem outro layout.
+ */
+export function DocPaper({
+  doctor,
+  patient,
+  title,
+  children,
+}: {
+  doctor: ConsultDoctor
+  patient: { name: string; birth_date: string | null }
+  title: string
+  children: React.ReactNode
+}) {
+  const name = [doctor.first_name, doctor.surname].filter(Boolean).join(" ")
+  const registry = [doctor.crm && `CRM ${doctor.crm}`, doctor.rqe && `RQE ${doctor.rqe}`].filter(Boolean).join(" · ")
+  const place = [doctor.default_location_city, doctor.default_location_state].filter(Boolean).join(" · ")
+  const age = formatPediatricAge(computePediatricAge(patient.birth_date))
+  const today = formatDate(new Date())
+  return (
+    <div className="mx-auto flex aspect-[1/1.414] w-full flex-col rounded-md bg-white p-7 text-[8.5px] leading-relaxed text-neutral-700 shadow-md">
+      <div className="flex items-end justify-between gap-2 border-b border-neutral-300 pb-2">
+        <div>
+          <div className="text-[10px] font-bold text-neutral-900">{name}</div>
+          <div>{["Pediatria", registry].filter(Boolean).join(" · ")}</div>
+        </div>
+        <div className="text-right">{place}</div>
+      </div>
+      <div className="mt-4 text-center text-[10px] font-bold tracking-[0.12em] text-neutral-900 uppercase">{title}</div>
+      <div className="mt-3">
+        Paciente: <b className="text-neutral-900">{patient.name}</b>
+        {age ? ` · ${age}` : null}
+      </div>
+      <div className="mt-3 flex-1 space-y-2 overflow-hidden">{children}</div>
+      <div className="mx-auto mt-4 w-40 border-t border-neutral-400 pt-1 text-center">
+        {name}
+        <br />
+        {[doctor.default_location_city, today].filter(Boolean).join(", ")}
+      </div>
+    </div>
+  )
 }
 
 /**

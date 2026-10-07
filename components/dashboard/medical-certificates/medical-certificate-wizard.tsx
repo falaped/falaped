@@ -596,22 +596,14 @@ type CertificatePreviewShortProfile = {
   default_location_city?: string | null
 }
 
-export function CertificatePreviewShort({
-  type,
-  currentPayload,
-  profile,
-  issuedAt,
-  selectedPatient,
-  embedded = false,
-}: {
-  type: MedicalCertificateType
-  currentPayload: NonNullable<WizardPayload[MedicalCertificateType]>
-  profile: CertificatePreviewShortProfile
-  issuedAt: string
-  selectedPatient: Pick<Patient, "responsible"> | null
-  /** Só a folha, sem o cartão do passo: dentro do painel da Consulta. */
-  embedded?: boolean
-}) {
+/** Título, bloco da criança, corpo e rodapé do atestado, com as datas já formatadas. */
+export function getCertificatePreview(
+  type: MedicalCertificateType,
+  currentPayload: NonNullable<WizardPayload[MedicalCertificateType]>,
+  profile: CertificatePreviewShortProfile,
+  issuedAt: string,
+  responsible: string | null,
+) {
   const location = getProfileDefaultLocation(profile)
   const issuedAtFormatted = issuedAt
     ? format(new Date(issuedAt + "T12:00:00"), "d 'de' MMMM 'de' yyyy", { locale: ptBR })
@@ -623,25 +615,44 @@ export function CertificatePreviewShort({
     rqe: profile.rqe ?? null,
   }
   const formattedPayload = { ...currentPayload } as Record<string, unknown>
-  if (typeof formattedPayload.birthDate === "string" && formattedPayload.birthDate)
-    formattedPayload.birthDate = formatDate(formattedPayload.birthDate as string)
-  if (typeof formattedPayload.attendanceDate === "string" && formattedPayload.attendanceDate)
-    formattedPayload.attendanceDate = formatDate(formattedPayload.attendanceDate as string)
-  if (typeof formattedPayload.startDate === "string" && formattedPayload.startDate)
-    formattedPayload.startDate = formatDate(formattedPayload.startDate as string)
-  if (typeof formattedPayload.consultationDate === "string" && formattedPayload.consultationDate)
-    formattedPayload.consultationDate = formatDate(formattedPayload.consultationDate as string)
+  for (const key of ["birthDate", "attendanceDate", "startDate", "consultationDate"])
+    if (typeof formattedPayload[key] === "string" && formattedPayload[key])
+      formattedPayload[key] = formatDate(formattedPayload[key] as string)
 
-  const preview = getMedicalCertificatePreviewContent(
+  return getMedicalCertificatePreviewContent(
     type,
     formattedPayload as Parameters<typeof getMedicalCertificatePreviewContent>[1],
     doctor,
     location || "—",
     issuedAtFormatted,
-    selectedPatient?.responsible ?? null,
+    responsible,
   )
+}
 
-  const sheet = (
+export function CertificatePreviewShort({
+  type,
+  currentPayload,
+  profile,
+  issuedAt,
+  selectedPatient,
+}: {
+  type: MedicalCertificateType
+  currentPayload: NonNullable<WizardPayload[MedicalCertificateType]>
+  profile: CertificatePreviewShortProfile
+  issuedAt: string
+  selectedPatient: Pick<Patient, "responsible"> | null
+}) {
+  const preview = getCertificatePreview(type, currentPayload, profile, issuedAt, selectedPatient?.responsible ?? null)
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="text-base">Passo 4 — Preview</CardTitle>
+        <CardDescription className="mt-1">
+          Visualização resumida do atestado. O PDF gerado seguirá o mesmo conteúdo.
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
         <div className="space-y-2 rounded-md border border-border bg-muted/30 p-4 text-xs leading-relaxed text-foreground">
           <p className="font-semibold uppercase tracking-wide">{preview.title}</p>
           <p>
@@ -680,18 +691,7 @@ export function CertificatePreviewShort({
             <p>{preview.footerLines[1]}</p>
           </div>
         </div>
-  )
-  if (embedded) return sheet
-
-  return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="text-base">Passo 4 — Preview</CardTitle>
-        <CardDescription className="mt-1">
-          Visualização resumida do atestado. O PDF gerado seguirá o mesmo conteúdo.
-        </CardDescription>
-      </CardHeader>
-      <CardContent>{sheet}</CardContent>
+      </CardContent>
     </Card>
   )
 }

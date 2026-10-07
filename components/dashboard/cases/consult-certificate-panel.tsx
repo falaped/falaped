@@ -2,14 +2,14 @@
 
 import { useState } from "react"
 import { format } from "date-fns"
-import { PrinterIcon } from "lucide-react"
+import { ActivityIcon, BedIcon, CircleCheckIcon, ClockIcon, PrinterIcon, UsersIcon, type LucideIcon } from "lucide-react"
 
 import { generateMedicalCertificateAction } from "@/actions"
-import { emitAndOpenPdf, PanelBody, PanelFooter } from "@/components/dashboard/cases/consult-document"
+import { DocLayout, DocPaper, DocStep, emitAndOpenPdf, FromBadge, PanelFooter } from "@/components/dashboard/cases/consult-document"
 import type { ConsultDoctor } from "@/components/dashboard/cases/consult-prescription-panel"
 import {
   CertificateFormCard,
-  CertificatePreviewShort,
+  getCertificatePreview,
   initialPayload,
   type WizardPayload,
 } from "@/components/dashboard/medical-certificates/medical-certificate-wizard"
@@ -17,11 +17,11 @@ import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 import type { MedicalCertificateType } from "@/modules/medical-certificates/get-medical-certificates-by-profile-id"
 
-const TYPES: Array<[MedicalCertificateType, string]> = [
-  ["comparecimento", "Comparecimento"],
-  ["medico", "Afastamento"],
-  ["acompanhante", "Acompanhante"],
-  ["aptidao_fisica", "Aptidão física"],
+const TYPES: Array<[MedicalCertificateType, string, string, LucideIcon]> = [
+  ["comparecimento", "Comparecimento", "Esteve na consulta, com horário", ClockIcon],
+  ["medico", "Afastamento", "Precisa ficar em casa por uns dias", BedIcon],
+  ["acompanhante", "Acompanhante", "Para o responsável apresentar no trabalho", UsersIcon],
+  ["aptidao_fisica", "Aptidão física", "Liberado para esporte ou natação", ActivityIcon],
 ]
 
 /** Tudo o que a consulta já sabe: criança, responsável, data e horário de hoje. */
@@ -87,49 +87,65 @@ export function ConsultCertificatePanel({
     if (ok) onDone()
   }
 
-  return (
+  const preview = getCertificatePreview(type, current, doctor, issuedAt, patient.responsible)
+
+  const form = (
     <>
-      <PanelBody>
-        <div className="flex flex-col gap-1.5">
-          <span className="text-label font-medium">Tipo</span>
-          <div className="inline-flex w-fit rounded-lg bg-muted p-1" role="group" aria-label="Tipo de atestado">
-            {TYPES.map(([value, label]) => (
+      <DocStep n={1} title="Que atestado?">
+        <div className="grid grid-cols-2 gap-2" role="group" aria-label="Tipo de atestado">
+          {TYPES.map(([value, label, description, Icon]) => {
+            const selected = type === value
+            return (
               <button
                 key={value}
                 type="button"
-                aria-pressed={type === value}
+                aria-pressed={selected}
                 onClick={() => setType(value)}
                 className={cn(
-                  "h-8 rounded-md px-3 text-label",
-                  type === value ? "bg-card font-semibold shadow-xs" : "text-muted-foreground hover:text-foreground",
+                  "flex items-start gap-3 rounded-xl border p-3 text-left",
+                  selected ? "border-primary bg-primary-soft" : "border-border hover:bg-accent",
                 )}
               >
-                {label}
+                <span
+                  className={cn(
+                    "grid size-8 shrink-0 place-items-center rounded-lg",
+                    selected ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground",
+                  )}
+                >
+                  <Icon className="size-4" aria-hidden />
+                </span>
+                <span className="min-w-0 flex-1">
+                  <span className="block font-semibold">{label}</span>
+                  <span className="block text-caption text-muted-foreground">{description}</span>
+                </span>
+                {selected ? <CircleCheckIcon className="size-4 shrink-0 text-primary-ink" aria-hidden /> : null}
               </button>
-            ))}
-          </div>
+            )
+          })}
         </div>
-        <CertificateFormCard
-          type={type}
-          currentPayload={current}
-          setPayload={setPayload}
-          selectedPatient={patient}
-          embedded
-        />
-        <div className="flex flex-col gap-2">
-          <span className="text-caption font-medium text-subtle-foreground">
-            Prévia
-          </span>
-          <CertificatePreviewShort
-            type={type}
-            currentPayload={current}
-            profile={doctor}
-            issuedAt={issuedAt}
-            selectedPatient={patient}
-            embedded
-          />
-        </div>
-      </PanelBody>
+      </DocStep>
+      <DocStep n={2} title="Confira os dados" aside={<FromBadge>data e horário desta consulta</FromBadge>}>
+        <CertificateFormCard type={type} currentPayload={current} setPayload={setPayload} selectedPatient={patient} embedded />
+      </DocStep>
+    </>
+  )
+
+  return (
+    <>
+      <DocLayout
+        form={form}
+        preview={
+          <DocPaper doctor={doctor} patient={patient} title={preview.title}>
+            {preview.bodyParagraphs.map((segments, i) =>
+              segments.length ? (
+                <p key={i} className="text-[9px] leading-[1.7]">
+                  {segments.map((seg, j) => (seg.bold ? <b key={j} className="text-neutral-900">{seg.text}</b> : <span key={j}>{seg.text}</span>))}
+                </p>
+              ) : null,
+            )}
+          </DocPaper>
+        }
+      />
       <PanelFooter>
         <Button className="ml-auto" onClick={handleEmit} disabled={busy}>
           <PrinterIcon data-icon="inline-start" />

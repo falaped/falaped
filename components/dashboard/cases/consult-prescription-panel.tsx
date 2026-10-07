@@ -2,21 +2,26 @@
 
 import { useState } from "react"
 import { format } from "date-fns"
-import { ptBR } from "date-fns/locale"
-import { ChevronRightIcon, EyeIcon, PencilIcon, PlusIcon, PrinterIcon, ScaleIcon, TriangleAlertIcon, XIcon } from "lucide-react"
+import { BookmarkIcon, PlusIcon, PrinterIcon, ScaleIcon, Trash2Icon, TriangleAlertIcon } from "lucide-react"
 import { toast } from "sonner"
 
 import { createPrescriptionTemplateAction, generatePrescriptionAction } from "@/actions"
-import { emitAndOpenPdf, PanelBody, PanelFooter } from "@/components/dashboard/cases/consult-document"
+import {
+  AddFieldButton,
+  ChoiceChip,
+  DocLayout,
+  DocPaper,
+  DocStep,
+  emitAndOpenPdf,
+  PanelFooter,
+} from "@/components/dashboard/cases/consult-document"
 import { Button } from "@/components/ui/button"
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
 import { Input } from "@/components/ui/input"
 import { RichTextEditor } from "@/components/ui/rich-text-editor"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { formatDate } from "@/lib/formatters"
+import { htmlToPlainMultiline } from "@/lib/formatters"
 import { getFriendlyToastMessage } from "@/lib/get-friendly-toast-message"
 import { cn } from "@/lib/utils"
-import { getPrescriptionPreviewParagraphs } from "@/modules/prescriptions/get-prescription-preview-paragraphs"
 import type { PrescriptionTemplateOption } from "@/modules/prescription-templates/types"
 import { getProfileDefaultLocation } from "@/modules/profiles/get-profile-default-location"
 
@@ -52,6 +57,9 @@ function allergyHit(medName: string, allergies: string[]): string | null {
   )
 }
 
+/** Quantos modelos viram atalho; o resto fica em "Ver todos". */
+const TEMPLATE_CHIPS = 4
+
 /** Receita dentro da Consulta (protótipo a6): criança, peso e alergia já vêm da consulta. */
 export function ConsultPrescriptionPanel({
   caseId,
@@ -73,10 +81,9 @@ export function ConsultPrescriptionPanel({
 }) {
   const [medications, setMedications] = useState<Medication[]>([emptyMedication()])
   const [orientations, setOrientations] = useState("")
-  const [warningSigns, setWarningSigns] = useState("")
-  const [additionalNotes, setAdditionalNotes] = useState("")
-  const [extrasOpen, setExtrasOpen] = useState(false)
-  const [preview, setPreview] = useState(false)
+  const [warningSigns, setWarningSigns] = useState<string | null>(null)
+  const [additionalNotes, setAdditionalNotes] = useState<string | null>(null)
+  const [templateId, setTemplateId] = useState<string | null>(null)
   const [templateName, setTemplateName] = useState<string | null>(null)
   const [busy, setBusy] = useState<"emit" | "template" | null>(null)
 
@@ -88,6 +95,7 @@ export function ConsultPrescriptionPanel({
     const template = templates.find((t) => t.id === id)
     if (!template) return
     const s = template.snapshot
+    setTemplateId(id)
     setMedications(
       s.medications.length
         ? s.medications.map((m) => ({
@@ -99,9 +107,8 @@ export function ConsultPrescriptionPanel({
         : [emptyMedication()],
     )
     setOrientations(s.orientations ?? "")
-    setWarningSigns(s.warningSigns ?? "")
-    setAdditionalNotes(s.additionalNotes ?? "")
-    if (s.orientations || s.warningSigns || s.additionalNotes) setExtrasOpen(true)
+    setWarningSigns(s.warningSigns || null)
+    setAdditionalNotes(s.additionalNotes || null)
   }
 
   const meds = filled.map((m) => ({
@@ -112,8 +119,8 @@ export function ConsultPrescriptionPanel({
   }))
   const extras = {
     orientations: orientations.trim() || undefined,
-    warningSigns: warningSigns.trim() || undefined,
-    additionalNotes: additionalNotes.trim() || undefined,
+    warningSigns: warningSigns?.trim() || undefined,
+    additionalNotes: additionalNotes?.trim() || undefined,
   }
 
   async function handleEmit() {
@@ -148,109 +155,72 @@ export function ConsultPrescriptionPanel({
     setTemplateName(null)
   }
 
-  if (preview) {
-    const paragraphs = getPrescriptionPreviewParagraphs(
-      {
-        patientName: patient.name,
-        birthDate: patient.birth_date ? formatDate(patient.birth_date) : undefined,
-        medications: meds,
-        ...extras,
-      },
-      { firstName: doctor.first_name ?? "", surname: doctor.surname ?? "", crm: doctor.crm ?? null, rqe: doctor.rqe ?? null },
-      getProfileDefaultLocation(doctor),
-      format(new Date(), "d 'de' MMMM 'de' yyyy", { locale: ptBR }),
-    )
-    return (
-      <>
-        <PanelBody>
-          <div className="mx-auto aspect-[1/1.414] w-full max-w-md space-y-2 overflow-auto rounded-md border border-border bg-white p-8 text-[12px] leading-relaxed text-neutral-800 shadow-sm">
-            {paragraphs.map((line, i) =>
-              line === "_________________________" ? (
-                <div key={i} className="my-3 border-b border-neutral-300" aria-hidden />
-              ) : (
-                <p key={i} className={cn("whitespace-pre-wrap", line.includes("\n") && "font-medium")}>
-                  {line}
-                </p>
-              ),
-            )}
-          </div>
-        </PanelBody>
-        <PanelFooter>
-          <Button variant="ghost" onClick={() => setPreview(false)}>
-            <PencilIcon data-icon="inline-start" />
-            Voltar a editar
-          </Button>
-          <Button className="ml-auto" onClick={handleEmit} disabled={busy !== null}>
-            <PrinterIcon data-icon="inline-start" />
-            {busy === "emit" ? "Emitindo…" : "Emitir e imprimir"}
-          </Button>
-        </PanelFooter>
-      </>
-    )
-  }
+  const extraNotes = (
+    [
+      ["Orientações", extras.orientations],
+      ["Sinais de alerta", extras.warningSigns],
+      ["Anotações", extras.additionalNotes],
+    ] as const
+  ).filter(([, value]) => value && htmlToPlainMultiline(value).trim())
 
-  return (
+  const form = (
     <>
-      <PanelBody>
-        {allergies.length || weightLabel ? (
-          <div
-            className={cn(
-              "flex items-center gap-3 rounded-xl border px-3 py-2.5",
-              allergies.length ? "border-danger-border bg-danger-soft" : "border-border bg-muted",
-            )}
-          >
-            {allergies.length ? (
-              <>
-                <span className="grid size-7 shrink-0 place-items-center rounded-full bg-destructive text-destructive-foreground" aria-hidden>
-                  <TriangleAlertIcon className="size-3.5" />
-                </span>
-                <div className="min-w-0 flex-1">
-                  <p className="font-semibold text-danger-text">Alérgica a {allergies.join(", ")}</p>
-                  <p className="text-caption text-muted-foreground">Confira cada item antes de emitir.</p>
-                </div>
-              </>
-            ) : (
-              <span className="flex-1" />
-            )}
-            {weightLabel ? (
-              <span className="num inline-flex shrink-0 items-center gap-1 rounded-full bg-card px-2.5 py-1 text-label">
-                <ScaleIcon className="size-3.5 text-subtle-foreground" aria-hidden />
-                {weightLabel}
-              </span>
+      {allergies.length || weightLabel ? (
+        <div className="flex flex-wrap items-center gap-2">
+          {allergies.length ? (
+            <span className="inline-flex items-center gap-1 rounded-full border border-danger-border bg-danger-soft px-2.5 py-0.5 text-label font-medium text-danger-text">
+              <TriangleAlertIcon className="size-3.5" aria-hidden />
+              Alérgica a {allergies.join(", ")}
+            </span>
+          ) : null}
+          {weightLabel ? (
+            <span className="num inline-flex items-center gap-1 rounded-full border border-border bg-muted px-2.5 py-0.5 text-label text-muted-foreground">
+              <ScaleIcon className="size-3.5" aria-hidden />
+              {weightLabel}
+            </span>
+          ) : null}
+        </div>
+      ) : null}
+
+      <DocStep n={1} title="Medicamentos">
+        {templates.length ? (
+          <div className="flex flex-wrap items-center gap-1.5">
+            <span className="text-caption text-subtle-foreground">Começar de um modelo:</span>
+            {templates.slice(0, TEMPLATE_CHIPS).map((t) => (
+              <ChoiceChip key={t.id} selected={templateId === t.id} onClick={() => applyTemplate(t.id)}>
+                {t.name}
+              </ChoiceChip>
+            ))}
+            {templates.length > TEMPLATE_CHIPS ? (
+              <Select value={templateId ?? ""} onValueChange={applyTemplate}>
+                <SelectTrigger size="sm" className="w-auto border-none text-primary-ink shadow-none">
+                  <SelectValue placeholder="Ver todos" />
+                </SelectTrigger>
+                <SelectContent>
+                  {templates.map((t) => (
+                    <SelectItem key={t.id} value={t.id}>
+                      {t.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             ) : null}
           </div>
-        ) : null}
-
-        {templates.length ? (
-          <label className="flex flex-col gap-1.5">
-            <span className="text-label font-medium">Usar modelo</span>
-            <Select onValueChange={applyTemplate}>
-              <SelectTrigger className="w-full">
-                <SelectValue placeholder="Escolha um modelo salvo" />
-              </SelectTrigger>
-              <SelectContent>
-                {templates.map((t) => (
-                  <SelectItem key={t.id} value={t.id}>
-                    {t.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </label>
         ) : null}
 
         <ul className="flex flex-col gap-2">
           {medications.map((med, index) => {
             const hit = allergyHit(med.name, allergies)
             return (
-              <li key={index} className={cn("rounded-xl border bg-card p-4", hit ? "border-danger-border" : "border-border")}>
-                <div className="flex items-start gap-2">
+              <li key={index} className={cn("flex flex-col gap-3 rounded-xl border bg-card p-4", hit ? "border-danger-border" : "border-border")}>
+                <div className="flex items-center gap-2">
+                  <span className="num w-4 text-caption text-subtle-foreground">{index + 1}.</span>
                   <Input
                     aria-label={`Medicamento ${index + 1}`}
                     value={med.name}
                     onChange={(e) => update(index, "name", e.target.value)}
-                    placeholder="Medicamento e apresentação. Ex.: Dipirona 500 mg/mL"
-                    className="font-medium"
+                    placeholder="Medicamento e apresentação. Ex.: Dipirona 500 mg/mL, gotas"
+                    className="font-semibold"
                   />
                   <Button
                     variant="ghost"
@@ -261,24 +231,33 @@ export function ConsultPrescriptionPanel({
                       setMedications((prev) => (prev.length > 1 ? prev.filter((_, i) => i !== index) : [emptyMedication()]))
                     }
                   >
-                    <XIcon />
+                    <Trash2Icon />
                   </Button>
                 </div>
                 {hit ? (
-                  <p className="mt-1.5 flex items-center gap-1.5 text-caption font-medium text-danger-text">
+                  <p className="flex items-center gap-1.5 pl-6 text-caption font-medium text-danger-text">
                     <TriangleAlertIcon className="size-3.5" aria-hidden />
                     Pode conflitar com a alergia a {hit}
                   </p>
                 ) : null}
-                <div className="mt-2 grid grid-cols-[1fr_2fr_1fr] gap-2">
-                  <Input aria-label="Dose" value={med.dosage} onChange={(e) => update(index, "dosage", e.target.value)} placeholder="Dose" />
-                  <Input
-                    aria-label="Posologia"
-                    value={med.posology}
-                    onChange={(e) => update(index, "posology", e.target.value)}
-                    placeholder="Posologia. Ex.: 6 gotas de 6/6 h"
-                  />
-                  <Input aria-label="Duração" value={med.duration} onChange={(e) => update(index, "duration", e.target.value)} placeholder="Duração" />
+                <div className="grid grid-cols-[110px_minmax(0,1fr)_130px] gap-3 pl-6">
+                  {(
+                    [
+                      ["dosage", "Dose", "3,1 mL"],
+                      ["posology", "Como tomar", "1x ao dia, via oral"],
+                      ["duration", "Por quanto tempo", "3 dias"],
+                    ] as const
+                  ).map(([field, label, placeholder]) => (
+                    <label key={field} className="flex flex-col gap-1">
+                      <span className="text-label font-medium">{label}</span>
+                      <Input
+                        value={med[field]}
+                        onChange={(e) => update(index, field, e.target.value)}
+                        placeholder={placeholder}
+                        className={field === "dosage" ? "num" : undefined}
+                      />
+                    </label>
+                  ))}
                 </div>
               </li>
             )
@@ -292,40 +271,69 @@ export function ConsultPrescriptionPanel({
           <PlusIcon className="size-4" aria-hidden />
           Adicionar medicamento
         </button>
+      </DocStep>
 
-        <Collapsible open={extrasOpen} onOpenChange={setExtrasOpen}>
-          <CollapsibleTrigger className="flex items-center gap-1.5 text-label font-medium text-muted-foreground hover:text-foreground">
-            <ChevronRightIcon className={cn("size-4 transition-transform", extrasOpen && "rotate-90")} aria-hidden />
-            Orientações e sinais de alerta
-          </CollapsibleTrigger>
-          <CollapsibleContent className="mt-3 flex flex-col gap-4">
-            {(
-              [
-                ["Orientações", orientations, setOrientations, "Orientações para o responsável"],
-                ["Sinais de alerta", warningSigns, setWarningSigns, "Quando voltar ou procurar a urgência"],
-                ["Anotações", additionalNotes, setAdditionalNotes, "Opcional"],
-              ] as const
-            ).map(([label, value, onChange, placeholder]) => (
-              <div key={label} className="flex flex-col gap-1.5">
-                <span className="text-label font-medium">{label}</span>
-                <RichTextEditor value={value} onChange={onChange} placeholder={placeholder} minHeight="72px" />
-              </div>
-            ))}
-          </CollapsibleContent>
-        </Collapsible>
-      </PanelBody>
+      <DocStep n={2} title="Orientações à família" aside="opcional">
+        <RichTextEditor value={orientations} onChange={setOrientations} placeholder="O que a família deve fazer em casa" minHeight="88px" />
+        {warningSigns !== null ? (
+          <div className="flex flex-col gap-1.5">
+            <span className="text-label font-medium">Sinais de alerta</span>
+            <RichTextEditor value={warningSigns} onChange={setWarningSigns} placeholder="Quando voltar ou procurar a urgência" minHeight="72px" />
+          </div>
+        ) : null}
+        {additionalNotes !== null ? (
+          <div className="flex flex-col gap-1.5">
+            <span className="text-label font-medium">Anotações</span>
+            <RichTextEditor value={additionalNotes} onChange={setAdditionalNotes} minHeight="72px" />
+          </div>
+        ) : null}
+        <div className="flex flex-wrap gap-1">
+          {warningSigns === null ? <AddFieldButton onClick={() => setWarningSigns("")}>Sinais de alerta</AddFieldButton> : null}
+          {additionalNotes === null ? <AddFieldButton onClick={() => setAdditionalNotes("")}>Anotação</AddFieldButton> : null}
+        </div>
+      </DocStep>
+    </>
+  )
 
+  const preview = (
+    <DocPaper doctor={doctor} patient={patient} title="Receituário">
+      {meds.length ? (
+        meds.map((m, i) => (
+          <div key={i}>
+            <b className="text-neutral-900">
+              {i + 1}. {m.name}
+            </b>
+            <div className="pl-3">
+              {[m.dosage, m.posology, m.duration && `por ${m.duration}`].filter(Boolean).join(", ")}.
+            </div>
+          </div>
+        ))
+      ) : (
+        <p className="text-neutral-400">Os medicamentos aparecem aqui.</p>
+      )}
+      {extraNotes.map(([label, value]) => (
+        <div key={label} className="pt-2">
+          <b className="text-neutral-900">{label}</b>
+          <div className="whitespace-pre-line">{htmlToPlainMultiline(value!)}</div>
+        </div>
+      ))}
+    </DocPaper>
+  )
+
+  return (
+    <>
+      <DocLayout form={form} preview={preview} />
       <PanelFooter>
         {templateName === null ? (
           <>
-            <Button variant="ghost" onClick={() => setPreview(true)} disabled={!meds.length}>
-              <EyeIcon data-icon="inline-start" />
-              Ver prévia
-            </Button>
             <Button variant="ghost" onClick={() => setTemplateName("")} disabled={!meds.length}>
+              <BookmarkIcon data-icon="inline-start" />
               Salvar como modelo
             </Button>
-            <Button className="ml-auto" onClick={handleEmit} disabled={busy !== null || !meds.length}>
+            <span className="num ml-auto text-caption text-subtle-foreground">
+              {meds.length ? `${meds.length} ${meds.length === 1 ? "medicamento" : "medicamentos"}` : null}
+            </span>
+            <Button onClick={handleEmit} disabled={busy !== null || !meds.length}>
               <PrinterIcon data-icon="inline-start" />
               {busy === "emit" ? "Emitindo…" : "Emitir e imprimir"}
             </Button>
