@@ -278,45 +278,43 @@ export function CertificateFormCard({
           )}
           {isAptidao && (
             <>
-              <div className="w-full min-w-0 sm:w-1/2 sm:max-w-[50%]">
-                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                  <Field>
-                    <FieldLabel>Atividades</FieldLabel>
-                    <FieldContent>
-                      <Input
-                        value={(currentPayload as { activities?: string }).activities ?? ""}
-                        onChange={(e) =>
-                          setPayload((prev) => ({
-                            ...prev,
-                            aptidao_fisica: {
-                              ...prev.aptidao_fisica!,
-                              activities: e.target.value,
-                            },
-                          }))
-                        }
-                        placeholder="Ex.: atividades escolares e Natação"
-                      />
-                    </FieldContent>
-                  </Field>
-                  <Field>
-                    <FieldLabel>Validade</FieldLabel>
-                    <FieldContent>
-                      <Input
-                        value={(currentPayload as { validity?: string }).validity ?? ""}
-                        onChange={(e) =>
-                          setPayload((prev) => ({
-                            ...prev,
-                            aptidao_fisica: {
-                              ...prev.aptidao_fisica!,
-                              validity: e.target.value,
-                            },
-                          }))
-                        }
-                        placeholder="3 meses, 6 meses ou 12 meses"
-                      />
-                    </FieldContent>
-                  </Field>
-                </div>
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <Field>
+                  <FieldLabel>Atividades</FieldLabel>
+                  <FieldContent>
+                    <Input
+                      value={(currentPayload as { activities?: string }).activities ?? ""}
+                      onChange={(e) =>
+                        setPayload((prev) => ({
+                          ...prev,
+                          aptidao_fisica: {
+                            ...prev.aptidao_fisica!,
+                            activities: e.target.value,
+                          },
+                        }))
+                      }
+                      placeholder="Ex.: atividades escolares e Natação"
+                    />
+                  </FieldContent>
+                </Field>
+                <Field>
+                  <FieldLabel>Validade</FieldLabel>
+                  <FieldContent>
+                    <Input
+                      value={(currentPayload as { validity?: string }).validity ?? ""}
+                      onChange={(e) =>
+                        setPayload((prev) => ({
+                          ...prev,
+                          aptidao_fisica: {
+                            ...prev.aptidao_fisica!,
+                            validity: e.target.value,
+                          },
+                        }))
+                      }
+                      placeholder="3 meses, 6 meses ou 12 meses"
+                    />
+                  </FieldContent>
+                </Field>
               </div>
               <Field>
                 <FieldLabel>Observações</FieldLabel>
