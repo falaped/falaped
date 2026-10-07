@@ -106,6 +106,7 @@ export function CloseCaseWithEarningsDialog({
   const [amounts, setAmounts] = useState<Record<string, string>>({})
   const [errors, setErrors] = useState<FieldErrors>(NO_ERRORS)
   const [isDirty, setIsDirty] = useState(false)
+  const [billed, setBilled] = useState({ count: 0, totalCents: 0 })
 
   const isPending = isClosing || isSaving
 
@@ -120,6 +121,7 @@ export function CloseCaseWithEarningsDialog({
     setAmounts({})
     setErrors(NO_ERRORS)
     setIsDirty(false)
+    setBilled({ count: 0, totalCents: 0 })
   }
 
   function handleOpenChange(next: boolean) {
@@ -152,13 +154,17 @@ export function CloseCaseWithEarningsDialog({
    * pista do porquê.
    */
   async function loadEarningsStep(): Promise<"ok" | "already-billed" | "error"> {
-    const prepared = await prepareCaseEarningsAction(caseId)
+    const prepared = await prepareCaseEarningsAction(caseId, { always: mode === "close" })
     if (!prepared.ok) return "error"
     if (!prepared.ask) return "already-billed"
 
     setCatalog(prepared.procedures)
+    setBilled(prepared.billed)
     setConsultationPriceCents(prepared.consultationPriceCents)
-    setConsultationAmount(formatCentsToInputValue(prepared.consultationPriceCents))
+    // Já lançado (caso reaberto): a consulta não vem pré-preenchida, para não cobrar duas vezes.
+    setConsultationAmount(
+      prepared.billed.count > 0 ? "" : formatCentsToInputValue(prepared.consultationPriceCents),
+    )
     setAmounts(
       Object.fromEntries(
         prepared.procedures.map((item) => [
@@ -265,7 +271,7 @@ export function CloseCaseWithEarningsDialog({
   function handleDismiss() {
     startSaving(async () => {
       await markCaseEarningsPromptedAction(caseId)
-      closeAndRefresh("Caso encerrado sem lançamento.")
+      closeAndRefresh(billed.count > 0 ? "Caso encerrado." : "Caso encerrado sem lançamento.")
     })
   }
 
@@ -366,10 +372,18 @@ export function CloseCaseWithEarningsDialog({
             <AlertDialogHeader>
               <AlertDialogTitle>Registrar o que foi cobrado</AlertDialogTitle>
               <AlertDialogDescription>
-                O caso já está encerrado. Registre o valor da consulta e os procedimentos
-                realizados — ou feche sem lançar, se foi cortesia.
+                {billed.count > 0
+                  ? "O caso já está encerrado. Lance só o que faltar, se faltar algo."
+                  : "O caso já está encerrado. Registre o valor da consulta e os procedimentos realizados — ou feche sem lançar, se foi cortesia."}
               </AlertDialogDescription>
             </AlertDialogHeader>
+            {billed.count > 0 ? (
+              <p className="rounded-lg bg-muted px-3 py-2 text-sm">
+                Já lançado nesta consulta:{" "}
+                <span className="font-medium tabular-nums">{formatCentsToBRL(billed.totalCents)}</span>{" "}
+                · {billed.count === 1 ? "1 lançamento" : `${billed.count} lançamentos`}
+              </p>
+            ) : null}
 
             <div className="flex flex-col gap-4">
               <Field data-invalid={!!errors.consultationAmount}>
@@ -545,7 +559,7 @@ export function CloseCaseWithEarningsDialog({
                 disabled={isSaving}
                 onClick={handleDismiss}
               >
-                Sem cobrança
+                {billed.count > 0 ? "Nada a acrescentar" : "Sem cobrança"}
               </Button>
               <Button
                 type="button"

@@ -5,6 +5,7 @@ import { getAuthenticatedUser } from "@/modules/supabase/get-authenticated-user"
 import { findOwnedCaseId } from "@/modules/cases/find-owned-case-id"
 import { getCaseEarningsPromptedAt } from "@/modules/cases/get-case-earnings-prompted-at"
 import { countNonVoidedEntriesForCase } from "@/modules/financial-entries/count-non-voided-entries-for-case"
+import { getCaseEarningsTotals } from "@/modules/financial-entries/get-case-earnings-totals"
 import {
   listProcedureCatalogItems,
   type ProcedureCatalogItemOption,
@@ -17,6 +18,8 @@ export type PrepareCaseEarningsResult =
       ask: true
       consultationPriceCents: number | null
       procedures: ProcedureCatalogItemOption[]
+      /** O que já foi lançado (não-anulado) neste caso — só em `always`. */
+      billed: { count: number; totalCents: number }
     }
   | { ok: false; error: string }
 
@@ -37,6 +40,12 @@ export type PrepareCaseEarningsResult =
  */
 export async function prepareCaseEarningsAction(
   caseId: string,
+  /**
+   * `always`: o encerramento pela tela SEMPRE passa pela cobrança (protótipo a10b), mesmo
+   * num caso reaberto que já respondeu ou já tem lançamento — aí a etapa mostra o que já
+   * foi lançado, para não duplicar.
+   */
+  options: { always?: boolean } = {},
 ): Promise<PrepareCaseEarningsResult> {
   const supabase = await createClient()
   const { profile } = await getAuthenticatedUser(supabase)
@@ -57,15 +66,20 @@ export async function prepareCaseEarningsAction(
     // respondeu (salvou ou dispensou com "Sem cobrança"), e reabrir + encerrar o mesmo
     // caso NÃO pergunta de novo: é o mesmo atendimento. Esta checagem vem antes da
     // contagem porque cobre o que a contagem não cobre — cortesia deixa zero lançamento.
-    const promptedAt = await getCaseEarningsPromptedAt(supabase, ownedCaseId)
-    if (promptedAt !== null) return { ok: true, ask: false }
+    let billed = { count: 0, totalCents: 0 }
+    if (options.always) {
+      billed = await getCaseEarningsTotals(supabase, profile.id, ownedCaseId)
+    } else {
+      const promptedAt = await getCaseEarningsPromptedAt(supabase, ownedCaseId)
+      if (promptedAt !== null) return { ok: true, ask: false }
 
-    const alreadyBilled = await countNonVoidedEntriesForCase(
-      supabase,
-      profile.id,
-      ownedCaseId,
-    )
-    if (alreadyBilled > 0) return { ok: true, ask: false }
+      const alreadyBilled = await countNonVoidedEntriesForCase(
+        supabase,
+        profile.id,
+        ownedCaseId,
+      )
+      if (alreadyBilled > 0) return { ok: true, ask: false }
+    }
 
     const procedures = await listProcedureCatalogItems(supabase, profile.id)
     return {
@@ -73,6 +87,7 @@ export async function prepareCaseEarningsAction(
       ask: true,
       consultationPriceCents: profile.consultation_price_cents ?? null,
       procedures,
+      billed,
     }
   } catch (e) {
     const message =
