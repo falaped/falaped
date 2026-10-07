@@ -103,7 +103,6 @@
   --shadow-sm: 0 1px 2px oklch(var(--shadow-color) / 0.06), 0 2px 6px oklch(var(--shadow-color) / 0.06);
   --shadow-md: 0 1px 3px oklch(var(--shadow-color) / 0.08), 0 6px 16px oklch(var(--shadow-color) / 0.10);
   --shadow-lg: 0 2px 6px oklch(var(--shadow-color) / 0.08), 0 16px 40px oklch(var(--shadow-color) / 0.16);
-  --shadow-brand: 3px 3px 0 var(--foreground);
   /* escala tipográfica nomeada */
   --text-display: 30px; --text-display--line-height: 36px; --text-display--letter-spacing: -0.02em;
   --text-page: 24px; --text-page--line-height: 32px; --text-page--letter-spacing: -0.015em;
@@ -129,7 +128,6 @@
   .btn-ghost { @apply text-foreground hover:bg-surface-hover; }
   .btn-danger { @apply text-danger-text hover:bg-danger-bg; }
   .btn-link { @apply h-auto px-0 text-accent-text underline-offset-4 hover:underline; }
-  .btn-signature { @apply shadow-brand border border-foreground hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-[2px_2px_0_var(--foreground)] active:translate-x-[3px] active:translate-y-[3px] active:shadow-none; }
   /* selos com papel fixo */
   .badge { @apply inline-flex items-center gap-1 h-6 px-2 rounded-[var(--radius-badge)] text-caption font-medium border whitespace-nowrap; }
   .badge-neutral { @apply bg-surface-sunken text-text-secondary border-border; }
@@ -183,7 +181,7 @@
       <div class="card p-5"><div class="t-card">3. Vermelho é alerta clínico</div><p class="mt-1 text-text-secondary">Alergia é o vermelho mais forte da tela, sempre com ícone e texto. Excluir é discreto: só texto vermelho, sem preenchimento. (ui-ux-pro-max · color-only)</p></div>
       <div class="card p-5"><div class="t-card">4. Hierarquia antes da cor</div><p class="mt-1 text-text-secondary">Tamanho, peso e cinza definem a leitura. A tela tem que funcionar em escala de cinza, como no wireframe. (refactoring-ui · T2)</p></div>
       <div class="card p-5"><div class="t-card">5. Três superfícies, uma regra de forma</div><p class="mt-1 text-text-secondary">Destaque (gradiente no card inteiro), comum (branco com contorno) e apoio (cinza sem contorno). Raios: controle 8, card 12, janela 16, selo 6. (taste · shape lock · S4, S7)</p></div>
-      <div class="card p-5"><div class="t-card">6. A marca aparece uma vez</div><p class="mt-1 text-text-secondary">A sombra dura da logo vira a "assinatura" do botão Iniciar consulta e do card da consulta aberta. Em nenhum outro lugar. (ui-ux-pro-max · neubrutalism fora de saúde)</p></div>
+      <div class="card p-5"><div class="t-card">6. O neo-brutalismo fica na logo</div><p class="mt-1 text-text-secondary">A logo empilhada é a única peça com blocos e sombra dura. O app usa sombras suaves e contornos finos; a marca entra pelo azul e pela Lexend. (ui-ux-pro-max · neubrutalism fora de saúde)</p></div>
     </div>
   </section>
 
@@ -193,7 +191,7 @@
     <p class="doc-lead">Lexend (a família da logo) só nos títulos. Inter em todo o resto, com números tabulares em doses, pesos, horários e valores.</p>
     <div class="grid gap-4 md:grid-cols-[260px_1fr]">
       <div class="card flex flex-col items-center justify-center gap-4 p-6">
-        <img src="../../public/falaped-logo-horizontal.svg" alt="Falaped" class="h-10 dark:hidden"><img src="../../public/falaped-logo-horizontal-dark.svg" alt="Falaped" class="hidden h-10 dark:block">
+        <img src="../../public/falaped-logo.svg" alt="Falaped" class="h-24 dark:hidden"><img src="../../public/falaped-logo-dark.svg" alt="Falaped" class="hidden h-24 dark:block"><span class="doc-k">principal · empilhada</span>
         <div class="flex items-center gap-4"><img src="../../public/falaped-icon.svg" alt="" class="h-10 dark:hidden"><img src="../../public/falaped-icon-dark.svg" alt="" class="hidden h-10 dark:block"><span class="doc-k">compacta · menu recolhido</span></div>
       </div>
       <div class="card divide-y divide-border">
@@ -271,7 +269,6 @@
       <div class="text-center"><div class="h-16 w-24 rounded-[var(--radius-card)] bg-surface shadow-sm"></div><div class="doc-k mt-1">sm · destaque</div></div>
       <div class="text-center"><div class="h-16 w-24 rounded-[var(--radius-card)] bg-surface shadow-md"></div><div class="doc-k mt-1">md · menu</div></div>
       <div class="text-center"><div class="h-16 w-24 rounded-[var(--radius-card)] bg-surface shadow-lg"></div><div class="doc-k mt-1">lg · janela</div></div>
-      <div class="text-center"><div class="h-16 w-24 rounded-[var(--radius-card)] border border-foreground bg-accent shadow-brand"></div><div class="doc-k mt-1">assinatura</div></div>
     </div>
   </section>
 
@@ -280,7 +277,7 @@
     <h2 class="t-section">Botões</h2>
     <p class="doc-lead">Passe o mouse e clique: todos reagem. Altura padrão 36 px; 40 px para a ação principal do cabeçalho; 32 px dentro de linhas e cards.</p>
     <div class="flex flex-wrap items-center gap-3">
-      <button class="btn btn-primary btn-lg btn-signature">Iniciar consulta</button>
+      <button class="btn btn-primary btn-lg">Iniciar consulta</button>
       <button class="btn btn-primary">Emitir e imprimir</button>
       <button class="btn btn-secondary">Editar</button>
       <button class="btn btn-ghost">Cancelar</button>
@@ -291,7 +288,7 @@
     <div class="mt-4 flex flex-wrap items-center gap-3">
       <button class="btn btn-primary btn-lg">40 · cabeçalho</button><button class="btn btn-primary">36 · padrão</button><button class="btn btn-secondary btn-sm">32 · linha</button><button class="btn btn-secondary btn-xs">28 · compacto</button>
     </div>
-    <p class="mt-3 text-caption text-text-tertiary">A "assinatura" (sombra dura da logo) só no Iniciar consulta. O Excluir é discreto de propósito: o vermelho forte fica para a alergia.</p>
+    <p class="mt-3 text-caption text-text-tertiary">O Excluir é discreto de propósito: o vermelho forte fica para a alergia.</p>
   </section>
 
   <!-- SELOS -->
@@ -341,8 +338,8 @@
     <div class="grid gap-5 lg:grid-cols-[250px_1fr]">
       <!-- menu lateral -->
       <aside class="card-sunken flex flex-col gap-1 p-3">
-        <img src="../../public/falaped-logo-horizontal.svg" alt="Falaped" class="mx-1 mb-3 mt-1 h-7 self-start dark:hidden"><img src="../../public/falaped-logo-horizontal-dark.svg" alt="Falaped" class="mx-1 mb-3 mt-1 hidden h-7 self-start dark:block">
-        <div class="card-highlight mb-1 flex items-center gap-2 border-foreground p-3 shadow-brand">
+        <img src="../../public/falaped-logo.svg" alt="Falaped" class="mx-1 mb-3 mt-1 h-12 self-start dark:hidden"><img src="../../public/falaped-logo-dark.svg" alt="Falaped" class="mx-1 mb-3 mt-1 hidden h-12 self-start dark:block">
+        <div class="card-highlight mb-1 flex items-center gap-2 p-3">
           <span class="size-2 rounded-full bg-success-solid"></span><div class="min-w-0"><div class="text-label font-semibold">Helena D.</div><div class="text-caption text-text-secondary">Voltar à consulta</div></div><span class="ml-auto text-caption num text-text-secondary">12:47</span>
         </div>
         <div class="input mb-2 h-8 text-text-tertiary">Buscar paciente <span class="ml-auto rounded border border-border px-1 text-[10px]">⌘K</span></div>
