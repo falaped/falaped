@@ -98,35 +98,40 @@ export function ConsultRail({
   return (
     <div className="flex flex-col gap-5">
       {allergies.length ? (
-        <section className="rounded-xl border border-danger-border bg-danger-soft p-3" aria-label="Alergias">
-          <div className="flex items-center gap-2">
-            <span className="grid size-6 shrink-0 place-items-center rounded-full bg-destructive text-destructive-foreground" aria-hidden>
-              <TriangleAlertIcon className="size-3.5" />
-            </span>
-            <h3 className="font-semibold text-danger-text">{allergies.length === 1 ? "Alergia" : "Alergias"}</h3>
-            {patientId ? (
-              <Link href={`/dashboard/patients/${patientId}/editar`} className="ml-auto text-caption text-danger-text hover:underline">
+        <Section
+          title={allergies.length === 1 ? "Alergia" : "Alergias"}
+          action={
+            patientId ? (
+              <Link href={`/dashboard/patients/${patientId}/editar`} className="text-caption text-muted-foreground hover:underline">
                 Editar
               </Link>
-            ) : null}
-          </div>
-          <ul className="mt-2 flex flex-col gap-0.5 pl-8 text-label font-medium">
+            ) : null
+          }
+        >
+          <ul className="flex flex-col gap-1 text-label">
             {allergies.map((allergy) => (
-              <li key={allergy}>{allergy}</li>
+              <li key={allergy} className="flex items-center gap-2">
+                <TriangleAlertIcon className="size-3.5 shrink-0 text-danger-text" aria-hidden />
+                {allergy}
+              </li>
             ))}
           </ul>
-        </section>
+        </Section>
       ) : null}
-      <Section title="Documentos">
-        {rows.length ? (
-          <ul className="flex flex-col gap-1.5">
-            {rows.map(({ key, ...row }) => (
-              <DocRow key={key} {...row} />
+      <Section title="Lembretes">
+        {reminders.length ? (
+          <ul className="mb-2 flex flex-col gap-1 text-label">
+            {reminders.map((r) => (
+              <li key={r.id} className="wrap-break-word">{r.text}</li>
             ))}
           </ul>
         ) : (
-          <p className="text-label text-subtle-foreground">Nenhum documento ainda</p>
+          <p className="mb-2 text-label text-subtle-foreground">O que retomar na próxima consulta desta criança</p>
         )}
+        <CaseRemindersDialog caseId={caseId} initialReminders={reminders} />
+      </Section>
+      <Section title="Relatório">
+        <p className="text-label text-subtle-foreground">Gerado ao encerrar, a partir da conversa</p>
       </Section>
       <Section title="Medidas">
         {measures.length ? (
@@ -137,19 +142,16 @@ export function ConsultRail({
           <p className="text-label text-subtle-foreground">Nenhuma medida hoje</p>
         )}
       </Section>
-      <Section title="Lembretes" action={<CaseRemindersDialog caseId={caseId} initialReminders={reminders} />}>
-        {reminders.length ? (
-          <ul className="flex flex-col gap-1 text-label">
-            {reminders.map((r) => (
-              <li key={r.id} className="wrap-break-word">{r.text}</li>
+      <Section title="Documentos">
+        {rows.length ? (
+          <ul className="flex flex-col gap-1.5">
+            {rows.map(({ key, ...row }) => (
+              <DocRow key={key} {...row} />
             ))}
           </ul>
         ) : (
-          <p className="text-label text-subtle-foreground">Para a próxima consulta desta criança</p>
+          <p className="text-label text-subtle-foreground">Nenhum documento ainda</p>
         )}
-      </Section>
-      <Section title="Relatório">
-        <p className="text-label text-subtle-foreground">Gerado ao encerrar, a partir da conversa</p>
       </Section>
     </div>
   )

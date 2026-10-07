@@ -28,9 +28,9 @@ export function CaseRemindersDialog({
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button type="button" variant="ghost" size="xs" className="-my-1 text-muted-foreground">
+        <Button type="button" variant="outline" size="sm" className="w-full">
           <NotebookPenIcon data-icon="inline-start" />
-          {initialReminders.length ? "Editar" : "Escrever"}
+          {initialReminders.length ? "Editar lembretes" : "Escrever lembrete"}
         </Button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-lg">
