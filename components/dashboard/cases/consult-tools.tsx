@@ -14,15 +14,14 @@ import {
   type LucideIcon,
 } from "lucide-react"
 
+import { ConsultAttachmentsPanel } from "@/components/dashboard/cases/consult-attachments-panel"
 import { ConsultCertificatePanel } from "@/components/dashboard/cases/consult-certificate-panel"
-import { PanelBody } from "@/components/dashboard/cases/consult-document"
 import { ConsultExamReadingPanel } from "@/components/dashboard/cases/consult-exam-reading-panel"
 import { ConsultExamRequestPanel } from "@/components/dashboard/cases/consult-exam-request-panel"
 import { ConsultMeasurePanel } from "@/components/dashboard/cases/consult-measure-panel"
 import { ConsultPrescriptionPanel, type ConsultDoctor } from "@/components/dashboard/cases/consult-prescription-panel"
 import { ConsultScalePanel } from "@/components/dashboard/cases/consult-scale-panel"
 import { ConsultReferralPanel } from "@/components/dashboard/cases/consult-referral-panel"
-import { AttachmentsSection } from "@/components/dashboard/attachments/attachments-section"
 import type { ExamReadingWithPages } from "@/components/dashboard/exam-readings/exam-reading-card"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
@@ -196,15 +195,13 @@ export function ConsultTools({
               <ConsultMeasurePanel patient={patient} measurements={measurements} onDone={onDone} />
             ) : null}
             {sheet === "attachment" ? (
-              <PanelBody>
-                <AttachmentsSection
-                  patientId={patient.id}
-                  caseId={caseId}
-                  attachments={attachments}
-                  title="Anexos desta consulta"
-                  description="Os arquivos ficam também na ficha da criança."
-                />
-              </PanelBody>
+              <ConsultAttachmentsPanel
+                patientId={patient.id}
+                caseId={caseId}
+                firstName={patient.name.split(" ")[0] ?? ""}
+                attachments={attachments}
+                onDone={onDone}
+              />
             ) : null}
           </SheetContent>
         </Sheet>

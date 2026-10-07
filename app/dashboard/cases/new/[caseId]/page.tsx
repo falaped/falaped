@@ -16,6 +16,7 @@ import { getReferralsByCaseId } from "@/modules/referrals/get-referrals-by-case-
 import { getScaleResultsByCase } from "@/modules/patient-scales/get-scale-results-by-case"
 import { getScaleResultsByPatient } from "@/modules/patient-scales/get-scale-results-by-patient"
 import { listAttachmentsByCase } from "@/modules/patient-attachments/list-attachments-by-case"
+import { listAttachmentsByPatient } from "@/modules/patient-attachments/list-attachments-by-patient"
 import { listExamReadingsByCase } from "@/modules/exam-readings/list-exam-readings-by-case"
 import { getExamReadingPageUrls } from "@/modules/exam-readings/get-exam-reading-page-urls"
 import { getMeasurementsByPatient } from "@/modules/patient-growth/get-measurements-by-patient"
@@ -73,7 +74,11 @@ export default async function NewCaseWorkspacePage({
       ? getScaleResultsByPatient(supabase, profile.id, patientId)
       : getScaleResultsByCase(supabase, profile.id, caseId)
     ).catch(() => []),
-    listAttachmentsByCase(supabase, profile.id, caseId).catch(() => []),
+    // Todos os arquivos da criança: o painel marca os desta consulta.
+    (patientId
+      ? listAttachmentsByPatient(supabase, profile.id, patientId)
+      : listAttachmentsByCase(supabase, profile.id, caseId)
+    ).catch(() => []),
     listExamReadingsByCase(supabase, profile.id, caseId).catch(() => []),
     patientId ? getMeasurementsByPatient(supabase, profile.id, patientId).catch(() => []) : [],
     getPrescriptionTemplatesByProfileId(supabase, profile.id).catch(() => []),

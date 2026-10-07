@@ -14,11 +14,6 @@ import { cn } from "@/lib/utils"
 
 type PdfResult = { ok: true; pdfBase64: string; filename: string } | { ok: false; error: string }
 
-/** Corpo rolável dos painéis da Consulta. */
-export function PanelBody({ className, children }: { className?: string; children: React.ReactNode }) {
-  return <div className={cn("flex flex-1 flex-col gap-5 overflow-auto px-6 py-5", className)}>{children}</div>
-}
-
 /** Rodapé fixo dos painéis: ações secundárias à esquerda, a principal com `ml-auto`. */
 export function PanelFooter({ children }: { children: React.ReactNode }) {
   return <div className="flex shrink-0 items-center gap-2 border-t border-border px-6 py-3">{children}</div>
