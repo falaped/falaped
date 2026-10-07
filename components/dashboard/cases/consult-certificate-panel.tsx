@@ -20,7 +20,7 @@ import type { MedicalCertificateType } from "@/modules/medical-certificates/get-
 const TYPES: Array<[MedicalCertificateType, string, string, LucideIcon]> = [
   ["comparecimento", "Comparecimento", "Esteve na consulta, com horário", ClockIcon],
   ["medico", "Afastamento", "Precisa ficar em casa por uns dias", BedIcon],
-  ["acompanhante", "Acompanhante", "Para o responsável apresentar no trabalho", UsersIcon],
+  ["acompanhante", "Acompanhante", "Para o responsável", UsersIcon],
   ["aptidao_fisica", "Aptidão física", "Liberado para esporte ou natação", ActivityIcon],
 ]
 
