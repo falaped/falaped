@@ -113,7 +113,7 @@ export function ConsultScalePanel({
     function onKey(event: KeyboardEvent) {
       const target = event.target as HTMLElement | null
       if (event.metaKey || event.ctrlKey || event.altKey || target?.closest("input, textarea, [contenteditable]")) return
-      const at = keys.indexOf(event.key.toUpperCase())
+      const at = keys.indexOf(event.key?.toUpperCase() ?? "")
       if (at === -1) return
       event.preventDefault()
       answer(item!.options[at].value)

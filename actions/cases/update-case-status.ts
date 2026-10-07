@@ -17,9 +17,16 @@ export type UpdateCaseStatusResult =
   | { ok: true }
   | { ok: false; error: string }
 
+/**
+ * `deferRevalidate`: quem chama faz o `router.refresh()` depois. Existe para o encerrar
+ * em duas etapas da Consulta: revalidar aqui re-renderia a página da consulta no meio do
+ * diálogo, ela veria o caso encerrado e redirecionaria para o caso, desmontando a etapa
+ * de cobrança antes de ela aparecer.
+ */
 export async function updateCaseStatusAction(
   caseId: string,
   status: "active" | "closed",
+  options: { deferRevalidate?: boolean } = {},
 ): Promise<UpdateCaseStatusResult> {
   const supabase = await createClient()
   const { profile } = await getAuthenticatedUser(supabase)
@@ -42,6 +49,7 @@ export async function updateCaseStatusAction(
       )
     }
 
+    if (options.deferRevalidate) return { ok: true }
     revalidatePath("/dashboard/cases")
     revalidatePath(`/dashboard/cases/${caseId}`)
     // Workspace route is cached (cacheComponents); without this, reopening a case
