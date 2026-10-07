@@ -71,7 +71,7 @@ function Steps({ step }: { step: 0 | 1 }) {
 
 /**
  * Encerrar consulta (protótipos a10 e a10b): um drawer em duas etapas. Primeiro o conteúdo
- * clínico — relatório (gerado aqui se ainda não existe), documentos e lembretes —, depois a
+ * clínico — relatório (opcional: só gera se o médico pedir), documentos e lembretes —, depois a
  * cobrança, com o botão que encerra e salva tudo. A consulta só é encerrada nesse botão:
  * fechar o drawer em qualquer ponto não muda nada.
  */
@@ -145,7 +145,6 @@ export function CloseConsultSheet({
                     caseId={caseId}
                     hasMessages={hasMessages}
                     embedded
-                    autoGenerate
                   />
                 ) : (
                   <p className="text-muted-foreground">Nenhum modelo de relatório disponível para este perfil.</p>
