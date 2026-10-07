@@ -991,7 +991,7 @@ export function NewCaseWorkspace({
           <footer className="shrink-0 border-t border-border bg-card px-6 py-3">
             <div className="mx-auto flex max-w-[760px] flex-col gap-2">
               {chips.length ? (
-                <div className="flex gap-1.5 overflow-x-auto">
+                <div className="flex flex-wrap gap-1.5">
                   {chips.slice(0, 4).map((chip) => {
                     const chipBusy = chipsLoading || submittingChipId === chip.id
                     return (
