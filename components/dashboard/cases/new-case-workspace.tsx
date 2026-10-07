@@ -981,6 +981,7 @@ export function NewCaseWorkspace({
         scaleResults={scaleResults}
         attachments={attachments}
         examReadings={examReadings}
+        measurements={measurements}
         documentData={{
           allergies,
           weightLabel,

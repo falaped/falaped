@@ -18,15 +18,16 @@ import { ConsultCertificatePanel } from "@/components/dashboard/cases/consult-ce
 import { PanelBody } from "@/components/dashboard/cases/consult-document"
 import { ConsultExamReadingPanel } from "@/components/dashboard/cases/consult-exam-reading-panel"
 import { ConsultExamRequestPanel } from "@/components/dashboard/cases/consult-exam-request-panel"
+import { ConsultMeasurePanel } from "@/components/dashboard/cases/consult-measure-panel"
 import { ConsultPrescriptionPanel, type ConsultDoctor } from "@/components/dashboard/cases/consult-prescription-panel"
 import { ConsultScalePanel } from "@/components/dashboard/cases/consult-scale-panel"
 import { ConsultReferralPanel } from "@/components/dashboard/cases/consult-referral-panel"
 import { AttachmentsSection } from "@/components/dashboard/attachments/attachments-section"
 import type { ExamReadingWithPages } from "@/components/dashboard/exam-readings/exam-reading-card"
-import { MeasurementForm } from "@/components/dashboard/patients/growth/measurement-form"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet"
+import type { Measurement } from "@/modules/patient-growth/types"
 import type { PatientAttachment } from "@/modules/patient-attachments/types"
 import type { ExamCatalogItem } from "@/modules/exam-catalog/types"
 import type { ExamPanel } from "@/modules/exam-panels/types"
@@ -94,16 +95,25 @@ export function ConsultTools({
   scaleResults,
   attachments,
   examReadings,
+  measurements,
   documentData,
 }: {
   caseId: string
-  patient: { id: string; name: string; sex: string | null; birth_date: string | null; responsible: string | null } | null
+  patient: {
+    id: string
+    name: string
+    sex: string | null
+    birth_date: string | null
+    gestational_age_weeks: number | null
+    responsible: string | null
+  } | null
   /** "Helena Duarte · 2a 3m", repetido no topo de cada painel. */
   subtitle: string
   ageMonths: number | null
   scaleResults: ScaleResult[]
   attachments: PatientAttachment[]
   examReadings: ExamReadingWithPages[]
+  measurements: Measurement[]
   documentData: ConsultDocumentData
 }) {
   const router = useRouter()
@@ -183,15 +193,7 @@ export function ConsultTools({
               <ConsultExamReadingPanel patientId={patient.id} caseId={caseId} readings={examReadings} onDone={onDone} />
             ) : null}
             {sheet === "measure" ? (
-              <PanelBody>
-                <MeasurementForm
-                  patientId={patient.id}
-                  patientSex={patient.sex}
-                  patientBirthDate={patient.birth_date}
-                  open
-                  onOpenChange={(next) => !next && setSheet(null)}
-                />
-              </PanelBody>
+              <ConsultMeasurePanel patient={patient} measurements={measurements} onDone={onDone} />
             ) : null}
             {sheet === "attachment" ? (
               <PanelBody>
