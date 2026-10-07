@@ -277,14 +277,15 @@ const inicio = () => APP({ on: "inicio", active: 1 }, PAGE(`
       [S_RETURN(), "Lara Pereira · 8m", "Retorno em 2 dias", "Ver ficha", "b5"],
       [SIG("wallet", "warning", "Sem valor lançado", "3 consultas desta semana estão sem cobrança."), "3 consultas", "Sem valor lançado", "Lançar valores", null],
     ].map(([sig, n, w, b, go]) => `<div class="flex min-h-16 items-center gap-3 px-5 py-3">${sig}<div class="min-w-0 flex-1"><div class="font-semibold">${n}</div><div class="text-caption text-muted-foreground">${w}</div></div><button ${go ? `data-go="${go}"` : ""} class="btn btn-secondary btn-sm">${b}</button></div>`).join(""), "Ver as 4 pendências", null)}
-    ${SECTION("Atendidos hoje", 3, [["MS", "Miguel Santos", "4a 1m", "Puericultura · sem alterações", "09:10", ["Atestado"]], ["LP", "Lara Pereira", "8m", "Bronquiolite leve · retorno em 48 h", "08:20", ["Receita"]], ["BS", "Bia Souza", "3a", "IVAS · lavagem nasal", "07:40", ["Receita"]]].map(([i, n, a, w, t, d]) => `
+    ${SECTION("Consultas recentes", 0, [["MS", "Miguel Santos", "4a 1m", "Puericultura · sem alterações", "Hoje", ["Atestado"]], ["LP", "Lara Pereira", "8m", "Bronquiolite leve · retorno em 48 h", "Ontem", ["Receita"]], ["BS", "Bia Souza", "3a", "IVAS · lavagem nasal", "12/09", ["Receita"]]].map(([i, n, a, w, t, d]) => `
       <a data-go="b2" class="flex min-h-16 items-center gap-3 px-5 py-3 hover:bg-accent">${AV(i)}<div class="min-w-0 flex-1"><div><span class="font-semibold">${n}</span> <span class="text-subtle-foreground">· ${a}</span></div><div class="text-caption text-muted-foreground">${w}</div></div>${d.map(x => `<span class="badge badge-accent">${x}</span>`).join("")}<span class="w-12 text-right text-caption num text-subtle-foreground">${t}</span></a>`).join(""), "Ver todas as consultas", "b1")}
   </div>
   <section class="card">
-    <div class="flex items-center gap-2 px-5 pb-1 pt-4"><h2 class="t-section">Seu mês</h2><span class="text-muted-foreground">· outubro</span><a class="btn btn-link btn-sm ml-auto">Ver financeiro${I("arrow-right", "ic-sm")}</a></div>
-    <div class="grid grid-cols-3 divide-x divide-border">
-      ${KPI("stethoscope", "Consultas hoje", "3", "1 em andamento")}
-      ${KPI("calendar-days", "Esta semana", "14", "3 a mais que a semana passada", "text-success-text")}
+    <div class="flex items-center gap-2 px-5 pb-1 pt-4"><h2 class="t-section">Seus números</h2><a class="btn btn-link btn-sm ml-auto">Ver financeiro${I("arrow-right", "ic-sm")}</a></div>
+    <div class="grid grid-cols-4 divide-x divide-border">
+      ${KPI("users", "Pacientes cadastrados", "148", "no total")}
+      ${KPI("stethoscope", "Consultas no histórico", "312", "298 encerradas")}
+      ${KPI("pill", "Receitas emitidas", "187", "no total")}
       ${KPI("wallet", "Recebido em outubro", "R$ 9.800,00", "3 consultas sem valor lançado", "text-warning-text")}
     </div>
   </section>`));
