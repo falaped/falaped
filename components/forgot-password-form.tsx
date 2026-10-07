@@ -1,140 +1,115 @@
 "use client";
 
+import { useState } from "react";
+import Link from "next/link";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { createClient } from "@/lib/supabase/client";
-import {
-  forgotPasswordSchema,
-  type ForgotPasswordFormData,
-} from "@/lib/schemas/auth";
-import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import {
-  Field,
-  FieldContent,
-  FieldError,
-  FieldGroup,
-  FieldLabel,
-} from "@/components/ui/field";
-import { Input } from "@/components/ui/input";
-import Link from "next/link";
-import { useState } from "react";
-import { cn } from "@/lib/utils";
-import { authErrorMessage } from "@/lib/auth-error-message";
+import { ArrowLeft, MailCheck, TriangleAlert } from "lucide-react";
 
-export function ForgotPasswordForm({
-  className,
-  ...props
-}: React.ComponentPropsWithoutRef<"div">) {
+import { createClient } from "@/lib/supabase/client";
+import { forgotPasswordSchema, type ForgotPasswordFormData } from "@/lib/schemas/auth";
+import { authErrorMessage } from "@/lib/auth-error-message";
+import { Button } from "@/components/ui/button";
+import { Field, FieldContent, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field";
+import { Input } from "@/components/ui/input";
+
+export function ForgotPasswordForm() {
   const [apiError, setApiError] = useState<string | null>(null);
-  const [success, setSuccess] = useState(false);
+  const [sentTo, setSentTo] = useState<string | null>(null);
 
   const form = useForm<ForgotPasswordFormData>({
     resolver: zodResolver(forgotPasswordSchema),
     defaultValues: { email: "" },
   });
+  const { errors, isSubmitting } = form.formState;
 
   const handleSubmit = async (data: ForgotPasswordFormData) => {
     const supabase = createClient();
     setApiError(null);
 
     try {
-      const { error } = await supabase.auth.resetPasswordForEmail(
-        data.email,
-        {
-          redirectTo: `${window.location.origin}/auth/update-password`,
-        }
-      );
+      const { error } = await supabase.auth.resetPasswordForEmail(data.email, {
+        redirectTo: `${window.location.origin}/auth/update-password`,
+      });
       if (error) throw error;
-      setSuccess(true);
+      setSentTo(data.email);
     } catch (error: unknown) {
       setApiError(authErrorMessage(error));
     }
   };
 
-  if (success) {
+  const backToLogin = (
+    <p className="mt-6 text-center">
+      <Link
+        href="/auth/login"
+        className="inline-flex items-center gap-1.5 font-medium text-primary-ink underline-offset-4 hover:underline"
+      >
+        <ArrowLeft className="size-4" />
+        Voltar para o login
+      </Link>
+    </p>
+  );
+
+  if (sentTo) {
     return (
-      <div className={cn("flex flex-col gap-6", className)} {...props}>
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-2xl font-semibold tracking-tight">
-              Verifique seu e-mail
-            </CardTitle>
-            <CardDescription className="text-sm text-muted-foreground">
-              Instruções de redefinição enviadas
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <p className="text-sm text-muted-foreground">
-              Se você se cadastrou com e-mail e senha, receberá um e-mail para
-              redefinir sua senha.
-            </p>
-          </CardContent>
-        </Card>
-      </div>
+      <>
+        <section className="rounded-2xl border border-border bg-card p-8 shadow-sm">
+          <span className="grid size-12 place-items-center rounded-full bg-primary-soft text-primary-ink-strong">
+            <MailCheck className="size-6" />
+          </span>
+          <h1 className="mt-5 font-display text-page font-semibold">Confira seu e-mail</h1>
+          <p className="mt-2 text-read text-muted-foreground">
+            Se existir uma conta com <span className="font-medium text-foreground">{sentTo}</span>, enviamos um
+            link para criar uma nova senha.
+          </p>
+          <p className="mt-4 text-label text-subtle-foreground">
+            Não chegou em alguns minutos? Veja a caixa de spam ou de promoções.
+          </p>
+        </section>
+        {backToLogin}
+      </>
     );
   }
 
   return (
-    <div className={cn("flex flex-col gap-6", className)} {...props}>
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-2xl font-semibold tracking-tight">
-            Redefinir senha
-          </CardTitle>
-          <CardDescription className="text-sm text-muted-foreground">
-            Digite seu e-mail e enviaremos um link para redefinir sua senha.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={form.handleSubmit(handleSubmit)}>
-            <FieldGroup>
-              <Field data-invalid={!!form.formState.errors.email}>
-                <FieldLabel htmlFor="email">E-mail</FieldLabel>
-                <FieldContent>
-                  <Input
-                    id="email"
-                    type="email"
-                    placeholder="seu@email.com"
-                    aria-invalid={!!form.formState.errors.email}
-                    {...form.register("email")}
-                  />
-                  <FieldError errors={form.formState.errors.email ? [form.formState.errors.email] : undefined} />
-                </FieldContent>
-              </Field>
-              {apiError && (
-                <p className="text-sm text-destructive" role="alert">
-                  {apiError}
-                </p>
-              )}
-              <Button
-                type="submit"
-                className="w-full"
-                disabled={form.formState.isSubmitting}
+    <>
+      <section className="rounded-2xl border border-border bg-card p-8 shadow-sm">
+        <h1 className="font-display text-page font-semibold">Esqueceu a senha?</h1>
+        <p className="mt-1 text-muted-foreground">Digite seu e-mail e enviamos um link para criar outra.</p>
+
+        <form onSubmit={form.handleSubmit(handleSubmit)} noValidate className="mt-6">
+          <FieldGroup className="gap-5">
+            <Field data-invalid={!!errors.email}>
+              <FieldLabel htmlFor="email">E-mail</FieldLabel>
+              <FieldContent>
+                <Input
+                  id="email"
+                  type="email"
+                  autoComplete="email"
+                  aria-invalid={!!errors.email}
+                  {...form.register("email")}
+                />
+                <FieldError errors={errors.email ? [errors.email] : undefined} />
+              </FieldContent>
+            </Field>
+
+            {apiError && (
+              <div
+                role="alert"
+                className="flex items-start gap-2 rounded-lg border border-danger-border bg-danger-soft px-3 py-2.5 text-label text-danger-text"
               >
-                {form.formState.isSubmitting
-                  ? "Enviando..."
-                  : "Enviar e-mail de redefinição"}
-              </Button>
-            </FieldGroup>
-            <div className="mt-4 text-center text-sm text-muted-foreground">
-              Já tem uma conta?{" "}
-              <Link
-                href="/auth/login"
-                className="text-foreground underline underline-offset-4 hover:text-primary"
-              >
-                Entrar
-              </Link>
-            </div>
-          </form>
-        </CardContent>
-      </Card>
-    </div>
+                <TriangleAlert className="mt-0.5 size-4 shrink-0" />
+                {apiError}
+              </div>
+            )}
+
+            <Button type="submit" size="lg" className="w-full" disabled={isSubmitting}>
+              {isSubmitting ? "Enviando…" : "Enviar link"}
+            </Button>
+          </FieldGroup>
+        </form>
+      </section>
+      {backToLogin}
+    </>
   );
 }
