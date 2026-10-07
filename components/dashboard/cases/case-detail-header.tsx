@@ -17,7 +17,11 @@ import {
 
 import { AttentionSymbol } from "@/components/dashboard/attention-symbol"
 import { CaseDetailActions } from "@/components/dashboard/cases/case-detail-actions"
-import { CloseCaseWithEarningsDialog } from "@/components/dashboard/cases/close-case-with-earnings-dialog"
+import type { CaseDocument } from "@/components/dashboard/cases/case-detail-documents"
+import { CloseConsultSheet } from "@/components/dashboard/cases/close-consult-sheet"
+import type { CaseReport as CaseReportType } from "@/modules/cases/get-case-report"
+import type { CaseReminder } from "@/modules/cases/types"
+import type { ReportTemplateWithSections } from "@/modules/report-templates/get-report-template-by-id"
 import { ReopenCaseDialog } from "@/components/dashboard/cases/reopen-case-dialog"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
@@ -45,8 +49,11 @@ type CaseDetailHeaderProps = {
   durationLabel: string | null
   /** Motivo curto, tirado do resumo da consulta. */
   reason: string | null
-  /** Links de download de todos os documentos da consulta. */
-  documentHrefs: string[]
+  documents: CaseDocument[]
+  /** Para o Encerrar de uma consulta do WhatsApp ainda aberta. */
+  template: ReportTemplateWithSections | null
+  caseReports: CaseReportType[]
+  reminders: CaseReminder[]
   /** Lançamentos não-anulados do caso; `null` = a leitura falhou (S7 bloqueia). */
   earningsCount: number | null
   earningsTotalCents: number | null
@@ -61,7 +68,10 @@ export function CaseDetailHeader({
   whenLabel,
   durationLabel,
   reason,
-  documentHrefs,
+  documents,
+  template,
+  caseReports,
+  reminders,
   earningsCount,
   earningsTotalCents,
   todayLabel,
@@ -74,6 +84,7 @@ export function CaseDetailHeader({
     : null
   const ageLabel = age?.status === "ok" ? formatPediatricAgeShort(age) : ""
   const isActive = detail.status === "active"
+  const documentHrefs = documents.map((doc) => doc.href)
 
   // ponytail: um download por documento; o navegador pede permissão uma vez para
   // vários. Um .zip no servidor resolve se virar incômodo.
@@ -191,11 +202,17 @@ export function CaseDetailHeader({
       </div>
 
       {isActive ? (
-        <CloseCaseWithEarningsDialog
+        <CloseConsultSheet
           caseId={detail.id}
           open={dialog === "status"}
           onOpenChange={(open) => setDialog(open ? "status" : null)}
+          subtitle={[title, ageLabel].filter(Boolean).join(" · ")}
           todayLabel={todayLabel}
+          template={template}
+          caseReports={caseReports}
+          hasMessages={detail.messages.length > 0}
+          documents={documents}
+          reminders={reminders}
         />
       ) : (
         <ReopenCaseDialog

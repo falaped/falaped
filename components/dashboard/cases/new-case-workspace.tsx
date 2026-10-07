@@ -53,11 +53,14 @@ import {
   ASSISTANT_TYPING_MIN_DISPLAY_MS,
 } from "@/lib/constants"
 import { CLINICAL_NOTATION_SUMMARY_MESSAGE } from "@/lib/format-clinical-assistant-sections"
-import { CloseCaseWithEarningsDialog } from "@/components/dashboard/cases/close-case-with-earnings-dialog"
+import { CloseConsultSheet } from "@/components/dashboard/cases/close-consult-sheet"
+import type { CaseReport as CaseReportType } from "@/modules/cases/get-case-report"
+import type { ReportTemplateWithSections } from "@/modules/report-templates/get-report-template-by-id"
+import { toCaseDocuments } from "@/components/dashboard/cases/case-detail-documents"
 import { ConsultRail, type ConsultDocuments } from "@/components/dashboard/cases/consult-rail"
 import { ConsultTimer } from "@/components/dashboard/cases/consult-timer"
 import type { ConsultDoctor } from "@/components/dashboard/cases/consult-prescription-panel"
-import { ConsultTools } from "@/components/dashboard/cases/consult-tools"
+import { ConsultTools, openConsultTool } from "@/components/dashboard/cases/consult-tools"
 import type { ExamReadingWithPages } from "@/components/dashboard/exam-readings/exam-reading-card"
 import type { CaseCarryover } from "@/modules/cases/get-previous-case-carryover"
 import type { CasePatientDetail } from "@/modules/cases/get-case-by-id"
@@ -573,6 +576,8 @@ export function NewCaseWorkspace({
   prescriptionTemplates,
   examCatalog,
   examPanels,
+  reportTemplate,
+  caseReports,
 }: {
   caseId: string
   initialMessages: WorkspaceMessage[]
@@ -602,6 +607,9 @@ export function NewCaseWorkspace({
   prescriptionTemplates: PrescriptionTemplateOption[]
   examCatalog: ExamCatalogItem[]
   examPanels: ExamPanel[]
+  /** Para a revisão do Encerrar. */
+  reportTemplate: ReportTemplateWithSections | null
+  caseReports: CaseReportType[]
 }) {
   const scrollRef = useRef<HTMLDivElement | null>(null)
   const sendInFlightRef = useRef(false)
@@ -620,7 +628,8 @@ export function NewCaseWorkspace({
   const [isFinalizeAudioBusy, setIsFinalizeAudioBusy] = useState(false)
   const [isAssistantResponding, setIsAssistantResponding] = useState(false)
   const [isSlowNetworkExpanded, setIsSlowNetworkExpanded] = useState(false)
-  const [closeOpen, setCloseOpen] = useState(false)
+  // Subtítulo do Encerrar ("… · 27 min"), fixado no clique; null = fechado.
+  const [closeOpen, setCloseOpen] = useState<string | null>(null)
   const [railOpen, setRailOpen] = useState(false)
   const [showCarryover, setShowCarryover] = useState(true)
   const [transcriptionPreview, setTranscriptionPreview] = useState<string | null>(null)
@@ -966,7 +975,16 @@ export function NewCaseWorkspace({
               <span className="size-2 rounded-full bg-destructive" aria-label="A criança tem alergia" />
             ) : null}
           </Button>
-          <Button onClick={() => setCloseOpen(true)}>
+          <Button
+            onClick={() => {
+              const minutes = Math.max(1, Math.round((Date.now() - Date.parse(startedAt) - consultationPausedMs) / 60_000))
+              setCloseOpen(
+                [panelSubtitle, lastWeight ? `${(lastWeight.weight_grams! / 1000).toFixed(1).replace(".", ",")} kg` : null, `${minutes} min`]
+                  .filter(Boolean)
+                  .join(" · "),
+              )
+            }}
+          >
             <CheckIcon data-icon="inline-start" />
             Encerrar consulta
           </Button>
@@ -1174,11 +1192,18 @@ export function NewCaseWorkspace({
         </SheetContent>
       </Sheet>
 
-      <CloseCaseWithEarningsDialog
+      <CloseConsultSheet
         caseId={caseId}
-        open={closeOpen}
-        onOpenChange={setCloseOpen}
+        open={closeOpen !== null}
+        onOpenChange={(open) => !open && setCloseOpen(null)}
+        subtitle={closeOpen ?? panelSubtitle}
         todayLabel={todayLabel}
+        template={reportTemplate}
+        caseReports={caseReports}
+        hasMessages={messages.length > 0}
+        documents={toCaseDocuments(documents)}
+        reminders={reminders}
+        onOpenTool={openConsultTool}
       />
 
       <AlertDialog

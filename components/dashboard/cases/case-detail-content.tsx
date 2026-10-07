@@ -186,7 +186,10 @@ export async function CaseDetailContent({ id }: { id: string }) {
         whenLabel={whenLabel}
         durationLabel={durationMin ? `${durationMin} min` : null}
         reason={caseSummaryHeadline(caseDetail.summary)}
-        documentHrefs={documents.map((doc) => doc.href)}
+        documents={documents}
+        template={template}
+        caseReports={caseReports}
+        reminders={caseReminders}
         earningsCount={earningsTotals?.count ?? null}
         earningsTotalCents={earningsTotals?.totalCents ?? null}
         todayLabel={todayLabel}

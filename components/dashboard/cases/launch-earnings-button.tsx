@@ -3,7 +3,7 @@
 import { useState } from "react"
 
 import { Button } from "@/components/ui/button"
-import { CloseCaseWithEarningsDialog } from "@/components/dashboard/cases/close-case-with-earnings-dialog"
+import { CaseEarningsDialog } from "@/components/dashboard/cases/case-earnings-dialog"
 
 /**
  * "Lançar valor" de uma consulta ENCERRADA sem lançamento não-anulado.
@@ -30,12 +30,11 @@ export function LaunchEarningsButton({
       <Button variant={variant} size="sm" onClick={() => setOpen(true)}>
         Lançar valor
       </Button>
-      <CloseCaseWithEarningsDialog
+      <CaseEarningsDialog
         caseId={caseId}
         open={open}
         onOpenChange={setOpen}
         todayLabel={todayLabel}
-        mode="earnings"
       />
     </>
   )

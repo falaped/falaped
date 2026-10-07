@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { Bell, Loader2, Plus, Trash2 } from "lucide-react"
 import { toast } from "sonner"
 
@@ -15,6 +15,8 @@ type CaseRemindersFormProps = {
   initialReminders: CaseReminder[]
   /** O campo fica atrás de "Adicionar lembrete" (consulta encerrada: mais lida que escrita). */
   collapsed?: boolean
+  /** Avisa a lista atual a cada mudança (o drawer de encerrar conta os lembretes). */
+  onChange?: (reminders: CaseReminder[]) => void
 }
 
 /**
@@ -29,9 +31,14 @@ export function CaseRemindersForm({
   caseId,
   initialReminders,
   collapsed = false,
+  onChange,
 }: CaseRemindersFormProps) {
   const [isAdding, setIsAdding] = useState(!collapsed)
   const [reminders, setReminders] = useState<CaseReminder[]>(initialReminders)
+  useEffect(() => {
+    onChange?.(reminders)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [reminders])
   const [text, setText] = useState("")
   const [isSaving, setIsSaving] = useState(false)
   const [deletingId, setDeletingId] = useState<string | null>(null)

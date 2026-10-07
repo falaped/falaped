@@ -24,6 +24,10 @@ import { getPrescriptionTemplatesByProfileId } from "@/modules/prescription-temp
 import { getExamCatalogItems } from "@/modules/exam-catalog/get-exam-catalog-items"
 import { getExamPanelsByProfileId } from "@/modules/exam-panels/get-exam-panels-by-profile-id"
 import { computePediatricAge } from "@/lib/compute-pediatric-age"
+import { getCaseReports } from "@/modules/cases/get-case-report"
+import { getReportTemplateById } from "@/modules/report-templates/get-report-template-by-id"
+import { getDefaultReportTemplate } from "@/modules/report-templates/get-default-report-template"
+import { normalizeReportTemplateSections } from "@/modules/report-templates/fixed-template-sections"
 import { NewCaseWorkspace } from "@/components/dashboard/cases/new-case-workspace"
 
 export default async function NewCaseWorkspacePage({
@@ -61,6 +65,8 @@ export default async function NewCaseWorkspacePage({
     prescriptionTemplates,
     examCatalog,
     examPanels,
+    templateRaw,
+    caseReports,
   ] = await Promise.all([
     getPhoneByProfileId(supabase, profile.id).catch(() => null),
     listCaseReminders(supabase, profile.id, caseId).catch(() => []),
@@ -84,6 +90,12 @@ export default async function NewCaseWorkspacePage({
     getPrescriptionTemplatesByProfileId(supabase, profile.id).catch(() => []),
     getExamCatalogItems(supabase, profile.id).catch(() => []),
     getExamPanelsByProfileId(supabase, profile.id).catch(() => []),
+    // Para o Encerrar: o relatório é revisado (e gerado, se faltar) na primeira etapa.
+    (profile.report_template_id
+      ? getReportTemplateById(supabase, profile.report_template_id)
+      : getDefaultReportTemplate(supabase)
+    ).catch(() => null),
+    getCaseReports(supabase, caseId, profile.id).catch(() => []),
   ])
 
   // O que a consulta anterior desta criança deixou; sem ela, só não aparece o cartão.
@@ -134,6 +146,10 @@ export default async function NewCaseWorkspacePage({
       prescriptionTemplates={prescriptionTemplates}
       examCatalog={examCatalog}
       examPanels={examPanels}
+      reportTemplate={
+        templateRaw ? { ...templateRaw, sections: normalizeReportTemplateSections(templateRaw.sections) } : null
+      }
+      caseReports={caseReports}
     />
   )
 }

@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import {
   FileCheckIcon,
@@ -33,7 +33,7 @@ import type { ExamPanel } from "@/modules/exam-panels/types"
 import type { ScaleResult } from "@/modules/patient-scales/types"
 import type { PrescriptionTemplateOption } from "@/modules/prescription-templates/types"
 
-type SheetKind = "prescription" | "certificate" | "exam-request" | "referral" | "scale" | "exam" | "measure" | "attachment"
+export type SheetKind = "prescription" | "certificate" | "exam-request" | "referral" | "scale" | "exam" | "measure" | "attachment"
 
 const SHEET_TITLE: Record<SheetKind, string> = {
   prescription: "Nova receita",
@@ -69,6 +69,13 @@ const TOOLS: Array<[SheetKind, string, LucideIcon]> = [
   ["measure", "Medidas", RulerIcon],
   ["attachment", "Anexo", PaperclipIcon],
 ]
+
+const OPEN_TOOL_EVENT = "falaped:open-consult-tool"
+
+/** Abre um painel da consulta de fora da barra (ex.: "Emitir atestado" no Encerrar). */
+export function openConsultTool(kind: SheetKind) {
+  window.dispatchEvent(new CustomEvent(OPEN_TOOL_EVENT, { detail: kind }))
+}
 
 /** O que os painéis de documento precisam além da criança. */
 export type ConsultDocumentData = {
@@ -127,6 +134,11 @@ export function ConsultTools({
     setSheet(null)
     router.refresh()
   }
+  useEffect(() => {
+    const onOpen = (event: Event) => open((event as CustomEvent<SheetKind>).detail)
+    window.addEventListener(OPEN_TOOL_EVENT, onOpen)
+    return () => window.removeEventListener(OPEN_TOOL_EVENT, onOpen)
+  }, [])
   const title = SHEET_TITLE[sheet ?? lastSheet]
 
   return (
