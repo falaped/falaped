@@ -30,7 +30,7 @@ const addUnique = (list: string[], names: string[]) =>
     list,
   )
 
-/** Pedido de exame dentro da Consulta (protótipo a6e): catálogo, painéis salvos e a folha ao lado. */
+/** Pedido de exame dentro da Consulta (protótipo a6e): catálogo, modelos salvos e a folha ao lado. */
 export function ConsultExamRequestPanel({
   caseId,
   patient,
@@ -78,12 +78,12 @@ export function ConsultExamRequestPanel({
 
   async function handleSavePanel() {
     const name = panelName?.trim()
-    if (!name) return void toast.error("Dê um nome ao painel.")
+    if (!name) return void toast.error("Dê um nome ao modelo.")
     setBusy("panel")
     const result = await createExamPanelAction({ name, panelItems: exams })
     setBusy(null)
     if (!result.ok) return void toast.error(getFriendlyToastMessage(result.error))
-    toast.success("Painel salvo.")
+    toast.success("Modelo salvo.")
     setPanelName(null)
   }
 
@@ -93,7 +93,7 @@ export function ConsultExamRequestPanel({
         <ExamSearch catalog={catalog} selected={exams} onAdd={(name) => setExams((prev) => addUnique(prev, [name]))} />
         {panels.length ? (
           <div className="flex flex-wrap items-center gap-1.5">
-            <span className="text-caption text-subtle-foreground">Seus painéis:</span>
+            <span className="text-caption text-subtle-foreground">Começar de um modelo:</span>
             {panels.map((panel) => (
               <ChoiceChip key={panel.id} onClick={() => setExams((prev) => addUnique(prev, panel.panel_items))}>
                 <PlusIcon className="size-3" aria-hidden />
@@ -174,7 +174,7 @@ export function ConsultExamRequestPanel({
           <>
             <Button variant="ghost" onClick={() => setPanelName("")} disabled={!exams.length}>
               <BookmarkIcon data-icon="inline-start" />
-              Salvar como painel
+              Salvar como modelo
             </Button>
             <span className="num ml-auto text-caption text-subtle-foreground">{exams.length ? count : null}</span>
             <Button onClick={handleEmit} disabled={busy !== null || !exams.length}>
@@ -189,14 +189,14 @@ export function ConsultExamRequestPanel({
               value={panelName}
               onChange={(e) => setPanelName(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && handleSavePanel()}
-              placeholder="Nome do painel. Ex.: Investigação de ITU"
+              placeholder="Nome do modelo. Ex.: Investigação de ITU"
               className="flex-1"
             />
             <Button variant="ghost" onClick={() => setPanelName(null)}>
               Cancelar
             </Button>
             <Button variant="outline" onClick={handleSavePanel} disabled={busy !== null}>
-              {busy === "panel" ? "Salvando…" : "Salvar painel"}
+              {busy === "panel" ? "Salvando…" : "Salvar modelo"}
             </Button>
           </>
         )}

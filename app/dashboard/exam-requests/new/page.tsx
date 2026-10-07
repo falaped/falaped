@@ -69,7 +69,7 @@ export default async function NewExamRequestPage({ searchParams }: PageProps) {
           </div>
           <p className="mt-1 text-sm text-muted-foreground">
             Associe a um paciente ou preencha manualmente. Busque exames no
-            catálogo, aplique painéis e gere o PDF.
+            catálogo, use um modelo e gere o PDF.
           </p>
         </div>
       </div>
