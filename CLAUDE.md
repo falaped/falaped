@@ -1,4 +1,8 @@
 
+## Idioma
+
+- Responda sempre em português brasileiro: mensagens no chat, descrições de PR, comentários de PR e mensagens de commit. Código, nomes de arquivos e identificadores seguem em inglês, como no resto do repositório.
+
 ## Project
 
 **Falaped**
