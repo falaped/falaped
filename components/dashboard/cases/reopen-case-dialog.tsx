@@ -42,10 +42,9 @@ export function ReopenCaseDialog({
     <AlertDialog open={open} onOpenChange={onOpenChange}>
       <AlertDialogContent>
         <AlertDialogHeader>
-          <AlertDialogTitle>Reabrir este caso?</AlertDialogTitle>
+          <AlertDialogTitle>Reabrir esta consulta?</AlertDialogTitle>
           <AlertDialogDescription>
-            Ao reabrir este caso, o outro caso ativo (se houver) será
-            encerrado. Deseja continuar?
+            Se houver outra consulta aberta, ela será encerrada.
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>

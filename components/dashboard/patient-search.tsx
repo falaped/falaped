@@ -63,6 +63,13 @@ function lastConsultLabel(iso: string | null): string {
   return `Última consulta em ${format(new Date(iso), "dd/MM/yyyy")}`
 }
 
+const START_CONSULT_EVENT = "falaped:start-consult"
+
+/** Abre a janela "Iniciar consulta" do menu a partir de qualquer tela. */
+export function openStartConsult() {
+  window.dispatchEvent(new Event(START_CONSULT_EVENT))
+}
+
 /**
  * "Iniciar consulta" e "Buscar paciente" do menu lateral (⌘K / Ctrl+K abre a busca).
  * As duas abrem a mesma janela com a consulta em andamento e as crianças atendidas por último,
@@ -96,8 +103,16 @@ export function PatientSearch() {
         setOpen((value) => !value)
       }
     }
+    const onStart = () => {
+      setMode("start")
+      setOpen(true)
+    }
     window.addEventListener("keydown", onKeyDown)
-    return () => window.removeEventListener("keydown", onKeyDown)
+    window.addEventListener(START_CONSULT_EVENT, onStart)
+    return () => {
+      window.removeEventListener("keydown", onKeyDown)
+      window.removeEventListener(START_CONSULT_EVENT, onStart)
+    }
   }, [])
 
   // Recarrega a cada abertura: a consulta aberta e os recentes mudam ao longo do dia.
