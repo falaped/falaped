@@ -176,3 +176,11 @@ Ganhos rápidos que podem entrar antes da etapa 5, porque não dependem do desig
 - **07/10/2026:** gestor aprovou a rodada 1 do protótipo ("ficou tudo muito bom"), incluindo as decisões de botão com contorno quando já existe uma ação azul na tela. Próximo: fluxo de IA no workspace, depois rodada 2 (Consulta) e Etapa 4.
 - **07/10/2026:** fluxo de IA adiado sem data pelo gestor. Etapa 3, rodada 2: 8 telas da Consulta no `prototipo.html`, com a área do assistente como no wireframe (Consulta, Receita, Receita emitida, Atestado com prévia, Escala com escore ao vivo, Ler exame com valor fora da faixa em destaque, Encerrar consulta e Consulta encerrada). Na Consulta, "Encerrar consulta" é a ação azul e "Enviar" fica com contorno.
 - **08/10/2026:** gestor aprovou a rodada 2. Etapa 3 concluída (16 telas no protótipo).
+- **08/10/2026:** Etapa 3 reaberta para ajustes pedidos pelo gestor antes da Etapa 4:
+  - **Alertas viram símbolos.** Selos de texto (alergia, vacina etc.) viram símbolos redondos; o detalhe aparece no hover, no foco ou no toque. Isso vale no Início, no cabeçalho da Consulta, em Pacientes e na Ficha. Na Receita a alergia continua escrita por extenso. A regra foi registrada na ficha (Selos → Símbolos de atenção).
+  - **Menu lateral.** Logo maior e centralizada. No menu recolhido entram Modelos, Novidades e o avatar, que leva ao Perfil.
+  - **Início.** Cartões "Precisam de atenção" e "Atendidos hoje" com a mesma altura. Os números do mês ganham um cartão próprio, "Seu mês".
+  - **Encerrar consulta em duas etapas:** 1) revisar o relatório, os documentos e o lembrete; 2) cobrança e encerrar.
+  - **Ficha refeita em três faixas:** resumo clínico em números; última consulta e "O que fazer" lado a lado; histórico e crescimento.
+  - **Tela nova de Perfil** com o índice das seções: dados profissionais, marca nos documentos com prévia do cabeçalho, relatório, valores, WhatsApp, aparência, plano e conta.
+  - O protótipo agora tem 18 telas.

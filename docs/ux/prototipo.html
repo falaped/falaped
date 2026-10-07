@@ -200,15 +200,37 @@
 <script>
 const I = (n, c = "") => `<i data-lucide="${n}" class="ic ${c}"></i>`;
 const AV = (t, o = {}) => `<span class="grid ${o.s || "size-9"} shrink-0 place-items-center rounded-full ${o.on ? "bg-primary-soft text-primary-ink-strong" : "bg-muted text-muted-foreground"} ${o.t || "text-label"} font-semibold">${t}</span>`;
-const ALLERGY = `<span class="badge badge-clinical">${I("triangle-alert", "ic-sm")}Alergia: amoxicilina</span>`;
+/* símbolos de atenção: o ícone diz o tipo; passar o mouse, focar ou clicar mostra o detalhe */
+const SIG_KIND = {
+  danger: "border-transparent bg-destructive text-destructive-foreground",
+  warning: "border-warning-border bg-warning-soft text-warning-text",
+  neutral: "border-border bg-muted text-muted-foreground",
+};
+const SIG = (ic, kind, title, detail, o = {}) => `<span class="group/sig relative inline-flex" tabindex="0" aria-label="${title}">
+  <span class="grid ${o.lg ? "size-8" : "size-7"} place-items-center rounded-full border ${SIG_KIND[kind]} ${kind === "danger" ? "shadow-xs" : ""}">${I(ic, o.lg ? "" : "ic-sm")}</span>
+  <span role="tooltip" class="pointer-events-none absolute ${o.right ? "right-0" : "left-0"} top-full z-30 mt-2 ${o.open ? "block" : "hidden"} w-64 rounded-xl border border-border bg-popover p-3 text-left font-normal shadow-md group-hover/sig:block group-focus/sig:block">
+    <span class="flex items-center gap-1.5 font-semibold ${kind === "danger" ? "text-danger-text" : kind === "warning" ? "text-warning-text" : "text-foreground"}">${I(ic, "ic-sm")}${title}</span>
+    <span class="mt-0.5 block text-caption text-muted-foreground">${detail}</span></span></span>`;
+const S_ALLERGY = (o) => SIG("triangle-alert", "danger", "Alergia: amoxicilina", "Exantema em 06/2025. Checada em toda receita.", o);
+const S_VACCINE = (o) => SIG("syringe", "warning", "Vacina atrasada", "Tríplice viral, 2ª dose, desde 10/09.", o);
+const S_INCOMPLETE = (o) => SIG("file-warning", "warning", "Ficha incompleta", "Falta o sexo e o responsável. A curva de crescimento depende do sexo.", o);
+const S_OVERDUE = (o) => SIG("calendar-x", "warning", "Retorno vencido", "Retorno de controle da asma era para 15/09.", o);
+const S_RETURN = (o) => SIG("calendar-clock", "neutral", "Retorno em 2 dias", "Reavaliar bronquiolite em 08/10.", o);
 
 /* ---------- menu lateral ---------- */
 const NAV = [["inicio", "Início", "house", "a12"], ["consultas", "Consultas", "stethoscope", "b1"], ["pacientes", "Pacientes", "users", "b4"], ["documentos", "Documentos", "file-text", null], ["assistente", "Pergunte ao assistente", "message-circle-question", null], ["financeiro", "Financeiro", "wallet", null]];
 function sidebar(o = {}) {
+  const foot = (mini) => [["layout-template", "Modelos", null, ""], ["megaphone", "Novidades", null, `<span class="${mini ? "absolute right-2 top-2" : "ml-auto"} size-2 rounded-full bg-primary"></span>`]].map(([ic, l, go, extra]) => mini
+    ? `<a title="${l}" class="relative grid size-10 place-items-center rounded-lg text-sidebar-foreground hover:bg-accent hover:text-foreground">${I(ic)}${extra}</a>`
+    : `<a class="flex h-9 items-center gap-2.5 rounded-lg px-2.5 text-sidebar-foreground hover:bg-accent hover:text-foreground">${I(ic)}${l}${extra}</a>`).join("");
   if (o.mini) return `<aside class="flex w-[64px] shrink-0 flex-col items-center gap-1 border-r border-sidebar-border bg-sidebar py-4">
-    <img src="../../public/falaped-icon.svg" alt="Falaped" class="mb-3 h-9 dark:hidden"><img src="../../public/falaped-icon-dark.svg" alt="Falaped" class="mb-3 hidden h-9 dark:block">
+    <img src="../../public/falaped-icon.svg" alt="Falaped" class="mb-4 h-10 dark:hidden"><img src="../../public/falaped-icon-dark.svg" alt="Falaped" class="mb-4 hidden h-10 dark:block">
     <a data-go="a5" class="mb-2 grid size-10 place-items-center rounded-lg border border-primary-soft-border bg-primary-soft text-primary-ink-strong" title="Voltar à consulta · Helena D."><span class="relative text-label font-semibold">HD<span class="absolute -right-2 -top-1.5 size-2 rounded-full bg-success ring-2 ring-primary-soft"></span></span></a>
+    <a data-go="a3" title="Buscar paciente (⌘K)" class="grid size-10 place-items-center rounded-lg text-sidebar-foreground hover:bg-accent hover:text-foreground">${I("search")}</a>
     ${NAV.map(([k, l, ic, go]) => `<a ${go ? `data-go="${go}"` : ""} title="${l}" class="grid size-10 place-items-center rounded-lg ${o.on === k ? "bg-sidebar-accent text-sidebar-accent-foreground" : "text-sidebar-foreground hover:bg-accent hover:text-foreground"}">${I(ic)}</a>`).join("")}
+    <div class="flex-1"></div>
+    <div class="flex flex-col items-center gap-1 border-t border-sidebar-border pt-2">${foot(1)}
+      <a data-go="d4" title="Dra. Ana Souza · Seu perfil" class="mt-1 grid size-10 place-items-center rounded-lg hover:bg-accent">${AV("AS", { s: "size-8", t: "text-caption", on: 1 })}</a></div>
   </aside>`;
   const top = o.active
     ? `<a data-go="a5" class="card-highlight mb-3 flex items-center gap-2.5 p-3 hover:shadow-md">
@@ -216,16 +238,14 @@ function sidebar(o = {}) {
         <div class="min-w-0 flex-1"><div class="text-label font-semibold">Helena D.</div><div class="text-caption text-muted-foreground">Voltar à consulta</div></div>
         <span class="text-caption num text-muted-foreground">12:47</span></a>`
     : `<button data-go="a3" class="btn btn-primary btn-lg mb-3 w-full">${I("plus")}Iniciar consulta</button>`;
-  return `<aside class="flex w-[248px] shrink-0 flex-col border-r border-sidebar-border bg-sidebar px-3 pb-3 pt-5">
-    <img src="../../public/falaped-logo.svg" alt="Falaped" class="mx-2 mb-5 h-11 self-start dark:hidden"><img src="../../public/falaped-logo-dark.svg" alt="Falaped" class="mx-2 mb-5 hidden h-11 self-start dark:block">
+  return `<aside class="flex w-[248px] shrink-0 flex-col border-r border-sidebar-border bg-sidebar px-3 pb-3 pt-6">
+    <img src="../../public/falaped-logo.svg" alt="Falaped" class="mb-6 h-16 self-center dark:hidden"><img src="../../public/falaped-logo-dark.svg" alt="Falaped" class="mb-6 hidden h-16 self-center dark:block">
     ${top}
     <button data-go="a3" class="mb-3 flex h-9 items-center gap-2 rounded-lg border border-input bg-card px-2.5 text-left text-subtle-foreground hover:border-border-strong">${I("search")}<span class="flex-1">Buscar paciente</span><span class="kbd">⌘K</span></button>
     <nav class="flex flex-col gap-0.5">${NAV.map(([k, l, ic, go]) => `<a ${go ? `data-go="${go}"` : ""} class="flex h-9 items-center gap-2.5 rounded-lg px-2.5 ${o.on === k ? "bg-sidebar-accent font-semibold text-sidebar-accent-foreground" : "text-sidebar-foreground hover:bg-accent hover:text-foreground"}">${I(ic)}<span class="flex-1">${l}</span>${k === "documentos" ? I("chevron-right", "ic-sm text-subtle-foreground") : ""}</a>`).join("")}</nav>
     <div class="flex-1"></div>
-    <div class="flex flex-col gap-0.5 border-t border-sidebar-border pt-2">
-      <a class="flex h-9 items-center gap-2.5 rounded-lg px-2.5 text-sidebar-foreground hover:bg-accent hover:text-foreground">${I("layout-template")}Modelos</a>
-      <a class="flex h-9 items-center gap-2.5 rounded-lg px-2.5 text-sidebar-foreground hover:bg-accent hover:text-foreground">${I("megaphone")}Novidades<span class="ml-auto size-2 rounded-full bg-primary"></span></a>
-      <a class="flex h-11 items-center gap-2.5 rounded-lg px-2 hover:bg-accent">${AV("AS", { s: "size-7", t: "text-caption", on: 1 })}<div class="min-w-0 leading-tight"><div class="text-label font-medium">Dra. Ana Souza</div><div class="text-caption text-subtle-foreground">CRM-MG 54.321</div></div>${I("chevrons-up-down", "ic-sm ml-auto text-subtle-foreground")}</a>
+    <div class="flex flex-col gap-0.5 border-t border-sidebar-border pt-2">${foot(0)}
+      <a data-go="d4" class="flex h-11 items-center gap-2.5 rounded-lg px-2 ${o.on === "perfil" ? "bg-sidebar-accent" : "hover:bg-accent"}">${AV("AS", { s: "size-7", t: "text-caption", on: 1 })}<div class="min-w-0 leading-tight"><div class="text-label font-medium">Dra. Ana Souza</div><div class="text-caption text-subtle-foreground">CRM-MG 54.321</div></div>${I("chevrons-up-down", "ic-sm ml-auto text-subtle-foreground")}</a>
     </div>
   </aside>`;
 }
@@ -236,35 +256,38 @@ const TABS = (items, on) => `<div class="flex gap-1 border-b border-border">${it
 const SEARCH = (ph, w = "w-80") => `<label class="input flex ${w} items-center gap-2 text-subtle-foreground">${I("search")}<span>${ph}</span></label>`;
 const ACTIVE = (extra = "") => `<div class="card-highlight flex items-center gap-4 px-5 py-4">
   <span class="relative">${AV("HD", { s: "size-10", on: 1 })}<span class="absolute -right-0.5 -top-0.5 size-3 animate-pulse rounded-full bg-success ring-2 ring-card"></span></span>
-  <div class="min-w-0"><div class="flex items-center gap-2"><span class="t-card">Helena Duarte</span><span class="text-muted-foreground">· 2a 3m</span>${ALLERGY}</div><div class="text-muted-foreground">Em andamento há 12 min · febre e otalgia${extra}</div></div>
+  <div class="min-w-0"><div class="flex items-center gap-2"><span class="t-card">Helena Duarte</span><span class="text-muted-foreground">· 2a 3m</span>${S_ALLERGY()}</div><div class="text-muted-foreground">Em andamento há 12 min · febre e otalgia${extra}</div></div>
   <button data-go="a5" class="btn btn-primary ml-auto">Voltar à consulta${I("arrow-right")}</button></div>`;
+const SECTION = (title, count, body, footLabel, footGo) => `<section class="card flex flex-col">
+  <div class="flex items-center gap-2 px-5 pb-3 pt-4"><h2 class="t-section">${title}</h2>${count ? `<span class="badge badge-neutral num">${count}</span>` : ""}</div>
+  <div class="flex-1 divide-y divide-border border-t border-border">${body}</div>
+  <a ${footGo ? `data-go="${footGo}"` : ""} class="flex items-center gap-1 rounded-b-xl border-t border-border px-5 py-3 text-label font-medium text-primary-ink hover:bg-accent">${footLabel}${I("arrow-right", "ic-sm")}</a></section>`;
 
 /* ---------- telas ---------- */
 const S = [];
 const add = s => S.push(s);
 
+const KPI = (ic, label, value, note, tone = "") => `<div class="flex flex-col gap-1 px-6 py-5"><div class="flex items-center gap-2 text-label text-muted-foreground">${I(ic, "ic-sm")}${label}</div><div class="font-display text-display font-semibold num">${value}</div><div class="text-caption ${tone || "text-subtle-foreground"}">${note}</div></div>`;
 const inicio = () => APP({ on: "inicio", active: 1 }, PAGE(`
   ${HEAD("Bom dia, Dra. Ana", "Segunda-feira, 6 de outubro")}
   ${ACTIVE()}
-  <div class="grid items-start gap-5 lg:grid-cols-[1.2fr_1fr]">
-    <section class="card">
-      <div class="flex items-center px-5 pb-2 pt-4"><h2 class="t-card">Atendidos hoje</h2><span class="ml-2 text-subtle-foreground num">2</span><a data-go="b1" class="btn btn-link btn-sm ml-auto">Ver todas as consultas</a></div>
-      <div class="divide-y divide-border">
-        ${[["MS", "Miguel Santos", "4a 1m", "Puericultura · sem alterações", "09:10", ["Atestado"]], ["LP", "Lara Pereira", "8m", "Bronquiolite leve · retorno em 48 h", "08:20", ["Receita"]]].map(([i, n, a, w, t, d]) => `
-        <a data-go="b2" class="flex items-center gap-3 px-5 py-3 hover:bg-accent">${AV(i)}<div class="min-w-0 flex-1"><div><span class="font-semibold">${n}</span> <span class="text-subtle-foreground">· ${a}</span></div><div class="text-caption text-muted-foreground">${w}</div></div>${d.map(x => `<span class="badge badge-accent">${x}</span>`).join("")}<span class="w-12 text-right text-caption num text-subtle-foreground">${t}</span></a>`).join("")}
-      </div>
-    </section>
-    <section class="card">
-      <div class="flex items-center px-5 pb-2 pt-4"><h2 class="t-card">Precisam de atenção</h2><span class="ml-2 text-subtle-foreground num">4</span></div>
-      <div class="divide-y divide-border">
-        ${[["Lara Pereira", "Retorno em 2 dias", "Ver ficha", "b5"], ["Gabriel Alves", "Tríplice viral atrasada", "Abrir ficha", "b5"], ["3 consultas", "Sem valor lançado", "Lançar valores", null], ["Pedido pelo WhatsApp", "Sem paciente associado", "Associar", null]].map(([n, w, b, go]) => `
-        <div class="flex items-center gap-3 px-5 py-3"><div class="min-w-0 flex-1"><div class="font-semibold">${n}</div><span class="badge badge-warning mt-1">${w}</span></div><button ${go ? `data-go="${go}"` : ""} class="btn btn-secondary btn-sm">${b}</button></div>`).join("")}
-      </div>
-    </section>
+  <div class="grid items-stretch gap-5 lg:grid-cols-2">
+    ${SECTION("Precisam de atenção", 4, [
+      [S_VACCINE(), "Gabriel Alves · 6a 2m", "Tríplice viral, 2ª dose atrasada", "Abrir ficha", "b5"],
+      [S_RETURN(), "Lara Pereira · 8m", "Retorno em 2 dias", "Ver ficha", "b5"],
+      [SIG("wallet", "warning", "Sem valor lançado", "3 consultas desta semana estão sem cobrança."), "3 consultas", "Sem valor lançado", "Lançar valores", null],
+    ].map(([sig, n, w, b, go]) => `<div class="flex min-h-16 items-center gap-3 px-5 py-3">${sig}<div class="min-w-0 flex-1"><div class="font-semibold">${n}</div><div class="text-caption text-muted-foreground">${w}</div></div><button ${go ? `data-go="${go}"` : ""} class="btn btn-secondary btn-sm">${b}</button></div>`).join(""), "Ver as 4 pendências", null)}
+    ${SECTION("Atendidos hoje", 3, [["MS", "Miguel Santos", "4a 1m", "Puericultura · sem alterações", "09:10", ["Atestado"]], ["LP", "Lara Pereira", "8m", "Bronquiolite leve · retorno em 48 h", "08:20", ["Receita"]], ["BS", "Bia Souza", "3a", "IVAS · lavagem nasal", "07:40", ["Receita"]]].map(([i, n, a, w, t, d]) => `
+      <a data-go="b2" class="flex min-h-16 items-center gap-3 px-5 py-3 hover:bg-accent">${AV(i)}<div class="min-w-0 flex-1"><div><span class="font-semibold">${n}</span> <span class="text-subtle-foreground">· ${a}</span></div><div class="text-caption text-muted-foreground">${w}</div></div>${d.map(x => `<span class="badge badge-accent">${x}</span>`).join("")}<span class="w-12 text-right text-caption num text-subtle-foreground">${t}</span></a>`).join(""), "Ver todas as consultas", "b1")}
   </div>
-  <div class="grid gap-4 sm:grid-cols-3">
-    ${[["Consultas hoje", "3"], ["Esta semana", "14"], ["Recebido em outubro", "R$ 9.800,00"]].map(([l, v]) => `<div class="card-sunken px-5 py-4"><div class="text-label text-muted-foreground">${l}</div><div class="mt-1 font-display text-section font-semibold num">${v}</div></div>`).join("")}
-  </div>`));
+  <section class="card">
+    <div class="flex items-center gap-2 px-5 pb-1 pt-4"><h2 class="t-section">Seu mês</h2><span class="text-muted-foreground">· outubro</span><a class="btn btn-link btn-sm ml-auto">Ver financeiro${I("arrow-right", "ic-sm")}</a></div>
+    <div class="grid grid-cols-3 divide-x divide-border">
+      ${KPI("stethoscope", "Consultas hoje", "3", "1 em andamento")}
+      ${KPI("calendar-days", "Esta semana", "14", "3 a mais que a semana passada", "text-success-text")}
+      ${KPI("wallet", "Recebido em outubro", "R$ 9.800,00", "3 consultas sem valor lançado", "text-warning-text")}
+    </div>
+  </section>`));
 
 add({ id: "d1", t: "Menu", obj: "Os três estados do menu: sem consulta aberta (botão Iniciar consulta), com consulta aberta (cartão para voltar) e recolhido durante a consulta.",
   html: () => `<div class="grid h-full grid-cols-[248px_248px_64px_1fr] gap-6 overflow-auto bg-background p-6">
@@ -310,7 +333,7 @@ const RAIL_SEC = (t, body) => `<div><div class="mb-1.5 text-caption font-medium 
 const consulta = (o = {}) => APP({ mini: 1, on: "consultas" }, `<div class="flex h-full flex-col">
   <header class="flex items-center gap-4 border-b border-border bg-card px-6 py-3">
     ${AV("HD", { s: "size-10", on: 1 })}
-    <div class="min-w-0"><div class="flex flex-wrap items-center gap-2"><span class="t-card">Helena Duarte</span><span class="badge badge-neutral">2a 3m</span>${ALLERGY}</div>
+    <div class="min-w-0"><div class="flex flex-wrap items-center gap-2"><span class="t-card">Helena Duarte</span><span class="badge badge-neutral">2a 3m</span>${S_ALLERGY()}${S_VACCINE()}</div>
       <div class="text-caption text-muted-foreground">Carla Duarte (mãe) · <span class="num">(31) 98888-1111</span> · <a data-go="b5" class="text-primary-ink hover:underline">Ver ficha</a></div></div>
     <div class="ml-auto flex items-center gap-2">
       <span class="inline-flex h-9 items-center gap-2 rounded-lg border border-border px-3 text-muted-foreground"><span class="size-2 animate-pulse rounded-full bg-success"></span><span class="num font-medium text-foreground">12:47</span><button class="text-subtle-foreground hover:text-foreground" aria-label="Pausar">${I("pause", "ic-sm")}</button></span>
@@ -365,7 +388,7 @@ add({ id: "a5", t: "Consulta", obj: "Conduzir a consulta com o assistente e faze
 
 add({ id: "a6", t: "Receita", obj: "Emitir a receita durante a consulta, com peso e alergia vindos da consulta. O mesmo painel serve aos outros documentos.",
   html: () => SHEET("w-[560px]", "Nova receita", SUB, `
-    <div class="flex flex-wrap items-center gap-2"><span class="badge badge-neutral num">${I("scale", "ic-sm")}Peso 12,4 kg · da consulta</span>${ALLERGY}<span class="inline-flex items-center gap-1 text-caption text-success-text">${I("check", "ic-sm")}Nenhum item conflita com a alergia</span></div>
+    <div class="flex items-center gap-3 rounded-xl border border-danger-border bg-danger-soft px-3 py-2.5"><span class="grid size-7 place-items-center rounded-full bg-destructive text-destructive-foreground">${I("triangle-alert", "ic-sm")}</span><div class="flex-1"><div class="font-semibold text-danger-text">Alérgica a amoxicilina</div><div class="flex items-center gap-1 text-caption text-success-text">${I("check", "ic-sm")}Nenhum item desta receita conflita</div></div><span class="badge badge-neutral num">${I("scale", "ic-sm")}12,4 kg · da consulta</span></div>
     <label class="flex flex-col gap-1.5"><span class="field-label">Usar modelo</span><button class="input flex items-center justify-between text-left text-subtle-foreground">IVAS, febre, otite…${I("chevron-down", "ic-sm")}</button></label>
     <div class="space-y-2">
       ${[["Azitromicina 200 mg/5 mL", "3,1 mL · via oral · 1x ao dia · 3 dias"], ["Dipirona 500 mg/mL", "6 gotas · via oral · se dor ou febre · até de 6/6 h"]].map(([n, d]) => `<div class="card flex items-start gap-3 p-4"><div class="flex-1"><div class="font-semibold">${n}</div><div class="text-muted-foreground num">${d}</div></div><button class="btn btn-ghost btn-xs" aria-label="Editar">${I("pencil", "ic-sm")}</button><button class="btn btn-ghost btn-xs text-danger-text" aria-label="Remover">${I("x", "ic-sm")}</button></div>`).join("")}
@@ -409,19 +432,28 @@ add({ id: "a9", t: "Ler exame", obj: "O assistente lê o exame e o médico confe
     <p class="text-caption text-subtle-foreground">A leitura é feita pelo assistente. Confira os valores com o laudo antes de usar.</p>`,
     `<button data-go="a5" class="btn btn-secondary">${I("message-square-plus", "ic-sm")}Inserir na conversa</button><button data-go="a5" class="btn btn-primary ml-auto">${I("paperclip", "ic-sm")}Salvar nos anexos</button>`) });
 
-add({ id: "a10", t: "Encerrar consulta", obj: "Fechar a consulta conferindo tudo de uma vez: relatório, documentos, cobrança e o lembrete para a próxima.",
+const STEPS = (on) => `<ol class="flex items-center gap-3">${["Revisar consulta", "Cobrança e encerrar"].map((t, i) => `<li class="flex items-center gap-2 ${i === on ? "font-semibold" : "text-muted-foreground"}"><span class="grid size-6 place-items-center rounded-full text-caption font-semibold ${i < on ? "bg-success-soft text-success-text" : i === on ? "bg-primary text-primary-foreground" : "border border-border-strong"}">${i < on ? I("check", "size-3") : i + 1}</span>${t}</li>${i === 0 ? `<span class="h-px w-10 bg-border-strong"></span>` : ""}`).join("")}</ol>`;
+add({ id: "a10", t: "Encerrar: revisar", obj: "Encerrar em duas etapas. Primeiro o conteúdo clínico: relatório, documentos e lembrete para a próxima consulta.",
   html: () => SHEET("w-[720px]", "Encerrar consulta", SUB + " · 27 min", `
+    ${STEPS(0)}
     <section><div class="mb-2 flex items-center gap-2"><h3 class="t-card">Relatório da consulta</h3><button class="btn btn-ghost btn-sm ml-auto">${I("sparkles", "ic-sm")}Melhorar com o assistente</button><button class="btn btn-secondary btn-sm">${I("pencil", "ic-sm")}Editar</button></div>
       <div class="card-sunken space-y-3 p-4 text-read"><p><span class="font-semibold">Queixa:</span> febre de 38,5 há 2 dias, otalgia à direita, irritabilidade noturna.</p><p><span class="font-semibold">Exame:</span> MT direita abaulada e hiperemiada. Peso 12,4 kg.</p><p><span class="font-semibold">Conduta:</span> OMA à direita. Azitromicina por 3 dias (alergia a amoxicilina) e dipirona se dor ou febre. Reavaliar em 48 a 72 h.</p></div></section>
     <section><h3 class="t-card mb-2">Documentos</h3>
       <div class="flex items-center gap-3 rounded-lg border border-border px-3 py-2.5">${I("pill", "ic-sm text-primary-ink")}<span class="flex-1">Receita · azitromicina, dipirona</span><span class="badge badge-success">Emitida</span></div>
       <div class="mt-2 flex items-center gap-2 text-muted-foreground">Precisa de atestado?<button data-go="a7" class="btn btn-secondary btn-xs">Emitir atestado</button></div></section>
-    <section><h3 class="t-card mb-2">Cobrança</h3>
-      <div class="grid grid-cols-2 gap-4">${FIELD("Valor da consulta", "R$ 350,00", "Do seu perfil", "num")}${FIELD("Recebido em", "Hoje, 06/10", "", "num")}</div>
-      <div class="mt-3 flex flex-wrap gap-5">${CHECK(0, "Nebulização · <span class='num'>R$ 60,00</span>")}${CHECK(0, "Teste do pezinho · <span class='num'>R$ 90,00</span>")}</div>
-      <div class="mt-3 flex flex-wrap items-center gap-4">${SEGS(["Pix", "Dinheiro", "Cartão", "Convênio"], 0)}${CHECK(0, "Sem cobrança (retorno ou cortesia)")}</div></section>
     <section>${FIELD("Lembrete para a próxima consulta", "Reavaliar o ouvido em 10 dias", "Aparece no início da próxima consulta de Helena")}</section>`,
-    `<button data-go="a5" class="btn btn-ghost">${I("arrow-left", "ic-sm")}Voltar à consulta</button><button data-go="a11" class="btn btn-primary ml-auto">${I("check", "ic-sm")}Encerrar e salvar</button>`, { doc: 1 }) });
+    `<button data-go="a5" class="btn btn-ghost">${I("arrow-left", "ic-sm")}Voltar à consulta</button><button data-go="a10b" class="btn btn-primary ml-auto">Continuar para cobrança${I("arrow-right", "ic-sm")}</button>`, { doc: 1 }) });
+
+add({ id: "a10b", t: "Encerrar: cobrança", obj: "Segunda etapa: só a cobrança, com o total à vista, e o botão que encerra e salva tudo.",
+  html: () => SHEET("w-[720px]", "Encerrar consulta", SUB + " · 27 min", `
+    ${STEPS(1)}
+    <div class="flex items-center gap-3 rounded-lg bg-muted px-4 py-3 text-label">${I("circle-check", "ic-sm text-success-text")}<span class="flex-1">Relatório, 1 documento e 1 lembrete revisados</span><button data-go="a10" class="btn btn-ghost btn-xs">Revisar de novo</button></div>
+    <section class="space-y-4"><h3 class="t-card">Cobrança</h3>
+      <div class="grid grid-cols-2 gap-4">${FIELD("Valor da consulta", "R$ 350,00", "Do seu perfil", "num")}${FIELD("Recebido em", "Hoje, 06/10", "", "num")}</div>
+      <div class="flex flex-col gap-1.5"><span class="field-label">Procedimentos</span><div class="flex flex-wrap gap-5">${CHECK(0, "Nebulização · <span class='num'>R$ 60,00</span>")}${CHECK(0, "Teste do pezinho · <span class='num'>R$ 90,00</span>")}</div></div>
+      <div class="flex flex-col gap-1.5"><span class="field-label">Forma de pagamento</span><div class="flex flex-wrap items-center gap-4">${SEGS(["Pix", "Dinheiro", "Cartão", "Convênio"], 0)}${CHECK(0, "Sem cobrança (retorno ou cortesia)")}</div></div></section>
+    <div class="flex items-center justify-between rounded-xl border border-border px-4 py-3"><span class="text-muted-foreground">Total desta consulta</span><span class="font-display text-section font-semibold num">R$ 350,00</span></div>`,
+    `<button data-go="a10" class="btn btn-ghost">${I("arrow-left", "ic-sm")}Voltar à revisão</button><button data-go="a11" class="btn btn-primary ml-auto">${I("check", "ic-sm")}Encerrar e salvar</button>`, { doc: 1 }) });
 
 add({ id: "a11", t: "Consulta encerrada", obj: "Confirmar o que foi salvo e emendar no próximo atendimento. Desfazer é \"Reabrir consulta\", sem \"tem certeza?\" antes.",
   html: () => APP({ on: "consultas" }, `<div class="grid h-full place-items-center p-8"><div class="card-highlight w-[620px] space-y-5 p-7">
@@ -432,66 +464,77 @@ add({ id: "a11", t: "Consulta encerrada", obj: "Confirmar o que foi salvo e emen
   </div></div>`) });
 
 const PAT_ROWS = [
-  ["HD", "Helena Duarte", "2a 3m", "Carla Duarte", "(31) 98888-1111", "Hoje", "Otite média aguda", `${ALLERGY}<span class="badge badge-warning">Vacina atrasada</span>`],
-  ["MS", "Miguel Santos", "4a 1m", "Rafael Santos", "(31) 97777-2222", "Hoje", "Puericultura", ""],
-  ["LP", "Lara Pereira", "8m", "Juliana Pereira", "(31) 96666-3333", "Hoje", "Bronquiolite", `<span class="badge badge-neutral">Retorno em 2 dias</span>`],
-  ["TC", "Theo Costa", "1a 6m", "Paula Costa", "(31) 95555-4444", "Ontem", "Diarreia aguda", ""],
-  ["GA", "Gabriel Alves", "6a 2m", null, null, "Há 3 meses", "Asma · controle", `<span class="badge badge-warning">Ficha incompleta</span><span class="badge badge-warning">Retorno vencido</span>`],
-  ["BS", "Bia Souza", "3a", "Marina Souza", "(31) 97777-5555", "12/09", "IVAS", ""],
+  ["HD", "Helena Duarte", "2a 3m", "Carla Duarte", "(31) 98888-1111", "Hoje", "Otite média aguda", [S_ALLERGY(), S_VACCINE()]],
+  ["MS", "Miguel Santos", "4a 1m", "Rafael Santos", "(31) 97777-2222", "Hoje", "Puericultura", []],
+  ["LP", "Lara Pereira", "8m", "Juliana Pereira", "(31) 96666-3333", "Hoje", "Bronquiolite", [S_RETURN()]],
+  ["TC", "Theo Costa", "1a 6m", "Paula Costa", "(31) 95555-4444", "Ontem", "Diarreia aguda", []],
+  ["GA", "Gabriel Alves", "6a 2m", null, null, "Há 3 meses", "Asma · controle", [S_INCOMPLETE(), S_OVERDUE()]],
+  ["BS", "Bia Souza", "3a", "Marina Souza", "(31) 97777-5555", "12/09", "IVAS", []],
 ];
 add({ id: "b4", t: "Pacientes", obj: "Achar a criança rápido e ver quem precisa de atenção. Atender começa a consulta direto da linha.",
   html: () => APP({ on: "pacientes" }, PAGE(`
     ${HEAD("Pacientes", "148 pacientes · 6 precisam de atenção", `<button data-go="a4" class="btn btn-secondary">${I("user-plus")}Cadastrar paciente</button>`)}
     <div class="flex items-end gap-4"><div class="flex-1">${TABS(["Atendidos recentemente", "A–Z", `Precisam de atenção <span class="badge badge-warning ml-1 h-5">6</span>`], 0)}</div>${SEARCH("Nome, responsável ou telefone")}</div>
-    <div class="card overflow-hidden">
-      <div class="grid grid-cols-[1.5fr_1.3fr_1.1fr_1.6fr_96px] gap-4 border-b border-border bg-muted px-5 py-2.5 text-label font-medium text-muted-foreground"><span>Paciente</span><span>Responsável</span><span>Última consulta</span><span>Atenção</span><span></span></div>
+    <div class="card">
+      <div class="grid grid-cols-[1.6fr_1.4fr_1.3fr_120px_96px] gap-4 rounded-t-xl border-b border-border bg-muted px-5 py-2.5 text-label font-medium text-muted-foreground"><span>Paciente</span><span>Responsável</span><span>Última consulta</span><span>Atenção</span><span></span></div>
       <div class="divide-y divide-border">${PAT_ROWS.map(([i, n, a, r, t, d, w, at]) => `
-        <a data-go="b5" class="group grid min-h-14 grid-cols-[1.5fr_1.3fr_1.1fr_1.6fr_96px] items-center gap-4 px-5 py-2.5 hover:bg-accent">
+        <a data-go="b5" class="group relative grid min-h-14 grid-cols-[1.6fr_1.4fr_1.3fr_120px_96px] items-center gap-4 px-5 py-2.5 hover:bg-accent">
           <div class="flex items-center gap-3">${AV(i)}<div><div class="font-semibold">${n}</div><div class="text-caption text-subtle-foreground">${a}</div></div></div>
           <div>${r ? `<div>${r}</div><div class="text-caption text-subtle-foreground num">${t}</div>` : `<span class="text-subtle-foreground">Não informado</span>`}</div>
           <div><div>${d}</div><div class="text-caption text-subtle-foreground">${w}</div></div>
-          <div class="flex flex-wrap gap-1">${at}</div>
+          <div class="flex gap-1.5">${at.join("")}</div>
           <span class="btn btn-secondary btn-sm justify-self-end">Atender</span></a>`).join("")}
       </div>
     </div>`)) });
 
-const curve = () => `<svg viewBox="0 0 220 70" preserveAspectRatio="none" class="mt-3 h-[72px] w-full"><path d="M0 60 C60 40 120 26 220 14 L220 34 C120 44 60 54 0 68Z" fill="var(--primary-soft)"/><path d="M0 64 C60 47 120 35 220 24" fill="none" stroke="var(--primary-soft-border)" stroke-dasharray="3 3"/><polyline points="10,62 50,52 95,44 140,38 180,33" fill="none" stroke="var(--primary-ink)" stroke-width="2" vector-effect="non-scaling-stroke"/></svg><div class="mt-1 flex justify-between text-caption text-subtle-foreground num"><span>6m</span><span>2a 3m</span></div>`;
-add({ id: "b5", t: "Ficha", obj: "Entender a criança em 10 segundos antes de atender, e começar a consulta daqui.",
+const curve = () => `<svg viewBox="0 0 220 70" preserveAspectRatio="none" class="h-[110px] w-full"><path d="M0 60 C60 40 120 26 220 14 L220 34 C120 44 60 54 0 68Z" fill="var(--primary-soft)"/><path d="M0 64 C60 47 120 35 220 24" fill="none" stroke="var(--primary-soft-border)" stroke-dasharray="3 3"/><polyline points="10,62 50,52 95,44 140,38 180,33" fill="none" stroke="var(--primary-ink)" stroke-width="2" vector-effect="non-scaling-stroke"/></svg><div class="mt-1 flex justify-between text-caption text-subtle-foreground num"><span>6m</span><span>p3–p97 · OMS</span><span>2a 3m</span></div>`;
+const FACT = (label, value, note, tone, ic) => `<div class="flex flex-col gap-1 px-5 py-4"><div class="flex items-center gap-1.5 text-label text-muted-foreground">${ic ? I(ic, "ic-sm " + (tone || "")) : ""}${label}</div><div class="text-[18px] font-semibold leading-7 num">${value}</div><div class="text-caption ${tone || "text-subtle-foreground"}">${note}</div></div>`;
+add({ id: "b5", t: "Ficha", obj: "Entender a criança em 10 segundos. Leitura em três faixas: quem é (cabeçalho com símbolos de atenção), o essencial em números (resumo clínico) e o que fazer agora (última consulta e pendências lado a lado, na mesma altura). O detalhe da alergia está aberto para mostrar o comportamento do símbolo.",
   html: () => APP({ on: "pacientes" }, `
     <div class="border-b border-border bg-card"><div class="mx-auto max-w-[1180px] px-8 pt-6">
       <div class="mb-3 text-caption text-subtle-foreground"><a data-go="b4" class="hover:text-foreground hover:underline">Pacientes</a> › Helena Duarte</div>
       <div class="flex items-start gap-4">
         ${AV("HD", { s: "size-14", t: "text-section", on: 1 })}
-        <div class="min-w-0"><div class="flex flex-wrap items-center gap-2"><h1 class="t-page">Helena Duarte</h1><span class="badge badge-neutral num">2a 3m · nasc. 10/06/2024</span>${ALLERGY}</div>
-          <div class="mt-1 text-muted-foreground">Carla Duarte (mãe) · <span class="num">(31) 98888-1111</span> · IG 38 semanas</div></div>
-        <div class="ml-auto flex items-center gap-2"><button class="btn btn-secondary">${I("pencil")}Editar</button><button class="btn btn-ghost px-2.5" aria-label="Mais ações">${I("ellipsis")}</button><button class="btn btn-primary">${I("stethoscope")}Iniciar consulta</button></div>
+        <div class="min-w-0"><div class="flex flex-wrap items-center gap-3"><h1 class="t-page">Helena Duarte</h1><div class="flex gap-1.5">${S_ALLERGY({ lg: 1, open: 1 })}${S_VACCINE({ lg: 1 })}${S_INCOMPLETE({ lg: 1 })}</div></div>
+          <div class="mt-1 text-muted-foreground"><span class="font-medium text-foreground">2a 3m</span> · nasc. <span class="num">10/06/2024</span> · Carla Duarte (mãe) · <span class="num">(31) 98888-1111</span></div></div>
+        <div class="ml-auto flex items-center gap-2"><button class="btn btn-secondary">${I("pencil")}Editar</button><button class="btn btn-ghost px-2.5" aria-label="Mais ações">${I("ellipsis")}</button><button data-go="a5" class="btn btn-primary">${I("stethoscope")}Iniciar consulta</button></div>
       </div>
       <div class="mt-5">${TABS(["Resumo", `Consultas <span class="text-subtle-foreground num">5</span>`, "Crescimento", `Vacinas <span class="badge badge-warning ml-1 h-5">1 atrasada</span>`, "Documentos", "Anexos e escalas"], 0).replace("border-b border-border", "")}</div>
     </div></div>
-    ${PAGE(`<div class="grid gap-5 lg:grid-cols-[1.4fr_1fr]">
-      <div class="flex flex-col gap-5">
-        <section class="card-highlight p-5">
-          <div class="flex items-center"><h2 class="t-card">Última consulta · 29/09</h2><span class="badge badge-neutral ml-2">IVAS</span><button data-go="b2" class="btn btn-ghost btn-sm ml-auto">Ver registro</button></div>
-          <p class="mt-2 text-read">Coriza e tosse há 3 dias, sem febre. Bom estado geral, ausculta limpa. Sintomáticos e lavagem nasal; retorno se febre.</p>
-          <div class="mt-3 flex items-center gap-2 rounded-lg bg-card/70 px-3 py-2 text-label">${I("bell", "ic-sm text-primary-ink")}Lembrete: reavaliar o peso no próximo retorno</div>
+    ${PAGE(`
+      <section class="card">
+        <div class="grid grid-cols-4 divide-x divide-border">
+          ${FACT("Peso", "12,3 kg <span class='text-label font-normal text-subtle-foreground'>· p50</span>", "Medido há 37 dias", "text-warning-text", "scale")}
+          ${FACT("Altura", "87 cm <span class='text-label font-normal text-subtle-foreground'>· p50</span>", "Medida há 37 dias", "", "ruler")}
+          ${FACT("Alergias", "Amoxicilina", "Exantema · 06/2025", "text-danger-text", "triangle-alert")}
+          ${FACT("Vacinas", "1 atrasada", "Tríplice viral, 2ª dose", "text-warning-text", "syringe")}
+        </div>
+        <div class="border-t border-border px-5 py-2.5 text-caption text-muted-foreground">Sem comorbidades · sem uso contínuo · IG 38 semanas · tipo sanguíneo não informado <a class="ml-1 text-primary-ink hover:underline">Ver dados clínicos</a></div>
+      </section>
+      <div class="grid items-stretch gap-5 lg:grid-cols-[1.4fr_1fr]">
+        <section class="card-highlight flex flex-col p-5">
+          <div class="flex items-center gap-2"><h2 class="t-section">Última consulta</h2><span class="text-muted-foreground num">· 29/09</span><span class="badge badge-neutral">IVAS</span><button data-go="b2" class="btn btn-ghost btn-sm ml-auto">Ver registro</button></div>
+          <p class="mt-3 max-w-[60ch] text-read">Coriza e tosse há 3 dias, sem febre. Bom estado geral, ausculta limpa. Sintomáticos e lavagem nasal; retorno se febre.</p>
+          <div class="mt-auto flex items-center gap-2 rounded-lg border border-primary-soft-border bg-card px-3 py-2 text-label">${I("bell", "ic-sm text-primary-ink")}<span class="font-medium">Para esta consulta:</span> reavaliar o peso</div>
         </section>
-        <section class="card-sunken p-5"><h2 class="t-card">Histórico</h2>
-          <div class="mt-2 divide-y divide-border">${[["29/09", "IVAS", ["Receita"]], ["12/08", "Puericultura · vacinas de 15 meses", []], ["03/06", "Otite média aguda", ["Receita", "Atestado"]]].map(([d, w, docs]) => `<a data-go="b2" class="flex items-center gap-3 py-2.5 hover:text-foreground"><span class="w-12 text-caption num text-subtle-foreground">${d}</span><span class="flex-1">${w}</span>${docs.map(x => `<span class="badge badge-accent">${x}</span>`).join("")}</a>`).join("")}</div>
-          <button class="btn btn-link btn-sm mt-1">Ver as 5 consultas</button></section>
+        <section class="card flex flex-col">
+          <div class="flex items-center gap-2 px-5 pb-3 pt-5"><h2 class="t-section">O que fazer</h2><span class="badge badge-neutral num">3</span></div>
+          <div class="flex-1 divide-y divide-border border-t border-border">
+            ${[[S_VACCINE(), "Tríplice viral, 2ª dose", "Atrasada desde 10/09", "Ver vacinas"], [SIG("scale", "warning", "Sem medida recente", "Última medida em 29/08."), "Medir peso e altura", "Última medida há 37 dias", "Registrar"], [S_INCOMPLETE(), "Completar a ficha", "Falta o sexo: a curva depende dele", "Completar"]].map(([sig, t, d, b]) => `<div class="flex items-center gap-3 px-5 py-3">${sig}<div class="min-w-0 flex-1"><div class="font-medium">${t}</div><div class="text-caption text-muted-foreground">${d}</div></div><button class="btn btn-secondary btn-xs">${b}</button></div>`).join("")}
+          </div>
+        </section>
       </div>
-      <div class="flex flex-col gap-5">
-        <section class="card p-5"><h2 class="t-card">Pendências</h2>
-          <ul class="mt-3 space-y-2.5">
-            <li class="flex items-start gap-2.5"><span class="mt-0.5 text-warning-text">${I("syringe")}</span><div class="flex-1">Tríplice viral, 2ª dose<div class="text-caption text-subtle-foreground">Atrasada desde 10/09</div></div><button class="btn btn-secondary btn-xs">Ver vacinas</button></li>
-            <li class="flex items-start gap-2.5"><span class="mt-0.5 text-warning-text">${I("ruler")}</span><div class="flex-1">Sem medida há 37 dias</div></li>
-            <li class="flex items-start gap-2.5"><span class="mt-0.5 text-warning-text">${I("circle-alert")}</span><div class="flex-1">Falta o sexo na ficha<div class="text-caption text-subtle-foreground">A curva de crescimento depende dele</div></div><button class="btn btn-secondary btn-xs">Completar</button></li>
-          </ul></section>
-        <section class="card p-5"><div class="flex items-center"><h2 class="t-card">Crescimento</h2><button class="btn btn-ghost btn-xs ml-auto">Ver curvas</button></div>
-          <div class="mt-2 grid grid-cols-2 gap-3"><div><div class="text-caption text-subtle-foreground">Peso</div><div class="font-semibold num">12,3 kg <span class="font-normal text-subtle-foreground">· p50</span></div></div><div><div class="text-caption text-subtle-foreground">Altura</div><div class="font-semibold num">87 cm <span class="font-normal text-subtle-foreground">· p50</span></div></div></div>
-          ${curve()}</section>
-        <section class="card-sunken p-5"><h2 class="t-card">Dados clínicos</h2>
-          <dl class="mt-2 grid grid-cols-[auto_1fr] gap-x-4 gap-y-1.5"><dt class="text-subtle-foreground">Alergias</dt><dd>Amoxicilina (exantema, 06/2025)</dd><dt class="text-subtle-foreground">Comorbidades</dt><dd>Nenhuma</dd><dt class="text-subtle-foreground">Uso contínuo</dt><dd>Nenhum</dd><dt class="text-subtle-foreground">Tipo sanguíneo</dt><dd class="text-subtle-foreground">Não informado</dd></dl></section>
-      </div></div>`)}`) });
+      <div class="grid items-stretch gap-5 lg:grid-cols-[1.4fr_1fr]">
+        <section class="card flex flex-col">
+          <div class="flex items-center px-5 pb-3 pt-5"><h2 class="t-section">Histórico</h2><button class="btn btn-link btn-sm ml-auto">Ver as 5 consultas</button></div>
+          <ol class="flex-1 border-t border-border px-5 py-2">${[["29/09", "IVAS", "Sintomáticos · peso 12,3 kg", ["Receita"]], ["12/08", "Puericultura", "Vacinas de 15 meses", []], ["03/06", "Otite média aguda", "Amoxicilina · reação: exantema", ["Receita", "Atestado"]]].map(([d, w, n, docs], i, arr) => `<li class="relative flex gap-4 py-3"><span class="w-12 shrink-0 text-caption num text-subtle-foreground">${d}</span><span class="relative mt-1.5 flex flex-col items-center"><span class="size-2.5 rounded-full ${i === 0 ? "bg-primary" : "border-2 border-border-strong bg-card"}"></span>${i < arr.length - 1 ? `<span class="absolute top-4 h-[calc(100%+12px)] w-px bg-border"></span>` : ""}</span><a data-go="b2" class="min-w-0 flex-1 hover:text-foreground"><div class="font-medium">${w}</div><div class="text-caption text-muted-foreground">${n}</div></a><span class="flex gap-1">${docs.map(x => `<span class="badge badge-accent">${x}</span>`).join("")}</span></li>`).join("")}</ol>
+        </section>
+        <section class="card flex flex-col p-5">
+          <div class="flex items-center"><h2 class="t-section">Crescimento</h2><button class="btn btn-ghost btn-sm ml-auto">Ver curvas</button></div>
+          <div class="mt-1 text-caption text-muted-foreground">Peso por idade</div>
+          <div class="mt-auto pt-3">${curve()}</div>
+        </section>
+      </div>`)}`) });
 
 const row = (o) => `<div class="group relative grid min-h-14 grid-cols-[40px_1fr_auto_96px_96px_36px] items-center gap-4 px-5 py-2.5 hover:bg-accent">
   ${AV(o.i)}<a ${o.go ? `data-go="${o.go}"` : ""} class="min-w-0"><div><span class="font-semibold">${o.n}</span> <span class="text-subtle-foreground">· ${o.a}</span></div><div class="truncate text-caption text-muted-foreground">${o.w}</div></a>
@@ -547,6 +590,39 @@ add({ id: "b2", t: "Consulta encerrada", obj: "O registro de uma consulta que j�
         <p class="px-1 text-caption text-subtle-foreground">Escalas, exames e anexos aparecem aqui quando a consulta tiver algum.</p>
       </div>
     </div>`)) });
+
+const PSEC = ["Dados profissionais", "Sua marca nos documentos", "Relatório da consulta", "Valores e procedimentos", "WhatsApp", "Aparência", "Plano e conta"];
+const PCARD = (id, title, desc, body) => `<section id="${id}" class="card scroll-mt-6"><div class="border-b border-border px-6 py-4"><h2 class="t-section">${title}</h2><p class="text-muted-foreground">${desc}</p></div><div class="space-y-5 px-6 py-5">${body}</div></section>`;
+add({ id: "d4", t: "Perfil", obj: "Onde o médico define como aparece para as famílias: dados profissionais, a marca nos documentos com prévia ao vivo, valores, WhatsApp e conta. A barra de salvar aparece só quando há mudança.",
+  html: () => APP({ on: "perfil" }, `<div class="mx-auto max-w-[1180px] px-8 pb-28 pt-8">
+    <div class="card-highlight flex items-center gap-5 p-6">
+      <span class="relative">${AV("AS", { s: "size-20", t: "text-page font-display", on: 1 })}<button class="absolute -bottom-1 -right-1 grid size-8 place-items-center rounded-full border border-border bg-card shadow-xs hover:bg-accent" aria-label="Trocar foto">${I("camera", "ic-sm")}</button></span>
+      <div class="min-w-0"><h1 class="t-page">Dra. Ana Clara Souza</h1><div class="mt-1 text-muted-foreground">Pediatria · <span class="num">CRM-MG 54.321</span> · <span class="num">RQE 6789</span> · Belo Horizonte, MG</div>
+        <div class="mt-2 flex items-center gap-2"><span class="badge badge-success">${I("badge-check", "ic-sm")}Assinante</span><span class="text-caption text-subtle-foreground">desde março de 2026</span></div></div>
+      <button class="btn btn-secondary ml-auto">${I("eye", "ic-sm")}Ver como sai no documento</button>
+    </div>
+    <div class="mt-6 grid grid-cols-[220px_1fr] items-start gap-8">
+      <nav class="sticky top-6 flex flex-col gap-0.5">${PSEC.map((t, i) => `<a class="flex h-9 items-center rounded-lg px-3 ${i === 0 ? "bg-primary-soft font-semibold text-primary-ink-strong" : "text-muted-foreground hover:bg-accent hover:text-foreground"}">${t}</a>`).join("")}</nav>
+      <div class="space-y-6">
+        ${PCARD("dados", "Dados profissionais", "Saem em todo documento que você emite.", `<div class="grid grid-cols-2 gap-4">${FIELD("Nome", "Ana Clara")}${FIELD("Sobrenome", "Souza")}${FIELD("CRM", "54.321 MG", "Número e estado, como no carimbo.", "num")}${FIELD("RQE <span class='font-normal text-subtle-foreground'>(opcional)</span>", "6789", "Registro de especialista.", "num")}${FIELD("Cidade", "Belo Horizonte")}${FIELD("Estado", "Minas Gerais")}${FIELD("Instagram <span class='font-normal text-subtle-foreground'>(opcional)</span>", "@dra.anaclara")}${FIELD("Site <span class='font-normal text-subtle-foreground'>(opcional)</span>", "")}</div>`)}
+        ${PCARD("marca", "Sua marca nos documentos", "A logo entra no cabeçalho de receitas, atestados e relatórios.", `
+          <div class="grid grid-cols-2 gap-4">
+            <div class="flex flex-col gap-1.5"><span class="field-label">Logo completa</span><div class="flex h-28 items-center gap-4 rounded-xl border border-border px-4"><div class="grid h-16 flex-1 place-items-center rounded-lg bg-muted"><span class="font-display text-[17px] font-semibold text-primary-ink">Bem Crescer <span class="font-normal text-muted-foreground">Pediatria</span></span></div><div class="flex flex-col gap-1"><button class="btn btn-secondary btn-xs">Trocar</button><button class="btn btn-ghost btn-xs text-danger-text">Remover</button></div></div><span class="field-help">PNG ou SVG, fundo transparente</span></div>
+            <div class="flex flex-col gap-1.5"><span class="field-label">Logo curta <span class="font-normal text-subtle-foreground">(opcional)</span></span><button class="flex h-28 flex-col items-center justify-center gap-1 rounded-xl border border-dashed border-border-strong text-muted-foreground hover:bg-accent hover:text-foreground">${I("image-plus")}<span class="font-medium">Clique para enviar</span><span class="text-caption text-subtle-foreground">ou arraste o arquivo aqui</span></button><span class="field-help">Usada no rodapé das páginas seguintes</span></div>
+          </div>
+          <div><div class="mb-2 flex items-center gap-2 text-label font-medium">Prévia do cabeçalho<span class="badge badge-neutral h-5">ao vivo</span></div>
+            <div class="rounded-xl border border-border bg-white p-6 text-neutral-800 shadow-sm"><div class="flex items-center gap-4 border-b border-neutral-200 pb-4"><span class="font-display text-[20px] font-semibold text-[#3a6aa7]">Bem Crescer <span class="font-normal text-neutral-500">Pediatria</span></span><div class="ml-auto text-right text-[12px] leading-5"><div class="font-semibold">Dra. Ana Clara Souza</div><div class="text-neutral-500">Pediatra · CRM-MG 54.321 · RQE 6789</div><div class="text-neutral-500">Belo Horizonte, MG · @dra.anaclara</div></div></div><div class="mt-4 space-y-2"><div class="h-2 w-1/3 rounded bg-neutral-200"></div><div class="h-2 w-5/6 rounded bg-neutral-100"></div><div class="h-2 w-2/3 rounded bg-neutral-100"></div></div></div></div>`)}
+        ${PCARD("relatorio", "Relatório da consulta", "Como o assistente organiza o relatório ao encerrar.", `<div class="grid grid-cols-2 gap-4">${FIELD("Modelo usado", "Modelo padrão do Falaped", "Queixa, exame, conduta e retorno.")}<div class="flex items-end pb-6"><button data-go="d1" class="btn btn-link btn-sm">${I("layout-template", "ic-sm")}Ver meus modelos</button></div></div>`)}
+        ${PCARD("valores", "Valores e procedimentos", "Preenchem a cobrança ao encerrar a consulta.", `
+          <div class="grid grid-cols-2 gap-4">${FIELD("Valor da consulta", "R$ 350,00", "Deixe em branco se cada consulta tem um valor diferente.", "num")}</div>
+          <div><div class="mb-2 field-label">Procedimentos</div><div class="divide-y divide-border rounded-xl border border-border">${[["Nebulização", "R$ 60,00"], ["Teste do pezinho", "R$ 90,00"]].map(([n, v]) => `<div class="flex items-center gap-3 px-4 py-2.5"><span class="flex-1">${n}</span><span class="num font-medium">${v}</span><button class="btn btn-ghost btn-xs" aria-label="Editar">${I("pencil", "ic-sm")}</button><button class="btn btn-ghost btn-xs text-danger-text" aria-label="Remover">${I("x", "ic-sm")}</button></div>`).join("")}<button class="flex w-full items-center gap-2 rounded-b-xl px-4 py-2.5 text-primary-ink hover:bg-accent">${I("plus", "ic-sm")}Adicionar procedimento</button></div></div>`)}
+        ${PCARD("whatsapp", "WhatsApp", "Use o assistente do Falaped pelo seu WhatsApp.", `<div class="flex items-center gap-3"><span class="grid size-10 place-items-center rounded-full bg-success-soft text-success-text">${I("message-circle")}</span><div class="flex-1"><div class="font-medium num">(31) 99999-0000</div><div class="text-caption text-subtle-foreground">Vinculado em 12/09/2026</div></div><button class="btn btn-ghost btn-sm text-danger-text">Desvincular</button></div>`)}
+        ${PCARD("aparencia", "Aparência", "Só muda o app, não os documentos.", `<div class="flex flex-col gap-1.5"><span class="field-label">Tema</span>${SEGS(["Claro", "Escuro", "Igual ao sistema"], 2)}</div>`)}
+        ${PCARD("conta", "Plano e conta", "Seu plano e a exclusão da conta.", `<div class="grid grid-cols-2 gap-4">${FIELD("E-mail de acesso", "ana.souza@email.com")}<div class="flex flex-col gap-1.5"><span class="field-label">Plano</span><div class="flex h-9 items-center gap-2"><span class="badge badge-success">Assinante</span><span class="text-muted-foreground">renova em 03/11</span></div></div></div><div class="flex items-center gap-2 border-t border-border pt-4"><button class="btn btn-secondary btn-sm">${I("message-circle", "ic-sm")}Falar com a gente</button><button class="btn btn-ghost btn-sm ml-auto text-danger-text">Excluir conta</button></div>`)}
+      </div>
+    </div>
+    <div class="fixed bottom-6 left-1/2 z-20 flex w-[640px] -translate-x-1/2 items-center gap-3 rounded-2xl border border-border bg-popover px-4 py-3 shadow-lg" style="margin-left:124px"><span class="size-2 rounded-full bg-warning"></span><span class="flex-1">Você tem alterações não salvas</span><button class="btn btn-ghost btn-sm">Descartar</button><button class="btn btn-primary btn-sm">Salvar alterações</button></div>
+  </div>`) });
 
 /* ---------- navegação ---------- */
 let cur = 0;
