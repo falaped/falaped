@@ -8,7 +8,7 @@ import {
   HomeIcon,
   ChartLineIcon,
   FilterIcon,
-  MessagesSquareIcon,
+  MessageCircleQuestionIcon,
   PillIcon,
   MailsIcon,
   ShieldIcon,
@@ -50,36 +50,24 @@ export const dashboardNav: DashboardNavSection[] = [
     items: [],
   },
   {
-    title: "Atendimentos",
-    description: "Conduza consultas, acompanhe discussões e gerencie os pacientes.",
-    url: "/dashboard/appointments",
-    icon: MessagesSquareIcon,
-    items: [
-      {
-        title: "Casos",
-        description: "Consultas em andamento e histórico de atendimentos.",
-        url: "/dashboard/cases",
-        icon: StethoscopeIcon,
-      },
-      {
-        title: "Discussões",
-        description: "Converse com o assistente sobre condutas clínicas.",
-        url: "/dashboard/discussions",
-        icon: MessagesSquareIcon,
-      },
-      {
-        title: "Pacientes",
-        description: "Cadastro das crianças e seus responsáveis.",
-        url: "/dashboard/patients",
-        icon: UsersIcon,
-      },
-    ],
+    title: "Consultas",
+    description: "Consultas em andamento e histórico de atendimentos.",
+    url: "/dashboard/cases",
+    icon: StethoscopeIcon,
+    items: [],
   },
   {
-    title: "Serviços",
+    title: "Pacientes",
+    description: "Cadastro das crianças e seus responsáveis.",
+    url: "/dashboard/patients",
+    icon: UsersIcon,
+    items: [],
+  },
+  {
+    title: "Documentos",
     description: "Todos os documentos que você emite para o paciente.",
     url: "/dashboard/services",
-    icon: FileCheckIcon,
+    icon: FileTextIcon,
     items: [
       {
         title: "Atestados",
@@ -130,6 +118,13 @@ export const dashboardNav: DashboardNavSection[] = [
         icon: FilePlusIcon,
       },
     ],
+  },
+  {
+    title: "Pergunte ao assistente",
+    description: "Converse com o assistente sobre condutas clínicas.",
+    url: "/dashboard/discussions",
+    icon: MessageCircleQuestionIcon,
+    items: [],
   },
   {
     title: "Financeiro",
