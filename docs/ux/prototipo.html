@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Protótipo 2.0</title>
-<!-- Etapa 3 · rodada 1. Tokens copiados de ficha-design.html (fonte da verdade): ao mudar a ficha, recopiar o bloco de estilo. -->
+<!-- Etapa 3 · rodadas 1 e 2. Tokens copiados de ficha-design.html (fonte da verdade): ao mudar a ficha, recopiar o bloco de estilo. -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Lexend:wght@500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
@@ -187,7 +187,7 @@
 </head>
 <body class="overflow-hidden">
 <div class="flex h-14 items-center gap-3 border-b border-border bg-card px-4">
-  <span class="t-card shrink-0">Protótipo 2.0</span><span class="badge badge-neutral shrink-0">Rodada 1 · sem a Consulta</span>
+  <span class="t-card shrink-0">Protótipo 2.0</span><span class="badge badge-neutral shrink-0">Rodadas 1 e 2</span>
   <div id="nav" class="ml-3 flex min-w-0 flex-1 gap-1 overflow-x-auto whitespace-nowrap"></div>
   <div class="flex shrink-0 items-center gap-2">
     <button class="btn btn-ghost btn-sm" onclick="step(-1)" aria-label="Tela anterior"><i data-lucide="chevron-left" class="ic"></i></button>
@@ -207,11 +207,11 @@ const NAV = [["inicio", "Início", "house", "a12"], ["consultas", "Consultas", "
 function sidebar(o = {}) {
   if (o.mini) return `<aside class="flex w-[64px] shrink-0 flex-col items-center gap-1 border-r border-sidebar-border bg-sidebar py-4">
     <img src="../../public/falaped-icon.svg" alt="Falaped" class="mb-3 h-9 dark:hidden"><img src="../../public/falaped-icon-dark.svg" alt="Falaped" class="mb-3 hidden h-9 dark:block">
-    <a data-go="a12" class="mb-2 grid size-10 place-items-center rounded-lg border border-primary-soft-border bg-primary-soft text-primary-ink-strong" title="Voltar à consulta · Helena D."><span class="relative text-label font-semibold">HD<span class="absolute -right-2 -top-1.5 size-2 rounded-full bg-success ring-2 ring-primary-soft"></span></span></a>
+    <a data-go="a5" class="mb-2 grid size-10 place-items-center rounded-lg border border-primary-soft-border bg-primary-soft text-primary-ink-strong" title="Voltar à consulta · Helena D."><span class="relative text-label font-semibold">HD<span class="absolute -right-2 -top-1.5 size-2 rounded-full bg-success ring-2 ring-primary-soft"></span></span></a>
     ${NAV.map(([k, l, ic, go]) => `<a ${go ? `data-go="${go}"` : ""} title="${l}" class="grid size-10 place-items-center rounded-lg ${o.on === k ? "bg-sidebar-accent text-sidebar-accent-foreground" : "text-sidebar-foreground hover:bg-accent hover:text-foreground"}">${I(ic)}</a>`).join("")}
   </aside>`;
   const top = o.active
-    ? `<a data-go="a12" class="card-highlight mb-3 flex items-center gap-2.5 p-3 hover:shadow-md">
+    ? `<a data-go="a5" class="card-highlight mb-3 flex items-center gap-2.5 p-3 hover:shadow-md">
         <span class="relative grid size-8 place-items-center rounded-full bg-card text-label font-semibold text-primary-ink-strong">HD<span class="absolute -right-0.5 -top-0.5 size-2.5 rounded-full bg-success ring-2 ring-card"></span></span>
         <div class="min-w-0 flex-1"><div class="text-label font-semibold">Helena D.</div><div class="text-caption text-muted-foreground">Voltar à consulta</div></div>
         <span class="text-caption num text-muted-foreground">12:47</span></a>`
@@ -237,7 +237,7 @@ const SEARCH = (ph, w = "w-80") => `<label class="input flex ${w} items-center g
 const ACTIVE = (extra = "") => `<div class="card-highlight flex items-center gap-4 px-5 py-4">
   <span class="relative">${AV("HD", { s: "size-10", on: 1 })}<span class="absolute -right-0.5 -top-0.5 size-3 animate-pulse rounded-full bg-success ring-2 ring-card"></span></span>
   <div class="min-w-0"><div class="flex items-center gap-2"><span class="t-card">Helena Duarte</span><span class="text-muted-foreground">· 2a 3m</span>${ALLERGY}</div><div class="text-muted-foreground">Em andamento há 12 min · febre e otalgia${extra}</div></div>
-  <button data-go="a12" class="btn btn-primary ml-auto">Voltar à consulta${I("arrow-right")}</button></div>`;
+  <button data-go="a5" class="btn btn-primary ml-auto">Voltar à consulta${I("arrow-right")}</button></div>`;
 
 /* ---------- telas ---------- */
 const S = [];
@@ -303,6 +303,133 @@ add({ id: "a4", t: "Cadastro rápido", obj: "Cadastrar só o essencial e já abr
       <button class="flex items-center gap-1.5 text-label font-medium text-muted-foreground hover:text-foreground">${I("chevron-right", "ic-sm")}Mais dados: sexo, idade gestacional, alergias</button>
     </div>
     <div class="flex items-center gap-2 border-t border-border px-5 py-3"><button data-go="a3" class="btn btn-ghost">${I("arrow-left")}Voltar à busca</button><button class="btn btn-primary ml-auto">Cadastrar e iniciar consulta</button></div>`) });
+
+/* ---------- consulta (rodada 2) ---------- */
+const TOOLS = [["Receita", "pill", "a6"], ["Atestado", "file-check", "a7"], ["Pedido de exame", "flask-conical", null], ["Encaminhamento", "send", null], ["Escala", "list-checks", "a8"], ["Ler exame", "scan-text", "a9"], ["Medidas", "ruler", "a8"], ["Anexo", "paperclip", "a9"]];
+const RAIL_SEC = (t, body) => `<div><div class="mb-1.5 text-caption font-medium text-subtle-foreground">${t}</div>${body}</div>`;
+const consulta = (o = {}) => APP({ mini: 1, on: "consultas" }, `<div class="flex h-full flex-col">
+  <header class="flex items-center gap-4 border-b border-border bg-card px-6 py-3">
+    ${AV("HD", { s: "size-10", on: 1 })}
+    <div class="min-w-0"><div class="flex flex-wrap items-center gap-2"><span class="t-card">Helena Duarte</span><span class="badge badge-neutral">2a 3m</span>${ALLERGY}</div>
+      <div class="text-caption text-muted-foreground">Carla Duarte (mãe) · <span class="num">(31) 98888-1111</span> · <a data-go="b5" class="text-primary-ink hover:underline">Ver ficha</a></div></div>
+    <div class="ml-auto flex items-center gap-2">
+      <span class="inline-flex h-9 items-center gap-2 rounded-lg border border-border px-3 text-muted-foreground"><span class="size-2 animate-pulse rounded-full bg-success"></span><span class="num font-medium text-foreground">12:47</span><button class="text-subtle-foreground hover:text-foreground" aria-label="Pausar">${I("pause", "ic-sm")}</button></span>
+      <button data-go="a10" class="btn btn-primary">${I("check")}Encerrar consulta</button>
+    </div>
+  </header>
+  <div class="flex flex-wrap gap-1 border-b border-border bg-card px-5 py-2">${TOOLS.map(([t, ic, go]) => `<button ${go ? `data-go="${go}"` : ""} class="btn btn-ghost btn-sm text-muted-foreground hover:text-foreground">${I(ic, "ic-sm")}${t}</button>`).join("")}</div>
+  <div class="grid min-h-0 flex-1 grid-cols-[1fr_272px]">
+    <div class="flex min-h-0 flex-col">
+      <div class="flex-1 space-y-4 overflow-auto px-6 py-5">
+        <div class="mx-auto max-w-[760px] space-y-4">
+          <div class="card-sunken flex gap-3 p-4">${I("history", "mt-0.5 text-subtle-foreground")}<div><div class="text-label font-semibold">Da última consulta · 29/09</div><p class="text-muted-foreground">IVAS, sintomáticos. Lembretes: reavaliar o peso · tríplice viral (2ª dose) pendente.</p></div><button class="btn btn-ghost btn-xs ml-auto" aria-label="Dispensar">${I("x", "ic-sm")}</button></div>
+          <div class="ml-auto max-w-[85%] rounded-2xl rounded-br-md bg-primary-soft px-4 py-3 text-read">Febre de 38,5 há 2 dias, dor no ouvido direito, irritada à noite. Otoscopia: membrana timpânica direita abaulada e hiperemiada. Peso 12,4 kg.</div>
+          <div class="max-w-[92%]">
+            <div class="mb-1.5 flex items-center gap-2 text-caption text-subtle-foreground"><span class="grid size-5 place-items-center rounded-md bg-primary-soft text-primary-ink-strong">${I("sparkles", "size-3")}</span>Assistente</div>
+            <div class="card space-y-2 px-4 py-3 text-read">
+              <p>Quadro compatível com <b>otite média aguda à direita</b>.</p>
+              <p>Como há alergia a amoxicilina, uma opção é <b>azitromicina 10 mg/kg/dia por 3 dias</b>: 124 mg/dia, ou <span class="num">3,1 mL</span> da suspensão 200 mg/5 mL, 1x ao dia.</p>
+              <p>Para dor e febre: dipirona 500 mg/mL, 6 gotas até de 6/6 h. Reavaliar em 48 a 72 h se não melhorar.</p>
+              <div class="flex flex-wrap gap-2 pt-1"><button data-go="a6" class="btn btn-secondary btn-sm">${I("pill", "ic-sm")}Abrir receita com isso</button><button class="btn btn-ghost btn-sm">${I("book-open", "ic-sm")}Ver fontes</button></div>
+            </div>
+            <div class="mt-1 text-caption text-subtle-foreground">Confira doses e indicação antes de prescrever.</div>
+          </div>
+        </div>
+      </div>
+      <div class="border-t border-border bg-card px-6 py-3"><div class="mx-auto max-w-[760px] rounded-xl border border-input bg-card p-2 focus-within:border-ring">
+        <div class="min-h-12 px-2 py-1.5 text-read text-subtle-foreground">Descreva a consulta ou grave o áudio…</div>
+        <div class="flex items-center gap-1"><button class="btn btn-ghost btn-sm" aria-label="Anexar">${I("paperclip", "ic-sm")}</button><button class="btn btn-ghost btn-sm">${I("mic", "ic-sm")}Gravar</button><span class="ml-auto text-caption text-subtle-foreground"><span class="kbd">↵</span> envia · <span class="kbd">⇧↵</span> nova linha</span><button class="btn btn-secondary btn-sm">${I("arrow-up", "ic-sm")}Enviar</button></div>
+      </div></div>
+    </div>
+    <aside class="space-y-5 overflow-auto border-l border-border bg-muted px-4 py-5">
+      <div class="t-card">Nesta consulta</div>
+      ${RAIL_SEC("Documentos", o.doc ? `<div class="flex items-center gap-2 rounded-lg border border-border bg-card px-3 py-2">${I("pill", "ic-sm text-primary-ink")}<span class="flex-1 text-label">Receita · 2 itens</span><span class="badge badge-success h-5">Emitida</span></div>` : `<div class="text-label text-subtle-foreground">Nenhum documento ainda</div>`)}
+      ${RAIL_SEC("Medidas", `<div class="text-label num">Peso 12,4 kg <span class="text-subtle-foreground">· hoje</span></div>`)}
+      ${RAIL_SEC("Lembretes", `<div class="flex items-center gap-2 text-label">${I("syringe", "ic-sm text-warning-text")}Tríplice viral, 2ª dose</div>`)}
+      ${RAIL_SEC("Relatório", `<div class="text-label text-subtle-foreground">Gerado ao encerrar, a partir da conversa</div>`)}
+    </aside>
+  </div></div>`);
+const SHEET = (w, title, sub, body, foot, o = {}) => `<div class="relative h-full"><div class="pointer-events-none h-full">${consulta(o)}</div>
+  <div class="absolute inset-0" style="background:oklch(0.21 0.012 255.41 / 0.3)"></div>
+  <div class="absolute inset-y-0 right-0 flex ${w} flex-col rounded-l-2xl bg-card shadow-lg">
+    <div class="flex items-center gap-3 border-b border-border px-6 py-4"><div><div class="t-card">${title}</div><div class="text-caption text-subtle-foreground">${sub}</div></div><button data-go="a5" class="btn btn-ghost btn-sm ml-auto px-2" aria-label="Fechar">${I("x")}</button></div>
+    <div class="flex-1 space-y-5 overflow-auto px-6 py-5">${body}</div>
+    <div class="flex items-center gap-2 border-t border-border px-6 py-3">${foot}</div>
+  </div></div>`;
+const SUB = "Helena Duarte · 2a 3m · 12,4 kg";
+const FIELD = (l, v, help = "", cls = "") => `<label class="flex flex-col gap-1.5"><span class="field-label">${l}</span><input class="input ${cls}" value="${v}">${help ? `<span class="field-help">${help}</span>` : ""}</label>`;
+const CHECK = (on, t) => `<label class="flex items-center gap-2"><span class="grid size-4 place-items-center rounded-[4px] ${on ? "bg-primary text-primary-foreground" : "border border-subtle-foreground bg-card"}">${on ? I("check", "size-3") : ""}</span>${t}</label>`;
+const SEGS = (items, on) => `<div class="inline-flex rounded-lg bg-muted p-1">${items.map((t, i) => `<button class="h-8 rounded-md px-3 text-label ${i === on ? "bg-card font-semibold shadow-xs" : "text-muted-foreground hover:text-foreground"}">${t}</button>`).join("")}</div>`;
+
+add({ id: "a5", t: "Consulta", obj: "Conduzir a consulta com o assistente e fazer tudo o que ela pede (documentos, escalas, exames, medidas) sem sair desta tela. A área do assistente segue o wireframe; o fluxo de IA será revisto depois.", html: () => consulta() });
+
+add({ id: "a6", t: "Receita", obj: "Emitir a receita durante a consulta, com peso e alergia vindos da consulta. O mesmo painel serve aos outros documentos.",
+  html: () => SHEET("w-[560px]", "Nova receita", SUB, `
+    <div class="flex flex-wrap items-center gap-2"><span class="badge badge-neutral num">${I("scale", "ic-sm")}Peso 12,4 kg · da consulta</span>${ALLERGY}<span class="inline-flex items-center gap-1 text-caption text-success-text">${I("check", "ic-sm")}Nenhum item conflita com a alergia</span></div>
+    <label class="flex flex-col gap-1.5"><span class="field-label">Usar modelo</span><button class="input flex items-center justify-between text-left text-subtle-foreground">IVAS, febre, otite…${I("chevron-down", "ic-sm")}</button></label>
+    <div class="space-y-2">
+      ${[["Azitromicina 200 mg/5 mL", "3,1 mL · via oral · 1x ao dia · 3 dias"], ["Dipirona 500 mg/mL", "6 gotas · via oral · se dor ou febre · até de 6/6 h"]].map(([n, d]) => `<div class="card flex items-start gap-3 p-4"><div class="flex-1"><div class="font-semibold">${n}</div><div class="text-muted-foreground num">${d}</div></div><button class="btn btn-ghost btn-xs" aria-label="Editar">${I("pencil", "ic-sm")}</button><button class="btn btn-ghost btn-xs text-danger-text" aria-label="Remover">${I("x", "ic-sm")}</button></div>`).join("")}
+      <button class="flex h-11 w-full items-center justify-center gap-2 rounded-xl border border-dashed border-border-strong text-muted-foreground hover:bg-accent hover:text-foreground">${I("plus", "ic-sm")}Adicionar medicamento</button>
+    </div>
+    <button class="flex items-center gap-1.5 text-label font-medium text-muted-foreground hover:text-foreground">${I("chevron-right", "ic-sm")}Orientações e sinais de alerta</button>`,
+    `<button class="btn btn-ghost">${I("eye", "ic-sm")}Ver prévia</button><button class="btn btn-ghost">Salvar como modelo</button><button data-go="a5d" class="btn btn-primary ml-auto">${I("printer", "ic-sm")}Emitir e imprimir</button>`) });
+
+add({ id: "a5d", t: "Receita emitida", obj: "Depois de emitir, o painel fecha e a receita aparece em \"Nesta consulta\", com um aviso de confirmação.",
+  html: () => `<div class="relative h-full">${consulta({ doc: 1 })}<div class="absolute bottom-6 right-6 flex w-80 items-center gap-3 rounded-xl border border-border bg-popover p-3 shadow-md"><span class="grid size-6 place-items-center rounded-full bg-success-soft text-success-text">${I("check", "ic-sm")}</span><span class="flex-1">Receita emitida</span><button class="btn btn-link btn-sm">Baixar de novo</button></div></div>` });
+
+add({ id: "a7", t: "Atestado", obj: "Atestado em poucos segundos, com a data e o horário da consulta já preenchidos e a prévia ao lado.",
+  html: () => SHEET("w-[620px]", "Novo atestado", SUB, `
+    <div class="flex flex-col gap-1.5"><span class="field-label">Tipo</span>${SEGS(["Comparecimento", "Afastamento", "Acompanhante", "Aptidão física"], 0)}</div>
+    <div class="grid grid-cols-2 gap-4">${FIELD("Data", "06/10/2026", "", "num")}${FIELD("Horário", "14:10 às 14:40", "Horário desta consulta", "num")}</div>
+    <label class="flex flex-col gap-1.5"><span class="field-label">Observações <span class="font-normal text-subtle-foreground">(opcional)</span></span><textarea class="input h-20 py-2" placeholder="Aparece no fim do atestado"></textarea></label>
+    <div><div class="mb-2 text-caption font-medium text-subtle-foreground">Prévia</div>
+      <div class="mx-auto aspect-[1/1.414] w-64 rounded-md border border-border bg-white p-6 text-[7px] leading-relaxed text-neutral-700 shadow-sm"><div class="mb-3 text-center text-[8px] font-bold tracking-wide text-neutral-900">ATESTADO DE COMPARECIMENTO</div><p>Atesto, para os devidos fins, que <b>Carla Duarte</b> esteve neste consultório acompanhando a paciente <b>Helena Duarte</b> no dia 06/10/2026, das 14:10 às 14:40.</p><div class="mt-8 border-t border-neutral-400 pt-1 text-center">Dra. Ana Souza · CRM-MG 54.321</div></div></div>`,
+    `<button class="btn btn-ghost">${I("eye", "ic-sm")}Ver em tela cheia</button><button data-go="a5d" class="btn btn-primary ml-auto">${I("printer", "ic-sm")}Emitir e imprimir</button>`) });
+
+const MCHAT = [["Se você aponta para algo do outro lado da sala, Helena olha para o que você aponta?", 0], ["Você já se perguntou se Helena pode ser surda?", 1], ["Helena brinca de faz de conta?", 0]];
+add({ id: "a8", t: "Escala", obj: "Aplicar uma escala enquanto conversa com a família, com o escore ao vivo. Medidas usam o mesmo painel.",
+  html: () => SHEET("w-[560px]", "Aplicar escala", SUB, `
+    <label class="flex flex-col gap-1.5"><span class="field-label">Escala</span><button class="input flex items-center justify-between text-left">M-CHAT-R/F${I("chevron-down", "ic-sm text-subtle-foreground")}</button><span class="field-help">Só as escalas indicadas para 2a 3m</span></label>
+    <div class="space-y-2">${MCHAT.map(([q, a], i) => `<div class="card p-4"><div class="text-caption text-subtle-foreground num">Item ${i + 1} de 20</div><p class="mt-0.5">${q}</p><div class="mt-2 flex gap-2">${["Sim", "Não"].map((t, j) => `<button class="btn btn-sm ${j === a ? "border border-primary-soft-border bg-primary-soft font-semibold text-primary-ink-strong" : "btn-secondary"}">${t}</button>`).join("")}</div></div>`).join("")}
+      <div class="text-center text-caption text-subtle-foreground">+ 17 itens</div></div>
+    <div class="flex items-center gap-3 rounded-xl border border-success-border bg-success-soft p-4"><div class="font-display text-section font-semibold text-success-text num">Escore 2</div><div class="text-success-text"><div class="font-semibold">Baixo risco</div><div class="text-caption">0 a 2: sem indicação de seguimento agora</div></div></div>`,
+    `<span class="text-caption text-subtle-foreground">Medidas (peso, altura, PC, PA) usam este painel</span><button data-go="a5" class="btn btn-primary ml-auto">Registrar na consulta</button>`) });
+
+add({ id: "a9", t: "Ler exame", obj: "O assistente lê o exame e o médico confere antes de usar. Valores fora da faixa ficam em destaque.",
+  html: () => SHEET("w-[640px]", "Ler exame", SUB, `
+    <div class="flex items-center gap-3 rounded-xl border border-dashed border-border-strong p-4"><span class="grid size-10 place-items-center rounded-lg bg-primary-soft text-primary-ink-strong">${I("image")}</span><div class="flex-1"><div class="font-medium">hemograma-helena.jpg</div><div class="text-caption text-success-text">Lido · 14 valores encontrados</div></div><button class="btn btn-ghost btn-sm">Trocar arquivo</button></div>
+    ${FIELD("Nome do exame", "Hemograma · 02/10", "Sugerido pela leitura. Corrija se precisar.")}
+    <div class="card overflow-hidden"><table class="w-full">
+      <thead class="bg-muted text-label text-muted-foreground"><tr><th class="px-4 py-2 text-left font-medium">Exame</th><th class="px-4 text-right font-medium">Valor</th><th class="px-4 text-left font-medium">Referência</th><th class="px-4 text-left font-medium">Status</th></tr></thead>
+      <tbody class="divide-y divide-border num">
+        <tr><td class="px-4 py-2.5">Hemoglobina</td><td class="px-4 text-right">11,8 g/dL</td><td class="px-4 text-muted-foreground">11,5 a 13,5</td><td class="px-4 text-subtle-foreground">Normal</td></tr>
+        <tr class="bg-warning-soft"><td class="px-4 py-2.5 font-semibold">Leucócitos</td><td class="px-4 text-right font-semibold">16.200 /mm³</td><td class="px-4 text-muted-foreground">5.500 a 15.500</td><td class="px-4"><span class="badge badge-warning">${I("arrow-up", "ic-sm")}Alto</span></td></tr>
+        <tr><td class="px-4 py-2.5">Plaquetas</td><td class="px-4 text-right">310 mil /mm³</td><td class="px-4 text-muted-foreground">150 a 450 mil</td><td class="px-4 text-subtle-foreground">Normal</td></tr>
+      </tbody></table></div>
+    <p class="text-caption text-subtle-foreground">A leitura é feita pelo assistente. Confira os valores com o laudo antes de usar.</p>`,
+    `<button data-go="a5" class="btn btn-secondary">${I("message-square-plus", "ic-sm")}Inserir na conversa</button><button data-go="a5" class="btn btn-primary ml-auto">${I("paperclip", "ic-sm")}Salvar nos anexos</button>`) });
+
+add({ id: "a10", t: "Encerrar consulta", obj: "Fechar a consulta conferindo tudo de uma vez: relatório, documentos, cobrança e o lembrete para a próxima.",
+  html: () => SHEET("w-[720px]", "Encerrar consulta", SUB + " · 27 min", `
+    <section><div class="mb-2 flex items-center gap-2"><h3 class="t-card">Relatório da consulta</h3><button class="btn btn-ghost btn-sm ml-auto">${I("sparkles", "ic-sm")}Melhorar com o assistente</button><button class="btn btn-secondary btn-sm">${I("pencil", "ic-sm")}Editar</button></div>
+      <div class="card-sunken space-y-3 p-4 text-read"><p><span class="font-semibold">Queixa:</span> febre de 38,5 há 2 dias, otalgia à direita, irritabilidade noturna.</p><p><span class="font-semibold">Exame:</span> MT direita abaulada e hiperemiada. Peso 12,4 kg.</p><p><span class="font-semibold">Conduta:</span> OMA à direita. Azitromicina por 3 dias (alergia a amoxicilina) e dipirona se dor ou febre. Reavaliar em 48 a 72 h.</p></div></section>
+    <section><h3 class="t-card mb-2">Documentos</h3>
+      <div class="flex items-center gap-3 rounded-lg border border-border px-3 py-2.5">${I("pill", "ic-sm text-primary-ink")}<span class="flex-1">Receita · azitromicina, dipirona</span><span class="badge badge-success">Emitida</span></div>
+      <div class="mt-2 flex items-center gap-2 text-muted-foreground">Precisa de atestado?<button data-go="a7" class="btn btn-secondary btn-xs">Emitir atestado</button></div></section>
+    <section><h3 class="t-card mb-2">Cobrança</h3>
+      <div class="grid grid-cols-2 gap-4">${FIELD("Valor da consulta", "R$ 350,00", "Do seu perfil", "num")}${FIELD("Recebido em", "Hoje, 06/10", "", "num")}</div>
+      <div class="mt-3 flex flex-wrap gap-5">${CHECK(0, "Nebulização · <span class='num'>R$ 60,00</span>")}${CHECK(0, "Teste do pezinho · <span class='num'>R$ 90,00</span>")}</div>
+      <div class="mt-3 flex flex-wrap items-center gap-4">${SEGS(["Pix", "Dinheiro", "Cartão", "Convênio"], 0)}${CHECK(0, "Sem cobrança (retorno ou cortesia)")}</div></section>
+    <section>${FIELD("Lembrete para a próxima consulta", "Reavaliar o ouvido em 10 dias", "Aparece no início da próxima consulta de Helena")}</section>`,
+    `<button data-go="a5" class="btn btn-ghost">${I("arrow-left", "ic-sm")}Voltar à consulta</button><button data-go="a11" class="btn btn-primary ml-auto">${I("check", "ic-sm")}Encerrar e salvar</button>`, { doc: 1 }) });
+
+add({ id: "a11", t: "Consulta encerrada", obj: "Confirmar o que foi salvo e emendar no próximo atendimento. Desfazer é \"Reabrir consulta\", sem \"tem certeza?\" antes.",
+  html: () => APP({ on: "consultas" }, `<div class="grid h-full place-items-center p-8"><div class="card-highlight w-[620px] space-y-5 p-7">
+    <div class="flex items-start gap-3"><span class="grid size-10 shrink-0 place-items-center rounded-full bg-success-soft text-success-text">${I("check")}</span><div><h1 class="t-section">Consulta de Helena encerrada</h1><p class="text-muted-foreground num">27 min · R$ 350,00 lançado · relatório pronto · lembrete em 10 dias</p></div></div>
+    <div class="space-y-2">${[["pill", "Receita · azitromicina, dipirona"], ["file-text", "Relatório da consulta"]].map(([ic, t]) => `<div class="flex items-center gap-3 rounded-lg border border-border bg-card px-3 py-2.5">${I(ic, "ic-sm text-primary-ink")}<span class="flex-1">${t}</span><button class="btn btn-ghost btn-sm">${I("download", "ic-sm")}Baixar</button></div>`).join("")}</div>
+    <div class="flex flex-wrap gap-2"><button data-go="a3" class="btn btn-primary">Atender próximo paciente${I("arrow-right", "ic-sm")}</button><button class="btn btn-secondary">${I("message-circle", "ic-sm")}Enviar documentos à responsável</button></div>
+    <div class="flex items-center gap-1 text-muted-foreground"><button data-go="a5" class="btn btn-ghost btn-sm">${I("rotate-ccw", "ic-sm")}Reabrir consulta</button>·<button data-go="a12" class="btn btn-ghost btn-sm">Ir ao início</button></div>
+  </div></div>`) });
 
 const PAT_ROWS = [
   ["HD", "Helena Duarte", "2a 3m", "Carla Duarte", "(31) 98888-1111", "Hoje", "Otite média aguda", `${ALLERGY}<span class="badge badge-warning">Vacina atrasada</span>`],
