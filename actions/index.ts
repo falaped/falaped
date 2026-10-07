@@ -32,6 +32,8 @@ export {
   type UploadPatientPhotoResult,
   removePatientPhotoAction,
   type RemovePatientPhotoResult,
+  listPatientsForSearchAction,
+  type PatientSearchItem,
 } from "./patients"
 export {
   uploadAttachmentAction,

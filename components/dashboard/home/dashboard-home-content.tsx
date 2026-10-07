@@ -55,12 +55,11 @@ export async function DashboardHomeContent() {
     return (
       <FirstAccessHome
         firstName={profile.first_name}
+        fullName={[profile.first_name, profile.surname].filter(Boolean).join(" ") || "Seu nome"}
         crm={profile.crm}
-        hasLogo={!!profile.logo_url_full}
+        logoUrl={profile.logo_url_full}
+        place={[profile.default_location_city, profile.default_location_state].filter(Boolean).join(" · ") || null}
         trialEndsAt={profile.trial_ends_at}
-        patientsCount={home.patientsCount}
-        casesCount={home.totalCasesCount}
-        documentsCount={home.prescriptionsCount + home.medicalCertificatesCount}
       />
     )
   }

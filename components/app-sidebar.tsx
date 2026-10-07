@@ -19,6 +19,7 @@ import {
 } from "@/components/ui/sidebar"
 import { Button } from "@/components/ui/button"
 import { NavUser } from "@/components/nav-user"
+import { PatientSearch } from "@/components/dashboard/patient-search"
 import { ChangelogMenuItem } from "@/components/dashboard/changelog/changelog-dialog"
 import { dashboardNav } from "@/lib/dashboard-nav"
 import { isAdminEmail } from "@/lib/admin"
@@ -81,6 +82,9 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
             <span className="group-data-[collapsible=icon]:sr-only">Iniciar consulta</span>
           </Link>
         </Button>
+        <div className="mt-3 w-full group-data-[collapsible=icon]:mt-1 group-data-[collapsible=icon]:w-auto">
+          <PatientSearch />
+        </div>
       </SidebarHeader>
 
       <SidebarContent className="px-1 pt-2 group-data-[collapsible=icon]:items-center">
