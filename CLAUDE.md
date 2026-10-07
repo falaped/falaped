@@ -132,6 +132,25 @@ Falaped é um app web para o dia a dia do pediatra: cadastro de pacientes (crian
 - Class composition via `cn()` (`clsx` + `tailwind-merge`) from `lib/utils.ts`
 - Tailwind CSS v4 utility classes; variants via `class-variance-authority`
 
+## Design (fonte única de verdade)
+
+- **Antes de criar ou alterar qualquer tela, leia `docs/ux/ficha-design.html` (Guia de design do Falaped).** Ele é a fonte única de verdade:
+  - princípios de uso;
+  - layout e grid;
+  - modelos de página;
+  - tokens, componentes e quando usar cada sobreposição;
+  - guia de escrita;
+  - checklist de feature nova.
+- **Valores vêm do código.** Os tokens ficam em `app/globals.css` e os componentes em `components/ui/`. Nunca usar cor, raio, sombra ou tamanho solto fora deles.
+- **Exemplos vêm de `docs/ux/prototipo.html`.** Se o protótipo e o guia divergirem, vale o guia.
+- **Toda tela parte de um dos 6 modelos de página do guia.** O checklist de feature nova vai preenchido na descrição do PR.
+- **Para mudar uma regra:**
+  1. Peça o OK do gestor.
+  2. Atualize o guia.
+  3. Registre a decisão em `docs/ux/refactoring-ui.md`.
+  4. Só então mude o código.
+- **Mudança de texto ou de design nunca mexe no Supabase:** tabelas, colunas, enums, status e rotas ficam como estão. Rótulos novos saem de um mapa no front-end.
+
 ## Security Conventions
 
 - Every action and route handler calls `getAuthenticatedUser(supabase)` and gates on `profile.status === "paid"`

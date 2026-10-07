@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Ficha de design 2.0</title>
+<title>Guia de design 2.0</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Lexend:wght@500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
@@ -183,9 +183,9 @@
 
   <header class="flex flex-wrap items-end gap-4">
     <div>
-      <div class="text-caption text-subtle-foreground">Falaped 2.0 · Etapa 2 · 06/10/2026</div>
-      <h1 class="t-display mt-1">Ficha de design</h1>
-      <p class="mt-2 max-w-[68ch] text-muted-foreground">Tokens e componentes propostos sobre o mesmo shadcn de hoje. Decisões aprovadas: Lexend nos títulos, Inter no texto, botão principal com texto escuro sobre o azul da marca, logo nova. Todos os pares de cor desta página foram medidos e passam no WCAG AA, nos modos claro e escuro.</p>
+      <div class="text-caption text-subtle-foreground">Falaped 2.0 · versão 1 · 08/10/2026</div>
+      <h1 class="t-display mt-1">Guia de design do Falaped</h1>
+      <p class="mt-2 max-w-[68ch] text-muted-foreground">A fonte única de verdade do design: regras de uso, modelos de página, tokens e componentes sobre o shadcn. Decisões aprovadas: Lexend nos títulos, Inter no texto, botão principal com texto escuro sobre o azul da marca, logo nova. Todos os pares de cor desta página foram medidos e passam no WCAG AA, nos modos claro e escuro.</p>
     </div>
     <div class="ml-auto flex items-center gap-2">
       <span class="text-label text-subtle-foreground">Tema</span>
@@ -193,9 +193,23 @@
     </div>
   </header>
 
+  <nav aria-label="Índice" class="card mt-8 p-5"><div class="doc-k mb-3">Índice</div><ol class="grid gap-x-6 gap-y-1.5 sm:grid-cols-2 lg:grid-cols-3"><li><a href="#como-usar" class="text-primary-ink hover:underline"><span class="num text-subtle-foreground">1.</span> Como usar este guia</a></li><li><a href="#regras" class="text-primary-ink hover:underline"><span class="num text-subtle-foreground">2.</span> Seis regras visuais</a></li><li><a href="#principios" class="text-primary-ink hover:underline"><span class="num text-subtle-foreground">3.</span> Princípios de uso</a></li><li><a href="#marca" class="text-primary-ink hover:underline"><span class="num text-subtle-foreground">4.</span> Marca e tipografia</a></li><li><a href="#cores" class="text-primary-ink hover:underline"><span class="num text-subtle-foreground">5.</span> Cores</a></li><li><a href="#nomes" class="text-primary-ink hover:underline"><span class="num text-subtle-foreground">6.</span> Nomes no código</a></li><li><a href="#superficies" class="text-primary-ink hover:underline"><span class="num text-subtle-foreground">7.</span> Superfícies, forma e sombra</a></li><li><a href="#layout" class="text-primary-ink hover:underline"><span class="num text-subtle-foreground">8.</span> Layout e grid</a></li><li><a href="#modelos" class="text-primary-ink hover:underline"><span class="num text-subtle-foreground">9.</span> Modelos de página</a></li><li><a href="#botoes" class="text-primary-ink hover:underline"><span class="num text-subtle-foreground">10.</span> Botões</a></li><li><a href="#selos" class="text-primary-ink hover:underline"><span class="num text-subtle-foreground">11.</span> Selos e símbolos</a></li><li><a href="#campos" class="text-primary-ink hover:underline"><span class="num text-subtle-foreground">12.</span> Campos</a></li><li><a href="#padroes" class="text-primary-ink hover:underline"><span class="num text-subtle-foreground">13.</span> Padrões do produto</a></li><li><a href="#sobreposicoes" class="text-primary-ink hover:underline"><span class="num text-subtle-foreground">14.</span> Sobreposições</a></li><li><a href="#escrita" class="text-primary-ink hover:underline"><span class="num text-subtle-foreground">15.</span> Guia de escrita</a></li><li><a href="#movimento" class="text-primary-ink hover:underline"><span class="num text-subtle-foreground">16.</span> Movimento e densidade</a></li><li><a href="#checklist" class="text-primary-ink hover:underline"><span class="num text-subtle-foreground">17.</span> Checklist de feature nova</a></li></ol></nav>
+
+  <!-- COMO USAR -->
+  <section id="como-usar" class="doc-sec scroll-mt-6">
+    <h2 class="t-section">Como usar este guia</h2>
+    <p class="doc-lead">Este guia é a fonte única de verdade do design do Falaped. Toda tela nova ou alterada parte daqui, seja feita por uma pessoa ou pelo Claude.</p>
+    <div class="grid gap-3 md:grid-cols-3">
+      <div class="card p-5"><div class="t-card">1. Regras: este guia</div><p class="mt-1 text-muted-foreground">Princípios, modelos de página, quando usar cada componente e como escrever.</p></div>
+      <div class="card p-5"><div class="t-card">2. Valores: o código</div><p class="mt-1 text-muted-foreground">Depois da Etapa 5, os tokens vivem em <code class="doc-k">app/globals.css</code> e os componentes em <code class="doc-k">components/ui</code>. O código nunca cria cor, raio ou tamanho fora deles.</p></div>
+      <div class="card p-5"><div class="t-card">3. Exemplos: o protótipo</div><p class="mt-1 text-muted-foreground"><code class="doc-k">docs/ux/prototipo.html</code> mostra as regras aplicadas em 21 telas. Se o protótipo e o guia divergirem, vale o guia.</p></div>
+    </div>
+    <div class="card-sunken mt-4 p-5 text-muted-foreground"><span class="font-semibold text-foreground">Para mudar uma regra:</span> proponha ao gestor. Com o OK, atualize este guia primeiro e registre a decisão em <code class="doc-k">docs/ux/refactoring-ui.md</code>; só depois mude o código. Mudança de texto nunca mexe no Supabase: tabelas, colunas, enums, status e rotas ficam como estão.</div>
+  </section>
+
   <!-- PRINCÍPIOS -->
-  <section class="doc-sec">
-    <h2 class="t-section">Seis regras da ficha</h2>
+  <section id="regras" class="doc-sec scroll-mt-6">
+    <h2 class="t-section">Seis regras visuais</h2>
     <p class="doc-lead">Cada regra resolve um achado da auditoria. A referência para o "por quê" está entre parênteses.</p>
     <div class="grid gap-3 md:grid-cols-2">
       <div class="card p-5"><div class="t-card">1. Uma ação colorida por tela</div><p class="mt-1 text-muted-foreground">Só a ação principal leva o azul preenchido. O resto é contorno ou texto. (refactoring-ui, better-colors · C1, S1)</p></div>
@@ -207,8 +221,16 @@
     </div>
   </section>
 
+
+  <!-- PRINCÍPIOS DE USO -->
+  <section id="principios" class="doc-sec scroll-mt-6">
+    <h2 class="t-section">Princípios de uso</h2>
+    <p class="doc-lead">As heurísticas do fluxo ideal e da revisão de usabilidade, em forma de regra. Valem para qualquer feature nova.</p>
+    <ol class="grid gap-3 md:grid-cols-2"><li class="card p-5"><div class="t-card"><span class="num text-subtle-foreground">1.</span> A consulta nunca é interrompida</div><p class="mt-1 text-muted-foreground">Documentos, escalas, medidas e exames abrem em painel lateral dentro da consulta. Nada leva o médico para outra página no meio do atendimento.</p><p class="mt-2 text-caption text-subtle-foreground">fluxo ideal · controle e liberdade</p></li><li class="card p-5"><div class="t-card"><span class="num text-subtle-foreground">2.</span> Uma consulta aberta por vez, sempre à vista</div><p class="mt-1 text-muted-foreground">Com consulta aberta, o menu mostra quem está em atendimento e o tempo, em qualquer tela. Ações que abririam outra consulta perguntam antes: voltar à atual ou encerrar e atender a próxima.</p><p class="mt-2 text-caption text-subtle-foreground">visibilidade do estado · prevenção de erro</p></li><li class="card p-5"><div class="t-card"><span class="num text-subtle-foreground">3.</span> Tudo começa pelo nome da criança</div><p class="mt-1 text-muted-foreground">A busca (⌘K) está em todas as telas e já permite cadastrar quem não existe e iniciar a consulta no mesmo passo.</p><p class="mt-2 text-caption text-subtle-foreground">Krug · reconhecer em vez de lembrar</p></li><li class="card p-5"><div class="t-card"><span class="num text-subtle-foreground">4.</span> Uma ação principal por tela</div><p class="mt-1 text-muted-foreground">Só ela leva o azul preenchido. Quem chega ao app pela primeira vez vê uma ação só: Iniciar consulta.</p><p class="mt-2 text-caption text-subtle-foreground">Nielsen 8 · minimalismo</p></li><li class="card p-5"><div class="t-card"><span class="num text-subtle-foreground">5.</span> Depois de agir, o próximo passo</div><p class="mt-1 text-muted-foreground">Salvar ou emitir mantém o médico no contexto e oferece o que vem depois (baixar de novo, atender próximo paciente). Nunca redirecionar para uma tela genérica.</p><p class="mt-2 text-caption text-subtle-foreground">fluxo ideal · eficiência</p></li><li class="card p-5"><div class="t-card"><span class="num text-subtle-foreground">6.</span> Alerta clínico não depende de hover</div><p class="mt-1 text-muted-foreground">Em listas e cartões o alerta é um símbolo que abre com mouse, teclado ou toque. Na consulta a alergia é um botão com nome; na receita ela fica escrita por extenso.</p><p class="mt-2 text-caption text-subtle-foreground">prevenção de erro · acessibilidade</p></li><li class="card p-5"><div class="t-card"><span class="num text-subtle-foreground">7.</span> Resultado clínico só quando completo</div><p class="mt-1 text-muted-foreground">Escore, interpretação ou leitura de exame parcial aparecem como parciais. O registro só libera no fim, e o motivo fica escrito.</p><p class="mt-2 text-caption text-subtle-foreground">prevenção de erro clínico</p></li><li class="card p-5"><div class="t-card"><span class="num text-subtle-foreground">8.</span> Excluir diz o que some</div><p class="mt-1 text-muted-foreground">A confirmação nomeia o item e lista o que vai junto. Quando der, prefira reabrir ou desfazer a perguntar de novo.</p><p class="mt-2 text-caption text-subtle-foreground">controle e liberdade</p></li><li class="card p-5"><div class="t-card"><span class="num text-subtle-foreground">9.</span> Só o essencial agora</div><p class="mt-1 text-muted-foreground">Formulários pedem o mínimo para seguir (cadastro: nome, nascimento, responsável e telefone). O resto fica em &quot;Mais dados&quot; ou para depois.</p><p class="mt-2 text-caption text-subtle-foreground">Krug · metade das palavras</p></li><li class="card p-5"><div class="t-card"><span class="num text-subtle-foreground">10.</span> A tela só mostra dado que existe</div><p class="mt-1 text-muted-foreground">Nenhum número, alerta ou lista sem fonte no banco. Se o dado não existe, a seção não entra; estado vazio diz como começar.</p><p class="mt-2 text-caption text-subtle-foreground">honestidade · Supabase intocado</p></li></ol>
+  </section>
+
   <!-- MARCA E TIPOGRAFIA -->
-  <section class="doc-sec">
+  <section id="marca" class="doc-sec scroll-mt-6">
     <h2 class="t-section">Marca e tipografia</h2>
     <p class="doc-lead">Lexend (a família da logo) só nos títulos. Inter em todo o resto, com números tabulares em doses, pesos, horários e valores.</p>
     <div class="grid gap-4 md:grid-cols-[260px_1fr]">
@@ -232,7 +254,7 @@
   </section>
 
   <!-- CORES -->
-  <section class="doc-sec">
+  <section id="cores" class="doc-sec scroll-mt-6">
     <h2 class="t-section">Cores</h2>
     <p class="doc-lead">Três famílias: neutros frios (com uma pitada do azul da marca, o que resolve a mistura de cinzas do C5), a rampa da marca e três rampas de status: sucesso, atenção e perigo. Informação usa a própria marca.</p>
     <div class="space-y-4">
@@ -273,7 +295,7 @@
   </section>
 
   <!-- NOMES NO CÓDIGO -->
-  <section class="doc-sec">
+  <section id="nomes" class="doc-sec scroll-mt-6">
     <h2 class="t-section">Nomes no código</h2>
     <p class="doc-lead">Os tokens usam os nomes do shadcn que o app já tem, então os componentes de <code class="doc-k">components/ui</code> mudam de cor sem ninguém mexer neles. O que não existe hoje está marcado como novo. Saem do <code class="doc-k">globals.css</code> os tokens da Agenda e o bloco duplicado de <code class="doc-k">:root</code>/<code class="doc-k">.dark</code>. As <code class="doc-k">shadow-hard-*</code> e <code class="doc-k">ink</code> ficam: são do Books (neo-brutalista), fora da 2.0.</p>
     <div class="card overflow-hidden">
@@ -285,7 +307,7 @@
   </section>
 
   <!-- SUPERFÍCIES, FORMA, SOMBRA -->
-  <section class="doc-sec">
+  <section id="superficies" class="doc-sec scroll-mt-6">
     <h2 class="t-section">Superfícies, forma e sombra</h2>
     <p class="doc-lead">Três níveis com papel fixo. O gradiente da marca cobre o card inteiro, como aprovado no admin, e só existe no nível destaque: no máximo um ou dois por tela.</p>
     <div class="grid gap-4 md:grid-cols-3">
@@ -306,8 +328,34 @@
     </div>
   </section>
 
+
+  <!-- LAYOUT E GRID -->
+  <section id="layout" class="doc-sec scroll-mt-6">
+    <h2 class="t-section">Layout e grid</h2>
+    <p class="doc-lead">O Falaped é usado no computador do consultório. Desktop primeiro; tablet na horizontal funciona; no celular as telas empilham, mas não são otimizadas até termos dados de uso.</p>
+    <div class="card overflow-hidden"><table class="w-full text-left">
+      <thead class="bg-muted text-label text-muted-foreground"><tr><th class="px-4 py-2.5 font-medium">Peça</th><th class="px-4 font-medium">Regra</th></tr></thead>
+      <tbody class="divide-y divide-border">
+        <tr><td class="px-4 py-2.5 font-medium">Menu lateral</td><td class="px-4 text-muted-foreground"><span class="num">248 px</span>; recolhido <span class="num">64 px</span> (na consulta e abaixo de <span class="num">1280 px</span>)</td></tr>
+        <tr><td class="px-4 py-2.5 font-medium">Conteúdo</td><td class="px-4 text-muted-foreground">largura máxima <span class="num">1180 px</span>, centralizado; margem <span class="num">32 px</span> (<span class="num">24 px</span> abaixo de <span class="num">1280</span>)</td></tr>
+        <tr><td class="px-4 py-2.5 font-medium">Grid</td><td class="px-4 text-muted-foreground">12 colunas, espaço <span class="num">24 px</span> entre colunas e entre blocos</td></tr>
+        <tr><td class="px-4 py-2.5 font-medium">Divisões</td><td class="px-4 text-muted-foreground">12 (largura toda) · 7 + 5 (principal e lateral, <code class="doc-k">1.4fr 1fr</code>) · 6 + 6 (par de cartões) · 3 ou 4 iguais (números)</td></tr>
+        <tr><td class="px-4 py-2.5 font-medium">Cartões lado a lado</td><td class="px-4 text-muted-foreground">mesma altura (<code class="doc-k">items-stretch</code>), link de rodapé preso embaixo (<code class="doc-k">mt-auto</code>)</td></tr>
+        <tr><td class="px-4 py-2.5 font-medium">Painel lateral (Sheet)</td><td class="px-4 text-muted-foreground"><span class="num">560 px</span> para formulário · <span class="num">720 px</span> quando mostra prévia ou relatório</td></tr>
+        <tr><td class="px-4 py-2.5 font-medium">Diálogo</td><td class="px-4 text-muted-foreground"><span class="num">480 px</span> para confirmação · <span class="num">600 px</span> para busca e cadastro rápido</td></tr>
+        <tr><td class="px-4 py-2.5 font-medium">Pontos de quebra</td><td class="px-4 text-muted-foreground"><span class="num">≥1280</span> completo · <span class="num">1024–1279</span> menu recolhido, divisões mantidas · <span class="num">&lt;1024</span> uma coluna, menu vira gaveta</td></tr>
+      </tbody></table></div>
+  </section>
+
+  <!-- MODELOS DE PÁGINA -->
+  <section id="modelos" class="doc-sec scroll-mt-6">
+    <h2 class="t-section">Modelos de página</h2>
+    <p class="doc-lead">Toda tela nova parte de um destes seis modelos. Se nenhum servir, discuta antes de inventar um sétimo.</p>
+    <div class="grid gap-3 md:grid-cols-2"><div class="card p-5"><div class="flex items-baseline gap-2"><span class="t-card">Entrada</span><span class="text-caption text-subtle-foreground">Cadastro, login, recuperar senha</span></div><p class="mt-1 text-muted-foreground">Sem menu. Logo empilhada acima de um cartão central de 440 px, uma ação principal, links secundários embaixo.</p></div><div class="card p-5"><div class="flex items-baseline gap-2"><span class="t-card">Painel</span><span class="text-caption text-subtle-foreground">Início, Início do 1º acesso</span></div><p class="mt-1 text-muted-foreground">Saudação → cartão de destaque (consulta aberta ou primeiro passo) → par de cartões iguais → números.</p></div><div class="card p-5"><div class="flex items-baseline gap-2"><span class="t-card">Lista</span><span class="text-caption text-subtle-foreground">Consultas, Pacientes, Documentos</span></div><p class="mt-1 text-muted-foreground">Título com subtítulo e ação secundária → abas e busca na mesma linha → lista em cartão; linha clicável e ação à direita.</p></div><div class="card p-5"><div class="flex items-baseline gap-2"><span class="t-card">Registro</span><span class="text-caption text-subtle-foreground">Ficha, Consulta encerrada</span></div><p class="mt-1 text-muted-foreground">Migalha → cabeçalho de identidade com símbolos e ações → faixas: resumo em números, o que fazer agora, histórico.</p></div><div class="card p-5"><div class="flex items-baseline gap-2"><span class="t-card">Espaço de trabalho</span><span class="text-caption text-subtle-foreground">Consulta</span></div><p class="mt-1 text-muted-foreground">Menu recolhido, cabeçalho fixo com paciente, tempo e Encerrar; barra de ferramentas; conversa ao centro; coluna &quot;Nesta consulta&quot;. Documentos em painel lateral.</p></div><div class="card p-5"><div class="flex items-baseline gap-2"><span class="t-card">Configuração</span><span class="text-caption text-subtle-foreground">Perfil, Modelos</span></div><p class="mt-1 text-muted-foreground">Cartão de identidade → índice fixo à esquerda + seções em cartões → barra de salvar que aparece só com mudança.</p></div></div>
+  </section>
+
   <!-- BOTÕES -->
-  <section class="doc-sec">
+  <section id="botoes" class="doc-sec scroll-mt-6">
     <h2 class="t-section">Botões</h2>
     <p class="doc-lead">Passe o mouse e clique: todos reagem. Altura padrão 36 px; 40 px para a ação principal do cabeçalho; 32 px dentro de linhas e cards.</p>
     <div class="flex flex-wrap items-center gap-3">
@@ -326,8 +374,8 @@
   </section>
 
   <!-- SELOS -->
-  <section class="doc-sec">
-    <h2 class="t-section">Selos com papel fixo</h2>
+  <section id="selos" class="doc-sec scroll-mt-6">
+    <h2 class="t-section">Selos e símbolos</h2>
     <p class="doc-lead">Cada cor de selo tem um significado e sempre vem com texto (e ícone quando é alerta). O médico aprende uma vez.</p>
     <div class="grid gap-3 md:grid-cols-3">
       <div class="card flex items-center gap-3 p-4"><span class="badge badge-clinical">⚠ Alergia: amoxicilina</span><span class="text-caption text-subtle-foreground">alerta clínico</span></div>
@@ -350,7 +398,7 @@
   </section>
 
   <!-- FORMULÁRIO -->
-  <section class="doc-sec">
+  <section id="campos" class="doc-sec scroll-mt-6">
     <h2 class="t-section">Campos</h2>
     <p class="doc-lead">Rótulo acima, ajuda abaixo, erro abaixo com o que fazer. O contorno agora se vê (3,1:1) e o foco é um anel azul visível.</p>
     <div class="grid max-w-3xl gap-5 md:grid-cols-2">
@@ -375,7 +423,7 @@
   </section>
 
   <!-- PADRÕES DO PRODUTO -->
-  <section class="doc-sec">
+  <section id="padroes" class="doc-sec scroll-mt-6">
     <h2 class="t-section">Padrões do produto</h2>
     <p class="doc-lead">Os blocos que mais aparecem no wireframe, já com os tokens.</p>
 
@@ -439,7 +487,7 @@
   </section>
 
   <!-- SOBREPOSIÇÕES -->
-  <section class="doc-sec">
+  <section id="sobreposicoes" class="doc-sec scroll-mt-6">
     <h2 class="t-section">Sobreposições: qual usar quando</h2>
     <p class="doc-lead">Hoje o app tem 23 telas com Dialog, 31 com AlertDialog, 11 com Sheet (o "drawer" lateral), 6 com Popover e 267 avisos (toast). Cada um ganha um papel e todos usam o mesmo fundo escurecido, a mesma família de sombra e o mesmo cabeçalho.</p>
     <div class="card overflow-hidden">
@@ -678,7 +726,7 @@
   </section>
 
   <!-- MOVIMENTO E DENSIDADE -->
-  <section class="doc-sec">
+  <section id="movimento" class="doc-sec scroll-mt-6">
     <h2 class="t-section">Movimento e densidade</h2>
     <div class="grid gap-4 md:grid-cols-2">
       <div class="card p-5"><div class="t-card">Movimento: discreto (2 de 10)</div><ul class="mt-2 list-disc space-y-1 pl-5 text-muted-foreground"><li>Só feedback: hover 150 ms, clique desce 1 px, painel entra em 200 ms.</li><li>Curva <code class="doc-k">cubic-bezier(0.16, 1, 0.3, 1)</code>, nunca linear.</li><li>Nada em loop, nada de animação de entrada em listas. Respeitar <code class="doc-k">prefers-reduced-motion</code>.</li></ul></div>
@@ -686,7 +734,15 @@
     </div>
   </section>
 
-  <p class="mt-12 text-caption text-subtle-foreground">Proposta para validação. Nada aqui foi aplicado ao app. A próxima etapa aplica esta ficha às telas do wireframe.</p>
+
+  <!-- CHECKLIST -->
+  <section id="checklist" class="doc-sec scroll-mt-6">
+    <h2 class="t-section">Checklist de feature nova</h2>
+    <p class="doc-lead">Antes de abrir o PR de qualquer tela, todas as respostas precisam ser sim. Copie a lista na descrição do PR.</p>
+    <ol class="card divide-y divide-border"><li class="flex items-start gap-3 px-5 py-3"><span class="mt-0.5 grid size-5 shrink-0 place-items-center rounded-[4px] border border-subtle-foreground"></span><span>Qual modelo de página a tela usa?</span></li><li class="flex items-start gap-3 px-5 py-3"><span class="mt-0.5 grid size-5 shrink-0 place-items-center rounded-[4px] border border-subtle-foreground"></span><span>Qual é a única ação principal (azul preenchido)?</span></li><li class="flex items-start gap-3 px-5 py-3"><span class="mt-0.5 grid size-5 shrink-0 place-items-center rounded-[4px] border border-subtle-foreground"></span><span>Só tokens e componentes deste guia: nenhuma cor, raio, sombra ou tamanho solto?</span></li><li class="flex items-start gap-3 px-5 py-3"><span class="mt-0.5 grid size-5 shrink-0 place-items-center rounded-[4px] border border-subtle-foreground"></span><span>O texto segue o guia de escrita (termos do glossário, sem jargão de sistema)?</span></li><li class="flex items-start gap-3 px-5 py-3"><span class="mt-0.5 grid size-5 shrink-0 place-items-center rounded-[4px] border border-subtle-foreground"></span><span>Tem estado vazio, carregando e erro, todos com o que fazer?</span></li><li class="flex items-start gap-3 px-5 py-3"><span class="mt-0.5 grid size-5 shrink-0 place-items-center rounded-[4px] border border-subtle-foreground"></span><span>Funciona no claro e no escuro, e com teclado (foco visível, Esc fecha)?</span></li><li class="flex items-start gap-3 px-5 py-3"><span class="mt-0.5 grid size-5 shrink-0 place-items-center rounded-[4px] border border-subtle-foreground"></span><span>Alerta clínico visível sem hover?</span></li><li class="flex items-start gap-3 px-5 py-3"><span class="mt-0.5 grid size-5 shrink-0 place-items-center rounded-[4px] border border-subtle-foreground"></span><span>Todo dado mostrado existe no banco? Nenhuma mudança no Supabase só por causa de texto?</span></li><li class="flex items-start gap-3 px-5 py-3"><span class="mt-0.5 grid size-5 shrink-0 place-items-center rounded-[4px] border border-subtle-foreground"></span><span>Ação, auth e gate de assinatura seguem as camadas do projeto (app → actions → modules)?</span></li><li class="flex items-start gap-3 px-5 py-3"><span class="mt-0.5 grid size-5 shrink-0 place-items-center rounded-[4px] border border-subtle-foreground"></span><span>Comparada com o protótipo e com este guia em 1440 px e em 1024 px?</span></li></ol>
+  </section>
+
+  <p class="mt-12 text-caption text-subtle-foreground">Versão 1, aprovada pelo gestor ao fim da Etapa 4 (08/10/2026). Histórico das decisões em docs/ux/refactoring-ui.md.</p>
 </div>
 <script src="https://unpkg.com/lucide@0.511.0/dist/umd/lucide.min.js"></script>
 <script>
