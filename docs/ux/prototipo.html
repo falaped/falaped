@@ -214,8 +214,7 @@ const SIG = (ic, kind, title, detail, o = {}) => `<span class="group/sig relativ
 const S_ALLERGY = (o) => SIG("triangle-alert", "danger", "Alergia: amoxicilina", "Exantema em 06/2025. Checada em toda receita.", o);
 const S_VACCINE = (o) => SIG("syringe", "warning", "Vacina atrasada", "Tríplice viral, 2ª dose, desde 10/09.", o);
 const S_INCOMPLETE = (o) => SIG("file-warning", "warning", "Ficha incompleta", "Falta o sexo e o responsável. A curva de crescimento depende do sexo.", o);
-const S_OVERDUE = (o) => SIG("calendar-x", "warning", "Retorno vencido", "Retorno de controle da asma era para 15/09.", o);
-const S_RETURN = (o) => SIG("calendar-clock", "neutral", "Retorno em 2 dias", "Reavaliar bronquiolite em 08/10.", o);
+const S_MEASURE = (o) => SIG("ruler", "warning", "Sem medida recente", "Última medida de peso e altura há 4 meses.", o);
 
 /* ---------- menu lateral ---------- */
 const NAV = [["inicio", "Início", "house", "a12"], ["consultas", "Consultas", "stethoscope", "b1"], ["pacientes", "Pacientes", "users", "b4"], ["documentos", "Documentos", "file-text", null], ["assistente", "Pergunte ao assistente", "message-circle-question", null], ["financeiro", "Financeiro", "wallet", null]];
@@ -274,7 +273,7 @@ const inicio = () => APP({ on: "inicio", active: 1 }, PAGE(`
   <div class="grid items-stretch gap-5 lg:grid-cols-2">
     ${SECTION("Precisam de atenção", 4, [
       [S_VACCINE(), "Gabriel Alves · 6a 2m", "Tríplice viral, 2ª dose atrasada", "Abrir ficha", "b5"],
-      [S_RETURN(), "Lara Pereira · 8m", "Retorno em 2 dias", "Ver ficha", "b5"],
+      [S_MEASURE(), "Theo Costa · 1a 6m", "Sem peso e altura há 4 meses", "Abrir ficha", "b5"],
       [SIG("wallet", "warning", "Sem valor lançado", "3 consultas desta semana estão sem cobrança."), "3 consultas", "Sem valor lançado", "Lançar valores", null],
     ].map(([sig, n, w, b, go]) => `<div class="flex min-h-16 items-center gap-3 px-5 py-3">${sig}<div class="min-w-0 flex-1"><div class="font-semibold">${n}</div><div class="text-caption text-muted-foreground">${w}</div></div><button ${go ? `data-go="${go}"` : ""} class="btn btn-secondary btn-sm">${b}</button></div>`).join(""), "Ver as 4 pendências", null)}
     ${SECTION("Consultas recentes", 0, [["MS", "Miguel Santos", "4a 1m", "Puericultura · sem alterações", "Hoje", ["Atestado"]], ["LP", "Lara Pereira", "8m", "Bronquiolite leve · retorno em 48 h", "Ontem", ["Receita"]], ["BS", "Bia Souza", "3a", "IVAS · lavagem nasal", "12/09", ["Receita"]]].map(([i, n, a, w, t, d]) => `
@@ -298,7 +297,7 @@ add({ id: "d1", t: "Menu", obj: "Os três estados do menu: sem consulta aberta (
 
 add({ id: "a12", t: "Início", obj: "O dia do médico: a consulta em andamento, quem já foi atendido e o que pede atenção, com a ação pronta em cada linha.", html: inicio });
 
-const dialog = (w, body) => `<div class="relative h-full"><div class="pointer-events-none h-full opacity-100">${inicio()}</div>
+const dialog = (w, body, bg = inicio) => `<div class="relative h-full"><div class="pointer-events-none h-full opacity-100">${bg()}</div>
   <div class="absolute inset-0" style="background:oklch(0.21 0.012 255.41 / 0.3)"></div>
   <div class="absolute inset-x-0 top-[12vh] mx-auto ${w} overflow-hidden rounded-2xl border border-border bg-popover shadow-lg">${body}</div></div>`;
 
@@ -335,11 +334,16 @@ add({ id: "a3", t: "Buscar paciente", obj: "Achar a criança por nome, responsá
     <div class="flex items-center gap-3 border-b border-border px-5 py-3">${I("search", "text-subtle-foreground")}<span class="flex-1 text-read">Nome, responsável ou telefone<span class="ml-px inline-block h-5 w-px translate-y-1 animate-pulse bg-foreground"></span></span><span class="kbd">Esc</span></div>
     <div class="p-2">
       <div class="px-3 pb-1 pt-2 text-caption font-medium text-subtle-foreground">Recentes</div>
-      ${[["MS", "Miguel Santos", "4a 1m · Rafael Santos", "Última consulta hoje", `<span class="kbd">↵ Iniciar</span>`, 1], ["LP", "Lara Pereira", "8m · Juliana Pereira", "Retorno marcado para hoje", "", 0], ["HD", "Helena Duarte", "2a 3m · Carla Duarte", `<span class="inline-flex items-center gap-1 text-success-text"><span class="size-1.5 rounded-full bg-success"></span>Consulta em andamento há 12 min</span>`, `<button class="btn btn-secondary btn-sm">Voltar à consulta</button>`, 0]].map(([i, n, s, w, r, on]) => `
+      ${[["MS", "Miguel Santos", "4a 1m · Rafael Santos", "Última consulta hoje", `<span data-go="a3c" class="kbd cursor-pointer">↵ Iniciar</span>`, 1], ["LP", "Lara Pereira", "8m · Juliana Pereira", "Última consulta ontem", "", 0], ["HD", "Helena Duarte", "2a 3m · Carla Duarte", `<span class="inline-flex items-center gap-1 text-success-text"><span class="size-1.5 rounded-full bg-success"></span>Consulta em andamento há 12 min</span>`, `<button class="btn btn-secondary btn-sm">Voltar à consulta</button>`, 0]].map(([i, n, s, w, r, on]) => `
       <div class="flex items-center gap-3 rounded-lg px-3 py-2.5 ${on ? "bg-accent" : "hover:bg-accent"}">${AV(i)}<div class="min-w-0 flex-1"><div><span class="font-semibold">${n}</span> <span class="text-subtle-foreground">· ${s}</span></div><div class="text-caption text-muted-foreground">${w}</div></div>${r}</div>`).join("")}
     </div>
     <div class="border-t border-border p-3"><button data-go="a4" class="btn btn-secondary w-full">${I("user-plus")}Cadastrar paciente</button></div>
     <div class="flex gap-4 border-t border-border bg-muted px-5 py-2 text-caption text-subtle-foreground"><span><span class="kbd">↑↓</span> navegar</span><span><span class="kbd">↵</span> iniciar consulta</span><span><span class="kbd">Esc</span> fechar</span></div>`) });
+
+add({ id: "a3c", t: "Já tem consulta aberta", obj: "O app só permite uma consulta aberta por vez. Ao atender outra criança com a Helena em consulta, o médico escolhe o que fazer; nada fecha sem ele ver. Vale para Iniciar consulta, Atender e o ↵ da busca.",
+  html: () => dialog("w-[480px]", `<div class="p-6">
+    <div class="flex items-start gap-3"><span class="grid size-10 shrink-0 place-items-center rounded-full bg-warning-soft text-warning-text">${I("stethoscope")}</span><div><h2 class="t-card">A consulta da Helena ainda está aberta</h2><p class="mt-1 text-muted-foreground">Começou há 12 min. Para atender o Miguel, encerre a da Helena antes. O relatório e a cobrança dela ficam para revisar no encerramento.</p></div></div>
+    <div class="mt-6 flex flex-col gap-2"><button data-go="a10" class="btn btn-primary w-full">Encerrar a da Helena e atender o Miguel</button><button data-go="a5" class="btn btn-secondary w-full">Voltar à consulta da Helena</button><button data-go="a3" class="btn btn-ghost w-full">Cancelar</button></div></div>`) });
 
 add({ id: "a4", t: "Cadastro rápido", obj: "Cadastrar só o essencial e já abrir a consulta. O resto da ficha é completado depois.",
   html: () => dialog("w-[600px]", `
@@ -357,15 +361,20 @@ add({ id: "a4", t: "Cadastro rápido", obj: "Cadastrar só o essencial e já abr
     <div class="flex items-center gap-2 border-t border-border px-5 py-3"><button data-go="a3" class="btn btn-ghost">${I("arrow-left")}Voltar à busca</button><button class="btn btn-primary ml-auto">Cadastrar e iniciar consulta</button></div>`) });
 
 /* ---------- consulta (rodada 2) ---------- */
-const TOOLS = [["Receita", "pill", "a6"], ["Atestado", "file-check", "a7"], ["Pedido de exame", "flask-conical", null], ["Encaminhamento", "send", null], ["Escala", "list-checks", "a8"], ["Ler exame", "scan-text", "a9"], ["Medidas", "ruler", "a8"], ["Anexo", "paperclip", "a9"]];
+const TOOLS = [["Receita", "pill", "a6"], ["Atestado", "file-check", "a7"], ["Pedido de exame", "flask-conical", null], ["Encaminhamento", "send", null], ["Escala", "list-checks", "a8"], ["Ler exame", "scan-text", "a9"], ["Medidas", "ruler", null], ["Anexo", "paperclip", "a9"]];
 const RAIL_SEC = (t, body) => `<div><div class="mb-1.5 text-caption font-medium text-subtle-foreground">${t}</div>${body}</div>`;
+/* na consulta a alergia é um botão com nome: vê-se que existe sem hover; o clique abre o detalhe */
+const ALG_BTN = (open) => `<details class="relative" ${open ? "open" : ""}><summary class="flex h-7 cursor-pointer list-none items-center gap-1.5 rounded-full bg-destructive pl-2 pr-2.5 text-label font-semibold text-destructive-foreground shadow-xs [&::-webkit-details-marker]:hidden">${I("triangle-alert", "ic-sm")}Alergia<span class="grid size-4 place-items-center rounded-full bg-card/25 text-[11px] num">1</span>${I("chevron-down", "size-3.5")}</summary>
+  <div class="absolute left-0 top-full z-30 mt-2 w-72 rounded-xl border border-danger-border bg-popover p-3 shadow-md"><div class="text-caption font-medium text-danger-text">Alergias registradas</div>
+    <div class="mt-2 flex items-start gap-2"><span class="mt-1.5 size-1.5 rounded-full bg-destructive"></span><div><div class="font-semibold">Amoxicilina</div><div class="text-caption text-muted-foreground">Exantema em 06/2025</div></div></div>
+    <a data-go="b5" class="mt-3 block border-t border-border pt-2 text-caption text-primary-ink hover:underline">Editar na ficha</a></div></details>`;
 const consulta = (o = {}) => APP({ mini: 1, on: "consultas" }, `<div class="flex h-full flex-col">
   <header class="flex items-center gap-4 border-b border-border bg-card px-6 py-3">
     ${AV("HD", { s: "size-10", on: 1 })}
-    <div class="min-w-0"><div class="flex flex-wrap items-center gap-2"><span class="t-card">Helena Duarte</span><span class="badge badge-neutral">2a 3m</span>${S_ALLERGY()}${S_VACCINE()}</div>
+    <div class="min-w-0"><div class="flex flex-wrap items-center gap-2"><span class="t-card">Helena Duarte</span><span class="badge badge-neutral">2a 3m</span>${ALG_BTN(o.alg)}${S_VACCINE()}</div>
       <div class="text-caption text-muted-foreground">Carla Duarte (mãe) · <span class="num">(31) 98888-1111</span> · <a data-go="b5" class="text-primary-ink hover:underline">Ver ficha</a></div></div>
     <div class="ml-auto flex items-center gap-2">
-      <span class="inline-flex h-9 items-center gap-2 rounded-lg border border-border px-3 text-muted-foreground"><span class="size-2 animate-pulse rounded-full bg-success"></span><span class="num font-medium text-foreground">12:47</span><button class="text-subtle-foreground hover:text-foreground" aria-label="Pausar">${I("pause", "ic-sm")}</button></span>
+      <span class="inline-flex h-9 items-center gap-2 rounded-lg border border-border px-3 text-muted-foreground"><span class="size-2 animate-pulse rounded-full bg-success"></span><span class="num font-medium text-foreground">12:47</span><button class="text-subtle-foreground hover:text-foreground" aria-label="Pausar cronômetro" title="Pausar cronômetro">${I("pause", "ic-sm")}</button></span>
       <button data-go="a10" class="btn btn-primary">${I("check")}Encerrar consulta</button>
     </div>
   </header>
@@ -439,25 +448,25 @@ add({ id: "a7", t: "Atestado", obj: "Atestado em poucos segundos, com a data e o
     `<button class="btn btn-ghost">${I("eye", "ic-sm")}Ver em tela cheia</button><button data-go="a5d" class="btn btn-primary ml-auto">${I("printer", "ic-sm")}Emitir e imprimir</button>`) });
 
 const MCHAT = [["Se você aponta para algo do outro lado da sala, Helena olha para o que você aponta?", 0], ["Você já se perguntou se Helena pode ser surda?", 1], ["Helena brinca de faz de conta?", 0]];
-add({ id: "a8", t: "Escala", obj: "Aplicar uma escala enquanto conversa com a família, com o escore ao vivo. Medidas usam o mesmo painel.",
+add({ id: "a8", t: "Escala", obj: "Aplicar uma escala enquanto conversa com a família. A resposta marcada fica cheia, com check; o escore é parcial até o último item, e só então vem a interpretação e o registro.",
   html: () => SHEET("w-[560px]", "Aplicar escala", SUB, `
     <label class="flex flex-col gap-1.5"><span class="field-label">Escala</span><button class="input flex items-center justify-between text-left">M-CHAT-R/F${I("chevron-down", "ic-sm text-subtle-foreground")}</button><span class="field-help">Só as escalas indicadas para 2a 3m</span></label>
-    <div class="space-y-2">${MCHAT.map(([q, a], i) => `<div class="card p-4"><div class="text-caption text-subtle-foreground num">Item ${i + 1} de 20</div><p class="mt-0.5">${q}</p><div class="mt-2 flex gap-2">${["Sim", "Não"].map((t, j) => `<button class="btn btn-sm ${j === a ? "border border-primary-soft-border bg-primary-soft font-semibold text-primary-ink-strong" : "btn-secondary"}">${t}</button>`).join("")}</div></div>`).join("")}
+    <div class="space-y-2">${MCHAT.map(([q, a], i) => `<div class="card p-4"><div class="text-caption text-subtle-foreground num">Item ${i + 1} de 20</div><p class="mt-0.5">${q}</p><div class="mt-2 flex gap-2">${["Sim", "Não"].map((t, j) => `<button aria-pressed="${j === a}" class="btn btn-sm ${j === a ? "btn-primary" : "btn-secondary"}">${j === a ? I("check", "ic-sm") : ""}${t}</button>`).join("")}</div></div>`).join("")}
       <div class="text-center text-caption text-subtle-foreground">+ 17 itens</div></div>
-    <div class="flex items-center gap-3 rounded-xl border border-success-border bg-success-soft p-4"><div class="font-display text-section font-semibold text-success-text num">Escore 2</div><div class="text-success-text"><div class="font-semibold">Baixo risco</div><div class="text-caption">0 a 2: sem indicação de seguimento agora</div></div></div>`,
-    `<span class="text-caption text-subtle-foreground">Medidas (peso, altura, PC, PA) usam este painel</span><button data-go="a5" class="btn btn-primary ml-auto">Registrar na consulta</button>`) });
+    <div class="rounded-xl border border-border bg-muted p-4"><div class="flex items-baseline justify-between"><span class="font-semibold">Escore parcial: <span class="num">2</span></span><span class="text-label num text-muted-foreground">3 de 20 respondidos</span></div><div class="mt-2 h-1.5 rounded-full bg-border"><div class="h-1.5 w-[15%] rounded-full bg-primary"></div></div><div class="mt-2 text-caption text-muted-foreground">A interpretação aparece quando todos os itens forem respondidos.</div></div>`,
+    `<span class="text-caption text-subtle-foreground">Faltam 17 itens para registrar</span><button disabled class="btn btn-primary ml-auto cursor-not-allowed opacity-50">Registrar na consulta</button>`) });
 
 add({ id: "a9", t: "Ler exame", obj: "O assistente lê o exame e o médico confere antes de usar. Valores fora da faixa ficam em destaque.",
   html: () => SHEET("w-[640px]", "Ler exame", SUB, `
-    <div class="flex items-center gap-3 rounded-xl border border-dashed border-border-strong p-4"><span class="grid size-10 place-items-center rounded-lg bg-primary-soft text-primary-ink-strong">${I("image")}</span><div class="flex-1"><div class="font-medium">hemograma-helena.jpg</div><div class="text-caption text-success-text">Lido · 14 valores encontrados</div></div><button class="btn btn-ghost btn-sm">Trocar arquivo</button></div>
+    <div class="flex items-center gap-3 rounded-xl border border-dashed border-border-strong p-4"><span class="grid size-10 place-items-center rounded-lg bg-primary-soft text-primary-ink-strong">${I("image")}</span><div class="flex-1"><div class="font-medium">hemograma-helena.jpg</div><div class="text-caption text-success-text">Lido · 14 valores, 1 fora da faixa</div></div><button class="btn btn-ghost btn-sm">Trocar arquivo</button></div>
     ${FIELD("Nome do exame", "Hemograma · 02/10", "Sugerido pela leitura. Corrija se precisar.")}
     <div class="card overflow-hidden"><table class="w-full">
       <thead class="bg-muted text-label text-muted-foreground"><tr><th class="px-4 py-2 text-left font-medium">Exame</th><th class="px-4 text-right font-medium">Valor</th><th class="px-4 text-left font-medium">Referência</th><th class="px-4 text-left font-medium">Status</th></tr></thead>
       <tbody class="divide-y divide-border num">
-        <tr><td class="px-4 py-2.5">Hemoglobina</td><td class="px-4 text-right">11,8 g/dL</td><td class="px-4 text-muted-foreground">11,5 a 13,5</td><td class="px-4 text-subtle-foreground">Normal</td></tr>
         <tr class="bg-warning-soft"><td class="px-4 py-2.5 font-semibold">Leucócitos</td><td class="px-4 text-right font-semibold">16.200 /mm³</td><td class="px-4 text-muted-foreground">5.500 a 15.500</td><td class="px-4"><span class="badge badge-warning">${I("arrow-up", "ic-sm")}Alto</span></td></tr>
+        <tr><td class="px-4 py-2.5">Hemoglobina</td><td class="px-4 text-right">11,8 g/dL</td><td class="px-4 text-muted-foreground">11,5 a 13,5</td><td class="px-4 text-subtle-foreground">Normal</td></tr>
         <tr><td class="px-4 py-2.5">Plaquetas</td><td class="px-4 text-right">310 mil /mm³</td><td class="px-4 text-muted-foreground">150 a 450 mil</td><td class="px-4 text-subtle-foreground">Normal</td></tr>
-      </tbody></table></div>
+      </tbody></table><button class="flex w-full items-center justify-center gap-1 border-t border-border py-2.5 text-label font-medium text-primary-ink hover:bg-accent">Ver os 14 valores${I("chevron-down", "ic-sm")}</button></div>
     <p class="text-caption text-subtle-foreground">A leitura é feita pelo assistente. Confira os valores com o laudo antes de usar.</p>`,
     `<button data-go="a5" class="btn btn-secondary">${I("message-square-plus", "ic-sm")}Inserir na conversa</button><button data-go="a5" class="btn btn-primary ml-auto">${I("paperclip", "ic-sm")}Salvar nos anexos</button>`) });
 
@@ -488,16 +497,16 @@ add({ id: "a11", t: "Consulta encerrada", obj: "Confirmar o que foi salvo e emen
   html: () => APP({ on: "consultas" }, `<div class="grid h-full place-items-center p-8"><div class="card-highlight w-[620px] space-y-5 p-7">
     <div class="flex items-start gap-3"><span class="grid size-10 shrink-0 place-items-center rounded-full bg-success-soft text-success-text">${I("check")}</span><div><h1 class="t-section">Consulta de Helena encerrada</h1><p class="text-muted-foreground num">27 min · R$ 350,00 lançado · relatório pronto · lembrete em 10 dias</p></div></div>
     <div class="space-y-2">${[["pill", "Receita · azitromicina, dipirona"], ["file-text", "Relatório da consulta"]].map(([ic, t]) => `<div class="flex items-center gap-3 rounded-lg border border-border bg-card px-3 py-2.5">${I(ic, "ic-sm text-primary-ink")}<span class="flex-1">${t}</span><button class="btn btn-ghost btn-sm">${I("download", "ic-sm")}Baixar</button></div>`).join("")}</div>
-    <div class="flex flex-wrap gap-2"><button data-go="a3" class="btn btn-primary">Atender próximo paciente${I("arrow-right", "ic-sm")}</button><button class="btn btn-secondary">${I("message-circle", "ic-sm")}Enviar documentos à responsável</button></div>
+    <div class="flex flex-wrap gap-2"><button data-go="a3" class="btn btn-primary">Atender próximo paciente${I("arrow-right", "ic-sm")}</button><button class="btn btn-secondary">${I("message-circle", "ic-sm")}Enviar documentos ao responsável</button></div>
     <div class="flex items-center gap-1 text-muted-foreground"><button data-go="a5" class="btn btn-ghost btn-sm">${I("rotate-ccw", "ic-sm")}Reabrir consulta</button>·<button data-go="a12" class="btn btn-ghost btn-sm">Ir ao início</button></div>
   </div></div>`) });
 
 const PAT_ROWS = [
   ["HD", "Helena Duarte", "2a 3m", "Carla Duarte", "(31) 98888-1111", "Hoje", "Otite média aguda", [S_ALLERGY(), S_VACCINE()]],
   ["MS", "Miguel Santos", "4a 1m", "Rafael Santos", "(31) 97777-2222", "Hoje", "Puericultura", []],
-  ["LP", "Lara Pereira", "8m", "Juliana Pereira", "(31) 96666-3333", "Hoje", "Bronquiolite", [S_RETURN()]],
-  ["TC", "Theo Costa", "1a 6m", "Paula Costa", "(31) 95555-4444", "Ontem", "Diarreia aguda", []],
-  ["GA", "Gabriel Alves", "6a 2m", null, null, "Há 3 meses", "Asma · controle", [S_INCOMPLETE(), S_OVERDUE()]],
+  ["LP", "Lara Pereira", "8m", "Juliana Pereira", "(31) 96666-3333", "Hoje", "Bronquiolite", []],
+  ["TC", "Theo Costa", "1a 6m", "Paula Costa", "(31) 95555-4444", "Ontem", "Diarreia aguda", [S_MEASURE()]],
+  ["GA", "Gabriel Alves", "6a 2m", null, null, "Há 3 meses", "Asma · controle", [S_INCOMPLETE(), S_VACCINE()]],
   ["BS", "Bia Souza", "3a", "Marina Souza", "(31) 97777-5555", "12/09", "IVAS", []],
 ];
 add({ id: "b4", t: "Pacientes", obj: "Achar a criança rápido e ver quem precisa de atenção. Atender começa a consulta direto da linha.",
@@ -572,7 +581,7 @@ const row = (o) => `<div class="group relative grid min-h-14 grid-cols-[40px_1fr
   <button class="btn btn-ghost btn-sm px-2" aria-label="Ações" onclick="this.nextElementSibling.classList.toggle('hidden')">${I("ellipsis")}</button>
   <div class="absolute right-5 top-12 z-10 ${o.menu ? "" : "hidden"} w-56 rounded-xl border border-border bg-popover p-1 shadow-md">
     <a data-go="b2" class="flex h-8 items-center gap-2 rounded-md px-2.5 hover:bg-accent">${I("file-text", "ic-sm")}Ver relatório</a><a class="flex h-8 items-center gap-2 rounded-md px-2.5 hover:bg-accent">${I("download", "ic-sm")}Baixar documentos</a><a data-go="b5" class="flex h-8 items-center gap-2 rounded-md px-2.5 hover:bg-accent">${I("user", "ic-sm")}Abrir ficha</a><a class="flex h-8 items-center gap-2 rounded-md px-2.5 hover:bg-accent">${I("rotate-ccw", "ic-sm")}Reabrir consulta</a>
-    <div class="my-1 h-px bg-border"></div><a class="flex h-8 items-center gap-2 rounded-md px-2.5 text-danger-text hover:bg-danger-soft">${I("trash-2", "ic-sm")}Excluir consulta</a></div>
+    <div class="my-1 h-px bg-border"></div><a class="flex h-8 items-center gap-2 rounded-md px-2.5 text-danger-text hover:bg-danger-soft" data-go="b1x">${I("trash-2", "ic-sm")}Excluir consulta</a></div>
 </div>`;
 add({ id: "b1", t: "Consultas", obj: "Encontrar uma consulta pelo que aconteceu nela e ver o que ficou pendente. O menu ⋯ da primeira linha está aberto para mostrar as ações.",
   html: () => APP({ on: "consultas", active: 1 }, PAGE(`
@@ -652,6 +661,13 @@ add({ id: "d4", t: "Perfil", obj: "Onde o médico define como aparece para as fa
     </div>
     <div class="fixed bottom-6 left-1/2 z-20 flex w-[640px] -translate-x-1/2 items-center gap-3 rounded-2xl border border-border bg-popover px-4 py-3 shadow-lg" style="margin-left:124px"><span class="size-2 rounded-full bg-warning"></span><span class="flex-1">Você tem alterações não salvas</span><button class="btn btn-ghost btn-sm">Descartar</button><button class="btn btn-primary btn-sm">Salvar alterações</button></div>
   </div>`) });
+
+add({ id: "b1x", t: "Excluir consulta", obj: "Exclusão diz exatamente o que some antes de apagar. Sem campo de digitar o nome: uma confirmação clara basta.",
+  html: () => dialog("w-[460px]", `<div class="p-6">
+    <div class="flex items-start gap-3"><span class="grid size-10 shrink-0 place-items-center rounded-full bg-danger-soft text-danger-text">${I("trash-2")}</span><div><h2 class="t-card">Excluir a consulta de Miguel (06/10)?</h2><p class="mt-1 text-muted-foreground">Também serão apagados:</p>
+      <ul class="mt-2 space-y-1 text-label"><li class="flex items-center gap-2">${I("file-text", "ic-sm text-subtle-foreground")}Relatório da consulta</li><li class="flex items-center gap-2">${I("file-check", "ic-sm text-subtle-foreground")}1 atestado</li><li class="flex items-center gap-2">${I("wallet", "ic-sm text-subtle-foreground")}Cobrança de R$ 350,00</li></ul>
+      <p class="mt-3 text-caption text-muted-foreground">Não dá para desfazer. A ficha do Miguel continua.</p></div></div>
+    <div class="mt-6 flex justify-end gap-2"><button data-go="b1" class="btn btn-ghost">Cancelar</button><button data-go="b1" class="btn btn-danger border border-danger-border bg-danger-soft">Excluir consulta</button></div></div>`, () => S.find(x => x.id === "b1").html()) });
 
 /* ---------- navegação ---------- */
 let cur = 0;

@@ -146,7 +146,7 @@ Instaladas em `~/.agents/skills` em 06/10/2026.
 - [x] **Etapa 1:** auditoria visual do app atual (`redesign-existing-projects`): [`auditoria-visual.md`](./auditoria-visual.md), nota 6/10
 - [x] **Etapa 2:** ficha de design (`ficha-design.html`, aba "Ficha de design"): tokens de tipografia, espaçamento, cor, raio, sombra, estados e densidade
 - [x] **Etapa 3:** protótipo com a ficha (`prototipo.html`, aba "Protótipo"). Rodada 1 (8 telas sem a Consulta) aprovada em 07/10/2026; rodada 2 (Consulta e painéis) aprovada
-- [ ] **Etapa 4:** revisão de usabilidade (`ux-heuristics`) da versão com design
+- [x] **Etapa 4:** revisão de usabilidade (`ux-heuristics`) da versão com design: [`revisao-usabilidade.md`](./revisao-usabilidade.md), correções aplicadas em 08/10/2026
 - [ ] **Etapa 5:** implementação, por ordem de dor: Consulta → Pacientes → Ficha → Consultas → Menu → Início e cadastro
 - [ ] **Depois das etapas (pedido do gestor em 08/10/2026): Guia de design do Falaped.** A `ficha-design.html` vira a fonte única de verdade para toda feature nova. Ganha 4 seções:
   - **Princípios de uso:** as heurísticas viram regras curtas.
@@ -193,3 +193,12 @@ Ganhos rápidos que podem entrar antes da etapa 5, porque não dependem do desig
   - O protótipo agora tem 18 telas.
 - **08/10/2026:** Início do 1º acesso refeito como no fluxo ideal: uma ação principal (Iniciar consulta, que leva à busca com cadastro na hora), passos "Conta criada → Atenda o primeiro paciente → Emita uma receita ou atestado → Personalize o cabeçalho" e contadores zerados. Pacientes, consultas e documentos são dados que o app já tem; a agenda do dia não existe, por isso o Início normal mostra "Consultas recentes".
 - **08/10/2026:** Etapa 4: revisão de usabilidade em [`revisao-usabilidade.md`](./revisao-usabilidade.md). Nota 7/10. Há 5 itens de severidade 3: alergia escrita na Consulta; confirmação ao iniciar outra consulta com uma já aberta; escore só no fim da escala; resposta marcada visível; confirmação ao excluir consulta. Aguardando o OK do gestor para aplicar no protótipo.
+- **08/10/2026:** correções da Etapa 4 aplicadas no protótipo, que agora tem 21 telas:
+  - Na consulta, a alergia virou um botão "Alergia 1" que abre a lista. Foi escolha do gestor, em vez de deixá-la escrita por extenso.
+  - Tela nova "Já tem consulta aberta".
+  - Escala com resposta marcada (fundo cheio e check), escore parcial e registro só no fim.
+  - Confirmação de exclusão que lista o que será apagado.
+  - Ler exame mostra primeiro os valores alterados e tem "Ver os 14 valores".
+  - Cronômetro com rótulo e "ao responsável".
+
+  A agenda não está em uso, então os alertas de retorno saíram das telas e "Sem medida recente" entrou no lugar.
