@@ -42,7 +42,9 @@ type StandaloneEntryDialogProps = {
   /** Quando presente, o lançamento fica vinculado a este caso em vez de avulso. */
   caseId?: string
   triggerVariant?: "default" | "outline"
-  triggerSize?: "default" | "sm"
+  triggerSize?: "default" | "xs" | "sm"
+  /** Texto do botão que abre o diálogo. */
+  triggerLabel?: string
 }
 
 /**
@@ -58,6 +60,7 @@ export function StandaloneEntryDialog({
   caseId,
   triggerVariant = "default",
   triggerSize = "default",
+  triggerLabel = "Novo lançamento",
 }: StandaloneEntryDialogProps) {
   const router = useRouter()
   const [open, setOpen] = useState(false)
@@ -113,7 +116,7 @@ export function StandaloneEntryDialog({
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger asChild>
         <Button variant={triggerVariant} size={triggerSize}>
-          Novo lançamento
+          {triggerLabel}
         </Button>
       </DialogTrigger>
       <DialogContent

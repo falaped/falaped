@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation"
 import { tz } from "@date-fns/tz"
-import { addMonths, format, startOfMonth, subDays } from "date-fns"
+import { addMonths, format, startOfDay, startOfMonth, subDays } from "date-fns"
 import { ptBR } from "date-fns/locale/pt-BR"
 
 import { FirstAccessHome } from "@/components/dashboard/home/first-access-home"
@@ -8,7 +8,7 @@ import { HomeOverview } from "@/components/dashboard/home/home-overview"
 import { CLINIC_TIME_ZONE } from "@/lib/clinic-timezone"
 import { createClient } from "@/lib/supabase/server"
 import { getDashboardHomeData } from "@/modules/dashboard/get-dashboard-home-data"
-import { getHomeAttention } from "@/modules/dashboard/get-home-attention"
+import { getHomeDay } from "@/modules/dashboard/get-home-day"
 import { getEarningsSummary } from "@/modules/financial-entries/get-earnings-summary"
 import { applySignupMetadata } from "@/modules/profiles/apply-signup-metadata"
 import { getAuthenticatedUser } from "@/modules/supabase/get-authenticated-user"
@@ -54,9 +54,11 @@ export async function DashboardHomeContent() {
   const greeting = `${hour < 12 ? "Bom dia" : hour < 18 ? "Boa tarde" : "Boa noite"}${firstName ? `, ${firstName}` : ""}`
   const dateLabel = format(now, "EEEE, d 'de' MMMM", { ...context, locale: ptBR })
 
-  const [attention, earnings] = await Promise.all([
-    getHomeAttention(supabase, profile.id, {
+  const [day, earnings] = await Promise.all([
+    getHomeDay(supabase, profile.id, {
+      todayStartIso: startOfDay(now, context).toISOString(),
       monthStartIso: monthStart.toISOString(),
+      monthStartDate: format(monthStart, "yyyy-MM-dd", context),
       recentSinceIso: subDays(now, RECENT_DAYS, context).toISOString(),
       measuredSinceIso: format(subDays(now, STALE_MEASURE_DAYS, context), "yyyy-MM-dd", context),
     }),
@@ -74,10 +76,16 @@ export async function DashboardHomeContent() {
       greeting={greeting}
       dateLabel={dateLabel.charAt(0).toUpperCase() + dateLabel.slice(1)}
       monthLabel={format(now, "MMMM", { ...context, locale: ptBR })}
-      monthReceivedCents={earnings.month_cents}
+      todayLabel={format(now, "dd/MM/yyyy", context)}
       now={now}
       home={home}
-      attention={attention}
+      day={day}
+      earnings={{
+        todayCents: earnings.today_cents,
+        weekCents: earnings.week_cents,
+        monthCents: earnings.month_cents,
+        averageCents: earnings.average_cents,
+      }}
     />
   )
 }

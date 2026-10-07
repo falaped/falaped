@@ -1,32 +1,19 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
 
-import type { AuthenticatedUserProfile } from "@/modules/supabase/get-authenticated-user"
-
+import { caseSummaryHeadline } from "@/lib/case-summary-headline"
 import type { CaseOrigin } from "@/modules/cases/types"
-
-export interface DashboardHomeActiveCasePatient {
-  name: string | null
-  birthDate: string | null
-  allergies: string | null
-  responsible: string | null
-  contactPhone: string | null
-}
-
-export interface DashboardHomeActiveCaseReport {
-  isFinalized: boolean
-  updatedAt: string
-}
+import type { AuthenticatedUserProfile } from "@/modules/supabase/get-authenticated-user"
 
 export interface DashboardHomeActiveCase {
   id: string
   startedAt: string
   origin: CaseOrigin
-  pendingAction: string | null
-  contextSummary: string | null
-  patient: DashboardHomeActiveCasePatient | null
-  messageCount: number
-  lastMessageAt: string | null
-  report: DashboardHomeActiveCaseReport | null
+  patient: {
+    name: string | null
+    birthDate: string | null
+    allergies: string | null
+    responsible: string | null
+  } | null
 }
 
 export interface DashboardHomeRecentClosedCase {
@@ -34,87 +21,28 @@ export interface DashboardHomeRecentClosedCase {
   startedAt: string
   endedAt: string | null
   patientName: string | null
-  responsible: string | null
   birthDate: string | null
-  /** Documentos emitidos nesta consulta. */
-  prescriptionsCount: number
-  certificatesCount: number
+  /** Motivo curto, tirado do resumo da consulta. */
+  reason: string | null
 }
 
 export interface DashboardHomeData {
-  closedCasesCount: number
-  patientsCount: number
+  /** Zero = 1º acesso. */
   totalCasesCount: number
-  prescriptionsCount: number
-  medicalCertificatesCount: number
   activeCase: DashboardHomeActiveCase | null
   recentClosedCases: DashboardHomeRecentClosedCase[]
 }
 
-type ActiveCaseRow = {
-  id: string
-  started_at: string
-  origin: CaseOrigin
-  pending_action: string | null
-  dashboard_chat_context_summary: string | null
-  patient:
-    | {
-        name: string
-        birth_date: string | null
-        responsible: string | null
-        contact_phone: string | null
-        allergies: string | null
-      }
-    | {
-        name: string
-        birth_date: string | null
-        responsible: string | null
-        contact_phone: string | null
-        allergies: string | null
-      }[]
-    | null
-}
+/** Quantas consultas encerradas o Início lista. */
+const RECENT_CLOSED_LIMIT = 3
 
-type ClosedCaseRow = {
-  id: string
-  started_at: string
-  ended_at: string | null
-  patient:
-    | { name: string; responsible: string | null; birth_date: string | null }
-    | { name: string; responsible: string | null; birth_date: string | null }[]
-    | null
-}
-
-function normalizeActivePatient(
-  patient: ActiveCaseRow["patient"],
-): DashboardHomeActiveCasePatient | null {
-  if (patient == null) return null
-  const row = Array.isArray(patient) ? patient[0] : patient
-  if (!row) return null
-  return {
-    name: row.name ?? null,
-    birthDate: row.birth_date ?? null,
-    responsible: row.responsible ?? null,
-    contactPhone: row.contact_phone ?? null,
-    allergies: row.allergies?.trim() || null,
-  }
-}
-
-function normalizeClosedPatient(
-  patient: ClosedCaseRow["patient"],
-): { name: string | null; responsible: string | null; birthDate: string | null } {
-  if (patient == null) return { name: null, responsible: null, birthDate: null }
-  const row = Array.isArray(patient) ? patient[0] : patient
-  return {
-    name: row?.name ?? null,
-    responsible: row?.responsible ?? null,
-    birthDate: row?.birth_date ?? null,
-  }
-}
+type PatientEmbed<T> = T | T[] | null
+const one = <T,>(row: PatientEmbed<T>): T | null => (Array.isArray(row) ? (row[0] ?? null) : row)
 
 /**
- * Loads dashboard home summary: single active case (when any), document counts,
- * recent closed cases, and optional report/message stats for the active case.
+ * Início: total de consultas (decide o 1º acesso), a consulta em andamento e as
+ * últimas consultas encerradas.
+ * @throws Error("[DASHBOARD_HOME] ...") se alguma consulta falhar
  */
 export async function getDashboardHomeData(
   supabase: SupabaseClient,
@@ -122,54 +50,11 @@ export async function getDashboardHomeData(
 ): Promise<DashboardHomeData> {
   const profileId = profile.id
 
-  const [
-    closedResult,
-    patientsResult,
-    totalCasesResult,
-    prescriptionsResult,
-    certificatesResult,
-    activeRowResult,
-    closedRecentResult,
-  ] = await Promise.all([
+  const [totalResult, activeResult, recentResult] = await Promise.all([
+    supabase.from("cases").select("id", { count: "exact", head: true }).eq("profile_id", profileId),
     supabase
       .from("cases")
-      .select("id", { count: "exact", head: true })
-      .eq("profile_id", profileId)
-      .eq("status", "closed"),
-    supabase
-      .from("patients")
-      .select("id", { count: "exact", head: true })
-      .eq("profile_id", profileId),
-    supabase
-      .from("cases")
-      .select("id", { count: "exact", head: true })
-      .eq("profile_id", profileId),
-    supabase
-      .from("prescriptions")
-      .select("id", { count: "exact", head: true })
-      .eq("profile_id", profileId),
-    supabase
-      .from("medical_certificates")
-      .select("id", { count: "exact", head: true })
-      .eq("profile_id", profileId),
-    supabase
-      .from("cases")
-      .select(
-        `
-      id,
-      started_at,
-      origin,
-      pending_action,
-      dashboard_chat_context_summary,
-      patient:patients(
-        name,
-        birth_date,
-        responsible,
-        contact_phone,
-        allergies
-      )
-    `,
-      )
+      .select("id, started_at, origin, patient:patients(name, birth_date, allergies, responsible)")
       .eq("profile_id", profileId)
       .eq("status", "active")
       .order("started_at", { ascending: false })
@@ -177,149 +62,62 @@ export async function getDashboardHomeData(
       .maybeSingle(),
     supabase
       .from("cases")
-      .select(
-        `
-      id,
-      started_at,
-      ended_at,
-      patient:patients(
-        name,
-        responsible,
-        birth_date
-      )
-    `,
-      )
+      .select("id, started_at, ended_at, summary, patient:patients(name, birth_date)")
       .eq("profile_id", profileId)
       .eq("status", "closed")
       .order("ended_at", { ascending: false, nullsFirst: false })
-      .limit(5),
+      .limit(RECENT_CLOSED_LIMIT),
   ])
 
-  const checks = [
-    { label: "closed cases count", result: closedResult },
-    { label: "patients count", result: patientsResult },
-    { label: "total cases count", result: totalCasesResult },
-    { label: "prescriptions count", result: prescriptionsResult },
-    { label: "medical certificates count", result: certificatesResult },
-    { label: "active case row", result: activeRowResult },
-    { label: "recent closed cases", result: closedRecentResult },
-  ] as const
-
-  for (const { label, result } of checks) {
-    if (result.error) {
-      throw new Error(
-        `[DASHBOARD_HOME] Failed to load ${label}: ${result.error.message}`,
-      )
-    }
+  for (const [label, result] of [
+    ["total cases count", totalResult],
+    ["active case", activeResult],
+    ["recent closed cases", recentResult],
+  ] as const) {
+    if (result.error) throw new Error(`[DASHBOARD_HOME] Failed to load ${label}: ${result.error.message}`)
   }
 
-  const activeRow = activeRowResult.data as ActiveCaseRow | null
+  type ActivePatient = { name: string; birth_date: string | null; allergies: string | null; responsible: string | null }
+  const active = activeResult.data as
+    | { id: string; started_at: string; origin: CaseOrigin; patient: PatientEmbed<ActivePatient> }
+    | null
+  const activePatient = active ? one(active.patient) : null
 
-  let activeCase: DashboardHomeActiveCase | null = null
-  if (activeRow) {
-    const caseId = activeRow.id
-
-    const [msgCountResult, lastMsgResult, reportResult] = await Promise.all([
-      supabase
-        .from("case_messages")
-        .select("id", { count: "exact", head: true })
-        .eq("case_id", caseId),
-      supabase
-        .from("case_messages")
-        .select("created_at")
-        .eq("case_id", caseId)
-        .order("created_at", { ascending: false })
-        .limit(1)
-        .maybeSingle(),
-      supabase
-        .from("case_reports")
-        .select("is_finalized, updated_at")
-        .eq("case_id", caseId)
-        .eq("profile_id", profileId)
-        .order("updated_at", { ascending: false })
-        .limit(1)
-        .maybeSingle(),
-    ])
-
-    if (msgCountResult.error) {
-      throw new Error(
-        `[DASHBOARD_HOME] Failed to count case messages: ${msgCountResult.error.message}`,
-      )
-    }
-    if (lastMsgResult.error) {
-      throw new Error(
-        `[DASHBOARD_HOME] Failed to load last message: ${lastMsgResult.error.message}`,
-      )
-    }
-    if (reportResult.error) {
-      throw new Error(
-        `[DASHBOARD_HOME] Failed to load case report: ${reportResult.error.message}`,
-      )
-    }
-
-    const reportRow = reportResult.data
-    activeCase = {
-      id: activeRow.id,
-      startedAt: activeRow.started_at,
-      origin: activeRow.origin,
-      pendingAction: activeRow.pending_action,
-      contextSummary: activeRow.dashboard_chat_context_summary,
-      patient: normalizeActivePatient(activeRow.patient),
-      messageCount: msgCountResult.count ?? 0,
-      lastMessageAt: lastMsgResult.data?.created_at ?? null,
-      report: reportRow
-        ? {
-            isFinalized: reportRow.is_finalized,
-            updatedAt: reportRow.updated_at,
-          }
-        : null,
-    }
+  type RecentRow = {
+    id: string
+    started_at: string
+    ended_at: string | null
+    summary: string | null
+    patient: PatientEmbed<{ name: string; birth_date: string | null }>
   }
 
-  const closedRows = (closedRecentResult.data ?? []) as ClosedCaseRow[]
-  const closedIds = closedRows.map((row) => row.id)
-  const [recentPrescriptions, recentCertificates] = closedIds.length
-    ? await Promise.all([
-        supabase.from("prescriptions").select("case_id").eq("profile_id", profileId).in("case_id", closedIds),
-        supabase.from("medical_certificates").select("case_id").eq("profile_id", profileId).in("case_id", closedIds),
-      ])
-    : [{ data: [], error: null }, { data: [], error: null }]
-  if (recentPrescriptions.error || recentCertificates.error) {
-    throw new Error(
-      `[DASHBOARD_HOME] Failed to load documents of recent cases: ${(recentPrescriptions.error ?? recentCertificates.error)?.message}`,
-    )
-  }
-  const countByCase = (rows: { case_id: string | null }[] | null) => {
-    const counts = new Map<string, number>()
-    for (const row of rows ?? []) if (row.case_id) counts.set(row.case_id, (counts.get(row.case_id) ?? 0) + 1)
-    return counts
-  }
-  const prescriptionsByCase = countByCase(recentPrescriptions.data)
-  const certificatesByCase = countByCase(recentCertificates.data)
-
-  const recentClosedCases: DashboardHomeRecentClosedCase[] = closedRows.map(
-    (row) => {
-      const p = normalizeClosedPatient(row.patient)
+  return {
+    totalCasesCount: totalResult.count ?? 0,
+    activeCase: active
+      ? {
+          id: active.id,
+          startedAt: active.started_at,
+          origin: active.origin,
+          patient: activePatient
+            ? {
+                name: activePatient.name ?? null,
+                birthDate: activePatient.birth_date ?? null,
+                allergies: activePatient.allergies?.trim() || null,
+                responsible: activePatient.responsible ?? null,
+              }
+            : null,
+        }
+      : null,
+    recentClosedCases: ((recentResult.data ?? []) as RecentRow[]).map((row) => {
+      const patient = one(row.patient)
       return {
         id: row.id,
         startedAt: row.started_at,
         endedAt: row.ended_at,
-        patientName: p.name,
-        responsible: p.responsible,
-        birthDate: p.birthDate,
-        prescriptionsCount: prescriptionsByCase.get(row.id) ?? 0,
-        certificatesCount: certificatesByCase.get(row.id) ?? 0,
+        patientName: patient?.name ?? null,
+        birthDate: patient?.birth_date ?? null,
+        reason: caseSummaryHeadline(row.summary),
       }
-    },
-  )
-
-  return {
-    closedCasesCount: closedResult.count ?? 0,
-    patientsCount: patientsResult.count ?? 0,
-    totalCasesCount: totalCasesResult.count ?? 0,
-    prescriptionsCount: prescriptionsResult.count ?? 0,
-    medicalCertificatesCount: certificatesResult.count ?? 0,
-    activeCase,
-    recentClosedCases,
+    }),
   }
 }
