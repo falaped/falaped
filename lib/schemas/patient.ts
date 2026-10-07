@@ -4,6 +4,7 @@ import {
   isCompleteBirthDateInputString,
   parseBirthDateFormValueToIso,
 } from "@/lib/brazilian-date-form"
+import { computePediatricAge } from "@/lib/compute-pediatric-age"
 import { PATIENT_SEX_VALUES } from "@/modules/patients/patient-sex"
 
 const GENERIC_TERMS = [
@@ -70,6 +71,13 @@ const patientSexFormField = z.string().refine(
   "Selecione Masculino ou Feminino",
 )
 
+/** Cadastro e edição pela ficha completa: nascimento obrigatório e nunca no futuro. */
+const requiredBirthDate = optionalBrazilianBirthDate
+  .refine((v) => v !== undefined, "Informe a data de nascimento.")
+  .refine((v) => !v || computePediatricAge(v).status !== "future", "A data não pode ser no futuro.")
+
+const requiredSex = patientSexFormField.refine((v) => v.trim() !== "", "Escolha o sexo da criança.")
+
 export const BLOOD_TYPE_OPTIONS = [
   "A+",
   "A-",
@@ -83,7 +91,7 @@ export const BLOOD_TYPE_OPTIONS = [
 
 export const createPatientSchema = z.object({
   name: z.string().min(2, "Nome deve ter pelo menos 2 caracteres"),
-  birth_date: optionalBrazilianBirthDate,
+  birth_date: requiredBirthDate,
   responsible: z
     .string()
     .min(3, "Informe o nome completo do responsável")
@@ -96,9 +104,9 @@ export const createPatientSchema = z.object({
     .min(1, "Telefone de contato é obrigatório")
     .refine(
       (val) => val.replace(/\D/g, "").length >= 10,
-      "Informe um telefone válido com pelo menos 10 dígitos"
+      "Informe o telefone com DDD. Ex.: (31) 98888-1111"
     ),
-  sex: patientSexFormField,
+  sex: requiredSex,
   legal_guardian: optionalString,
   blood_type: z
     .string()
@@ -142,7 +150,7 @@ export const updatePatientSchema = z.object({
     .refine(
       (val) =>
         !val || val.trim() === "" || val.replace(/\D/g, "").length >= 10,
-      "Informe um telefone válido com pelo menos 10 dígitos"
+      "Informe o telefone com DDD. Ex.: (31) 98888-1111"
     ),
   sex: patientSexFormField,
   legal_guardian: optionalString,

@@ -1,7 +1,7 @@
 "use client"
 
 import Link from "next/link"
-import { useLayoutEffect, useState } from "react"
+import { useEffect, useState } from "react"
 import { usePathname, useRouter } from "next/navigation"
 import { differenceInCalendarDays, format, subMonths } from "date-fns"
 import {
@@ -9,7 +9,6 @@ import {
   BellIcon,
   CalculatorIcon,
   CircleDotIcon,
-  EllipsisIcon,
   FilePenLineIcon,
   FileWarningIcon,
   PencilIcon,
@@ -30,7 +29,6 @@ import { ExamReadingsSection } from "@/components/dashboard/exam-readings/exam-r
 import type { ExamReadingWithPages } from "@/components/dashboard/exam-readings/exam-reading-card"
 import { GrowthSection } from "@/components/dashboard/patients/growth/growth-section"
 import { PatientDetailTimeline } from "@/components/dashboard/patients/patient-detail-timeline"
-import { PatientForm } from "@/components/dashboard/patients/patient-form"
 import { PatientVaccineCalendarSection } from "@/components/dashboard/patients/patient-vaccine-calendar-section"
 import { ScalesSection } from "@/components/dashboard/scales/scales-section"
 import { SectionTab } from "@/components/dashboard/section-tab"
@@ -46,12 +44,6 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
 import { Tabs, TabsContent, TabsList } from "@/components/ui/tabs"
 import { computePediatricAge } from "@/lib/compute-pediatric-age"
 import { formatPediatricAgeShort } from "@/lib/format-pediatric-age"
@@ -77,6 +69,7 @@ type Tab = "summary" | "data" | "consults" | "growth" | "vaccines" | "exams" | "
 
 /** Quantos meses de consultas o Histórico do Resumo mostra. */
 const HISTORY_MONTHS = 3
+const TAB_BY_HASH: Record<string, Tab> = { "#dados": "data", "#crescimento": "growth" }
 
 /**
  * Ficha (protótipo b5): cabeçalho com os símbolos de atenção e as abas; o Resumo lê em
@@ -127,15 +120,13 @@ export function PatientDetailView({
   const router = useRouter()
   const pathname = usePathname()
   const [tab, setTab] = useState<Tab>("summary")
-  const [isEditing, setIsEditing] = useState(false)
   const [deleteOpen, setDeleteOpen] = useState(false)
   const [deleteLoading, setDeleteLoading] = useState(false)
 
-  // Next.js may reuse this client boundary when navigating between patients or
-  // when restoring from the client router cache; reset edit mode on route/patient change.
-  useLayoutEffect(() => {
-    setIsEditing(false)
-    setTab("summary")
+  // O Next pode reaproveitar este componente entre pacientes; volta ao Resumo ou à aba da âncora
+  // (#dados depois de salvar a edição, #crescimento no "Registrar medida").
+  useEffect(() => {
+    setTab(TAB_BY_HASH[window.location.hash] ?? "summary")
   }, [pathname, patient.id])
 
   const now = new Date()
@@ -148,6 +139,7 @@ export function PatientDetailView({
     now,
   )
   const drafts = rows.filter((row) => row.reportDraft)
+  const editHref = `/dashboard/patients/${patient.id}/editar`
   const age = patient.birth_date ? formatPediatricAgeShort(computePediatricAge(patient.birth_date)) : null
 
   async function handleConfirmDelete() {
@@ -169,18 +161,11 @@ export function PatientDetailView({
     <Tabs value={tab} onValueChange={(value) => setTab(value as Tab)} className="gap-0">
       <header className="-mx-8 -mt-8 border-b border-border bg-card">
         <div className="max-w-[1440px] px-8 pt-6">
-          <Button
-            variant="ghost"
-            size="sm"
-            className="-ml-2.5 mb-2 text-muted-foreground"
-            onClick={() => {
-              // ponytail: history.length não sabe se a entrada anterior é do app; aberta pelo link direto cai em Pacientes.
-              if (window.history.length > 1) router.back()
-              else router.push("/dashboard/patients")
-            }}
-          >
-            <ArrowLeftIcon data-icon="inline-start" />
-            Voltar
+          <Button asChild variant="ghost" size="sm" className="-ml-2.5 mb-2 text-muted-foreground">
+            <Link href="/dashboard/patients">
+              <ArrowLeftIcon data-icon="inline-start" />
+              Voltar para pacientes
+            </Link>
           </Button>
           <div className="flex items-start gap-4">
             <Avatar className="size-14">
@@ -208,9 +193,7 @@ export function PatientDetailView({
                 {[
                   age ? <span key="age" className="font-medium text-foreground">{age}</span> : "Sem data de nascimento",
                   patient.birth_date ? <span key="birth">nasc. <span className="num">{formatDate(patient.birth_date)}</span></span> : null,
-                  patient.responsible?.trim()
-                    ? `${patient.responsible}${patient.legal_guardian?.trim() ? ` (${patient.legal_guardian.trim()})` : ""}`
-                    : null,
+                  patient.responsible?.trim() || null,
                   patient.contact_phone ? <span key="phone" className="num">{formatBrazilianPhone(patient.contact_phone)}</span> : null,
                 ]
                   .filter(Boolean)
@@ -223,62 +206,41 @@ export function PatientDetailView({
               </div>
             </div>
             <div className="ml-auto flex shrink-0 items-center gap-2">
-              {isEditing ? (
-                <Button variant="ghost" onClick={() => setIsEditing(false)}>
-                  Cancelar edição
+              <Button asChild variant="outline">
+                <Link href={editHref}>
+                  <PencilIcon data-icon="inline-start" />
+                  Editar
+                </Link>
+              </Button>
+              {active ? (
+                <Button asChild>
+                  <Link href={active.origin === "dashboard" ? `/dashboard/cases/new/${active.id}` : `/dashboard/cases/${active.id}`}>
+                    <StethoscopeIcon data-icon="inline-start" />
+                    Voltar à consulta
+                  </Link>
                 </Button>
               ) : (
-                <>
-                  <Button variant="outline" onClick={() => setIsEditing(true)}>
-                    <PencilIcon data-icon="inline-start" />
-                    Editar
-                  </Button>
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="icon" aria-label="Mais ações da ficha">
-                        <EllipsisIcon aria-hidden />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end" className="w-52">
-                      <DropdownMenuItem variant="destructive" onSelect={() => setDeleteOpen(true)}>
-                        <Trash2Icon aria-hidden />
-                        Excluir paciente
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                  {active ? (
-                    <Button asChild>
-                      <Link href={active.origin === "dashboard" ? `/dashboard/cases/new/${active.id}` : `/dashboard/cases/${active.id}`}>
-                        <StethoscopeIcon data-icon="inline-start" />
-                        Voltar à consulta
-                      </Link>
-                    </Button>
-                  ) : (
-                    <Button
-                      onClick={() =>
-                        openStartConsult({
-                          id: patient.id,
-                          name: patient.name,
-                          birthDate: patient.birth_date,
-                          responsible: patient.responsible,
-                          contactPhone: patient.contact_phone,
-                          sex: patient.sex,
-                          lastConsultAt: rows[0]?.startedAt ?? null,
-                        })
-                      }
-                    >
-                      <StethoscopeIcon data-icon="inline-start" />
-                      Iniciar consulta
-                    </Button>
-                  )}
-                </>
+                <Button
+                  onClick={() =>
+                    openStartConsult({
+                      id: patient.id,
+                      name: patient.name,
+                      birthDate: patient.birth_date,
+                      responsible: patient.responsible,
+                      contactPhone: patient.contact_phone,
+                      sex: patient.sex,
+                      lastConsultAt: rows[0]?.startedAt ?? null,
+                    })
+                  }
+                >
+                  <StethoscopeIcon data-icon="inline-start" />
+                  Iniciar consulta
+                </Button>
               )}
             </div>
           </div>
-          {isEditing ? (
-            <div className="h-5" />
-          ) : (
-            <TabsList className="mt-5 h-auto w-auto gap-5 rounded-none bg-transparent p-0 lg:w-auto">
+          <div className="mt-5 flex items-end">
+            <TabsList className="h-auto w-auto gap-5 rounded-none bg-transparent p-0 lg:w-auto">
               <SectionTab value="summary">Resumo</SectionTab>
               <SectionTab value="data">Dados</SectionTab>
               <SectionTab value="consults">
@@ -292,96 +254,90 @@ export function PatientDetailView({
               <SectionTab value="documents">Documentos</SectionTab>
               <SectionTab value="attachments">Anexos</SectionTab>
             </TabsList>
-          )}
+            {/* Longe de Editar e Iniciar consulta: ação rara e sem volta, à vista mas sem peso. */}
+            <Button
+              variant="ghost"
+              size="sm"
+              className="mb-2 ml-auto text-muted-foreground hover:bg-danger-soft hover:text-danger-text"
+              onClick={() => setDeleteOpen(true)}
+            >
+              <Trash2Icon data-icon="inline-start" />
+              Excluir paciente
+            </Button>
+          </div>
         </div>
       </header>
 
       <div className="flex w-full max-w-[1440px] flex-col gap-6 pt-8">
-        {isEditing ? (
-          <section className="rounded-xl border border-border bg-card p-6">
-            <h2 className="font-display text-section font-semibold">Editar dados</h2>
-            <p className="mt-0.5 mb-5 text-muted-foreground">Atualize as informações da criança e salve.</p>
-            <PatientForm
-              mode="edit"
-              patient={patient}
-              photoUrl={photoUrl}
-              onUpdateSuccess={() => {
-                router.refresh()
-                setIsEditing(false)
-              }}
-            />
-          </section>
-        ) : (
-          <>
-            <TabsContent value="summary" className="mt-0 flex flex-col gap-6">
-              <ClinicalFacts patient={patient} measurements={measurements} now={now} onShowData={() => setTab("data")} />
+        <TabsContent value="summary" className="mt-0 flex flex-col gap-6">
+          <ClinicalFacts patient={patient} measurements={measurements} now={now} onShowData={() => setTab("data")} />
 
-              <div className="grid items-start gap-5 lg:grid-cols-[1.4fr_1fr]">
-                <section className="flex flex-col rounded-xl border border-border bg-card">
-                  <div className="flex items-baseline gap-2 px-5 pt-5 pb-3">
-                    <h2 className="font-display text-section font-semibold">Histórico</h2>
-                    <span className="text-caption text-subtle-foreground">últimos {HISTORY_MONTHS} meses</span>
-                    {closed.length > recent.length ? (
-                      <Button variant="link" size="sm" className="ml-auto" onClick={() => setTab("consults")}>
-                        Ver todas as {closed.length} consultas
-                      </Button>
-                    ) : null}
-                  </div>
-                  <ConsultHistory
-                    rows={recent}
-                    carryover={lastCarryover}
-                    empty={closed.length ? `Nenhuma consulta nos últimos ${HISTORY_MONTHS} meses.` : undefined}
-                  />
-                </section>
-                <section className="flex flex-col rounded-xl border border-border bg-card">
-                  <div className="flex items-center gap-2 px-5 pt-5 pb-3">
-                    <h2 className="font-display text-section font-semibold">O que fazer</h2>
-                  </div>
-                  <div className="flex-1 divide-y divide-border border-t border-border">
-                    {!attention.measure && !attention.incomplete && drafts.length === 0 ? (
-                      <p className="px-5 py-6 text-muted-foreground">Nada pendente: ficha completa, medidas em dia e relatórios finalizados.</p>
-                    ) : null}
-                    {drafts.map((row) => (
-                      <TodoRow
-                        key={row.id}
-                        symbol={<AttentionSymbol icon={FilePenLineIcon} kind="warning" title="Relatório em rascunho" detail="Finalize para imprimir e enviar." />}
-                        title="Finalizar o relatório"
-                        detail={`Consulta de ${format(new Date(row.startedAt), "dd/MM")}`}
-                      >
-                        <Button asChild variant="outline" size="xs">
-                          <Link href={`/dashboard/cases/${row.id}`}>Finalizar</Link>
-                        </Button>
-                      </TodoRow>
-                    ))}
-                    {attention.measure ? (
-                      <TodoRow
-                        symbol={<AttentionSymbol icon={RulerIcon} kind="warning" title="Sem medida recente" detail={attention.measure} />}
-                        title="Medir peso e altura"
-                        detail={attention.measure}
-                      >
-                        <Button variant="outline" size="xs" onClick={() => setTab("growth")}>
-                          Registrar
-                        </Button>
-                      </TodoRow>
-                    ) : null}
-                    {attention.incomplete ? (
-                      <TodoRow
-                        symbol={<AttentionSymbol icon={FileWarningIcon} kind="warning" title="Ficha incompleta" detail={attention.incomplete} />}
-                        title="Completar a ficha"
-                        detail={attention.incomplete}
-                      >
-                        <Button variant="outline" size="xs" onClick={() => setIsEditing(true)}>
-                          Completar
-                        </Button>
-                      </TodoRow>
-                    ) : null}
-                  </div>
-                </section>
+          <div className="grid items-start gap-5 lg:grid-cols-[1.4fr_1fr]">
+            <section className="flex flex-col rounded-xl border border-border bg-card">
+              <div className="flex items-baseline gap-2 px-5 pt-5 pb-3">
+                <h2 className="font-display text-section font-semibold">Histórico</h2>
+                <span className="text-caption text-subtle-foreground">últimos {HISTORY_MONTHS} meses</span>
+                {closed.length > recent.length ? (
+                  <Button variant="link" size="sm" className="ml-auto" onClick={() => setTab("consults")}>
+                    Ver todas as {closed.length} consultas
+                  </Button>
+                ) : null}
               </div>
-            </TabsContent>
+              <ConsultHistory
+                rows={recent}
+                carryover={lastCarryover}
+                empty={closed.length ? `Nenhuma consulta nos últimos ${HISTORY_MONTHS} meses.` : undefined}
+              />
+            </section>
+            <section className="flex flex-col rounded-xl border border-border bg-card">
+              <div className="flex items-center gap-2 px-5 pt-5 pb-3">
+                <h2 className="font-display text-section font-semibold">O que fazer</h2>
+              </div>
+              <div className="flex-1 divide-y divide-border border-t border-border">
+                {!attention.measure && !attention.incomplete && drafts.length === 0 ? (
+                  <p className="px-5 py-6 text-muted-foreground">Nada pendente: ficha completa, medidas em dia e relatórios finalizados.</p>
+                ) : null}
+                {drafts.map((row) => (
+                  <TodoRow
+                    key={row.id}
+                    symbol={<AttentionSymbol icon={FilePenLineIcon} kind="warning" title="Relatório em rascunho" detail="Finalize para imprimir e enviar." />}
+                    title="Finalizar o relatório"
+                    detail={`Consulta de ${format(new Date(row.startedAt), "dd/MM")}`}
+                  >
+                    <Button asChild variant="outline" size="xs">
+                      <Link href={`/dashboard/cases/${row.id}`}>Finalizar</Link>
+                    </Button>
+                  </TodoRow>
+                ))}
+                {attention.measure ? (
+                  <TodoRow
+                    symbol={<AttentionSymbol icon={RulerIcon} kind="warning" title="Sem medida recente" detail={attention.measure} />}
+                    title="Medir peso e altura"
+                    detail={attention.measure}
+                  >
+                    <Button variant="outline" size="xs" onClick={() => setTab("growth")}>
+                      Registrar
+                    </Button>
+                  </TodoRow>
+                ) : null}
+                {attention.incomplete ? (
+                  <TodoRow
+                    symbol={<AttentionSymbol icon={FileWarningIcon} kind="warning" title="Ficha incompleta" detail={attention.incomplete} />}
+                    title="Completar a ficha"
+                    detail={attention.incomplete}
+                  >
+                    <Button asChild variant="outline" size="xs">
+                      <Link href={`${editHref}#${patient.birth_date ? "contato" : "crianca"}`}>Completar</Link>
+                    </Button>
+                  </TodoRow>
+                ) : null}
+              </div>
+            </section>
+          </div>
+        </TabsContent>
 
             <TabsContent value="data" className="mt-0">
-              <PatientData patient={patient} onEdit={() => setIsEditing(true)} />
+              <PatientData patient={patient} editHref={editHref} />
             </TabsContent>
             <TabsContent value="consults" className="mt-0">
               <section className="rounded-xl border border-border bg-card">
@@ -413,8 +369,6 @@ export function PatientDetailView({
             <TabsContent value="attachments" className="mt-0">
               <AttachmentsSection patientId={patient.id} attachments={attachments} />
             </TabsContent>
-          </>
-        )}
       </div>
 
       <AlertDialog open={deleteOpen} onOpenChange={(open) => !deleteLoading && setDeleteOpen(open)}>
@@ -535,11 +489,12 @@ function Fact({ icon: Icon, label, value, note, tone }: { icon: LucideIcon; labe
 }
 
 /** Aba Dados: todos os campos da ficha, agrupados, com o que falta à vista. */
-function PatientData({ patient, onEdit }: { patient: Patient; onEdit: () => void }) {
+function PatientData({ patient, editHref }: { patient: Patient; editHref: string }) {
   const age = patient.birth_date ? formatPediatricAgeShort(computePediatricAge(patient.birth_date)) : null
-  const groups: [string, [string, React.ReactNode][]][] = [
+  const groups: [string, string, [string, React.ReactNode][]][] = [
     [
       "Identificação",
+      "crianca",
       [
         ["Nome", patient.name],
         ["Nascimento", patient.birth_date ? `${formatDate(patient.birth_date)}${age ? ` (${age})` : ""}` : null],
@@ -550,32 +505,34 @@ function PatientData({ patient, onEdit }: { patient: Patient; onEdit: () => void
     ],
     [
       "Responsável e contato",
+      "contato",
       [
         ["Responsável", patient.responsible],
-        ["Parentesco", patient.legal_guardian],
         ["Telefone", patient.contact_phone ? formatBrazilianPhone(patient.contact_phone) : null],
+        ["Responsável legal", patient.legal_guardian],
         ["Endereço", patient.address],
+        ["Família", patient.family_notes],
       ],
     ],
     [
       "Saúde",
+      "saude",
       [
         ["Alergias", patient.allergies],
         ["Medicações em uso", patient.current_medications],
         ["Histórico médico", patient.medical_history],
-        ["Observações da família", patient.family_notes],
       ],
     ],
   ]
 
   return (
     <div className="grid items-start gap-5 lg:grid-cols-3">
-      {groups.map(([title, fields]) => (
+      {groups.map(([title, section, fields]) => (
         <section key={title} className="rounded-xl border border-border bg-card">
           <div className="flex items-center px-5 pt-5 pb-3">
             <h2 className="font-display text-section font-semibold">{title}</h2>
-            <Button variant="ghost" size="sm" className="ml-auto" onClick={onEdit}>
-              Editar
+            <Button asChild variant="ghost" size="sm" className="ml-auto">
+              <Link href={`${editHref}#${section}`}>Editar</Link>
             </Button>
           </div>
           <dl className="divide-y divide-border border-t border-border">

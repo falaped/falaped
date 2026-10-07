@@ -27,6 +27,7 @@ export function bloodTypeToFormValue(
     : ""
 }
 
+/** Sem peso, altura e PC: na edição eles ficam na aba Crescimento e o update não mexe nas colunas antigas. */
 export function buildEditPatientDefaultValues(patient: Patient) {
   return {
     name: toFormValue(patient.name),
@@ -40,9 +41,6 @@ export function buildEditPatientDefaultValues(patient: Patient) {
       patient.gestational_age_weeks != null
         ? String(patient.gestational_age_weeks)
         : "",
-    weight: toFormValue(patient.weight),
-    height: toFormValue(patient.height),
-    head_circumference: toFormValue(patient.head_circumference),
     allergies: toFormValue(patient.allergies),
     current_medications: toFormValue(patient.current_medications),
     medical_history: toFormValue(patient.medical_history),
