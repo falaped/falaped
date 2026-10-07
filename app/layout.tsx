@@ -1,12 +1,10 @@
 import type { Metadata } from "next";
-import { Geist, Noto_Sans } from "next/font/google";
+import { Inter, Lexend } from "next/font/google";
 import { ThemeProvider } from "next-themes";
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { MetaPixel } from "@/components/meta-pixel";
 import "./globals.css";
-
-const notoSans = Noto_Sans({ variable: '--font-sans' });
 
 const defaultUrl = process.env.VERCEL_URL
   ? `https://${process.env.VERCEL_URL}`
@@ -20,8 +18,15 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false },
 };
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+// Guia de design: Inter no texto, Lexend (a família da logo) nos títulos.
+const inter = Inter({
+  variable: "--font-inter",
+  display: "swap",
+  subsets: ["latin"],
+});
+
+const lexend = Lexend({
+  variable: "--font-lexend",
   display: "swap",
   subsets: ["latin"],
 });
@@ -32,8 +37,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" suppressHydrationWarning className={notoSans.variable}>
-      <body className={`${geistSans.className} antialiased`}>
+    <html lang="pt-BR" suppressHydrationWarning className={`${inter.variable} ${lexend.variable}`}>
+      <body className="font-sans antialiased">
         <ThemeProvider
           attribute="class"
           defaultTheme="system"
