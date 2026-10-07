@@ -10,7 +10,7 @@
 <style type="text/tailwindcss">
 /*
   Falaped 2.0 · ficha de design (Etapa 2) · 06/10/2026
-  Fonte da verdade dos tokens: este bloco. A implementação copia :root/.dark/@theme para app/globals.css.
+  Fonte da verdade dos tokens: este bloco, com os nomes do shadcn (marcados NOVO os que não existem hoje). A implementação copia :root/.dark/@theme para app/globals.css.
   Rampas em oklch, matiz da marca 255.41. Contraste medido (WCAG) para todos os pares listados na seção Cores.
 */
 @custom-variant dark (&:is(.dark *));
@@ -30,75 +30,97 @@
   --wa-50: oklch(0.975 0.02 80); --wa-200: oklch(0.9 0.08 80); --wa-500: oklch(0.78 0.15 75); --wa-700: oklch(0.5 0.1 60);
   --da-50: oklch(0.97 0.012 27); --da-200: oklch(0.89 0.05 27); --da-600: oklch(0.55 0.2 27); --da-700: oklch(0.5 0.18 27);
 
-  /* semânticos (os únicos usados em componentes) */
-  --background: var(--n-25);          /* fundo da página */
-  --surface: var(--n-0);              /* card comum */
-  --surface-sunken: var(--n-50);      /* área de apoio, menu lateral */
-  --surface-hover: var(--n-100);
-  --foreground: var(--n-900);         /* texto principal 17,7:1 */
-  --text-secondary: var(--n-600);     /* 7,1:1 */
-  --text-tertiary: var(--n-500);      /* legenda e placeholder 5,1:1 (4,6 sobre apoio) */
-  --border: var(--n-200);             /* contorno decorativo de card */
-  --border-strong: var(--n-300);
-  --input: var(--n-400);              /* contorno de campo 3,1:1 */
-  --accent: var(--b-400);             /* #8AB4EB: preenchimento da ação principal */
-  --accent-hover: var(--b-450);
-  --accent-active: var(--b-500);
-  --on-accent: var(--b-ink-on);       /* texto sobre a marca 8,1:1 */
-  --accent-subtle: var(--b-100);      /* chip, item ativo do menu */
-  --accent-subtle-border: var(--b-200);
-  --accent-text: var(--b-700);        /* link e texto azul 5,5:1 */
-  --accent-text-strong: var(--b-800); /* texto sobre accent-subtle 7,3:1 */
-  --ring: var(--b-600);               /* foco 4,3:1 */
-  --success-bg: var(--ok-50); --success-border: var(--ok-200); --success-solid: var(--ok-600); --success-text: var(--ok-700);
-  --warning-bg: var(--wa-50); --warning-border: var(--wa-200); --warning-solid: var(--wa-500); --warning-text: var(--wa-700);
-  --danger-bg: var(--da-50); --danger-border: var(--da-200); --danger-solid: var(--da-600); --danger-text: var(--da-700);
-  --on-danger: var(--n-0);            /* alergia: branco no vermelho 5,4:1 */
-  --highlight-gradient: radial-gradient(120% 140% at 0% 0%, var(--b-100) 0%, var(--n-0) 55%);
-  --shadow-color: 255.41 0.03 0.25;
+  /* semânticos com os nomes do shadcn (os únicos usados em componentes) */
+  --background: var(--n-25);              /* fundo da página */
+  --foreground: var(--n-900);             /* texto principal 17,7:1 */
+  --card: var(--n-0); --card-foreground: var(--n-900);
+  --popover: var(--n-0); --popover-foreground: var(--n-900);
+  --muted: var(--n-50);                   /* superfície de apoio */
+  --muted-foreground: var(--n-600);       /* texto secundário 7,1:1 */
+  --subtle-foreground: var(--n-500);      /* NOVO · legenda e placeholder 5,1:1 (4,6 sobre muted) */
+  --secondary: var(--n-100); --secondary-foreground: var(--n-900);  /* botão cinza */
+  --accent: var(--n-100); --accent-foreground: var(--n-900);        /* hover de item, como no shadcn */
+  --border: var(--n-200);                 /* contorno de card */
+  --border-strong: var(--n-300);          /* NOVO · botão outline */
+  --input: var(--n-400);                  /* contorno de campo 3,1:1 */
+  --ring: var(--b-600);                   /* foco 4,3:1 */
+  --primary: var(--b-400);                /* #8AB4EB, ação principal */
+  --primary-foreground: var(--b-ink-on);  /* texto sobre a marca 8,1:1 */
+  --primary-hover: var(--b-450);          /* NOVO */
+  --primary-active: var(--b-500);         /* NOVO */
+  --primary-soft: var(--b-100);           /* NOVO · chip, item ativo do menu */
+  --primary-soft-border: var(--b-200);    /* NOVO */
+  --primary-ink: var(--b-700);            /* já existe · link e texto azul 5,5:1 */
+  --primary-ink-strong: var(--b-800);     /* NOVO · texto sobre primary-soft 7,3:1 */
+  --destructive: var(--da-600);           /* alergia (sólido) */
+  --destructive-foreground: var(--n-0);   /* branco no vermelho 5,4:1 */
+  --danger-soft: var(--da-50); --danger-border: var(--da-200); --danger-text: var(--da-700);
+  --success: var(--ok-600); --success-soft: var(--ok-50); --success-border: var(--ok-200); --success-text: var(--ok-700);
+  --warning: var(--wa-500); --warning-soft: var(--wa-50); --warning-border: var(--wa-200); --warning-text: var(--wa-700);
+  --sidebar: var(--n-50); --sidebar-foreground: var(--n-600); --sidebar-border: var(--n-200); --sidebar-ring: var(--b-600);
+  --sidebar-primary: var(--b-400); --sidebar-primary-foreground: var(--b-ink-on);
+  --sidebar-accent: var(--b-100); --sidebar-accent-foreground: var(--b-800);
+  --gradient-highlight: radial-gradient(120% 140% at 0% 0%, var(--b-100) 0%, var(--n-0) 55%);
+  --shadow-color: 0.25 0.03 255.41;
+  --radius: 8px;
 }
 .dark {
   --background: oklch(0.17 0.008 255.41);
-  --surface: oklch(0.21 0.009 255.41);
-  --surface-sunken: oklch(0.19 0.009 255.41);
-  --surface-hover: oklch(0.25 0.01 255.41);
   --foreground: oklch(0.96 0.004 255.41);
-  --text-secondary: oklch(0.74 0.012 255.41);
-  --text-tertiary: oklch(0.62 0.012 255.41);
+  --card: oklch(0.21 0.009 255.41); --card-foreground: oklch(0.96 0.004 255.41);
+  --popover: oklch(0.21 0.009 255.41); --popover-foreground: oklch(0.96 0.004 255.41);
+  --muted: oklch(0.19 0.009 255.41);
+  --muted-foreground: oklch(0.74 0.012 255.41);
+  --subtle-foreground: oklch(0.62 0.012 255.41);
+  --secondary: oklch(0.25 0.01 255.41); --secondary-foreground: oklch(0.96 0.004 255.41);
+  --accent: oklch(0.25 0.01 255.41); --accent-foreground: oklch(0.96 0.004 255.41);
   --border: oklch(0.29 0.011 255.41);
   --border-strong: oklch(0.34 0.012 255.41);
   --input: oklch(0.52 0.012 255.41);
-  --accent: oklch(0.78 0.09 255.41);
-  --accent-hover: oklch(0.74 0.095 255.41);
-  --accent-active: oklch(0.7 0.1 255.41);
-  --on-accent: oklch(0.22 0.04 255.41);
-  --accent-subtle: oklch(0.3 0.05 255.41);
-  --accent-subtle-border: oklch(0.38 0.07 255.41);
-  --accent-text: oklch(0.82 0.08 255.41);
-  --accent-text-strong: oklch(0.88 0.06 255.41);
   --ring: oklch(0.78 0.09 255.41);
-  --success-bg: oklch(0.28 0.05 155); --success-border: oklch(0.38 0.08 155); --success-solid: oklch(0.7 0.14 155); --success-text: oklch(0.82 0.12 155);
-  --warning-bg: oklch(0.3 0.05 75); --warning-border: oklch(0.42 0.08 75); --warning-solid: oklch(0.8 0.14 75); --warning-text: oklch(0.85 0.12 80);
-  --danger-bg: oklch(0.29 0.06 27); --danger-border: oklch(0.4 0.1 27); --danger-solid: oklch(0.62 0.19 27); --danger-text: oklch(0.78 0.12 27);
-  --on-danger: oklch(1 0 0);
-  --highlight-gradient: radial-gradient(120% 140% at 0% 0%, oklch(0.3 0.05 255.41) 0%, oklch(0.21 0.009 255.41) 60%);
-  --shadow-color: 255.41 0.02 0.05;
+  --primary: oklch(0.78 0.09 255.41);
+  --primary-foreground: oklch(0.22 0.04 255.41);
+  --primary-hover: oklch(0.74 0.095 255.41);
+  --primary-active: oklch(0.7 0.1 255.41);
+  --primary-soft: oklch(0.3 0.05 255.41);
+  --primary-soft-border: oklch(0.38 0.07 255.41);
+  --primary-ink: oklch(0.82 0.08 255.41);
+  --primary-ink-strong: oklch(0.88 0.06 255.41);
+  --destructive: oklch(0.62 0.19 27); --destructive-foreground: oklch(1 0 0);
+  --danger-soft: oklch(0.29 0.06 27); --danger-border: oklch(0.4 0.1 27); --danger-text: oklch(0.78 0.12 27);
+  --success: oklch(0.7 0.14 155); --success-soft: oklch(0.28 0.05 155); --success-border: oklch(0.38 0.08 155); --success-text: oklch(0.82 0.12 155);
+  --warning: oklch(0.8 0.14 75); --warning-soft: oklch(0.3 0.05 75); --warning-border: oklch(0.42 0.08 75); --warning-text: oklch(0.85 0.12 80);
+  --sidebar: oklch(0.19 0.009 255.41); --sidebar-foreground: oklch(0.74 0.012 255.41); --sidebar-border: oklch(0.29 0.011 255.41); --sidebar-ring: oklch(0.78 0.09 255.41);
+  --sidebar-primary: oklch(0.78 0.09 255.41); --sidebar-primary-foreground: oklch(0.22 0.04 255.41);
+  --sidebar-accent: oklch(0.3 0.05 255.41); --sidebar-accent-foreground: oklch(0.88 0.06 255.41);
+  --gradient-highlight: radial-gradient(120% 140% at 0% 0%, oklch(0.3 0.05 255.41) 0%, oklch(0.21 0.009 255.41) 60%);
+  --shadow-color: 0.05 0.02 255.41;
 }
 @theme inline {
   --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
   --font-display: "Lexend", "Inter", ui-sans-serif, sans-serif;
-  --color-background: var(--background); --color-surface: var(--surface); --color-surface-sunken: var(--surface-sunken); --color-surface-hover: var(--surface-hover);
-  --color-foreground: var(--foreground); --color-text-secondary: var(--text-secondary); --color-text-tertiary: var(--text-tertiary);
-  --color-border: var(--border); --color-border-strong: var(--border-strong); --color-input: var(--input);
-  --color-accent: var(--accent); --color-accent-hover: var(--accent-hover); --color-accent-active: var(--accent-active); --color-on-accent: var(--on-accent);
-  --color-accent-subtle: var(--accent-subtle); --color-accent-subtle-border: var(--accent-subtle-border); --color-accent-text: var(--accent-text); --color-accent-text-strong: var(--accent-text-strong);
-  --color-ring: var(--ring);
-  --color-success-bg: var(--success-bg); --color-success-border: var(--success-border); --color-success-solid: var(--success-solid); --color-success-text: var(--success-text);
-  --color-warning-bg: var(--warning-bg); --color-warning-border: var(--warning-border); --color-warning-solid: var(--warning-solid); --color-warning-text: var(--warning-text);
-  --color-danger-bg: var(--danger-bg); --color-danger-border: var(--danger-border); --color-danger-solid: var(--danger-solid); --color-danger-text: var(--danger-text); --color-on-danger: var(--on-danger);
-  /* forma: controles 8, cards 12, sobreposições 16, selos 6 */
-  --radius-control: 8px; --radius-card: 12px; --radius-overlay: 16px; --radius-badge: 6px;
-  /* sombras com o matiz da marca */
+  --color-background: var(--background); --color-foreground: var(--foreground);
+  --color-card: var(--card); --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover); --color-popover-foreground: var(--popover-foreground);
+  --color-muted: var(--muted); --color-muted-foreground: var(--muted-foreground); --color-subtle-foreground: var(--subtle-foreground);
+  --color-secondary: var(--secondary); --color-secondary-foreground: var(--secondary-foreground);
+  --color-accent: var(--accent); --color-accent-foreground: var(--accent-foreground);
+  --color-border: var(--border); --color-border-strong: var(--border-strong); --color-input: var(--input); --color-ring: var(--ring);
+  --color-primary: var(--primary); --color-primary-foreground: var(--primary-foreground);
+  --color-primary-hover: var(--primary-hover); --color-primary-active: var(--primary-active);
+  --color-primary-soft: var(--primary-soft); --color-primary-soft-border: var(--primary-soft-border);
+  --color-primary-ink: var(--primary-ink); --color-primary-ink-strong: var(--primary-ink-strong);
+  --color-destructive: var(--destructive); --color-destructive-foreground: var(--destructive-foreground);
+  --color-danger-soft: var(--danger-soft); --color-danger-border: var(--danger-border); --color-danger-text: var(--danger-text);
+  --color-success: var(--success); --color-success-soft: var(--success-soft); --color-success-border: var(--success-border); --color-success-text: var(--success-text);
+  --color-warning: var(--warning); --color-warning-soft: var(--warning-soft); --color-warning-border: var(--warning-border); --color-warning-text: var(--warning-text);
+  --color-sidebar: var(--sidebar); --color-sidebar-foreground: var(--sidebar-foreground); --color-sidebar-border: var(--sidebar-border); --color-sidebar-ring: var(--sidebar-ring);
+  --color-sidebar-primary: var(--sidebar-primary); --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent); --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  /* forma (escala do shadcn sobre --radius 8): md 6 selo · lg 8 controle · xl 12 card · 2xl 16 janela */
+  --radius-sm: calc(var(--radius) - 4px); --radius-md: calc(var(--radius) - 2px); --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px); --radius-2xl: calc(var(--radius) + 8px);
+  /* sombras com o matiz da marca (substituem as shadow-hard-*) */
   --shadow-xs: 0 1px 2px oklch(var(--shadow-color) / 0.06);
   --shadow-sm: 0 1px 2px oklch(var(--shadow-color) / 0.06), 0 2px 6px oklch(var(--shadow-color) / 0.06);
   --shadow-md: 0 1px 3px oklch(var(--shadow-color) / 0.08), 0 6px 16px oklch(var(--shadow-color) / 0.10);
@@ -107,7 +129,7 @@
   --text-display: 30px; --text-display--line-height: 36px; --text-display--letter-spacing: -0.02em;
   --text-page: 24px; --text-page--line-height: 32px; --text-page--letter-spacing: -0.015em;
   --text-section: 18px; --text-section--line-height: 26px; --text-section--letter-spacing: -0.01em;
-  --text-card: 15px; --text-card--line-height: 22px;
+  --text-title: 15px; --text-title--line-height: 22px;
   --text-body: 14px; --text-body--line-height: 22px;
   --text-read: 16px; --text-read--line-height: 26px;
   --text-label: 13px; --text-label--line-height: 18px;
@@ -121,38 +143,38 @@
 }
 @layer components {
   /* botões: alturas 28 / 32 / 36 / 40, hover + clique + foco */
-  .btn { @apply inline-flex items-center justify-center gap-2 rounded-[var(--radius-control)] font-medium text-body whitespace-nowrap select-none transition-[background-color,box-shadow,transform] duration-150 ease-(--ease-out-soft) outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background active:translate-y-px disabled:opacity-50 disabled:pointer-events-none h-9 px-3.5; }
+  .btn { @apply inline-flex items-center justify-center gap-2 rounded-lg font-medium text-body whitespace-nowrap select-none transition-[background-color,box-shadow,transform] duration-150 ease-(--ease-out-soft) outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background active:translate-y-px disabled:opacity-50 disabled:pointer-events-none h-9 px-3.5; }
   .btn-lg { @apply h-10 px-4; } .btn-sm { @apply h-8 px-3 text-label; } .btn-xs { @apply h-7 px-2.5 text-caption; }
-  .btn-primary { @apply bg-accent text-on-accent font-semibold shadow-xs hover:bg-accent-hover active:bg-accent-active; }
-  .btn-secondary { @apply bg-surface text-foreground border border-border-strong shadow-xs hover:bg-surface-hover; }
-  .btn-ghost { @apply text-foreground hover:bg-surface-hover; }
-  .btn-danger { @apply text-danger-text hover:bg-danger-bg; }
-  .btn-link { @apply h-auto px-0 text-accent-text underline-offset-4 hover:underline; }
+  .btn-primary { @apply bg-primary text-primary-foreground font-semibold shadow-xs hover:bg-primary-hover active:bg-primary-active; }
+  .btn-secondary { @apply bg-card text-foreground border border-border-strong shadow-xs hover:bg-accent; }
+  .btn-ghost { @apply text-foreground hover:bg-accent; }
+  .btn-danger { @apply text-danger-text hover:bg-danger-soft; }
+  .btn-link { @apply h-auto px-0 text-primary-ink underline-offset-4 hover:underline; }
   /* selos com papel fixo */
-  .badge { @apply inline-flex items-center gap-1 h-6 px-2 rounded-[var(--radius-badge)] text-caption font-medium border whitespace-nowrap; }
-  .badge-neutral { @apply bg-surface-sunken text-text-secondary border-border; }
-  .badge-accent { @apply bg-accent-subtle text-accent-text-strong border-accent-subtle-border; }
-  .badge-success { @apply bg-success-bg text-success-text border-success-border; }
-  .badge-warning { @apply bg-warning-bg text-warning-text border-warning-border; }
-  .badge-danger { @apply bg-danger-bg text-danger-text border-danger-border; }
-  .badge-clinical { @apply bg-danger-solid text-on-danger border-transparent font-semibold; }
+  .badge { @apply inline-flex items-center gap-1 h-6 px-2 rounded-md text-caption font-medium border whitespace-nowrap; }
+  .badge-neutral { @apply bg-muted text-muted-foreground border-border; }
+  .badge-accent { @apply bg-primary-soft text-primary-ink-strong border-primary-soft-border; }
+  .badge-success { @apply bg-success-soft text-success-text border-success-border; }
+  .badge-warning { @apply bg-warning-soft text-warning-text border-warning-border; }
+  .badge-danger { @apply bg-danger-soft text-danger-text border-danger-border; }
+  .badge-clinical { @apply bg-destructive text-destructive-foreground border-transparent font-semibold; }
   /* campos */
   .field-label { @apply text-label font-medium text-foreground; }
-  .field-help { @apply text-caption text-text-tertiary; }
-  .input { @apply h-9 w-full rounded-[var(--radius-control)] border border-input bg-surface px-3 text-body text-foreground placeholder:text-text-tertiary outline-none transition-shadow focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/25 aria-invalid:border-danger-solid aria-invalid:ring-3 aria-invalid:ring-danger-solid/20; }
+  .field-help { @apply text-caption text-subtle-foreground; }
+  .input { @apply h-9 w-full rounded-lg border border-input bg-card px-3 text-body text-foreground placeholder:text-subtle-foreground outline-none transition-shadow focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/25 aria-invalid:border-destructive aria-invalid:ring-3 aria-invalid:ring-destructive/20; }
   /* superfícies: destaque / comum / apoio */
-  .card { @apply rounded-[var(--radius-card)] border border-border bg-surface; }
-  .card-highlight { @apply rounded-[var(--radius-card)] border border-accent-subtle-border shadow-sm; background: var(--highlight-gradient); }
-  .card-sunken { @apply rounded-[var(--radius-card)] bg-surface-sunken; }
+  .card { @apply rounded-xl border border-border bg-card; }
+  .card-highlight { @apply rounded-xl border border-primary-soft-border shadow-sm; background: var(--gradient-highlight); }
+  .card-sunken { @apply rounded-xl bg-muted; }
   /* títulos */
   .t-display { @apply font-display text-display font-semibold; }
   .t-page { @apply font-display text-page font-semibold; }
   .t-section { @apply font-display text-section font-semibold; }
-  .t-card { @apply text-card font-semibold; }
+  .t-card { @apply text-title font-semibold; }
   /* só desta página */
   .doc-sec { @apply border-t border-border pt-10 mt-12; }
-  .doc-lead { @apply text-body text-text-secondary mb-6 max-w-[68ch]; }
-  .doc-k { @apply font-mono text-[11px] text-text-tertiary; }
+  .doc-lead { @apply text-body text-muted-foreground mb-6 max-w-[68ch]; }
+  .doc-k { @apply font-mono text-[11px] text-subtle-foreground; }
 }
 </style>
 </head>
@@ -161,12 +183,12 @@
 
   <header class="flex flex-wrap items-end gap-4">
     <div>
-      <div class="text-caption text-text-tertiary">Falaped 2.0 · Etapa 2 · 06/10/2026</div>
+      <div class="text-caption text-subtle-foreground">Falaped 2.0 · Etapa 2 · 06/10/2026</div>
       <h1 class="t-display mt-1">Ficha de design</h1>
-      <p class="mt-2 max-w-[68ch] text-text-secondary">Tokens e componentes propostos sobre o mesmo shadcn de hoje. Decisões aprovadas: Lexend nos títulos, Inter no texto, botão principal com texto escuro sobre o azul da marca, logo nova. Todos os pares de cor desta página foram medidos e passam no WCAG AA, nos modos claro e escuro.</p>
+      <p class="mt-2 max-w-[68ch] text-muted-foreground">Tokens e componentes propostos sobre o mesmo shadcn de hoje. Decisões aprovadas: Lexend nos títulos, Inter no texto, botão principal com texto escuro sobre o azul da marca, logo nova. Todos os pares de cor desta página foram medidos e passam no WCAG AA, nos modos claro e escuro.</p>
     </div>
     <div class="ml-auto flex items-center gap-2">
-      <span class="text-label text-text-tertiary">Tema</span>
+      <span class="text-label text-subtle-foreground">Tema</span>
       <button id="themeBtn" class="btn btn-secondary btn-sm">Ver escuro</button>
     </div>
   </header>
@@ -176,12 +198,12 @@
     <h2 class="t-section">Seis regras da ficha</h2>
     <p class="doc-lead">Cada regra resolve um achado da auditoria. A referência para o "por quê" está entre parênteses.</p>
     <div class="grid gap-3 md:grid-cols-2">
-      <div class="card p-5"><div class="t-card">1. Uma ação colorida por tela</div><p class="mt-1 text-text-secondary">Só a ação principal leva o azul preenchido. O resto é contorno ou texto. (refactoring-ui, better-colors · C1, S1)</p></div>
-      <div class="card p-5"><div class="t-card">2. Cor só no papel dela</div><p class="mt-1 text-text-secondary">O azul da marca é preenchimento; texto azul usa <code class="doc-k">accent-text</code>. Componentes só usam tokens semânticos, nunca a cor crua. (better-colors · C2, C3)</p></div>
-      <div class="card p-5"><div class="t-card">3. Vermelho é alerta clínico</div><p class="mt-1 text-text-secondary">Alergia é o vermelho mais forte da tela, sempre com ícone e texto. Excluir é discreto: só texto vermelho, sem preenchimento. (ui-ux-pro-max · color-only)</p></div>
-      <div class="card p-5"><div class="t-card">4. Hierarquia antes da cor</div><p class="mt-1 text-text-secondary">Tamanho, peso e cinza definem a leitura. A tela tem que funcionar em escala de cinza, como no wireframe. (refactoring-ui · T2)</p></div>
-      <div class="card p-5"><div class="t-card">5. Três superfícies, uma regra de forma</div><p class="mt-1 text-text-secondary">Destaque (gradiente no card inteiro), comum (branco com contorno) e apoio (cinza sem contorno). Raios: controle 8, card 12, janela 16, selo 6. (taste · shape lock · S4, S7)</p></div>
-      <div class="card p-5"><div class="t-card">6. O neo-brutalismo fica na logo</div><p class="mt-1 text-text-secondary">A logo empilhada é a única peça com blocos e sombra dura. O app usa sombras suaves e contornos finos; a marca entra pelo azul e pela Lexend. (ui-ux-pro-max · neubrutalism fora de saúde)</p></div>
+      <div class="card p-5"><div class="t-card">1. Uma ação colorida por tela</div><p class="mt-1 text-muted-foreground">Só a ação principal leva o azul preenchido. O resto é contorno ou texto. (refactoring-ui, better-colors · C1, S1)</p></div>
+      <div class="card p-5"><div class="t-card">2. Cor só no papel dela</div><p class="mt-1 text-muted-foreground">O azul da marca é preenchimento; texto azul usa <code class="doc-k">primary-ink</code>. Componentes só usam tokens semânticos, nunca a cor crua. (better-colors · C2, C3)</p></div>
+      <div class="card p-5"><div class="t-card">3. Vermelho é alerta clínico</div><p class="mt-1 text-muted-foreground">Alergia é o vermelho mais forte da tela, sempre com ícone e texto. Excluir é discreto: só texto vermelho, sem preenchimento. (ui-ux-pro-max · color-only)</p></div>
+      <div class="card p-5"><div class="t-card">4. Hierarquia antes da cor</div><p class="mt-1 text-muted-foreground">Tamanho, peso e cinza definem a leitura. A tela tem que funcionar em escala de cinza, como no wireframe. (refactoring-ui · T2)</p></div>
+      <div class="card p-5"><div class="t-card">5. Três superfícies, uma regra de forma</div><p class="mt-1 text-muted-foreground">Destaque (gradiente no card inteiro), comum (branco com contorno) e apoio (cinza sem contorno). Raios: controle 8, card 12, janela 16, selo 6. (taste · shape lock · S4, S7)</p></div>
+      <div class="card p-5"><div class="t-card">6. O neo-brutalismo fica na logo</div><p class="mt-1 text-muted-foreground">A logo empilhada é a única peça com blocos e sombra dura. O app usa sombras suaves e contornos finos; a marca entra pelo azul e pela Lexend. (ui-ux-pro-max · neubrutalism fora de saúde)</p></div>
     </div>
   </section>
 
@@ -198,15 +220,15 @@
         <div class="flex items-baseline gap-6 px-5 py-4"><span class="doc-k w-44 shrink-0">display · Lexend 600 · 30/36</span><span class="t-display">Bom dia, Dra. Ana</span></div>
         <div class="flex items-baseline gap-6 px-5 py-4"><span class="doc-k w-44 shrink-0">page · Lexend 600 · 24/32</span><span class="t-page">Pacientes</span></div>
         <div class="flex items-baseline gap-6 px-5 py-4"><span class="doc-k w-44 shrink-0">section · Lexend 600 · 18/26</span><span class="t-section">Precisam de atenção</span></div>
-        <div class="flex items-baseline gap-6 px-5 py-4"><span class="doc-k w-44 shrink-0">card · Inter 600 · 15/22</span><span class="t-card">Última consulta · 29/09</span></div>
+        <div class="flex items-baseline gap-6 px-5 py-4"><span class="doc-k w-44 shrink-0">title · Inter 600 · 15/22</span><span class="t-card">Última consulta · 29/09</span></div>
         <div class="flex items-baseline gap-6 px-5 py-4"><span class="doc-k w-44 shrink-0">body · Inter 400 · 14/22</span><span>Febre há 2 dias, otalgia à direita, aceitando bem a dieta.</span></div>
         <div class="flex items-baseline gap-6 px-5 py-4"><span class="doc-k w-44 shrink-0">read · Inter 400 · 16/26</span><span class="text-read">Texto longo: relatório, conversa com o assistente.</span></div>
         <div class="flex items-baseline gap-6 px-5 py-4"><span class="doc-k w-44 shrink-0">label · Inter 500 · 13/18</span><span class="text-label font-medium">Data de nascimento</span></div>
-        <div class="flex items-baseline gap-6 px-5 py-4"><span class="doc-k w-44 shrink-0">caption · Inter 400 · 12/16</span><span class="text-caption text-text-tertiary">Atualizado há 3 dias</span></div>
+        <div class="flex items-baseline gap-6 px-5 py-4"><span class="doc-k w-44 shrink-0">caption · Inter 400 · 12/16</span><span class="text-caption text-subtle-foreground">Atualizado há 3 dias</span></div>
         <div class="flex items-baseline gap-6 px-5 py-4"><span class="doc-k w-44 shrink-0">números · tabular-nums</span><span class="num">Azitromicina 200 mg/5 mL · 3,1 mL · 12,4 kg · R$ 350,00</span></div>
       </div>
     </div>
-    <p class="mt-3 text-caption text-text-tertiary">Sem caixa alta em rótulos e cabeçalhos de tabela: sentence case em tudo (T3).</p>
+    <p class="mt-3 text-caption text-subtle-foreground">Sem caixa alta em rótulos e cabeçalhos de tabela: sentence case em tudo (T3).</p>
   </section>
 
   <!-- CORES -->
@@ -215,32 +237,32 @@
     <p class="doc-lead">Três famílias: neutros frios (com uma pitada do azul da marca, o que resolve a mistura de cinzas do C5), a rampa da marca e três rampas de status: sucesso, atenção e perigo. Informação usa a própria marca.</p>
     <div class="space-y-4">
       <div><div class="doc-k mb-2">Marca · 50 → 800 (o 400 é o #8AB4EB)</div>
-        <div class="grid grid-cols-11 overflow-hidden rounded-[var(--radius-card)] border border-border">
+        <div class="grid grid-cols-11 overflow-hidden rounded-xl border border-border">
           <div class="h-14" style="background:var(--b-50)"></div><div class="h-14" style="background:var(--b-100)"></div><div class="h-14" style="background:var(--b-200)"></div><div class="h-14" style="background:var(--b-300)"></div><div class="h-14 ring-2 ring-inset ring-foreground" style="background:var(--b-400)"></div><div class="h-14" style="background:var(--b-450)"></div><div class="h-14" style="background:var(--b-500)"></div><div class="h-14" style="background:var(--b-600)"></div><div class="h-14" style="background:var(--b-700)"></div><div class="h-14" style="background:var(--b-800)"></div><div class="h-14" style="background:var(--b-ink-on)"></div>
         </div>
         <div class="mt-1 grid grid-cols-11 text-center doc-k"><span>fundo</span><span>chip</span><span>contorno</span><span>·</span><span>ação</span><span>hover</span><span>clique</span><span>foco</span><span>texto</span><span>texto forte</span><span>sobre ação</span></div>
       </div>
       <div><div class="doc-k mb-2">Neutros · 0 → 900</div>
-        <div class="grid grid-cols-11 overflow-hidden rounded-[var(--radius-card)] border border-border">
+        <div class="grid grid-cols-11 overflow-hidden rounded-xl border border-border">
           <div class="h-10" style="background:var(--n-0)"></div><div class="h-10" style="background:var(--n-25)"></div><div class="h-10" style="background:var(--n-50)"></div><div class="h-10" style="background:var(--n-100)"></div><div class="h-10" style="background:var(--n-200)"></div><div class="h-10" style="background:var(--n-300)"></div><div class="h-10" style="background:var(--n-400)"></div><div class="h-10" style="background:var(--n-500)"></div><div class="h-10" style="background:var(--n-600)"></div><div class="h-10" style="background:var(--n-700)"></div><div class="h-10" style="background:var(--n-900)"></div>
         </div>
         <div class="mt-1 grid grid-cols-11 text-center doc-k"><span>card</span><span>página</span><span>apoio</span><span>hover</span><span>contorno</span><span>forte</span><span>campo</span><span>legenda</span><span>secundário</span><span>·</span><span>texto</span></div>
       </div>
       <div class="grid gap-3 md:grid-cols-3">
-        <div class="rounded-[var(--radius-card)] border border-success-border bg-success-bg p-4"><div class="font-semibold text-success-text">Sucesso · matiz 155</div><div class="text-caption text-success-text">vacina aplicada, pagamento recebido</div></div>
-        <div class="rounded-[var(--radius-card)] border border-warning-border bg-warning-bg p-4"><div class="font-semibold text-warning-text">Atenção · matiz 75</div><div class="text-caption text-warning-text">vacina atrasada, valor pendente, ficha incompleta</div></div>
-        <div class="rounded-[var(--radius-card)] border border-danger-border bg-danger-bg p-4"><div class="font-semibold text-danger-text">Perigo · matiz 27</div><div class="text-caption text-danger-text">alergia, erro, exclusão</div></div>
+        <div class="rounded-xl border border-success-border bg-success-soft p-4"><div class="font-semibold text-success-text">Sucesso · matiz 155</div><div class="text-caption text-success-text">vacina aplicada, pagamento recebido</div></div>
+        <div class="rounded-xl border border-warning-border bg-warning-soft p-4"><div class="font-semibold text-warning-text">Atenção · matiz 75</div><div class="text-caption text-warning-text">vacina atrasada, valor pendente, ficha incompleta</div></div>
+        <div class="rounded-xl border border-danger-border bg-danger-soft p-4"><div class="font-semibold text-danger-text">Perigo · matiz 27</div><div class="text-caption text-danger-text">alergia, erro, exclusão</div></div>
       </div>
     </div>
 
     <div class="mt-6 card overflow-hidden">
       <table class="w-full text-body">
-        <thead class="bg-surface-sunken text-label text-text-secondary"><tr><th class="px-4 py-2.5 text-left font-medium">Par</th><th class="px-4 text-left font-medium">Amostra</th><th class="px-4 text-left font-medium">Claro</th><th class="px-4 text-left font-medium">Escuro</th></tr></thead>
+        <thead class="bg-muted text-label text-muted-foreground"><tr><th class="px-4 py-2.5 text-left font-medium">Par</th><th class="px-4 text-left font-medium">Amostra</th><th class="px-4 text-left font-medium">Claro</th><th class="px-4 text-left font-medium">Escuro</th></tr></thead>
         <tbody class="divide-y divide-border">
           <tr><td class="px-4 py-3">Botão principal</td><td class="px-4"><span class="btn btn-primary btn-sm">Iniciar consulta</span></td><td class="px-4 num">8,1:1 (era 2,0)</td><td class="px-4 num">8,7:1</td></tr>
-          <tr><td class="px-4 py-3">Texto azul / link</td><td class="px-4 text-accent-text font-medium">Ver ficha</td><td class="px-4 num">5,5:1 (era 2,1)</td><td class="px-4 num">11,0:1</td></tr>
-          <tr><td class="px-4 py-3">Texto secundário</td><td class="px-4 text-text-secondary">Carla Duarte (mãe)</td><td class="px-4 num">7,1:1</td><td class="px-4 num">7,7:1</td></tr>
-          <tr><td class="px-4 py-3">Legenda e placeholder</td><td class="px-4 text-text-tertiary">há 3 dias</td><td class="px-4 num">5,1:1 (4,6 no apoio)</td><td class="px-4 num">4,9:1</td></tr>
+          <tr><td class="px-4 py-3">Texto azul / link</td><td class="px-4 text-primary-ink font-medium">Ver ficha</td><td class="px-4 num">5,5:1 (era 2,1)</td><td class="px-4 num">11,0:1</td></tr>
+          <tr><td class="px-4 py-3">Texto secundário</td><td class="px-4 text-muted-foreground">Carla Duarte (mãe)</td><td class="px-4 num">7,1:1</td><td class="px-4 num">7,7:1</td></tr>
+          <tr><td class="px-4 py-3">Legenda e placeholder</td><td class="px-4 text-subtle-foreground">há 3 dias</td><td class="px-4 num">5,1:1 (4,6 no apoio)</td><td class="px-4 num">4,9:1</td></tr>
           <tr><td class="px-4 py-3">Contorno de campo</td><td class="px-4"><span class="inline-block h-6 w-20 rounded-md border border-input align-middle"></span></td><td class="px-4 num">3,1:1</td><td class="px-4 num">≈3:1</td></tr>
           <tr><td class="px-4 py-3">Anel de foco</td><td class="px-4"><span class="inline-block h-6 w-20 rounded-md ring-2 ring-ring align-middle"></span></td><td class="px-4 num">4,3:1</td><td class="px-4 num">ok</td></tr>
           <tr><td class="px-4 py-3">Selos de status</td><td class="px-4"><span class="badge badge-success">Aplicada</span></td><td class="px-4 num">5,7 a 6,0:1</td><td class="px-4 num">6,9 a 8,6:1</td></tr>
@@ -250,25 +272,37 @@
     </div>
   </section>
 
+  <!-- NOMES NO CÓDIGO -->
+  <section class="doc-sec">
+    <h2 class="t-section">Nomes no código</h2>
+    <p class="doc-lead">Os tokens usam os nomes do shadcn que o app já tem, então os componentes de <code class="doc-k">components/ui</code> mudam de cor sem ninguém mexer neles. O que não existe hoje está marcado como novo. Saem do <code class="doc-k">globals.css</code> os tokens da Agenda e o bloco duplicado de <code class="doc-k">:root</code>/<code class="doc-k">.dark</code>. As <code class="doc-k">shadow-hard-*</code> e <code class="doc-k">ink</code> ficam: são do Books (neo-brutalista), fora da 2.0.</p>
+    <div class="card overflow-hidden">
+      <table class="w-full text-body">
+        <thead class="bg-muted text-label text-muted-foreground"><tr><th class="px-4 py-2.5 text-left font-medium">Token</th><th class="px-4 text-left font-medium">Papel</th><th class="px-4 text-left font-medium">Valor (claro)</th><th class="px-4 text-left font-medium">Mudança</th></tr></thead>
+        <tbody class="divide-y divide-border"><tr><td class="px-4 py-2.5 font-mono text-caption">--background</td><td class="px-4">página</td><td class="px-4 text-muted-foreground num">n-25</td><td class="px-4 text-caption text-subtle-foreground">mantém nome</td></tr><tr><td class="px-4 py-2.5 font-mono text-caption">--card / --popover</td><td class="px-4">card comum, menus</td><td class="px-4 text-muted-foreground num">branco</td><td class="px-4 text-caption text-subtle-foreground">mantém nome</td></tr><tr><td class="px-4 py-2.5 font-mono text-caption">--muted</td><td class="px-4">superfície de apoio, cabeçalho de tabela</td><td class="px-4 text-muted-foreground num">n-50</td><td class="px-4 text-caption text-subtle-foreground">mantém nome</td></tr><tr><td class="px-4 py-2.5 font-mono text-caption">--muted-foreground</td><td class="px-4">texto secundário</td><td class="px-4 text-muted-foreground num">n-600 · 7,1:1</td><td class="px-4 text-caption text-subtle-foreground">mantém nome, fica mais escuro</td></tr><tr><td class="px-4 py-2.5 font-mono text-caption">--subtle-foreground</td><td class="px-4">legenda e placeholder</td><td class="px-4 text-muted-foreground num">n-500 · 5,1:1</td><td class="px-4 text-caption font-semibold text-primary-ink">NOVO</td></tr><tr><td class="px-4 py-2.5 font-mono text-caption">--secondary</td><td class="px-4">botão cinza</td><td class="px-4 text-muted-foreground num">n-100</td><td class="px-4 text-caption text-subtle-foreground">mantém nome (perde o matiz 286)</td></tr><tr><td class="px-4 py-2.5 font-mono text-caption">--accent</td><td class="px-4">hover de item e de linha</td><td class="px-4 text-muted-foreground num">n-100</td><td class="px-4 text-caption text-subtle-foreground">mantém o papel do shadcn</td></tr><tr><td class="px-4 py-2.5 font-mono text-caption">--border · --border-strong</td><td class="px-4">contorno de card · de botão</td><td class="px-4 text-muted-foreground num">n-200 · n-300</td><td class="px-4 text-caption font-semibold text-primary-ink">border-strong NOVO</td></tr><tr><td class="px-4 py-2.5 font-mono text-caption">--input</td><td class="px-4">contorno de campo</td><td class="px-4 text-muted-foreground num">n-400 · 3,1:1</td><td class="px-4 text-caption text-subtle-foreground">mantém nome, fica visível</td></tr><tr><td class="px-4 py-2.5 font-mono text-caption">--ring</td><td class="px-4">foco</td><td class="px-4 text-muted-foreground num">b-600 · 4,3:1</td><td class="px-4 text-caption text-subtle-foreground">mantém nome</td></tr><tr><td class="px-4 py-2.5 font-mono text-caption">--primary · --primary-foreground</td><td class="px-4">ação principal · texto sobre ela</td><td class="px-4 text-muted-foreground num">#8AB4EB · texto escuro 8,1:1</td><td class="px-4 text-caption text-subtle-foreground">mantém nome, troca o texto</td></tr><tr><td class="px-4 py-2.5 font-mono text-caption">--primary-hover · --primary-active</td><td class="px-4">hover e clique da ação principal</td><td class="px-4 text-muted-foreground num">b-450 · b-500</td><td class="px-4 text-caption font-semibold text-primary-ink">NOVO</td></tr><tr><td class="px-4 py-2.5 font-mono text-caption">--primary-soft · --primary-soft-border</td><td class="px-4">chip, item ativo do menu</td><td class="px-4 text-muted-foreground num">b-100 · b-200</td><td class="px-4 text-caption font-semibold text-primary-ink">NOVO</td></tr><tr><td class="px-4 py-2.5 font-mono text-caption">--primary-ink · --primary-ink-strong</td><td class="px-4">link e texto azul · texto sobre o soft</td><td class="px-4 text-muted-foreground num">b-700 · b-800</td><td class="px-4 text-caption font-semibold text-primary-ink">ink já existe; strong NOVO</td></tr><tr><td class="px-4 py-2.5 font-mono text-caption">--destructive · --destructive-foreground</td><td class="px-4">alergia (selo cheio)</td><td class="px-4 text-muted-foreground num">da-600 · branco 5,4:1</td><td class="px-4 text-caption text-subtle-foreground">mantém nome</td></tr><tr><td class="px-4 py-2.5 font-mono text-caption">--danger-soft · -border · -text</td><td class="px-4">erro, Excluir</td><td class="px-4 text-muted-foreground num">da-50 · da-200 · da-700</td><td class="px-4 text-caption font-semibold text-primary-ink">soft/text já existem em hex; border NOVO</td></tr><tr><td class="px-4 py-2.5 font-mono text-caption">--success · -soft · -border · -text</td><td class="px-4">aplicada, pago</td><td class="px-4 text-muted-foreground num">matiz 155</td><td class="px-4 text-caption text-subtle-foreground">success vira rampa</td></tr><tr><td class="px-4 py-2.5 font-mono text-caption">--warning · -soft · -border · -text</td><td class="px-4">atrasada, pendente</td><td class="px-4 text-muted-foreground num">matiz 75</td><td class="px-4 text-caption text-subtle-foreground">warning vira rampa</td></tr><tr><td class="px-4 py-2.5 font-mono text-caption">--sidebar-*</td><td class="px-4">menu lateral</td><td class="px-4 text-muted-foreground num">muted + primary-soft no ativo</td><td class="px-4 text-caption text-subtle-foreground">mantém nomes</td></tr><tr><td class="px-4 py-2.5 font-mono text-caption">--gradient-highlight</td><td class="px-4">card de destaque</td><td class="px-4 text-muted-foreground num">b-100 → branco</td><td class="px-4 text-caption font-semibold text-primary-ink">NOVO</td></tr><tr><td class="px-4 py-2.5 font-mono text-caption">--radius: 8px</td><td class="px-4">md 6 · lg 8 · xl 12 · 2xl 16</td><td class="px-4 text-muted-foreground num">selo · controle · card · janela</td><td class="px-4 text-caption text-subtle-foreground">hoje 10 e 12 nos dois blocos</td></tr><tr><td class="px-4 py-2.5 font-mono text-caption">--shadow-xs … lg</td><td class="px-4">sombras com matiz</td><td class="px-4 text-muted-foreground num">—</td><td class="px-4 text-caption text-subtle-foreground">mesmos nomes do Tailwind; shadow-hard-* ficam só no Books</td></tr></tbody>
+      </table>
+    </div>
+  </section>
+
   <!-- SUPERFÍCIES, FORMA, SOMBRA -->
   <section class="doc-sec">
     <h2 class="t-section">Superfícies, forma e sombra</h2>
     <p class="doc-lead">Três níveis com papel fixo. O gradiente da marca cobre o card inteiro, como aprovado no admin, e só existe no nível destaque: no máximo um ou dois por tela.</p>
     <div class="grid gap-4 md:grid-cols-3">
-      <div class="card-highlight p-5"><div class="doc-k">destaque · gradiente + contorno azul + shadow-sm</div><div class="t-card mt-2">Consulta em andamento</div><p class="mt-1 text-text-secondary">O que o médico precisa ver primeiro.</p></div>
-      <div class="card p-5"><div class="doc-k">comum · branco + contorno</div><div class="t-card mt-2">Última consulta · 29/09</div><p class="mt-1 text-text-secondary">A maioria dos blocos.</p></div>
-      <div class="card-sunken p-5"><div class="doc-k">apoio · cinza, sem contorno</div><div class="t-card mt-2">Dados clínicos</div><p class="mt-1 text-text-secondary">Contexto secundário, colunas laterais.</p></div>
+      <div class="card-highlight p-5"><div class="doc-k">destaque · gradiente + contorno azul + shadow-sm</div><div class="t-card mt-2">Consulta em andamento</div><p class="mt-1 text-muted-foreground">O que o médico precisa ver primeiro.</p></div>
+      <div class="card p-5"><div class="doc-k">comum · branco + contorno</div><div class="t-card mt-2">Última consulta · 29/09</div><p class="mt-1 text-muted-foreground">A maioria dos blocos.</p></div>
+      <div class="card-sunken p-5"><div class="doc-k">apoio · cinza, sem contorno</div><div class="t-card mt-2">Dados clínicos</div><p class="mt-1 text-muted-foreground">Contexto secundário, colunas laterais.</p></div>
     </div>
     <div class="mt-6 flex flex-wrap items-end gap-6">
-      <div class="text-center"><div class="h-16 w-24 rounded-[var(--radius-control)] border border-border bg-surface"></div><div class="doc-k mt-1">controle 8</div></div>
-      <div class="text-center"><div class="h-16 w-24 rounded-[var(--radius-card)] border border-border bg-surface"></div><div class="doc-k mt-1">card 12</div></div>
-      <div class="text-center"><div class="h-16 w-24 rounded-[var(--radius-overlay)] border border-border bg-surface"></div><div class="doc-k mt-1">janela 16</div></div>
-      <div class="text-center"><div class="h-16 w-24 rounded-[var(--radius-badge)] border border-border bg-surface"></div><div class="doc-k mt-1">selo 6</div></div>
+      <div class="text-center"><div class="h-16 w-24 rounded-lg border border-border bg-card"></div><div class="doc-k mt-1">controle 8</div></div>
+      <div class="text-center"><div class="h-16 w-24 rounded-xl border border-border bg-card"></div><div class="doc-k mt-1">card 12</div></div>
+      <div class="text-center"><div class="h-16 w-24 rounded-2xl border border-border bg-card"></div><div class="doc-k mt-1">janela 16</div></div>
+      <div class="text-center"><div class="h-16 w-24 rounded-md border border-border bg-card"></div><div class="doc-k mt-1">selo 6</div></div>
       <span class="w-4"></span>
-      <div class="text-center"><div class="h-16 w-24 rounded-[var(--radius-card)] bg-surface shadow-xs"></div><div class="doc-k mt-1">xs · botão</div></div>
-      <div class="text-center"><div class="h-16 w-24 rounded-[var(--radius-card)] bg-surface shadow-sm"></div><div class="doc-k mt-1">sm · destaque</div></div>
-      <div class="text-center"><div class="h-16 w-24 rounded-[var(--radius-card)] bg-surface shadow-md"></div><div class="doc-k mt-1">md · menu</div></div>
-      <div class="text-center"><div class="h-16 w-24 rounded-[var(--radius-card)] bg-surface shadow-lg"></div><div class="doc-k mt-1">lg · janela</div></div>
+      <div class="text-center"><div class="h-16 w-24 rounded-xl bg-card shadow-xs"></div><div class="doc-k mt-1">xs · botão</div></div>
+      <div class="text-center"><div class="h-16 w-24 rounded-xl bg-card shadow-sm"></div><div class="doc-k mt-1">sm · destaque</div></div>
+      <div class="text-center"><div class="h-16 w-24 rounded-xl bg-card shadow-md"></div><div class="doc-k mt-1">md · menu</div></div>
+      <div class="text-center"><div class="h-16 w-24 rounded-xl bg-card shadow-lg"></div><div class="doc-k mt-1">lg · janela</div></div>
     </div>
   </section>
 
@@ -288,7 +322,7 @@
     <div class="mt-4 flex flex-wrap items-center gap-3">
       <button class="btn btn-primary btn-lg">40 · cabeçalho</button><button class="btn btn-primary">36 · padrão</button><button class="btn btn-secondary btn-sm">32 · linha</button><button class="btn btn-secondary btn-xs">28 · compacto</button>
     </div>
-    <p class="mt-3 text-caption text-text-tertiary">O Excluir é discreto de propósito: o vermelho forte fica para a alergia.</p>
+    <p class="mt-3 text-caption text-subtle-foreground">O Excluir é discreto de propósito: o vermelho forte fica para a alergia.</p>
   </section>
 
   <!-- SELOS -->
@@ -296,12 +330,12 @@
     <h2 class="t-section">Selos com papel fixo</h2>
     <p class="doc-lead">Cada cor de selo tem um significado e sempre vem com texto (e ícone quando é alerta). O médico aprende uma vez.</p>
     <div class="grid gap-3 md:grid-cols-3">
-      <div class="card flex items-center gap-3 p-4"><span class="badge badge-clinical">⚠ Alergia: amoxicilina</span><span class="text-caption text-text-tertiary">alerta clínico</span></div>
-      <div class="card flex items-center gap-3 p-4"><span class="badge badge-warning">Vacina atrasada</span><span class="badge badge-warning">Sem valor</span><span class="text-caption text-text-tertiary">pendência</span></div>
-      <div class="card flex items-center gap-3 p-4"><span class="badge badge-success">Aplicada</span><span class="badge badge-success">Pago</span><span class="text-caption text-text-tertiary">concluído</span></div>
-      <div class="card flex items-center gap-3 p-4"><span class="badge badge-neutral">Encerrada</span><span class="badge badge-neutral">2a 3m</span><span class="text-caption text-text-tertiary">informação</span></div>
-      <div class="card flex items-center gap-3 p-4"><span class="badge badge-accent">WhatsApp</span><span class="badge badge-accent">Receita</span><span class="text-caption text-text-tertiary">canal e tipo</span></div>
-      <div class="card flex items-center gap-3 p-4"><span class="badge badge-danger">Erro ao gerar PDF</span><span class="text-caption text-text-tertiary">erro do sistema</span></div>
+      <div class="card flex items-center gap-3 p-4"><span class="badge badge-clinical">⚠ Alergia: amoxicilina</span><span class="text-caption text-subtle-foreground">alerta clínico</span></div>
+      <div class="card flex items-center gap-3 p-4"><span class="badge badge-warning">Vacina atrasada</span><span class="badge badge-warning">Sem valor</span><span class="text-caption text-subtle-foreground">pendência</span></div>
+      <div class="card flex items-center gap-3 p-4"><span class="badge badge-success">Aplicada</span><span class="badge badge-success">Pago</span><span class="text-caption text-subtle-foreground">concluído</span></div>
+      <div class="card flex items-center gap-3 p-4"><span class="badge badge-neutral">Encerrada</span><span class="badge badge-neutral">2a 3m</span><span class="text-caption text-subtle-foreground">informação</span></div>
+      <div class="card flex items-center gap-3 p-4"><span class="badge badge-accent">WhatsApp</span><span class="badge badge-accent">Receita</span><span class="text-caption text-subtle-foreground">canal e tipo</span></div>
+      <div class="card flex items-center gap-3 p-4"><span class="badge badge-danger">Erro ao gerar PDF</span><span class="text-caption text-subtle-foreground">erro do sistema</span></div>
     </div>
   </section>
 
@@ -312,20 +346,20 @@
     <div class="grid max-w-3xl gap-5 md:grid-cols-2">
       <label class="flex flex-col gap-1.5"><span class="field-label">Nome da criança</span><input class="input" placeholder="Helena Duarte"><span class="field-help">Como está na certidão</span></label>
       <label class="flex flex-col gap-1.5"><span class="field-label">Telefone do responsável</span><input class="input num" aria-invalid="true" value="(31) 9888"><span class="text-caption text-danger-text">Faltam 5 dígitos. Ex.: (31) 98888-1111</span></label>
-      <label class="flex flex-col gap-1.5"><span class="field-label">Forma de pagamento</span><button class="input flex items-center justify-between text-left">Pix <span class="text-text-tertiary">▾</span></button></label>
+      <label class="flex flex-col gap-1.5"><span class="field-label">Forma de pagamento</span><button class="input flex items-center justify-between text-left">Pix <span class="text-subtle-foreground">▾</span></button></label>
       <div class="flex flex-col gap-1.5"><span class="field-label">Procedimentos</span>
         <div class="flex items-center gap-5">
-          <label class="flex items-center gap-2"><span class="grid size-4 place-items-center rounded-[4px] border border-text-tertiary bg-surface"></span>Nebulização</label>
-          <label class="flex items-center gap-2"><span class="grid size-4 place-items-center rounded-[4px] bg-accent text-on-accent text-[10px] font-bold">✓</span>Teste do pezinho</label>
+          <label class="flex items-center gap-2"><span class="grid size-4 place-items-center rounded-[4px] border border-subtle-foreground bg-card"></span>Nebulização</label>
+          <label class="flex items-center gap-2"><span class="grid size-4 place-items-center rounded-[4px] bg-primary text-primary-foreground text-[10px] font-bold">✓</span>Teste do pezinho</label>
         </div>
       </div>
     </div>
     <div class="mt-6"><div class="doc-k mb-2">Abas (sublinhado, como no wireframe da ficha)</div>
       <div class="flex gap-1 border-b border-border">
         <span class="-mb-px border-b-2 border-foreground px-3 py-2 font-semibold">Resumo</span>
-        <span class="px-3 py-2 text-text-secondary hover:text-foreground">Consultas <span class="text-text-tertiary num">5</span></span>
-        <span class="px-3 py-2 text-text-secondary">Crescimento</span>
-        <span class="px-3 py-2 text-text-secondary">Vacinas <span class="badge badge-warning ml-1 h-5">1</span></span>
+        <span class="px-3 py-2 text-muted-foreground hover:text-foreground">Consultas <span class="text-subtle-foreground num">5</span></span>
+        <span class="px-3 py-2 text-muted-foreground">Crescimento</span>
+        <span class="px-3 py-2 text-muted-foreground">Vacinas <span class="badge badge-warning ml-1 h-5">1</span></span>
       </div>
     </div>
   </section>
@@ -340,40 +374,40 @@
       <aside class="card-sunken flex flex-col gap-1 p-3">
         <img src="../../public/falaped-logo.svg" alt="Falaped" class="mx-1 mb-3 mt-1 h-12 self-start dark:hidden"><img src="../../public/falaped-logo-dark.svg" alt="Falaped" class="mx-1 mb-3 mt-1 hidden h-12 self-start dark:block">
         <div class="card-highlight mb-1 flex items-center gap-2 p-3">
-          <span class="size-2 rounded-full bg-success-solid"></span><div class="min-w-0"><div class="text-label font-semibold">Helena D.</div><div class="text-caption text-text-secondary">Voltar à consulta</div></div><span class="ml-auto text-caption num text-text-secondary">12:47</span>
+          <span class="size-2 rounded-full bg-success"></span><div class="min-w-0"><div class="text-label font-semibold">Helena D.</div><div class="text-caption text-muted-foreground">Voltar à consulta</div></div><span class="ml-auto text-caption num text-muted-foreground">12:47</span>
         </div>
-        <div class="input mb-2 h-8 text-text-tertiary">Buscar paciente <span class="ml-auto rounded border border-border px-1 text-[10px]">⌘K</span></div>
-        <a class="flex h-8 items-center rounded-[var(--radius-control)] px-2.5 text-text-secondary hover:bg-surface-hover hover:text-foreground">Início</a>
-        <a class="flex h-8 items-center rounded-[var(--radius-control)] bg-accent-subtle px-2.5 font-semibold text-accent-text-strong">Consultas</a>
-        <a class="flex h-8 items-center rounded-[var(--radius-control)] px-2.5 text-text-secondary hover:bg-surface-hover hover:text-foreground">Pacientes</a>
-        <a class="flex h-8 items-center rounded-[var(--radius-control)] px-2.5 text-text-secondary hover:bg-surface-hover hover:text-foreground">Documentos</a>
-        <a class="flex h-8 items-center rounded-[var(--radius-control)] px-2.5 text-text-secondary hover:bg-surface-hover hover:text-foreground">Pergunte ao assistente</a>
-        <a class="flex h-8 items-center rounded-[var(--radius-control)] px-2.5 text-text-secondary hover:bg-surface-hover hover:text-foreground">Financeiro</a>
-        <p class="mt-2 text-caption text-text-tertiary">Item ativo em azul suave com texto forte: aparece no teste do porta-malas (hoje é 0,97 sobre 0,985).</p>
+        <div class="input mb-2 h-8 text-subtle-foreground">Buscar paciente <span class="ml-auto rounded border border-border px-1 text-[10px]">⌘K</span></div>
+        <a class="flex h-8 items-center rounded-lg px-2.5 text-muted-foreground hover:bg-accent hover:text-foreground">Início</a>
+        <a class="flex h-8 items-center rounded-lg bg-primary-soft px-2.5 font-semibold text-primary-ink-strong">Consultas</a>
+        <a class="flex h-8 items-center rounded-lg px-2.5 text-muted-foreground hover:bg-accent hover:text-foreground">Pacientes</a>
+        <a class="flex h-8 items-center rounded-lg px-2.5 text-muted-foreground hover:bg-accent hover:text-foreground">Documentos</a>
+        <a class="flex h-8 items-center rounded-lg px-2.5 text-muted-foreground hover:bg-accent hover:text-foreground">Pergunte ao assistente</a>
+        <a class="flex h-8 items-center rounded-lg px-2.5 text-muted-foreground hover:bg-accent hover:text-foreground">Financeiro</a>
+        <p class="mt-2 text-caption text-subtle-foreground">Item ativo em azul suave com texto forte: aparece no teste do porta-malas (hoje é 0,97 sobre 0,985).</p>
       </aside>
 
       <div class="flex flex-col gap-5">
         <!-- cabeçalho da consulta -->
         <div class="card flex flex-wrap items-center gap-3 px-5 py-4">
-          <span class="grid size-10 place-items-center rounded-full bg-accent-subtle font-semibold text-accent-text-strong">HD</span>
-          <div><div class="flex flex-wrap items-center gap-2"><span class="t-card">Helena Duarte</span><span class="badge badge-neutral">2a 3m</span><span class="badge badge-clinical">⚠ Alergia: amoxicilina</span></div><div class="text-caption text-text-secondary">Carla Duarte (mãe) · <span class="num">(31) 98888-1111</span> · <a class="text-accent-text hover:underline">Ver ficha</a></div></div>
-          <span class="ml-auto inline-flex h-9 items-center gap-2 rounded-[var(--radius-control)] border border-border px-3 num text-text-secondary"><span class="size-2 rounded-full bg-success-solid"></span>12:47</span>
+          <span class="grid size-10 place-items-center rounded-full bg-primary-soft font-semibold text-primary-ink-strong">HD</span>
+          <div><div class="flex flex-wrap items-center gap-2"><span class="t-card">Helena Duarte</span><span class="badge badge-neutral">2a 3m</span><span class="badge badge-clinical">⚠ Alergia: amoxicilina</span></div><div class="text-caption text-muted-foreground">Carla Duarte (mãe) · <span class="num">(31) 98888-1111</span> · <a class="text-primary-ink hover:underline">Ver ficha</a></div></div>
+          <span class="ml-auto inline-flex h-9 items-center gap-2 rounded-lg border border-border px-3 num text-muted-foreground"><span class="size-2 rounded-full bg-success"></span>12:47</span>
           <button class="btn btn-primary btn-lg">Encerrar consulta</button>
         </div>
 
         <!-- lista de consultas -->
         <div class="card overflow-hidden">
-          <div class="bg-surface-sunken px-4 py-2 text-label font-medium text-text-secondary">Hoje</div>
+          <div class="bg-muted px-4 py-2 text-label font-medium text-muted-foreground">Hoje</div>
           <div class="divide-y divide-border">
-            <div class="grid grid-cols-[40px_1fr_auto_auto_auto] items-center gap-4 px-4 py-3 hover:bg-surface-hover">
-              <span class="grid size-9 place-items-center rounded-full bg-surface-sunken text-label font-semibold text-text-secondary">MS</span>
-              <div><div class="font-semibold">Miguel Santos <span class="font-normal text-text-tertiary">· 4a 1m</span></div><div class="text-caption text-text-secondary">Puericultura · sem alterações</div></div>
-              <span class="badge badge-accent">Atestado</span><span class="text-caption num text-text-tertiary">09:10 · 22 min</span><span class="num font-medium">R$ 350</span>
+            <div class="grid grid-cols-[40px_1fr_auto_auto_auto] items-center gap-4 px-4 py-3 hover:bg-accent">
+              <span class="grid size-9 place-items-center rounded-full bg-muted text-label font-semibold text-muted-foreground">MS</span>
+              <div><div class="font-semibold">Miguel Santos <span class="font-normal text-subtle-foreground">· 4a 1m</span></div><div class="text-caption text-muted-foreground">Puericultura · sem alterações</div></div>
+              <span class="badge badge-accent">Atestado</span><span class="text-caption num text-subtle-foreground">09:10 · 22 min</span><span class="num font-medium">R$ 350</span>
             </div>
-            <div class="grid grid-cols-[40px_1fr_auto_auto_auto] items-center gap-4 px-4 py-3 hover:bg-surface-hover">
-              <span class="grid size-9 place-items-center rounded-full bg-surface-sunken text-label font-semibold text-text-secondary">LP</span>
-              <div><div class="font-semibold">Lara Pereira <span class="font-normal text-text-tertiary">· 8m</span></div><div class="text-caption text-text-secondary">Bronquiolite leve · retorno em 48 h</div></div>
-              <span class="badge badge-accent">Receita</span><span class="text-caption num text-text-tertiary">08:20 · 31 min</span><span class="badge badge-warning">Sem valor</span>
+            <div class="grid grid-cols-[40px_1fr_auto_auto_auto] items-center gap-4 px-4 py-3 hover:bg-accent">
+              <span class="grid size-9 place-items-center rounded-full bg-muted text-label font-semibold text-muted-foreground">LP</span>
+              <div><div class="font-semibold">Lara Pereira <span class="font-normal text-subtle-foreground">· 8m</span></div><div class="text-caption text-muted-foreground">Bronquiolite leve · retorno em 48 h</div></div>
+              <span class="badge badge-accent">Receita</span><span class="text-caption num text-subtle-foreground">08:20 · 31 min</span><span class="badge badge-warning">Sem valor</span>
             </div>
           </div>
         </div>
@@ -381,12 +415,12 @@
         <!-- vazio + carregando -->
         <div class="grid gap-4 md:grid-cols-2">
           <div class="card flex flex-col items-start gap-3 p-6">
-            <span class="grid size-10 place-items-center rounded-[var(--radius-control)] bg-accent-subtle text-accent-text-strong">＋</span>
-            <div><div class="t-card">Nenhuma consulta hoje</div><p class="text-text-secondary">Quando você atender, ela aparece aqui com os documentos.</p></div>
+            <span class="grid size-10 place-items-center rounded-lg bg-primary-soft text-primary-ink-strong">＋</span>
+            <div><div class="t-card">Nenhuma consulta hoje</div><p class="text-muted-foreground">Quando você atender, ela aparece aqui com os documentos.</p></div>
             <button class="btn btn-primary btn-sm">Iniciar consulta</button>
           </div>
           <div class="card space-y-3 p-6">
-            <div class="h-4 w-2/3 animate-pulse rounded-md bg-surface-hover"></div><div class="h-4 w-1/2 animate-pulse rounded-md bg-surface-hover"></div><div class="h-16 animate-pulse rounded-[var(--radius-control)] bg-surface-hover"></div>
+            <div class="h-4 w-2/3 animate-pulse rounded-md bg-accent"></div><div class="h-4 w-1/2 animate-pulse rounded-md bg-accent"></div><div class="h-16 animate-pulse rounded-lg bg-accent"></div>
             <div class="doc-k">carregando: skeleton no formato do conteúdo</div>
           </div>
         </div>
@@ -399,19 +433,19 @@
     <h2 class="t-section">Painel, janela, menu e aviso</h2>
     <p class="doc-lead">Um fundo só para tudo que sobrepõe (escurecer 30%, sem desfoque) e uma sombra por nível. Hoje são três fundos diferentes.</p>
     <div class="grid gap-5 md:grid-cols-[1.4fr_1fr]">
-      <div class="relative h-72 overflow-hidden rounded-[var(--radius-card)] border border-border bg-background">
+      <div class="relative h-72 overflow-hidden rounded-xl border border-border bg-background">
         <div class="absolute inset-0" style="background:oklch(0.21 0.012 255.41 / 0.3)"></div>
-        <div class="absolute inset-y-0 right-0 flex w-3/5 flex-col bg-surface shadow-lg">
-          <div class="flex items-center border-b border-border px-5 py-4"><span class="t-card">Nova receita · Helena</span><span class="ml-auto text-text-tertiary">✕</span></div>
-          <div class="flex-1 space-y-3 p-5"><div class="flex gap-2"><span class="badge badge-neutral num">Peso 12,4 kg</span><span class="badge badge-clinical">⚠ amoxicilina</span></div><div class="card p-3"><div class="font-semibold">Azitromicina 200 mg/5 mL</div><div class="text-caption text-text-secondary num">3,1 mL · 1x ao dia · 3 dias</div></div></div>
+        <div class="absolute inset-y-0 right-0 flex w-3/5 flex-col bg-card shadow-lg">
+          <div class="flex items-center border-b border-border px-5 py-4"><span class="t-card">Nova receita · Helena</span><span class="ml-auto text-subtle-foreground">✕</span></div>
+          <div class="flex-1 space-y-3 p-5"><div class="flex gap-2"><span class="badge badge-neutral num">Peso 12,4 kg</span><span class="badge badge-clinical">⚠ amoxicilina</span></div><div class="card p-3"><div class="font-semibold">Azitromicina 200 mg/5 mL</div><div class="text-caption text-muted-foreground num">3,1 mL · 1x ao dia · 3 dias</div></div></div>
           <div class="flex items-center gap-2 border-t border-border px-5 py-3"><button class="btn btn-ghost btn-sm">Ver prévia</button><button class="btn btn-primary btn-sm ml-auto">Emitir e imprimir</button></div>
         </div>
       </div>
       <div class="flex flex-col gap-4">
-        <div class="w-56 rounded-[var(--radius-card)] border border-border bg-surface p-1 shadow-md">
-          <div class="rounded-md bg-surface-hover px-2.5 py-1.5">Ver relatório</div><div class="px-2.5 py-1.5">Baixar documentos</div><div class="px-2.5 py-1.5">Reabrir consulta</div><div class="my-1 h-px bg-border"></div><div class="px-2.5 py-1.5 text-danger-text">Excluir</div>
+        <div class="w-56 rounded-xl border border-border bg-card p-1 shadow-md">
+          <div class="rounded-md bg-accent px-2.5 py-1.5">Ver relatório</div><div class="px-2.5 py-1.5">Baixar documentos</div><div class="px-2.5 py-1.5">Reabrir consulta</div><div class="my-1 h-px bg-border"></div><div class="px-2.5 py-1.5 text-danger-text">Excluir</div>
         </div>
-        <div class="flex w-80 items-center gap-3 rounded-[var(--radius-card)] border border-border bg-surface p-3 shadow-lg"><span class="grid size-6 place-items-center rounded-full bg-success-bg text-success-text text-caption">✓</span><span>Lançamento anulado</span><button class="btn btn-link btn-sm ml-auto">Desfazer</button></div>
+        <div class="flex w-80 items-center gap-3 rounded-xl border border-border bg-card p-3 shadow-lg"><span class="grid size-6 place-items-center rounded-full bg-success-soft text-success-text text-caption">✓</span><span>Lançamento anulado</span><button class="btn btn-link btn-sm ml-auto">Desfazer</button></div>
         <div class="w-fit rounded-md bg-foreground px-2.5 py-1 text-caption text-background">Encerrar consulta</div>
       </div>
     </div>
@@ -421,12 +455,12 @@
   <section class="doc-sec">
     <h2 class="t-section">Movimento e densidade</h2>
     <div class="grid gap-4 md:grid-cols-2">
-      <div class="card p-5"><div class="t-card">Movimento: discreto (2 de 10)</div><ul class="mt-2 list-disc space-y-1 pl-5 text-text-secondary"><li>Só feedback: hover 150 ms, clique desce 1 px, painel entra em 200 ms.</li><li>Curva <code class="doc-k">cubic-bezier(0.16, 1, 0.3, 1)</code>, nunca linear.</li><li>Nada em loop, nada de animação de entrada em listas. Respeitar <code class="doc-k">prefers-reduced-motion</code>.</li></ul></div>
-      <div class="card p-5"><div class="t-card">Densidade: média-alta (6 de 10)</div><ul class="mt-2 list-disc space-y-1 pl-5 text-text-secondary"><li>Espaçamento só em 4 · 8 · 12 · 16 · 24 · 32 · 48.</li><li>Página com 32 px de margem; entre grupos 24; dentro do grupo 8 a 12.</li><li>Linhas de lista com 52 a 56 px (duas linhas de texto); tabela simples 44.</li></ul></div>
+      <div class="card p-5"><div class="t-card">Movimento: discreto (2 de 10)</div><ul class="mt-2 list-disc space-y-1 pl-5 text-muted-foreground"><li>Só feedback: hover 150 ms, clique desce 1 px, painel entra em 200 ms.</li><li>Curva <code class="doc-k">cubic-bezier(0.16, 1, 0.3, 1)</code>, nunca linear.</li><li>Nada em loop, nada de animação de entrada em listas. Respeitar <code class="doc-k">prefers-reduced-motion</code>.</li></ul></div>
+      <div class="card p-5"><div class="t-card">Densidade: média-alta (6 de 10)</div><ul class="mt-2 list-disc space-y-1 pl-5 text-muted-foreground"><li>Espaçamento só em 4 · 8 · 12 · 16 · 24 · 32 · 48.</li><li>Página com 32 px de margem; entre grupos 24; dentro do grupo 8 a 12.</li><li>Linhas de lista com 52 a 56 px (duas linhas de texto); tabela simples 44.</li></ul></div>
     </div>
   </section>
 
-  <p class="mt-12 text-caption text-text-tertiary">Proposta para validação. Nada aqui foi aplicado ao app. A próxima etapa aplica esta ficha às telas do wireframe.</p>
+  <p class="mt-12 text-caption text-subtle-foreground">Proposta para validação. Nada aqui foi aplicado ao app. A próxima etapa aplica esta ficha às telas do wireframe.</p>
 </div>
 <script>
 const btn = document.getElementById("themeBtn");
