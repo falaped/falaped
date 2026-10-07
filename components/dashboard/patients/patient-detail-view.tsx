@@ -69,7 +69,13 @@ type Tab = "summary" | "data" | "consults" | "growth" | "vaccines" | "exams" | "
 
 /** Quantos meses de consultas o Histórico do Resumo mostra. */
 const HISTORY_MONTHS = 3
-const TAB_BY_HASH: Record<string, Tab> = { "#dados": "data", "#crescimento": "growth" }
+const TAB_BY_HASH: Record<string, Tab> = {
+  "#dados": "data",
+  "#crescimento": "growth",
+  "#escalas": "scales",
+  "#exames": "exams",
+  "#anexos": "attachments",
+}
 
 /**
  * Ficha (protótipo b5): cabeçalho com os símbolos de atenção e as abas; o Resumo lê em

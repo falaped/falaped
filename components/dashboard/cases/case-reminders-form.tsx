@@ -13,6 +13,8 @@ import type { CaseReminder } from "@/modules/cases/types"
 type CaseRemindersFormProps = {
   caseId: string
   initialReminders: CaseReminder[]
+  /** O campo fica atrás de "Adicionar lembrete" (consulta encerrada: mais lida que escrita). */
+  collapsed?: boolean
 }
 
 /**
@@ -26,7 +28,9 @@ type CaseRemindersFormProps = {
 export function CaseRemindersForm({
   caseId,
   initialReminders,
+  collapsed = false,
 }: CaseRemindersFormProps) {
+  const [isAdding, setIsAdding] = useState(!collapsed)
   const [reminders, setReminders] = useState<CaseReminder[]>(initialReminders)
   const [text, setText] = useState("")
   const [isSaving, setIsSaving] = useState(false)
@@ -109,8 +113,10 @@ export function CaseRemindersForm({
         </p>
       )}
 
+      {isAdding ? (
       <div className="flex items-center gap-2">
         <Input
+          autoFocus={collapsed}
           value={text}
           maxLength={500}
           placeholder="Ex.: reavaliar em 15 dias"
@@ -136,6 +142,18 @@ export function CaseRemindersForm({
           Adicionar
         </Button>
       </div>
+      ) : (
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          className="-ml-2 self-start text-primary-ink"
+          onClick={() => setIsAdding(true)}
+        >
+          <Plus aria-hidden />
+          Adicionar lembrete
+        </Button>
+      )}
     </div>
   )
 }

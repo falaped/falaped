@@ -41,6 +41,7 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip"
+import { Badge } from "@/components/ui/badge"
 import { Skeleton } from "@/components/ui/skeleton"
 import { cn } from "@/lib/utils"
 import { formatDateTime } from "@/lib/formatters"
@@ -481,20 +482,30 @@ export function CaseReport({
   return (
     <section className="rounded-xl border border-border bg-card p-6">
       <div className="flex flex-wrap items-center gap-2">
-        <h2 className="mr-auto font-display text-section font-semibold">Relatório da consulta</h2>
+        <h2 className="font-display text-section font-semibold">Relatório da consulta</h2>
+        {selectedReport ? (
+          selectedReport.is_finalized ? (
+            <Badge variant="success">
+              <Check aria-hidden />
+              Finalizado
+            </Badge>
+          ) : (
+            <Badge variant="warning">Rascunho</Badge>
+          )
+        ) : null}
+        <span className="flex-1" />
         {generateButton}
         {selectedReport ? (
           <>
             {canEdit ? (
               <Button
                 type="button"
-                variant={hasUnsavedEdits ? "default" : "outline"}
                 size="sm"
                 disabled={isFinalizing}
                 onClick={() => handleFinalizeChange(true)}
               >
                 {isFinalizing ? <Loader2 className="animate-spin" /> : <Check />}
-                {hasUnsavedEdits ? "Salvar e concluir" : "Concluir edição"}
+                {hasUnsavedEdits ? "Salvar e finalizar" : "Finalizar"}
               </Button>
             ) : (
               <Button
@@ -597,6 +608,15 @@ export function CaseReport({
             </div>
           </SortableContext>
         </DndContext>
+      ) : null}
+      {selectedReport ? (
+        <p className="-mx-6 mt-6 -mb-6 border-t border-border px-6 py-3 text-caption text-subtle-foreground num">
+          {selectedReport.source === "whatsapp" ? "Gerado pelo WhatsApp" : "Gerado pelo assistente"} em{" "}
+          {formatDateTime(selectedReport.created_at)}
+          {selectedReport.is_finalized && selectedReport.finalized_at
+            ? ` · finalizado em ${formatDateTime(selectedReport.finalized_at)}`
+            : " · ainda não finalizado"}
+        </p>
       ) : null}
     </section>
   )

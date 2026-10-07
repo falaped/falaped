@@ -58,7 +58,7 @@ export function CaseBillingCard({ caseId, todayLabel, entries, totals, prompted 
         {totals.count > 0 ? (
           <Badge variant="success">
             <CheckIcon aria-hidden />
-            Lançado
+            Lançada
           </Badge>
         ) : prompted ? (
           <span className="text-muted-foreground">Cortesia</span>
@@ -91,9 +91,9 @@ export function CaseBillingCard({ caseId, todayLabel, entries, totals, prompted 
                 </div>
               </DialogContent>
             </Dialog>
-          ) : (
-            <LaunchEarningsButton caseId={caseId} todayLabel={todayLabel} variant={prompted ? "ghost" : "default"} />
-          )}
+          ) : prompted ? (
+            <LaunchEarningsButton caseId={caseId} todayLabel={todayLabel} variant="ghost" />
+          ) : null}
         </div>
       </div>
       {totals.count > 0 ? (
@@ -108,7 +108,7 @@ export function CaseBillingCard({ caseId, todayLabel, entries, totals, prompted 
         <p className="mt-2 text-muted-foreground">
           {prompted
             ? "Nada foi cobrado nesta consulta."
-            : "Registre o valor da consulta e os procedimentos. Se foi cortesia, deixe como está."}
+            : "Nada lançado ainda. Resolva na faixa do topo."}
         </p>
       )}
     </section>

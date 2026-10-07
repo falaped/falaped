@@ -21,7 +21,7 @@ export function LaunchEarningsButton({
   caseId: string
   /** Hoje no fuso da clínica, formatado no RSC — o cliente nunca deriva datas. */
   todayLabel: string
-  variant?: "default" | "ghost"
+  variant?: "default" | "ghost" | "outline"
 }) {
   const [open, setOpen] = useState(false)
 
