@@ -1,0 +1,753 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Fluxo ideal Falaped</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/lucide@0.511.0/dist/umd/lucide.min.js"></script>
+<style>
+:root{
+  --bg:oklch(0.985 0 0);--fg:oklch(0.145 0 0);--card:#fff;--muted:oklch(0.97 0 0);--mfg:oklch(0.556 0 0);
+  --primary:oklch(0.7603 0.0916 255.41);--pfg:oklch(0.98 0.01 255);--ink:oklch(0.52 0.11 255);
+  --border:oklch(0.922 0 0);--danger:oklch(0.58 0.22 27);--ok:oklch(0.62 0.14 155);--warn:oklch(0.72 0.15 70);
+  --r:10px;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font:14px/1.5 Geist,system-ui,sans-serif}
+button{font:inherit;cursor:pointer}
+.wrap{max-width:1320px;margin:0 auto;padding:24px 16px 64px}
+h1{font-size:26px;letter-spacing:-.02em;margin:0}
+.lead{color:var(--mfg);margin:4px 0 0;max-width:760px}
+
+/* resumo comparativo */
+.compare{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px;margin:20px 0}
+.stat{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:16px}
+.stat.hero{background:radial-gradient(120% 140% at 0% 0%,color-mix(in oklch,var(--primary) 45%,white) 0%,white 70%)}
+.stat b{font-size:28px;letter-spacing:-.02em;display:block}
+.stat small{color:var(--mfg)}
+.strike{text-decoration:line-through;color:var(--mfg);font-weight:500;font-size:18px;margin-right:6px}
+
+/* stepper */
+.stepper{display:flex;gap:6px;overflow-x:auto;padding:4px 0 12px;position:sticky;top:0;background:var(--bg);z-index:20}
+.stepper button{flex:0 0 auto;display:flex;align-items:center;gap:8px;border:1px solid var(--border);background:var(--card);border-radius:999px;padding:6px 14px 6px 6px;color:var(--mfg)}
+.stepper button .n{width:24px;height:24px;border-radius:50%;display:grid;place-items:center;background:var(--muted);font-weight:600;font-size:12px}
+.stepper button.on{border-color:var(--primary);color:var(--fg);box-shadow:0 0 0 3px color-mix(in oklch,var(--primary) 30%,transparent)}
+.stepper button.on .n,.stepper button.done .n{background:var(--primary);color:var(--pfg)}
+
+.stage{display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:20px;align-items:start}
+@media (max-width:1100px){.stage{grid-template-columns:1fr}}
+
+/* moldura do app */
+.app{background:var(--bg);border:1px solid var(--border);border-radius:16px;overflow:hidden;box-shadow:0 10px 30px -12px rgb(0 0 0/.15);display:grid;grid-template-columns:200px 1fr;height:680px;position:relative}
+.app.noside{grid-template-columns:1fr}
+.app-scroll{overflow-x:auto}
+.app-min{min-width:900px}
+.side{border-right:1px solid var(--border);border-top:8px solid var(--primary);padding:14px 10px;display:flex;flex-direction:column;gap:2px;background:var(--bg)}
+.logo{font-weight:800;letter-spacing:.04em;font-size:18px;padding:6px 8px 14px;border-bottom:1px solid var(--border);margin-bottom:8px}
+.logo span{background:var(--primary);color:#fff;padding:0 4px;border-radius:4px}
+.nav{display:flex;align-items:center;gap:8px;padding:7px 8px;border-radius:8px;color:var(--fg)}
+.nav.on{background:var(--muted);font-weight:600}
+.nav svg{width:16px;height:16px}
+.nav .pill{margin-left:auto}
+.side .grow{flex:1}
+.main{border-top:8px solid var(--primary);overflow:auto;position:relative;display:flex;flex-direction:column}
+.pad{padding:24px 28px}
+
+.card{background:var(--card);border:1px solid var(--border);border-radius:12px}
+.gcard{background:radial-gradient(130% 150% at 0% 0%,color-mix(in oklch,var(--primary) 40%,white) 0%,white 65%);border:1px solid color-mix(in oklch,var(--primary) 50%,var(--border));border-radius:14px}
+.chip{width:34px;height:34px;border-radius:9px;display:grid;place-items:center;background:color-mix(in oklch,var(--primary) 22%,white);color:var(--ink);flex:0 0 auto}
+.chip svg{width:18px;height:18px}
+.btn{display:inline-flex;align-items:center;gap:6px;border-radius:8px;padding:8px 14px;border:1px solid var(--border);background:var(--card);font-weight:500;white-space:nowrap}
+.btn svg{width:16px;height:16px}
+.btn.pri{background:var(--ink);color:#fff;border-color:var(--ink)}
+.btn.pri:hover{filter:brightness(1.1)}
+.btn.lg{padding:11px 18px;font-size:15px}
+.btn.ghost{border-color:transparent;background:transparent}
+.btn.danger-o{color:var(--danger);border-color:color-mix(in oklch,var(--danger) 40%,white)}
+.btn:disabled{opacity:.4;cursor:default}
+.btn.sm{padding:5px 10px;font-size:13px}
+.pill{white-space:nowrap;display:inline-flex;align-items:center;gap:4px;border-radius:999px;padding:2px 9px;font-size:12px;font-weight:500;background:var(--muted)}
+.pill.blue{background:color-mix(in oklch,var(--primary) 25%,white);color:var(--ink)}
+.pill.green{background:color-mix(in oklch,var(--ok) 18%,white);color:oklch(0.42 0.12 155)}
+.pill.amber{background:color-mix(in oklch,var(--warn) 22%,white);color:oklch(0.48 0.12 60)}
+.av{width:36px;height:36px;border-radius:50%;display:grid;place-items:center;font-weight:600;background:color-mix(in oklch,var(--primary) 30%,white);color:var(--ink);flex:0 0 auto}
+.muted{color:var(--mfg)}
+.row{display:flex;align-items:center;gap:10px}
+.col{display:flex;flex-direction:column}
+.h2{font-size:20px;font-weight:600;letter-spacing:-.01em;margin:0}
+.input{width:100%;border:1px solid var(--border);border-radius:8px;padding:9px 11px;background:#fff;font:inherit}
+label.f{display:flex;flex-direction:column;gap:4px;font-size:13px;font-weight:500}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.hl{outline:2px dashed var(--ink);outline-offset:3px;border-radius:10px;position:relative}
+.tag{position:absolute;top:-11px;right:8px;background:var(--ink);color:#fff;font-size:11px;font-weight:600;padding:1px 7px;border-radius:999px;z-index:2}
+
+/* anotações */
+.notes{position:sticky;top:64px;display:flex;flex-direction:column;gap:12px}
+.note{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:16px}
+.note h3{margin:0 0 6px;font-size:15px}
+.note ul{margin:0;padding-left:18px}
+.note li{margin:4px 0}
+.note .heur{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.before{border-left:3px solid var(--danger)}
+.after{border-left:3px solid var(--ok)}
+
+/* overlays dentro do app */
+.scrim{position:absolute;inset:0;background:rgb(0 0 0/.35);display:none;z-index:30}
+.scrim.show{display:block}
+.drawer{position:absolute;top:0;right:0;bottom:0;width:440px;background:#fff;border-left:1px solid var(--border);z-index:31;transform:translateX(100%);transition:transform .25s ease;display:flex;flex-direction:column}
+.drawer.show{transform:none}
+.modal{position:absolute;left:50%;top:50%;width:520px;max-width:calc(100% - 32px);transform:translate(-50%,-48%);opacity:0;pointer-events:none;transition:.2s;z-index:31;background:#fff;border-radius:14px;border:1px solid var(--border);box-shadow:0 20px 50px -10px rgb(0 0 0/.3)}
+.modal.show{opacity:1;pointer-events:auto;transform:translate(-50%,-50%)}
+
+/* workspace */
+.ws-head{padding:12px 20px;border-bottom:1px solid var(--border);background:#fff;display:flex;align-items:center;gap:14px}
+.timer{display:flex;align-items:center;gap:6px;font-variant-numeric:tabular-nums;font-weight:600;background:var(--muted);border-radius:999px;padding:4px 10px}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--ok);animation:pulse 1.6s infinite}
+@keyframes pulse{50%{opacity:.3}}
+.toolbar{padding:8px 20px;border-bottom:1px solid var(--border);display:flex;gap:6px;background:var(--bg);flex-wrap:wrap}
+.ws-body{flex:1;display:grid;grid-template-columns:1fr 250px;min-height:0}
+.chat{display:flex;flex-direction:column;min-height:0}
+.msgs{flex:1;overflow:auto;padding:18px 20px;display:flex;flex-direction:column;gap:10px}
+.bub{max-width:78%;padding:10px 13px;border-radius:12px;background:#fff;border:1px solid var(--border)}
+.bub.me{align-self:flex-end;background:color-mix(in oklch,var(--primary) 20%,white);border-color:transparent}
+.composer{padding:12px 20px;border-top:1px solid var(--border);background:#fff}
+.composer .box{display:flex;gap:8px;align-items:flex-end;border:1px solid var(--border);border-radius:12px;padding:8px}
+.composer textarea{flex:1;border:0;resize:none;font:inherit;outline:none;height:44px}
+.rail{border-left:1px solid var(--border);padding:14px;overflow:auto;background:#fff;display:flex;flex-direction:column;gap:12px}
+.rail h4{margin:0;font-size:12px;text-transform:uppercase;letter-spacing:.05em;color:var(--mfg)}
+.doc{display:flex;align-items:center;gap:8px;padding:8px;border:1px solid var(--border);border-radius:8px;font-size:13px}
+.doc svg{width:16px;height:16px;color:var(--ink)}
+.kbd{font-size:11px;border:1px solid var(--border);border-bottom-width:2px;border-radius:4px;padding:0 5px;color:var(--mfg);background:#fff}
+
+/* sidebar ideal */
+.app{grid-template-columns:220px 1fr}
+.app.mini{grid-template-columns:60px 1fr}
+.side{overflow:auto}
+.side .glabel{font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--mfg);padding:10px 8px 2px}
+.side .cta{width:100%;justify-content:center;margin:2px 0 4px}
+.consult{border-radius:10px;padding:9px 10px;background:color-mix(in oklch,var(--ok) 12%,white);border:1px solid color-mix(in oklch,var(--ok) 35%,white);cursor:pointer;margin:2px 0 4px}
+.consult .row{gap:6px}
+.consult small{color:oklch(0.42 0.12 155);font-weight:600}
+.search{display:flex;align-items:center;gap:6px;border:1px solid var(--border);border-radius:8px;padding:6px 8px;color:var(--mfg);background:#fff;margin-bottom:6px;font-size:13px}
+.search svg{width:14px;height:14px}
+.search .kbd{margin-left:auto}
+.nav{cursor:pointer}
+.nav:hover{background:var(--muted)}
+.nav .chev{margin-left:auto;width:14px;height:14px;transition:transform .2s}
+.nav.open .chev{transform:rotate(90deg)}
+.sub{display:none;flex-direction:column;margin:0 0 4px 16px;padding-left:10px;border-left:1px solid var(--border)}
+.sub.show{display:flex}
+.sub .nav{padding:5px 8px;font-size:13px;color:var(--mfg)}
+.side.mini{padding:14px 8px;align-items:center}
+.side.mini .lbl,.side.mini .glabel,.side.mini .chev,.side.mini .sub,.side.mini .kbd{display:none}
+.side.mini .logo{font-size:0;padding:0 0 10px;width:100%;text-align:center}
+.side.mini .logo span{font-size:14px}
+.side.mini .nav,.side.mini .search{justify-content:center;padding:8px;width:40px}
+.side.mini .search{border:0;background:transparent}
+.side.mini .cta,.side.mini .consult{width:40px;height:40px;padding:0;display:grid;place-items:center}
+.side.mini .consult .row{gap:0}
+.legend{display:flex;flex-direction:column;gap:10px}
+.legend .it{display:flex;gap:10px;align-items:flex-start}
+.legend .num{width:22px;height:22px;border-radius:50%;background:var(--ink);color:#fff;font-size:12px;font-weight:600;display:grid;place-items:center;flex:0 0 auto}
+.callout{position:relative}
+.callout::after{content:attr(data-n);position:absolute;right:-8px;top:-8px;width:18px;height:18px;border-radius:50%;background:var(--ink);color:#fff;font-size:11px;font-weight:600;display:grid;place-items:center;z-index:3}
+
+/* listas e ficha */
+.tabs{display:flex;gap:4px;background:var(--muted);padding:3px;border-radius:9px}
+.tabs button{white-space:nowrap;border:0;background:transparent;border-radius:7px;padding:5px 11px;color:var(--mfg);font-weight:500;display:flex;gap:6px;align-items:center}
+.tabs button.on{background:#fff;color:var(--fg);box-shadow:0 1px 2px rgb(0 0 0/.08)}
+.tabs.line{overflow-x:auto;background:transparent;padding:0;border-bottom:1px solid var(--border);border-radius:0;gap:2px}
+.tabs.line button{border-radius:0;padding:8px 12px;border-bottom:2px solid transparent;box-shadow:none}
+.tabs.line button.on{border-bottom-color:var(--ink);background:transparent}
+.grp{padding:8px 14px;font-size:12px;font-weight:600;color:var(--mfg);background:var(--bg);border-bottom:1px solid var(--border);text-transform:uppercase;letter-spacing:.04em}
+.crow{display:grid;grid-template-columns:36px 1fr 140px 96px 74px 30px;gap:12px;align-items:center;padding:10px 14px;border-bottom:1px solid var(--border);cursor:pointer}
+.crow:hover,.prow:not(.head):hover{background:var(--muted)}
+.cdocs{display:flex;gap:4px;flex-wrap:wrap}
+.cmeta{font-size:13px;color:var(--mfg);font-variant-numeric:tabular-nums}
+.cval{font-weight:600;font-size:13px}
+.menu-demo{position:relative}
+.menu-demo .pop{display:none;position:absolute;right:0;top:32px;width:200px;background:#fff;border:1px solid var(--border);border-radius:10px;box-shadow:0 10px 30px -10px rgb(0 0 0/.25);padding:4px;z-index:5}
+.menu-demo:hover .pop,.menu-demo:focus-within .pop{display:block}
+.prow{display:grid;grid-template-columns:1.3fr 1.1fr 1fr 1.2fr 100px;gap:12px;align-items:center;padding:10px 14px;border-bottom:1px solid var(--border);cursor:pointer;font-size:13px}
+.prow.head{font-size:12px;color:var(--mfg);font-weight:600;background:var(--bg);cursor:default}
+.prow .rowbtn{opacity:.55}
+.prow:hover .rowbtn{opacity:1;background:var(--ink);color:#fff;border-color:var(--ink)}
+.fhead{padding:18px 28px 0;background:#fff;border-bottom:1px solid var(--border);position:sticky;top:0;z-index:4}
+.fpane{display:none}
+.fpane.on{display:block}
+.fgrid{grid-template-columns:1.4fr 1fr;gap:14px}
+.fpane.fgrid.on{display:grid}
+.tl{display:grid;grid-template-columns:52px 1fr;gap:8px;padding:8px 0;border-bottom:1px dashed var(--border);font-size:13px}
+.tl span{color:var(--mfg);font-variant-numeric:tabular-nums}
+
+.step{display:none}
+.step.on{display:block}
+.footer-nav{display:flex;justify-content:space-between;margin-top:14px}
+.check{display:flex;gap:10px;align-items:flex-start;padding:12px;border-radius:10px;border:1px solid var(--border);background:#fff}
+.check .b{width:22px;height:22px;border-radius:50%;border:2px solid var(--border);display:grid;place-items:center;flex:0 0 auto}
+.check.ok .b{background:var(--ok);border-color:var(--ok);color:#fff}
+.check.ok .t{color:var(--mfg);text-decoration:line-through}
+.list-row{display:flex;align-items:center;gap:10px;padding:10px 12px;border-bottom:1px solid var(--border)}
+.list-row:last-child{border-bottom:0}
+.list-row:hover{background:var(--muted)}
+.flow{display:flex;flex-wrap:wrap;gap:6px;align-items:center;font-size:13px}
+.flow span{background:var(--muted);border-radius:6px;padding:2px 8px}
+.flow.ideal span{background:color-mix(in oklch,var(--primary) 22%,white);color:var(--ink)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Fluxo ideal: da conta nova ao fim da consulta</h1>
+  <p class="lead">Protótipo navegável com dados fictícios. Cada passo traz o problema de hoje e a heurística de usabilidade (Krug / Nielsen) que justifica a mudança. Clique nos botões destacados dentro da tela para avançar.</p>
+
+  <div class="compare">
+    <div class="stat hero"><small>Telas até a 1ª consulta</small><b><span class="strike">9</span>4</b><small>cadastro → início → buscar/cadastrar paciente → consulta</small></div>
+    <div class="stat"><small>Para emitir receita durante a consulta</small><b><span class="strike">4 níveis</span>1 clique</b><small>painel lateral, sem sair do chat</small></div>
+    <div class="stat"><small>Para encerrar</small><b><span class="strike">sair + card cinza</span>1 botão</b><small>"Encerrar consulta" fixo no topo</small></div>
+    <div class="stat"><small>Depois de encerrar</small><b><span class="strike">nada</span>próximo paciente</b><small>a consulta seguinte começa daqui</small></div>
+  </div>
+
+  <div class="card" style="padding:14px 16px;margin-bottom:16px">
+    <div class="flow" style="margin-bottom:8px"><b style="margin-right:4px">Hoje</b><span>Cadastro</span>→<span>Sucesso (pulado)</span>→<span>Início vazio</span>→<span>Selecionar paciente</span>→<span>Cadastrar paciente</span>→<span>Ficha (⋮)</span>→<span>Selecionar de novo</span>→<span>Workspace</span>→<span>Sair</span>→<span>Detalhe do caso</span>→<span>Encerrar</span></div>
+    <div class="flow ideal"><b style="margin-right:4px">Ideal</b><span>Cadastro</span>→<span>Início com 1º passo</span>→<span>Buscar ou cadastrar (mesmo painel)</span>→<span>Consulta: documentos e encerrar ali</span>→<span>Próximo paciente</span></div>
+  </div>
+
+  <nav class="stepper" id="stepper"></nav>
+
+  <div class="stage">
+    <div class="app-scroll"><div class="app-min">
+
+    <!-- 1. CADASTRO -->
+    <section class="step" data-title="Cadastro">
+      <div class="app noside">
+        <div class="main" style="display:grid;place-items:center;background:radial-gradient(80% 80% at 0% 0%,color-mix(in oklch,var(--primary) 30%,white),var(--bg) 60%)">
+          <div class="card" style="width:460px;padding:26px">
+            <div class="logo" style="border:0;padding:0 0 8px">FALA<span>PED</span></div>
+            <h2 class="h2">Crie sua conta</h2>
+            <p class="muted" style="margin:2px 0 16px">15 dias grátis. Sem cartão.</p>
+            <div class="col" style="gap:12px">
+              <div class="grid2"><label class="f">Nome<input class="input" value="Ana Clara"></label><label class="f">Sobrenome<input class="input" value="Souza"></label></div>
+              <div class="grid2"><label class="f">CRM e UF<input class="input" value="12345 / MG"></label><label class="f">WhatsApp<input class="input" value="(31) 99999-0000"></label></div>
+              <label class="f">E-mail<input class="input" value="ana@clinica.com"></label>
+              <label class="f">Senha<input class="input" type="password" value="12345678"><span class="muted" style="font-weight:400;font-size:12px">Mínimo 8 caracteres</span></label>
+              <div class="hl"><span class="tag">entra direto</span><button class="btn pri lg" style="width:100%;justify-content:center" data-go="1">Criar conta e começar</button></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 2. INÍCIO / PRIMEIRO ACESSO -->
+    <section class="step" data-title="Primeiro acesso">
+      <div class="app">
+        <aside class="side" data-side="inicio"></aside>
+        <div class="main"><div class="pad col" style="gap:18px">
+          <div class="gcard" style="padding:22px">
+            <div class="row" style="justify-content:space-between;align-items:flex-start">
+              <div>
+                <h2 class="h2">Olá, Dra. Ana. Vamos para a 1ª consulta?</h2>
+                <p class="muted" style="margin:4px 0 0">Leva uns 2 minutos. Você pode cadastrar o paciente na hora.</p>
+              </div>
+              <div class="hl"><span class="tag">1 ação principal</span><button class="btn pri lg" data-go="2"><i data-lucide="stethoscope"></i>Iniciar consulta</button></div>
+            </div>
+            <div class="col" style="gap:8px;margin-top:18px">
+              <div class="check ok"><div class="b"><i data-lucide="check" style="width:14px"></i></div><div class="t"><b>Conta criada</b> · CRM 12345/MG já vai nos documentos</div></div>
+              <div class="check"><div class="b">2</div><div><b>Atenda o primeiro paciente</b><div class="muted">Busque ou cadastre a criança e converse com o assistente.</div></div></div>
+              <div class="check"><div class="b">3</div><div><b>Emita uma receita ou atestado</b><div class="muted">Direto da consulta, sem trocar de tela.</div></div></div>
+              <div class="check"><div class="b">4</div><div><b>Personalize o cabeçalho dos documentos</b><div class="muted">Logo e endereço do consultório · <a href="#" style="color:var(--ink)">Perfil</a></div></div></div>
+            </div>
+          </div>
+          <div class="grid2" style="grid-template-columns:repeat(3,1fr)">
+            <div class="card" style="padding:14px"><div class="row"><div class="chip"><i data-lucide="users"></i></div><div><b>0</b><div class="muted" style="font-size:12px">pacientes</div></div></div></div>
+            <div class="card" style="padding:14px"><div class="row"><div class="chip"><i data-lucide="calendar-check"></i></div><div><b>0</b><div class="muted" style="font-size:12px">consultas este mês</div></div></div></div>
+            <div class="card" style="padding:14px"><div class="row"><div class="chip"><i data-lucide="file-text"></i></div><div><b>0</b><div class="muted" style="font-size:12px">documentos emitidos</div></div></div></div>
+          </div>
+        </div></div>
+      </div>
+    </section>
+
+    <!-- 3. BUSCAR OU CADASTRAR -->
+    <section class="step" data-title="Paciente">
+      <div class="app">
+        <aside class="side" data-side="inicio"></aside>
+        <div class="main"><div class="pad" style="opacity:.35"><h2 class="h2">Olá, Dra. Ana.</h2></div>
+          <div class="scrim show"></div>
+          <div class="modal show" style="width:560px">
+            <div style="padding:16px 18px;border-bottom:1px solid var(--border)">
+              <div class="row" style="justify-content:space-between"><b style="font-size:16px">Iniciar consulta</b><span class="kbd">Esc</span></div>
+              <div class="row" style="margin-top:10px;border:1px solid var(--ink);border-radius:9px;padding:8px 10px"><i data-lucide="search" style="width:16px;color:var(--mfg)"></i><input class="input" style="border:0;padding:0" value="Helena" aria-label="Buscar paciente"></div>
+            </div>
+            <div id="patientArea">
+              <div style="padding:6px 0">
+                <div class="list-row muted" style="font-size:12px;border:0">Nenhum paciente com "Helena"</div>
+              </div>
+              <div style="padding:14px 18px;border-top:1px solid var(--border);background:var(--bg)">
+                <div class="row" style="margin-bottom:10px"><div class="chip"><i data-lucide="user-plus"></i></div><div><b>Cadastrar "Helena" e iniciar</b><div class="muted" style="font-size:12px">Só o essencial agora. O resto da ficha você completa depois.</div></div></div>
+                <div class="grid2">
+                  <label class="f">Nome da criança<input class="input" value="Helena Duarte"></label>
+                  <label class="f">Nascimento<input class="input" type="date" value="2024-06-10"></label>
+                  <label class="f">Responsável<input class="input" value="Carla Duarte"></label>
+                  <label class="f">Telefone<input class="input" value="(31) 98888-1111"></label>
+                </div>
+                <div class="row" style="justify-content:flex-end;margin-top:14px;gap:8px">
+                  <button class="btn ghost">Ficha completa</button>
+                  <div class="hl"><span class="tag">cadastra e já abre</span><button class="btn pri" data-go="3"><i data-lucide="stethoscope"></i>Cadastrar e iniciar consulta</button></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 4. CONSULTA -->
+    <section class="step" data-title="Consulta">
+      <div class="app" id="ws">
+        <aside class="side" data-side="consultas" data-consult="1" data-mini="1"></aside>
+        <div class="main" style="overflow:hidden">
+          <div class="ws-head">
+            <div class="av">HD</div>
+            <div style="min-width:0">
+              <div class="row" style="gap:8px"><b style="font-size:16px">Helena Duarte</b><span class="pill blue">2a 3m</span><span class="pill amber">Alergia: amoxicilina</span></div>
+              <div class="muted" style="font-size:13px">Responsável: Carla Duarte · <a href="#" style="color:var(--ink)">Ver ficha</a></div>
+            </div>
+            <div style="margin-left:auto" class="row">
+              <span class="timer" title="Cronômetro dentro do cabeçalho: nunca cobre o chat"><span class="dot"></span><span id="clock">12:47</span><button class="btn ghost sm" style="padding:0 2px" aria-label="Pausar"><i data-lucide="pause" style="width:14px"></i></button></span>
+              <div class="hl"><span class="tag">sempre visível</span><button class="btn pri" data-open="close"><i data-lucide="check-circle-2"></i>Encerrar consulta</button></div>
+            </div>
+          </div>
+          <div class="toolbar hl" style="outline-offset:-3px;border-radius:0"><span class="tag" style="top:auto;bottom:-10px;right:12px">documentos sem sair</span>
+            <button class="btn sm" data-open="rx"><i data-lucide="pill"></i>Receita <span class="kbd">R</span></button>
+            <button class="btn sm"><i data-lucide="file-check"></i>Atestado <span class="kbd">A</span></button>
+            <button class="btn sm"><i data-lucide="flask-conical"></i>Exames</button>
+            <button class="btn sm"><i data-lucide="arrow-right-left"></i>Encaminhar</button>
+            <button class="btn sm"><i data-lucide="syringe"></i>Vacinas</button>
+            <button class="btn sm"><i data-lucide="ruler"></i>Escalas</button>
+          </div>
+          <div class="ws-body">
+            <div class="chat">
+              <div class="msgs">
+                <div class="bub" style="background:var(--muted);border:0;font-size:13px"><b>Da última consulta (12/08):</b> retornar para reavaliar peso; vacina de 2 anos pendente.</div>
+                <div class="bub me">Febre há 2 dias, 38,5 °C, coriza e tosse. Peso 12,4 kg. Otoscopia: membrana timpânica direita abaulada.</div>
+                <div class="bub">Quadro compatível com <b>otite média aguda à direita</b>. Atenção: <b>alergia a amoxicilina</b> registrada. Alternativas: azitromicina 10 mg/kg/dia por 3 dias (124 mg/dia).
+                  <div class="row" style="margin-top:8px;gap:6px"><button class="btn sm pri" data-open="rx"><i data-lucide="pill"></i>Abrir receita com isso</button><button class="btn sm">Ver fontes</button></div>
+                </div>
+              </div>
+              <div class="composer"><div class="box"><textarea placeholder="Descreva a consulta ou grave o áudio…"></textarea><button class="btn sm ghost" aria-label="Anexar"><i data-lucide="paperclip"></i></button><button class="btn sm" aria-label="Gravar"><i data-lucide="mic"></i></button><button class="btn sm pri" aria-label="Enviar"><i data-lucide="send"></i></button></div></div>
+            </div>
+            <div class="rail">
+              <h4>Nesta consulta</h4>
+              <div id="docList" class="col" style="gap:6px"><div class="muted" style="font-size:13px">Nenhum documento ainda.</div></div>
+              <h4 style="margin-top:6px">Lembretes</h4>
+              <div class="doc"><i data-lucide="bell"></i>Vacina 2 anos pendente</div>
+              <h4 style="margin-top:6px">Relatório</h4>
+              <div class="doc"><i data-lucide="sparkles"></i>Gerado ao encerrar</div>
+            </div>
+          </div>
+          <div class="scrim" id="scrim"></div>
+          <div class="drawer" id="rx">
+            <div class="row" style="padding:14px 18px;border-bottom:1px solid var(--border);justify-content:space-between"><b>Nova receita · Helena</b><button class="btn ghost sm" data-close><i data-lucide="x"></i></button></div>
+            <div class="col" style="padding:16px 18px;gap:12px;flex:1;overflow:auto">
+              <div class="row" style="gap:6px"><span class="pill blue">Peso 12,4 kg (da consulta)</span><span class="pill amber">Alergia checada</span></div>
+              <div class="card" style="padding:12px"><b>Azitromicina 200 mg/5 mL</b><div class="muted">3,1 mL, via oral, 1x ao dia, por 3 dias</div></div>
+              <div class="card" style="padding:12px"><b>Dipirona 500 mg/mL</b><div class="muted">6 gotas, se febre, até 6/6 h</div></div>
+              <button class="btn sm ghost" style="align-self:flex-start"><i data-lucide="plus"></i>Adicionar medicamento</button>
+            </div>
+            <div class="row" style="padding:14px 18px;border-top:1px solid var(--border);justify-content:flex-end;gap:8px">
+              <button class="btn" data-close>Cancelar</button>
+              <button class="btn pri" id="emitRx"><i data-lucide="printer"></i>Emitir e imprimir</button>
+            </div>
+          </div>
+          <div class="modal" id="close">
+            <div style="padding:18px 20px;border-bottom:1px solid var(--border)"><b style="font-size:16px">Encerrar consulta de Helena?</b><div class="muted">Confira antes de fechar. Nada aqui é obrigatório.</div></div>
+            <div class="col" style="padding:16px 20px;gap:10px">
+              <div class="check ok"><div class="b"><i data-lucide="check" style="width:14px"></i></div><div><b>Relatório do atendimento</b><div class="muted">Será gerado a partir da conversa</div></div></div>
+              <div class="check" id="rxCheck"><div class="b">!</div><div><b>Documentos</b><div class="muted" id="rxCheckTxt">Nenhum emitido. <a href="#" data-open="rx" style="color:var(--ink)">Emitir receita</a></div></div></div>
+              <label class="f">Valor cobrado<div class="row"><input class="input" value="R$ 350,00" style="max-width:160px"><label class="row" style="font-weight:400;gap:6px"><input type="checkbox"> Cortesia / retorno</label></div></label>
+              <label class="f">Lembrete para a próxima<input class="input" value="Reavaliar ouvido em 10 dias"></label>
+            </div>
+            <div class="row" style="padding:14px 20px;border-top:1px solid var(--border);justify-content:flex-end;gap:8px">
+              <button class="btn" data-close>Voltar à consulta</button>
+              <button class="btn pri" data-go="4"><i data-lucide="check-circle-2"></i>Encerrar</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 5. PRÓXIMO PACIENTE -->
+    <section class="step" data-title="Encerrada">
+      <div class="app">
+        <aside class="side" data-side="consultas"></aside>
+        <div class="main" style="display:grid;place-items:center">
+          <div class="gcard" style="width:560px;padding:28px">
+            <div class="row"><div class="chip" style="background:color-mix(in oklch,var(--ok) 20%,white);color:oklch(0.42 0.12 155)"><i data-lucide="check"></i></div><h2 class="h2">Consulta de Helena encerrada</h2></div>
+            <p class="muted" style="margin:8px 0 16px">27 min · R$ 350,00 lançado · relatório pronto · lembrete em 10 dias</p>
+            <div class="col" style="gap:6px;margin-bottom:18px" id="endDocs"></div>
+            <div class="row" style="gap:8px;flex-wrap:wrap">
+              <div class="hl"><span class="tag">fluxo contínuo</span><button class="btn pri lg" data-go="2"><i data-lucide="stethoscope"></i>Atender próximo paciente</button></div>
+              <button class="btn"><i data-lucide="send"></i>Enviar documentos ao responsável</button>
+              <button class="btn ghost" data-go="1">Ir ao início</button>
+            </div>
+            <div class="muted" style="font-size:12px;margin-top:14px">Errou algo? <a href="#" style="color:var(--ink)">Reabrir consulta</a></div>
+          </div>
+        </div>
+      </div>
+    </section>
+    <!-- 6. MENU -->
+    <section class="step" data-title="Menu lateral">
+      <div class="card" style="padding:20px;display:grid;grid-template-columns:1fr 1.25fr;gap:24px;min-height:680px">
+        <div class="col" style="gap:10px">
+          <div class="row"><span class="pill" style="background:color-mix(in oklch,var(--danger) 15%,white);color:var(--danger)">Hoje</span><span class="muted" style="font-size:13px">4 itens, cada um abre uma página de cards</span></div>
+          <div style="display:grid;grid-template-columns:170px 1fr;border:1px solid var(--border);border-radius:12px;overflow:hidden;flex:1;opacity:.92">
+            <div class="side" style="border-top-width:8px">
+              <div class="logo">FALA<span>PED</span></div>
+              <div class="glabel">Plataforma</div>
+              <div class="nav"><i data-lucide="home"></i>Início</div>
+              <div class="nav"><i data-lucide="messages-square"></i>Atendimentos</div>
+              <div class="nav on"><i data-lucide="file-check"></i>Serviços</div>
+              <div class="nav"><i data-lucide="wallet"></i>Financeiro</div>
+              <div class="grow"></div>
+              <div class="nav"><i data-lucide="sparkles"></i>Novidades</div>
+              <div class="nav"><div class="av" style="width:24px;height:24px;font-size:10px">AS</div>Dra. Ana</div>
+            </div>
+            <div style="padding:14px;border-top:8px solid var(--primary);background:var(--bg)">
+              <b>Serviços</b>
+              <div class="muted" style="font-size:12px;margin-bottom:10px">Escolha um card para continuar…</div>
+              <div class="col" style="gap:6px">
+                <div class="card" style="padding:8px 10px;font-size:13px">Atestados</div>
+                <div class="card" style="padding:8px 10px;font-size:13px;outline:2px solid var(--danger)">Receitas ← +1 clique</div>
+                <div class="card" style="padding:8px 10px;font-size:13px">Encaminhamentos</div>
+                <div class="card" style="padding:8px 10px;font-size:13px">Vacinas</div>
+                <div class="card" style="padding:8px 10px;font-size:13px">Relatórios médicos</div>
+                <div class="card" style="padding:8px 10px;font-size:13px">Pedidos de exames</div>
+                <div class="card" style="padding:8px 10px;font-size:13px">Orientações</div>
+                <div class="card" style="padding:8px 10px;font-size:13px">Receituário em branco</div>
+              </div>
+              <div class="muted" style="font-size:12px;margin-top:10px">Modelos ficam escondidos no menu do usuário.</div>
+            </div>
+          </div>
+        </div>
+        <div class="col" style="gap:10px">
+          <div class="row"><span class="pill green">Ideal</span><span class="muted" style="font-size:13px">clique nos itens: Documentos abre embaixo</span></div>
+          <div style="display:grid;grid-template-columns:230px 1fr;gap:18px;flex:1">
+            <aside class="side" data-side="receitas" data-consult="1" data-docs="1" data-callouts="1" style="border:1px solid var(--border);border-top:8px solid var(--primary);border-radius:12px"></aside>
+            <div class="legend">
+              <div class="it"><span class="num">1</span><div><b>Consulta aberta sempre à vista</b><div class="muted">Nome, cronômetro e um clique para voltar ao chat, de qualquer tela. Sem consulta, vira o botão <b>Iniciar consulta</b>.</div></div></div>
+              <div class="it"><span class="num">2</span><div><b>Buscar paciente (⌘K)</b><div class="muted">Quase tudo começa pelo nome da criança. O <code>cmdk</code> já está instalado.</div></div></div>
+              <div class="it"><span class="num">3</span><div><b>6 itens diretos, sem páginas de cards</b><div class="muted">"Casos" vira <b>Consultas</b> e "Discussões" vira <b>Pergunte ao assistente</b>.</div></div></div>
+              <div class="it"><span class="num">4</span><div><b>Documentos abre embaixo</b><div class="muted">Os 7 tipos ficam a um clique. "Receituário em branco" vira o botão "Em branco" dentro de Receitas.</div></div></div>
+              <div class="it"><span class="num">5</span><div><b>Financeiro direto</b><div class="muted">Hoje é uma página com um card só (Ganhos).</div></div></div>
+              <div class="it"><span class="num">6</span><div><b>Configuração no rodapé</b><div class="muted">Modelos sai do menu do usuário; Perfil, WhatsApp e Sair ficam no avatar. Admin só para você, separado.</div></div></div>
+              <div class="card" style="padding:12px;background:var(--muted);border:0"><b>Durante a consulta</b><div class="muted">O menu recolhe para ícones (veja o passo 4) e o chat ganha largura. O ponto verde continua mostrando a consulta aberta.</div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+    <!-- 7. CONSULTAS -->
+    <section class="step" data-title="Consultas">
+      <div class="app">
+        <aside class="side" data-side="consultas" data-consult="1"></aside>
+        <div class="main"><div class="pad col" style="gap:14px">
+          <div class="row" style="justify-content:space-between">
+            <div><h2 class="h2">Consultas</h2><div class="muted">32 este mês · 4 com pendência</div></div>
+            <button class="btn pri" data-go="2"><i data-lucide="stethoscope"></i>Iniciar consulta</button>
+          </div>
+
+          <div class="hl" style="outline-offset:2px"><span class="tag">fixada no topo</span>
+            <div class="consult" style="margin:0;padding:12px 14px;display:flex;align-items:center;gap:12px" data-go="3">
+              <span class="dot"></span><div class="av" style="width:32px;height:32px;font-size:12px">HD</div>
+              <div><b>Helena Duarte</b> <span class="muted">· 2a 3m · em andamento há 12 min</span><div class="muted" style="font-size:13px">Febre e otalgia · 1 receita</div></div>
+              <button class="btn pri sm" style="margin-left:auto">Voltar à consulta<i data-lucide="arrow-right"></i></button>
+            </div>
+          </div>
+
+          <div class="row" style="justify-content:space-between;flex-wrap:wrap;gap:8px">
+            <div class="tabs" data-tabs>
+              <button class="on">Todas</button><button>Hoje <span class="pill">3</span></button><button>Esta semana</button><button>Com pendência <span class="pill amber">4</span></button>
+            </div>
+            <div class="search" style="margin:0;width:300px"><i data-lucide="search"></i>Paciente, responsável ou diagnóstico</div>
+          </div>
+
+          <div class="card" style="overflow:hidden">
+            <div class="grp">Hoje</div>
+            <div class="crow"><div class="av">MS</div><div class="cmain"><b>Miguel Santos</b> <span class="muted">· 4a 1m</span><div class="muted">Puericultura · sem alterações</div></div><div class="cdocs"><span class="pill blue"><i data-lucide="file-check" style="width:12px"></i>Atestado</span></div><div class="cmeta">09:10 · 22 min</div><div class="cval">R$ 350</div><button class="btn ghost sm" aria-label="Mais"><i data-lucide="more-horizontal"></i></button></div>
+            <div class="crow"><div class="av">LP</div><div class="cmain"><b>Lara Pereira</b> <span class="muted">· 8m</span><div class="muted">Bronquiolite leve · retorno em 48 h</div></div><div class="cdocs"><span class="pill blue"><i data-lucide="pill" style="width:12px"></i>Receita</span></div><div class="cmeta">08:20 · 31 min</div><div class="cval"><span class="pill amber">Sem valor</span></div><button class="btn ghost sm" aria-label="Mais"><i data-lucide="more-horizontal"></i></button></div>
+            <div class="grp">Ontem</div>
+            <div class="crow"><div class="av">TC</div><div class="cmain"><b>Theo Costa</b> <span class="muted">· 1a 6m</span><div class="muted">Diarreia aguda · hidratação oral</div></div><div class="cdocs"><span class="pill blue"><i data-lucide="pill" style="width:12px"></i>Receita</span><span class="pill blue">Orientação</span></div><div class="cmeta">17:45 · 18 min</div><div class="cval">Cortesia</div><button class="btn ghost sm" aria-label="Mais"><i data-lucide="more-horizontal"></i></button></div>
+            <div class="crow"><div class="av">??</div><div class="cmain"><b>Pedido pelo WhatsApp</b> <span class="pill"><i data-lucide="message-circle" style="width:12px"></i>WhatsApp</span><div class="muted">Mãe de Bia, dúvida sobre dose de paracetamol</div></div><div class="cdocs"><span class="pill amber">Associar paciente</span></div><div class="cmeta">14:02</div><div class="cval">—</div><button class="btn ghost sm" aria-label="Mais"><i data-lucide="more-horizontal"></i></button></div>
+            <div class="grp">Segunda, 29/09</div>
+            <div class="crow"><div class="av">HD</div><div class="cmain"><b>Helena Duarte</b> <span class="muted">· 2a 3m</span><div class="muted">IVAS · sintomáticos</div></div><div class="cdocs"><span class="pill blue"><i data-lucide="pill" style="width:12px"></i>Receita</span></div><div class="cmeta">10:30 · 25 min</div><div class="cval">R$ 350</div>
+              <div class="menu-demo"><button class="btn ghost sm" aria-label="Mais"><i data-lucide="more-horizontal"></i></button>
+                <div class="pop"><div class="nav"><i data-lucide="file-text"></i>Ver relatório</div><div class="nav"><i data-lucide="download"></i>Baixar documentos</div><div class="nav"><i data-lucide="user"></i>Abrir ficha</div><div class="nav" style="color:var(--mfg)"><i data-lucide="rotate-ccw"></i>Reabrir consulta</div></div></div>
+            </div>
+          </div>
+        </div></div>
+      </div>
+    </section>
+
+    <!-- 8. PACIENTES -->
+    <section class="step" data-title="Pacientes">
+      <div class="app">
+        <aside class="side" data-side="pacientes"></aside>
+        <div class="main"><div class="pad col" style="gap:14px">
+          <div class="row" style="justify-content:space-between">
+            <div><h2 class="h2">Pacientes</h2><div class="muted">148 crianças · 6 precisam de atenção</div></div>
+            <button class="btn"><i data-lucide="user-plus"></i>Cadastrar paciente</button>
+          </div>
+          <div class="row" style="justify-content:space-between;flex-wrap:wrap;gap:8px">
+            <div class="tabs" data-tabs>
+              <button class="on">Atendidos recentemente</button><button>A–Z</button><button>Precisam de atenção <span class="pill amber">6</span></button>
+            </div>
+            <div class="search" style="margin:0;width:300px"><i data-lucide="search"></i>Nome, responsável ou telefone</div>
+          </div>
+          <div class="card" style="overflow:hidden">
+            <div class="prow head"><div>Paciente</div><div>Responsável</div><div>Última consulta</div><div>Atenção</div><div></div></div>
+            <div class="prow" data-go="8"><div class="row"><div class="av">HD</div><div><b>Helena Duarte</b><div class="muted">2a 3m</div></div></div><div>Carla Duarte<div class="muted">(31) 98888-1111</div></div><div>hoje<div class="muted">Otite média aguda</div></div><div class="row" style="gap:4px;flex-wrap:wrap"><span class="pill amber">Alergia</span><span class="pill" style="background:color-mix(in oklch,var(--danger) 14%,white);color:var(--danger)">Vacina atrasada</span></div><div><button class="btn sm rowbtn" data-go="2"><i data-lucide="stethoscope"></i>Atender</button></div></div>
+            <div class="prow" data-go="8"><div class="row"><div class="av">MS</div><div><b>Miguel Santos</b><div class="muted">4a 1m</div></div></div><div>Rafael Santos<div class="muted">(31) 97777-2222</div></div><div>hoje<div class="muted">Puericultura</div></div><div></div><div><button class="btn sm rowbtn" data-go="2"><i data-lucide="stethoscope"></i>Atender</button></div></div>
+            <div class="prow" data-go="8"><div class="row"><div class="av">LP</div><div><b>Lara Pereira</b><div class="muted">8m</div></div></div><div>Juliana Pereira<div class="muted">(31) 96666-3333</div></div><div>hoje<div class="muted">Bronquiolite</div></div><div><span class="pill blue">Retorno em 2 dias</span></div><div><button class="btn sm rowbtn" data-go="2"><i data-lucide="stethoscope"></i>Atender</button></div></div>
+            <div class="prow" data-go="8"><div class="row"><div class="av">TC</div><div><b>Theo Costa</b><div class="muted">1a 6m</div></div></div><div>Marina Costa<div class="muted">(31) 95555-4444</div></div><div>ontem<div class="muted">Diarreia aguda</div></div><div></div><div><button class="btn sm rowbtn" data-go="2"><i data-lucide="stethoscope"></i>Atender</button></div></div>
+            <div class="prow" data-go="8"><div class="row"><div class="av">GA</div><div><b>Gabriel Alves</b><div class="muted">6a 2m</div></div></div><div>Não informado<div class="muted">—</div></div><div>há 3 meses<div class="muted">Asma · controle</div></div><div class="row" style="gap:4px;flex-wrap:wrap"><span class="pill">Ficha incompleta</span><span class="pill" style="background:color-mix(in oklch,var(--danger) 14%,white);color:var(--danger)">Retorno vencido</span></div><div><button class="btn sm rowbtn" data-go="2"><i data-lucide="stethoscope"></i>Atender</button></div></div>
+          </div>
+          <div class="muted" style="font-size:12px">Clique na linha para abrir a ficha. "Atender" já começa a consulta.</div>
+        </div></div>
+      </div>
+    </section>
+
+    <!-- 9. FICHA -->
+    <section class="step" data-title="Ficha do paciente">
+      <div class="app">
+        <aside class="side" data-side="pacientes"></aside>
+        <div class="main">
+          <div class="fhead">
+            <div class="row" style="gap:14px">
+              <div class="av" style="width:56px;height:56px;font-size:18px">HD</div>
+              <div style="min-width:0">
+                <div class="row" style="gap:8px;flex-wrap:wrap"><b style="font-size:20px">Helena Duarte</b><span class="pill blue">2a 3m · nasc. 10/06/2024</span><span class="pill amber">Alergia: amoxicilina</span></div>
+                <div class="muted" style="font-size:13px">Carla Duarte (mãe) · (31) 98888-1111 · IG 38 sem</div>
+              </div>
+              <div class="row" style="margin-left:auto;gap:6px">
+                <button class="btn"><i data-lucide="pencil"></i>Editar</button>
+                <button class="btn ghost" aria-label="Mais"><i data-lucide="more-vertical"></i></button>
+                <div class="hl"><span class="tag">ação principal</span><button class="btn pri" data-go="3"><i data-lucide="stethoscope"></i>Iniciar consulta</button></div>
+              </div>
+            </div>
+            <div class="tabs line" data-tabs data-panes="fpane" style="margin-top:14px">
+              <button class="on">Resumo</button><button>Consultas <span class="pill">5</span></button><button>Crescimento</button><button>Vacinas <span class="pill" style="background:color-mix(in oklch,var(--danger) 14%,white);color:var(--danger)">1</span></button><button>Documentos</button><button>Anexos e escalas</button>
+            </div>
+          </div>
+          <div class="pad">
+            <div class="fpane on fgrid">
+              <div class="col" style="gap:14px">
+                <div class="gcard" style="padding:16px">
+                  <div class="row" style="justify-content:space-between"><b>Última consulta · 29/09</b><a href="#" class="muted" style="font-size:13px">Ver relatório</a></div>
+                  <p style="margin:6px 0 10px">IVAS, sintomáticos. Peso 12,3 kg. Mãe orientada sobre sinais de alarme.</p>
+                  <div class="check" style="padding:8px 10px"><i data-lucide="bell" style="width:16px;color:var(--ink)"></i><div>Reavaliar peso no próximo retorno</div></div>
+                </div>
+                <div class="card" style="padding:14px">
+                  <b>Histórico</b>
+                  <div class="tl"><span>29/09</span><div><b>IVAS</b> · receita</div></div>
+                  <div class="tl"><span>12/08</span><div><b>Puericultura</b> · vacinas 15 meses</div></div>
+                  <div class="tl"><span>03/06</span><div><b>Otite média</b> · receita, atestado</div></div>
+                  <a href="#" style="color:var(--ink);font-size:13px">Ver as 5 consultas</a>
+                </div>
+              </div>
+              <div class="col" style="gap:14px">
+                <div class="card" style="padding:14px;border-color:color-mix(in oklch,var(--danger) 35%,white)">
+                  <b>Pendências</b>
+                  <div class="col" style="gap:6px;margin-top:8px">
+                    <div class="row"><i data-lucide="syringe" style="width:16px;color:var(--danger)"></i>Tríplice viral (2ª dose) atrasada</div>
+                    <div class="row"><i data-lucide="ruler" style="width:16px;color:var(--ink)"></i>Sem medida há 37 dias</div>
+                  </div>
+                </div>
+                <div class="card" style="padding:14px">
+                  <b>Crescimento</b>
+                  <div class="grid2" style="margin-top:8px">
+                    <div><div class="muted" style="font-size:12px">Peso</div><b>12,3 kg</b> <span class="pill green">p50</span></div>
+                    <div><div class="muted" style="font-size:12px">Altura</div><b>87 cm</b> <span class="pill green">p50</span></div>
+                  </div>
+                  <svg viewBox="0 0 200 50" style="width:100%;height:50px;margin-top:8px"><polyline fill="none" stroke="var(--ink)" stroke-width="2" points="0,45 40,36 80,28 120,22 160,16 200,12"/></svg>
+                </div>
+                <div class="card" style="padding:14px">
+                  <b>Dados clínicos</b>
+                  <div class="muted" style="font-size:13px;margin-top:6px">Alergias: amoxicilina<br>Comorbidades: nenhuma<br>Medicação contínua: nenhuma</div>
+                </div>
+              </div>
+            </div>
+            <div class="fpane"><div class="card" style="padding:16px"><b>Consultas</b><div class="muted">Mesma lista da tela Consultas, filtrada para a Helena.</div></div></div>
+            <div class="fpane"><div class="card" style="padding:16px"><b>Crescimento</b><div class="muted">Curvas da OMS, com o gráfico na largura toda.</div></div></div>
+            <div class="fpane"><div class="card" style="padding:16px"><b>Vacinas</b><div class="muted">Calendário SUS/SBIm com a dose atrasada no topo.</div></div></div>
+            <div class="fpane"><div class="card" style="padding:16px"><b>Documentos</b><div class="muted">Receitas, atestados e pedidos de todas as consultas, com reimpressão.</div></div></div>
+            <div class="fpane"><div class="card" style="padding:16px"><b>Anexos e escalas</b><div class="muted">Exames enviados e escalas aplicadas.</div></div></div>
+          </div>
+        </div>
+      </div>
+    </section>
+    </div></div>
+
+    <aside class="notes" id="notes"></aside>
+  </div>
+</div>
+
+<script>
+const NOTES = [
+  { before: ["O app vai para \"Verifique seu e-mail\", mas a sessão já existe e o proxy pula a página (o Pixel de cadastro não dispara).", "Nome composto é cortado errado e o CRM não é pedido, então sai receita sem CRM."],
+    after: ["Uma tela, campos separados, CRM e UF pedidos já no cadastro.", "O botão leva direto ao app, e o evento de cadastro é disparado ali."],
+    heur: ["Nielsen 1 · status visível", "Nielsen 5 · prevenção de erro", "Krug · metade das palavras"] },
+  { before: ["Início com 4 contadores zerados, tabela vazia e um \"Criar novo caso\" pequeno.", "\"Caso\", \"workspace\" e \"atendimento\" nomeiam a mesma coisa."],
+    after: ["Um único CTA forte: Iniciar consulta.", "Checklist dos primeiros passos que some depois de concluído.", "Um termo só: consulta."],
+    heur: ["Nielsen 8 · 1 CTA por tela", "Nielsen 4 · consistência", "Krug · não me faça pensar"] },
+  { before: ["Cadastrar paciente leva à ficha, não à consulta.", "Para voltar, \"Novo atendimento\" fica no menu ⋮ ao lado de \"Excluir\".", "Passa duas vezes pela tela de seleção."],
+    after: ["Buscar e cadastrar no mesmo painel: sem resultado, o formulário curto já aparece preenchido com o nome digitado.", "Cadastrar e iniciar com um botão.", "A ficha completa continua disponível, mas é opcional."],
+    heur: ["Nielsen 6 · reconhecer, não lembrar", "Nielsen 7 · eficiência", "Krug · cliques sem dúvida"] },
+  { before: ["Sem botão de encerrar: só pelo chat ou saindo para um card cinza.", "Receita e atestado ficam a 4 níveis, fora da consulta.", "O cronômetro flutuante cobre Enviar e Gravar.", "\"Sair do workspace\" é vermelho e não sai."],
+    after: ["\"Encerrar consulta\" fixo no cabeçalho, como ação principal.", "Barra de documentos abrindo em painel lateral, com peso e alergia já trazidos da consulta.", "O cronômetro faz parte do cabeçalho.", "A IA sugere \"Abrir receita com isso\" na própria resposta.", "O menu recolhe para ícones; o ponto verde no topo é a consulta aberta.", "Experimente: clique em Receita → Emitir, depois em Encerrar."],
+    heur: ["Nielsen 3 · controle e saída", "Nielsen 1 · status visível", "Nielsen 8 · ação primária visível", "Nielsen 7 · atalhos R / A"] },
+  { before: ["Depois de encerrar, a tela só recarrega. Não há próximo passo.", "\"Descartar e sair\" não apaga nada e o caso fica ativo, gerando um alerta na próxima consulta."],
+    after: ["Resumo do que foi feito e um CTA: Atender próximo paciente.", "Enviar documentos ao responsável na hora.", "Reabrir disponível, em vez de diálogos \"tem certeza?\"."],
+    heur: ["Nielsen 1 · confirmação", "Nielsen 3 · desfazer > confirmar", "Krug · cada passo dá confiança"] },
+  { before: ["4 itens que abrem páginas de cards: todo destino custa 1 clique a mais.", "\"Serviços\" e \"Atendimentos\" não dizem o que há dentro.", "Financeiro é um hub com um card só.", "Não dá para iniciar consulta pelo menu nem ver que há uma aberta."],
+    after: ["Iniciar consulta (ou a consulta aberta) no topo, em todas as telas.", "Busca de paciente com ⌘K.", "6 itens diretos; Documentos abre embaixo.", "Configuração (Modelos, Perfil) no rodapé, Admin separado."],
+    heur: ["Krug · teste do porta-malas", "Nielsen 6 · reconhecer, não lembrar", "Nielsen 2 · linguagem do médico", "Nielsen 7 · ⌘K"] },
+  { before: ["Tabela com Paciente, Responsável, Início, Canal e Situação: nada diz do que foi a consulta.", "Nas encerradas, o único botão visível é \"Reabrir caso\", que ainda encerra a consulta ativa.", "\"Abrir caso\" da consulta ativa leva ao detalhe, não ao chat.", "Sem filtros (o estado vazio de \"ativos/encerrados\" existe no código, mas não é usado) e sem paginação.", "\"Painel\" / \"Outro canal\" é jargão interno; o tooltip repete \"clique para abrir\" em toda linha."],
+    after: ["A consulta em andamento fica fixada no topo e leva direto ao chat.", "Agrupado por dia, com o motivo (do relatório), documentos emitidos, duração e valor.", "Filtros: Hoje, Esta semana, Com pendência (sem valor, sem paciente associado).", "Reabrir vai para o menu ⋯, junto de Ver relatório e Baixar documentos.", "Só o WhatsApp ganha selo; o painel é o padrão e não precisa de marca."],
+    heur: ["Nielsen 6 · reconhecer, não lembrar", "Nielsen 5 · prevenção de erro", "Nielsen 8 · minimalismo", "Nielsen 2 · linguagem do médico"] },
+  { before: ["3 colunas: nome, responsável e data de nascimento. O pediatra pensa em idade, não em data.", "Ordem alfabética: quem você atendeu ontem fica no meio da lista.", "Busca só por nome e responsável (a mãe liga, e o telefone não serve para buscar).", "Nenhum sinal de pendência: vacina atrasada, retorno vencido, ficha incompleta.", "Para atender, é preciso abrir a ficha e achar o menu ⋮."],
+    after: ["Idade calculada ao lado do nome e telefone ao lado do responsável.", "Atendidos recentemente como padrão; A–Z como alternativa.", "Busca também por telefone.", "Coluna Atenção com pílulas e filtro \"Precisam de atenção\".", "Botão Atender em cada linha, que já inicia a consulta."],
+    heur: ["Nielsen 6 · reconhecer, não lembrar", "Nielsen 7 · eficiência", "Nielsen 1 · status visível", "Krug · não me faça pensar"] },
+  { before: ["Uma página longa: dados, última consulta, vacinas (componente de 800 linhas), crescimento, escalas, anexos e, no fim, o histórico.", "\"Novo atendimento\" escondido no ⋮ ao lado de \"Excluir\".", "Editar troca a página inteira pelo formulário.", "A alergia só aparece descendo até o painel clínico."],
+    after: ["Cabeçalho fixo com idade, responsável, telefone e alergia sempre visíveis.", "Iniciar consulta como botão principal; Excluir fica no ⋮.", "Abas: o Resumo junta a última consulta, pendências, crescimento e dados clínicos; o resto vai para as abas.", "Editar pode abrir em painel lateral (como a receita) sem perder o contexto."],
+    heur: ["Nielsen 8 · mostrar o que importa agora", "Nielsen 5 · prevenção de erro", "Krug · teste do porta-malas", "Nielsen 6 · reconhecer, não lembrar"] },
+];
+
+const steps = [...document.querySelectorAll(".step")];
+const stepper = document.getElementById("stepper");
+const notes = document.getElementById("notes");
+let cur = 0, rxEmitted = false;
+
+const DOCS = [["pill", "Receitas", "receitas"], ["file-check", "Atestados"], ["flask-conical", "Pedidos de exame"], ["arrow-right-left", "Encaminhamentos"], ["file-text", "Relatórios"], ["book-open-text", "Orientações"], ["syringe", "Vacinas"]];
+const nav = (icon, label, k = "", extra = "") =>
+  `<div class="nav" data-k="${k}" title="${label}" ${extra}><i data-lucide="${icon}"></i><span class="lbl">${label}</span></div>`;
+
+function sideHTML(d) {
+  const co = (n) => d.callouts ? `class="callout" data-n="${n}"` : "";
+  const top = d.consult
+    ? `<div ${co(1)}><div class="consult" data-go="3" title="Voltar à consulta: Helena Duarte">
+         <div class="row"><span class="dot"></span><b class="lbl" style="font-size:13px">Helena D.</b><small class="lbl" style="margin-left:auto">12:47</small></div>
+         <small class="lbl">Voltar à consulta →</small></div></div>`
+    : `<div ${co(1)}><button class="btn pri cta" data-go="2" title="Iniciar consulta"><i data-lucide="stethoscope"></i><span class="lbl">Iniciar consulta</span></button></div>`;
+  return `
+  <div class="logo">FALA<span>PED</span></div>
+  ${top}
+  <div ${co(2)}><div class="search" data-go="2" title="Buscar paciente"><i data-lucide="search"></i><span class="lbl">Buscar paciente</span><span class="kbd">⌘K</span></div></div>
+  <div ${co(3)}>
+    ${nav("home", "Início", "inicio", 'data-go="1"')}
+    ${nav("stethoscope", "Consultas", "consultas", 'data-go="6"')}
+    ${nav("users", "Pacientes", "pacientes", 'data-go="7"')}
+  </div>
+  <div ${co(4)}>
+    <div class="nav ${d.docs ? "open" : ""}" data-toggle title="Documentos"><i data-lucide="files"></i><span class="lbl">Documentos</span><i class="chev" data-lucide="chevron-right"></i></div>
+    <div class="sub ${d.docs ? "show" : ""}">${DOCS.map(([i, l, k]) => nav(i, l, k || "")).join("")}</div>
+    ${nav("messages-square", "Pergunte ao assistente")}
+  </div>
+  <div ${co(5)}>${nav("wallet", "Financeiro")}</div>
+  <div class="grow"></div>
+  <div ${co(6)} style="border-top:1px solid var(--border);padding-top:6px;width:100%">
+    ${nav("layout-template", "Modelos")}
+    ${nav("sparkles", "Novidades")}
+    <div class="nav" title="Dra. Ana Souza"><div class="av" style="width:24px;height:24px;font-size:10px">AS</div><span class="lbl">Dra. Ana Souza</span><i class="chev lbl" data-lucide="chevrons-up-down"></i></div>
+  </div>`;
+}
+
+document.querySelectorAll(".side[data-side]").forEach(s => {
+  s.innerHTML = sideHTML({ consult: s.dataset.consult, docs: s.dataset.docs, callouts: s.dataset.callouts });
+  s.querySelector(`[data-k="${s.dataset.side}"]`)?.classList.add("on");
+  if (s.dataset.mini) { s.classList.add("mini"); s.closest(".app").classList.add("mini"); }
+});
+document.addEventListener("click", e => {
+  const b = e.target.closest("[data-tabs] > button");
+  if (!b) return;
+  const bar = b.parentElement, idx = [...bar.children].indexOf(b);
+  [...bar.children].forEach(x => x.classList.toggle("on", x === b));
+  if (bar.dataset.panes) b.closest(".step").querySelectorAll("." + bar.dataset.panes).forEach((p, j) => p.classList.toggle("on", j === idx));
+});
+document.addEventListener("click", e => {
+  const t = e.target.closest("[data-toggle]");
+  if (!t) return;
+  t.classList.toggle("open");
+  t.nextElementSibling.classList.toggle("show");
+});
+
+steps.forEach((s, i) => {
+  const b = document.createElement("button");
+  b.innerHTML = `<span class="n">${i + 1}</span>${s.dataset.title}`;
+  b.onclick = () => go(i);
+  stepper.append(b);
+});
+
+function go(i) {
+  cur = i;
+  steps.forEach((s, j) => s.classList.toggle("on", j === i));
+  [...stepper.children].forEach((b, j) => { b.classList.toggle("on", j === i); b.classList.toggle("done", j < i); });
+  const n = NOTES[i];
+  notes.innerHTML = `
+    <div class="note before"><h3>Hoje</h3><ul>${n.before.map(x => `<li>${x}</li>`).join("")}</ul></div>
+    <div class="note after"><h3>No fluxo ideal</h3><ul>${n.after.map(x => `<li>${x}</li>`).join("")}</ul>
+      <div class="heur">${n.heur.map(h => `<span class="pill blue">${h}</span>`).join("")}</div></div>
+    <div class="footer-nav">
+      <button class="btn" ${i === 0 ? "disabled" : ""} onclick="go(${i - 1})"><i data-lucide="arrow-left"></i>Anterior</button>
+      <button class="btn pri" ${i === steps.length - 1 ? "disabled" : ""} onclick="go(${i + 1})">Próximo<i data-lucide="arrow-right"></i></button>
+    </div>`;
+  closeAll();
+  if (i === 4) renderEndDocs();
+  lucide.createIcons();
+}
+
+const scrim = document.getElementById("scrim");
+function closeAll() {
+  scrim.classList.remove("show");
+  document.querySelectorAll("#ws .drawer, #ws .modal").forEach(e => e.classList.remove("show"));
+}
+function open(id) {
+  closeAll();
+  scrim.classList.add("show");
+  document.getElementById(id).classList.add("show");
+}
+document.addEventListener("click", e => {
+  const t = e.target.closest("[data-go],[data-open],[data-close]");
+  if (!t) return;
+  e.preventDefault();
+  if (t.dataset.go) go(+t.dataset.go);
+  else if (t.dataset.open) open(t.dataset.open);
+  else closeAll();
+});
+scrim.onclick = closeAll;
+
+document.getElementById("emitRx").onclick = () => {
+  rxEmitted = true;
+  document.getElementById("docList").innerHTML =
+    `<div class="doc"><i data-lucide="pill"></i>Receita · 2 itens<span class="pill green" style="margin-left:auto">impressa</span></div>`;
+  const c = document.getElementById("rxCheck");
+  c.classList.add("ok"); c.querySelector(".b").innerHTML = '<i data-lucide="check" style="width:14px"></i>';
+  document.getElementById("rxCheckTxt").textContent = "Receita emitida (2 itens)";
+  closeAll();
+  lucide.createIcons();
+};
+
+function renderEndDocs() {
+  document.getElementById("endDocs").innerHTML = (rxEmitted
+    ? `<div class="doc"><i data-lucide="pill"></i>Receita · azitromicina, dipirona<button class="btn sm ghost" style="margin-left:auto"><i data-lucide="download"></i></button></div>`
+    : "") + `<div class="doc"><i data-lucide="file-text"></i>Relatório do atendimento<button class="btn sm ghost" style="margin-left:auto"><i data-lucide="download"></i></button></div>`;
+}
+
+// cronômetro de mentira
+let sec = 12 * 60 + 47;
+setInterval(() => { sec++; const c = document.getElementById("clock"); if (c) c.textContent = `${String(Math.floor(sec / 60)).padStart(2, "0")}:${String(sec % 60).padStart(2, "0")}`; }, 1000);
+
+go(0);
+</script>
+</body>
+</html>
