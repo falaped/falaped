@@ -32,6 +32,7 @@ import { computePediatricAge } from "@/lib/compute-pediatric-age"
 import { formatPediatricAgeShort } from "@/lib/format-pediatric-age"
 import { getFriendlyToastMessage } from "@/lib/get-friendly-toast-message"
 import { getPatientInitials } from "@/lib/get-patient-initials"
+import { PatientQuickRegister } from "@/components/dashboard/patient-quick-register"
 
 type ActiveCase = { id: string; origin: "dashboard" | "whatsapp"; startedAt: string; patientId: string | null }
 
@@ -81,6 +82,8 @@ export function PatientSearch() {
   /** Criança à espera do "Encerrar a da X e atender". */
   const [pendingPatient, setPendingPatient] = useState<PatientSearchItem | null>(null)
   const [busyId, setBusyId] = useState<string | null>(null)
+  /** Nome digitado ao abrir o cadastro rápido (a4); null = busca. */
+  const [registering, setRegistering] = useState<string | null>(null)
   const [isPending, startTransition] = useTransition()
 
   useEffect(() => {
@@ -100,6 +103,7 @@ export function PatientSearch() {
   useEffect(() => {
     if (!open) return
     setQuery("")
+    setRegistering(null)
     listPatientsForSearchAction().then((result) => {
       if (result.ok) {
         setPatients(result.patients)
@@ -202,12 +206,26 @@ export function PatientSearch() {
       </div>
 
       <CommandDialog open={open} onOpenChange={setOpen} title={isStart ? "Iniciar consulta" : "Buscar paciente"} className="top-[12vh] max-w-[600px] translate-y-0 rounded-2xl">
+        {registering !== null ? (
+          <PatientQuickRegister
+            initialName={registering}
+            busy={isPending}
+            onBack={() => setRegistering(null)}
+            onCreated={start}
+          />
+        ) : (
         <Command>
           <CommandInput value={query} onValueChange={setQuery} placeholder={isStart ? "Quem você vai atender? Nome, responsável ou telefone" : "Nome, responsável ou telefone"} />
           <CommandList className="max-h-[400px]">
             {patients ? (
               <>
-                <CommandEmpty>Nenhuma criança com esse nome. Cadastre abaixo.</CommandEmpty>
+                <CommandEmpty className="flex flex-col items-center gap-3 py-6 text-center">
+                  <span className="text-muted-foreground">Nenhum paciente com &ldquo;{query.trim()}&rdquo;.</span>
+                  <Button size="sm" onClick={() => setRegistering(query.trim())}>
+                    <UserPlusIcon aria-hidden />
+                    Cadastrar {query.trim().split(" ")[0]} e iniciar consulta
+                  </Button>
+                </CommandEmpty>
                 <CommandGroup heading={listed === recents ? "Recentes" : "Pacientes"}>
                   {listed.map((patient) => {
                     const age = formatPediatricAgeShort(computePediatricAge(patient.birthDate))
@@ -283,7 +301,7 @@ export function PatientSearch() {
             )}
           </CommandList>
           <div className="border-t border-border p-3">
-            <Button variant="outline" className="w-full" onClick={() => go("/dashboard/patients/new")}>
+            <Button variant="outline" className="w-full" onClick={() => setRegistering(query.trim())}>
               <UserPlusIcon aria-hidden />
               Cadastrar paciente
             </Button>
@@ -294,6 +312,7 @@ export function PatientSearch() {
             <span>Esc fechar</span>
           </div>
         </Command>
+        )}
       </CommandDialog>
 
       <AlertDialog open={!!pendingPatient} onOpenChange={(value) => !value && setPendingPatient(null)}>
