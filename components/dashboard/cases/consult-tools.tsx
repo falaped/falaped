@@ -16,12 +16,12 @@ import {
 
 import { ConsultCertificatePanel } from "@/components/dashboard/cases/consult-certificate-panel"
 import { PanelBody } from "@/components/dashboard/cases/consult-document"
+import { ConsultExamReadingPanel } from "@/components/dashboard/cases/consult-exam-reading-panel"
 import { ConsultExamRequestPanel } from "@/components/dashboard/cases/consult-exam-request-panel"
 import { ConsultPrescriptionPanel, type ConsultDoctor } from "@/components/dashboard/cases/consult-prescription-panel"
 import { ConsultScalePanel } from "@/components/dashboard/cases/consult-scale-panel"
 import { ConsultReferralPanel } from "@/components/dashboard/cases/consult-referral-panel"
 import { AttachmentsSection } from "@/components/dashboard/attachments/attachments-section"
-import { ExamReadingsSection } from "@/components/dashboard/exam-readings/exam-readings-section"
 import type { ExamReadingWithPages } from "@/components/dashboard/exam-readings/exam-reading-card"
 import { MeasurementForm } from "@/components/dashboard/patients/growth/measurement-form"
 import { Button } from "@/components/ui/button"
@@ -46,8 +46,18 @@ const SHEET_TITLE: Record<SheetKind, string> = {
   attachment: "Anexos",
 }
 
-/** Documentos levam a folha ao lado (protótipo a6): painel bem mais largo que os outros. */
-const DOCUMENT_KINDS: SheetKind[] = ["prescription", "certificate", "exam-request", "referral", "scale"]
+/** Largura de cada painel: com coluna ao lado (folha, resultado, curva) vai bem mais largo. */
+const WIDE = "data-[side=right]:w-[min(1120px,92vw)] lg:data-[side=right]:w-[min(1120px,82vw)]"
+const SHEET_WIDTH: Record<SheetKind, string> = {
+  prescription: WIDE,
+  certificate: WIDE,
+  "exam-request": WIDE,
+  referral: WIDE,
+  scale: WIDE,
+  measure: WIDE,
+  exam: "data-[side=right]:w-[min(880px,92vw)]",
+  attachment: "data-[side=right]:w-[min(760px,92vw)]",
+}
 
 const TOOLS: Array<[SheetKind, string, LucideIcon]> = [
   ["prescription", "Receita", PillIcon],
@@ -129,12 +139,7 @@ export function ConsultTools({
       {patient ? (
         <Sheet open={sheet !== null} onOpenChange={(next) => !next && setSheet(null)}>
           <SheetContent
-            className={cn(
-              "gap-0 rounded-l-2xl bg-card data-[side=right]:sm:max-w-none",
-              DOCUMENT_KINDS.includes(sheet ?? lastSheet)
-                ? "data-[side=right]:w-[min(1120px,92vw)] lg:data-[side=right]:w-[min(1120px,82vw)]"
-                : "data-[side=right]:w-[max(45vw,560px)]",
-            )}
+            className={cn("gap-0 rounded-l-2xl bg-card data-[side=right]:sm:max-w-none", SHEET_WIDTH[sheet ?? lastSheet])}
           >
             <SheetHeader className="border-b border-border px-6 py-4">
               <SheetTitle className="font-display text-section font-semibold">{title}</SheetTitle>
@@ -175,9 +180,7 @@ export function ConsultTools({
               <ConsultScalePanel patientId={patient.id} caseId={caseId} ageMonths={ageMonths} history={scaleResults} onDone={onDone} />
             ) : null}
             {sheet === "exam" ? (
-              <PanelBody>
-                <ExamReadingsSection patientId={patient.id} caseId={caseId} readings={examReadings} />
-              </PanelBody>
+              <ConsultExamReadingPanel patientId={patient.id} caseId={caseId} readings={examReadings} onDone={onDone} />
             ) : null}
             {sheet === "measure" ? (
               <PanelBody>
