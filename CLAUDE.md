@@ -148,6 +148,7 @@ Falaped é um app web para o dia a dia do pediatra: cadastro de pacientes (crian
 - **Valores vêm do código.** Os tokens ficam em `app/globals.css` e os componentes em `components/ui/`. Nunca usar cor, raio, sombra ou tamanho solto fora deles.
 - **Exemplos vêm de `docs/ux/prototipo.html`.** Se o protótipo e o guia divergirem, vale o guia.
 - **Toda tela parte de um dos 6 modelos de página do guia.** O checklist de feature nova vai preenchido na descrição do PR.
+- **PRs da 2.0 têm como base o branch `falaped-2.0`** (cópia da `main`), nunca a `main`. A virada `falaped-2.0` → `main` é uma só, no fim, quando o gestor pedir.
 - **Para mudar uma regra:**
   1. Peça o OK do gestor.
   2. Atualize o guia.
