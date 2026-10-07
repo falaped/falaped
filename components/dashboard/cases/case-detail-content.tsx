@@ -13,6 +13,8 @@ import { getDefaultReportTemplate } from "@/modules/report-templates/get-default
 import { normalizeReportTemplateSections } from "@/modules/report-templates/fixed-template-sections"
 import { getMedicalCertificatesByCaseId } from "@/modules/medical-certificates/get-medical-certificates-by-case-id"
 import { getPrescriptionsByCaseId } from "@/modules/prescriptions/get-prescriptions-by-case-id"
+import { getExamRequestsByCaseId } from "@/modules/exam-requests/get-exam-requests-by-case-id"
+import { getReferralsByCaseId } from "@/modules/referrals/get-referrals-by-case-id"
 import { getCaseEarningsTotals } from "@/modules/financial-entries/get-case-earnings-totals"
 import { listFinancialEntries } from "@/modules/financial-entries/list-financial-entries"
 import { getScaleResultsByCase } from "@/modules/patient-scales/get-scale-results-by-case"
@@ -24,13 +26,8 @@ import { getPreviousCaseCarryover } from "@/modules/cases/get-previous-case-carr
 import { listCaseReminders } from "@/modules/cases/list-case-reminders"
 import { computePediatricAge } from "@/lib/compute-pediatric-age"
 import { CaseDetailHeader } from "@/components/dashboard/cases/case-detail-header"
-import { CaseDetailDocuments } from "@/components/dashboard/cases/case-detail-documents"
-import { CaseSectionCards, type CaseSection } from "@/components/dashboard/cases/case-section-cards"
-import { CaseStatusCard } from "@/components/dashboard/cases/case-status-card"
-import { CaseResumeCard } from "@/components/dashboard/cases/case-resume-card"
-import { CaseEarningsCard } from "@/components/dashboard/cases/case-earnings-card"
-import { CasePendingEarningsCard } from "@/components/dashboard/cases/case-pending-earnings-card"
-import { caseDetailMainStackClassName } from "@/components/dashboard/cases/case-detail-workspace"
+import { CaseDetailDocuments, toCaseDocuments } from "@/components/dashboard/cases/case-detail-documents"
+import { CaseBillingCard } from "@/components/dashboard/cases/case-billing-card"
 import { CaseReport } from "@/components/dashboard/cases/case-report"
 import { ConsultationTimerWidget } from "@/components/dashboard/cases/consultation-timer-widget"
 import { ScalesSection } from "@/components/dashboard/scales/scales-section"
@@ -56,6 +53,8 @@ export async function CaseDetailContent({ id }: { id: string }) {
     caseAttachments,
     caseReminders,
     caseExamReadings,
+    caseExamRequests,
+    caseReferrals,
   ] = await Promise.all([
     getCaseById(supabase, id, profile.id),
     profile.report_template_id
@@ -79,6 +78,8 @@ export async function CaseDetailContent({ id }: { id: string }) {
     listAttachmentsByCase(supabase, profile.id, id).catch(() => []),
     listCaseReminders(supabase, profile.id, id).catch(() => []),
     listExamReadingsByCase(supabase, profile.id, id).catch(() => []),
+    getExamRequestsByCaseId(supabase, profile.id, id).catch(() => []),
+    getReferralsByCaseId(supabase, profile.id, id).catch(() => []),
   ])
 
   if (!caseDetail) {
@@ -150,163 +151,105 @@ export async function CaseDetailContent({ id }: { id: string }) {
         })()
       : null
 
-  const reportBlock =
-    template != null ? (
-      <CaseReport
-        template={template}
-        caseReports={caseReports}
-        caseId={id}
-        hasMessages={messages.length > 0}
-        patientName={caseDetail.patient?.name ?? "Paciente não associado"}
-      />
-    ) : (
-      <div className="rounded-xl border border-dashed border-border p-6 text-center text-sm text-muted-foreground">
-        Nenhum modelo de relatório disponível para este perfil.
-      </div>
-    )
+  const documents = toCaseDocuments({
+    prescriptions: casePrescriptions,
+    certificates: caseCertificates,
+    examRequests: caseExamRequests,
+    referrals: caseReferrals,
+  })
 
-  // Ordem pedida pelo gestor: relatório, escalas, exames, anexos, documentos,
-  // lembretes, ganhos. Escalas/anexos/exames só existem com paciente vinculado.
-  const patientSections: CaseSection[] = caseDetail.patient
-    ? [
-        {
-          key: "scales",
-          title: "Escalas da consulta",
-          description: "Escalas aplicadas neste atendimento.",
-          content: (
-            <ScalesSection
-              patientId={caseDetail.patient.id}
-              caseId={id}
-              ageMonths={caseAgeMonths}
-              results={scaleResults}
-              title="Escalas desta consulta"
-              description="Escalas aplicadas neste atendimento. O registro fica no histórico do paciente."
-            />
-          ),
-        },
-        {
-          key: "exams",
-          title: "Leitura de exames",
-          description: "Exames lidos pela IA neste atendimento.",
-          content: (
-            <ExamReadingsSection
-              patientId={caseDetail.patient.id}
-              caseId={id}
-              readings={examReadingsWithPages}
-            />
-          ),
-        },
-        {
-          key: "attachments",
-          title: "Anexos da consulta",
-          description: "Arquivos enviados neste atendimento.",
-          content: (
-            <AttachmentsSection
-              patientId={caseDetail.patient.id}
-              caseId={id}
-              attachments={caseAttachments}
-              title="Anexos desta consulta"
-              description="Arquivos enviados neste atendimento. Ficam guardados na ficha da criança."
-            />
-          ),
-        },
-      ]
-    : []
-
-  const sections: CaseSection[] = [
-    {
-      key: "report",
-      title: "Relatório do atendimento",
-      description: "Relatórios gerados a partir da consulta.",
-      content: reportBlock,
-    },
-    ...patientSections,
-    {
-      key: "documents",
-      title: "Documentos do caso",
-      description: "Receitas e atestados deste atendimento.",
-      content: (
-        <CaseDetailDocuments
-          caseId={id}
-          patientId={caseDetail.patient?.id ?? null}
-          certificates={caseCertificates}
-          prescriptions={casePrescriptions}
-        />
-      ),
-    },
-    {
-      key: "reminders",
-      title: "Lembretes e pendências",
-      description: "O que retomar na próxima consulta.",
-      content: (
-        <CaseRemindersCard caseId={id} initialReminders={caseReminders} />
-      ),
-    },
-    ...(caseEntries.length > 0 && earningsTotals != null
-      ? [
-          {
-            key: "earnings" as const,
-            title: "Ganhos deste atendimento",
-            description: "Lançamentos financeiros vinculados a este caso.",
-            content: (
-              <CaseEarningsCard
-                caseId={id}
-                todayLabel={todayLabel}
-                entries={caseEntries}
-                count={earningsTotals.count}
-                totalCents={earningsTotals.totalCents}
-              />
-            ),
-          },
-        ]
-      : []),
+  // "06/10 · 09:10 · 22 min" no fuso da clínica; a duração desconta as pausas.
+  const inClinic = { in: tz(CLINIC_TIME_ZONE) }
+  const durationMin = caseDetail.ended_at
+    ? Math.max(
+        1,
+        Math.round(
+          (Date.parse(caseDetail.ended_at) -
+            Date.parse(caseDetail.started_at) -
+            (caseDetail.consultation_paused_ms ?? 0)) /
+            60_000,
+        ),
+      )
+    : null
+  const whenLabel = [
+    format(caseDetail.started_at, "dd/MM", inClinic),
+    format(caseDetail.started_at, "HH:mm", inClinic),
+    durationMin ? `${durationMin} min` : null,
   ]
+    .filter(Boolean)
+    .join(" · ")
+
+  const patient = caseDetail.patient
+  const hasExtras =
+    patient != null &&
+    (scaleResults.length > 0 || examReadingsWithPages.length > 0 || caseAttachments.length > 0)
 
   return (
-    <div className={caseDetailMainStackClassName}>
+    <div className="flex w-full max-w-[1440px] flex-col gap-6">
       <CaseDetailHeader
         detail={caseDetail}
         photoUrl={casePhotoUrl}
+        whenLabel={whenLabel}
+        documentHrefs={documents.map((doc) => doc.href)}
         earningsCount={earningsTotals?.count ?? null}
         earningsTotalCents={earningsTotals?.totalCents ?? null}
+        todayLabel={todayLabel}
       />
-      {/* Caso encerrado sem lançamento não-anulado E com a pergunta ainda em aberto:
-          convida a lançar. Ancorado no ESTADO e não no evento de encerramento, porque
-          três dos quatro caminhos que encerram um caso rodam no servidor (assistente,
-          novo atendimento sobre o ativo, chamada direta) e nunca puderam abrir o
-          diálogo. `earnings_prompted_at` preenchido = o médico já respondeu (lançou ou
-          dispensou como cortesia) e a pergunta é UMA VEZ por caso — sem essa condição a
-          cortesia deixava o card para sempre na tela. `earningsTotals == null` = leitura
-          falhou → não convida, para não arriscar duplicata. */}
-      {!isActive &&
-      earningsTotals != null &&
-      earningsTotals.count === 0 &&
-      caseDetail.earnings_prompted_at == null ? (
-        <CasePendingEarningsCard caseId={id} todayLabel={todayLabel} />
-      ) : null}
-      <section className="flex flex-col gap-3">
-        <h2 className="text-lg font-semibold tracking-tight">Atendimento</h2>
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {/* Só o atendimento em curso conduzido no painel tem workspace para retomar. */}
-          {isActive && caseDetail.origin === "dashboard" ? (
-            <CaseResumeCard caseId={id} />
-          ) : null}
-          <CaseStatusCard
+      <div className="grid items-start gap-5 lg:grid-cols-[1.5fr_1fr]">
+        {template != null ? (
+          <CaseReport
+            template={template}
+            caseReports={caseReports}
             caseId={id}
-            status={caseDetail.status}
-            todayLabel={todayLabel}
+            hasMessages={messages.length > 0}
           />
+        ) : (
+          <section className="rounded-xl border border-dashed border-border p-6 text-center text-muted-foreground">
+            Nenhum modelo de relatório disponível para este perfil.
+          </section>
+        )}
+        <div className="flex flex-col gap-5">
+          <CaseDetailDocuments caseId={id} patientId={patient?.id ?? null} documents={documents} />
+          <CaseBillingCard
+            caseId={id}
+            todayLabel={todayLabel}
+            entries={caseEntries}
+            totals={earningsTotals}
+            prompted={caseDetail.earnings_prompted_at != null}
+          />
+          <CaseRemindersCard caseId={id} initialReminders={caseReminders} />
+          {hasExtras ? null : (
+            <p className="px-1 text-caption text-subtle-foreground">
+              Escalas, exames e anexos aparecem aqui quando a consulta tiver algum.
+            </p>
+          )}
         </div>
-      </section>
-      <section className="flex flex-col gap-3">
-        <h2 className="text-lg font-semibold tracking-tight">Registros do atendimento</h2>
-        <CaseSectionCards sections={sections} />
-      </section>
-      {previousCarryover && caseDetail.patient ? (
-        <PreviousCaseSummaryDialog
-          carryover={previousCarryover}
-          patientName={caseDetail.patient.name}
+      </div>
+      {/* Só o que a consulta teve: seção vazia aqui seria ruído numa consulta encerrada. */}
+      {patient && scaleResults.length > 0 ? (
+        <ScalesSection
+          patientId={patient.id}
+          caseId={id}
+          ageMonths={caseAgeMonths}
+          results={scaleResults}
+          title="Escalas desta consulta"
+          description="O registro fica também no histórico do paciente."
         />
+      ) : null}
+      {patient && examReadingsWithPages.length > 0 ? (
+        <ExamReadingsSection patientId={patient.id} caseId={id} readings={examReadingsWithPages} />
+      ) : null}
+      {patient && caseAttachments.length > 0 ? (
+        <AttachmentsSection
+          patientId={patient.id}
+          caseId={id}
+          attachments={caseAttachments}
+          title="Anexos desta consulta"
+          description="Ficam guardados também na ficha da criança."
+        />
+      ) : null}
+      {previousCarryover && patient ? (
+        <PreviousCaseSummaryDialog carryover={previousCarryover} patientName={patient.name} />
       ) : null}
       <ConsultationTimerWidget
         caseId={id}

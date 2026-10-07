@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { Loader2, Plus, Trash2 } from "lucide-react"
+import { Bell, Loader2, Plus, Trash2 } from "lucide-react"
 import { toast } from "sonner"
 
 import { addCaseReminderAction, deleteCaseReminderAction } from "@/actions"
@@ -83,15 +83,17 @@ export function CaseRemindersForm({
           {reminders.map((reminder) => (
             <li
               key={reminder.id}
-              className="flex items-start justify-between gap-2 rounded-lg border border-border px-3 py-2"
+              className="flex items-start gap-2"
             >
-              <span className="min-w-0 flex-1 wrap-break-word text-sm">
+              <Bell className="mt-1 size-3.5 shrink-0 text-primary-ink" aria-hidden />
+              <span className="min-w-0 flex-1 wrap-break-word">
                 {reminder.text}
               </span>
               <Button
                 type="button"
                 variant="ghost"
-                size="sm"
+                size="icon-xs"
+                className="text-muted-foreground"
                 onClick={() => handleDelete(reminder.id)}
                 disabled={deletingId === reminder.id}
                 aria-label={`Apagar lembrete: ${reminder.text}`}
@@ -102,8 +104,8 @@ export function CaseRemindersForm({
           ))}
         </ul>
       ) : (
-        <p className="text-sm text-muted-foreground">
-          Nenhum lembrete neste atendimento.
+        <p className="text-muted-foreground">
+          Nenhum lembrete nesta consulta.
         </p>
       )}
 

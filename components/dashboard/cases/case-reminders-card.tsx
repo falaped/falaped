@@ -1,16 +1,7 @@
-import { NotebookPenIcon } from "lucide-react"
-
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card"
 import { CaseRemindersForm } from "@/components/dashboard/cases/case-reminders-form"
 import type { CaseReminder } from "@/modules/cases/types"
 
-/** Lembretes do atendimento na página do caso. */
+/** Lembretes da consulta: aparecem na abertura da próxima consulta desta criança. */
 export function CaseRemindersCard({
   caseId,
   initialReminders,
@@ -19,20 +10,9 @@ export function CaseRemindersCard({
   initialReminders: CaseReminder[]
 }) {
   return (
-    <Card className="border-border/80">
-      <CardHeader className="pb-3">
-        <CardTitle className="flex items-center gap-2 text-base font-semibold">
-          <NotebookPenIcon className="h-4 w-4" aria-hidden />
-          Lembretes e pendências
-        </CardTitle>
-        <CardDescription>
-          O que precisa ser retomado na próxima consulta desta criança. Aparece
-          na abertura do próximo atendimento.
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        <CaseRemindersForm caseId={caseId} initialReminders={initialReminders} />
-      </CardContent>
-    </Card>
+    <section className="rounded-xl bg-muted p-5">
+      <h2 className="mb-3 font-display text-title font-semibold">Lembretes para a próxima consulta</h2>
+      <CaseRemindersForm caseId={caseId} initialReminders={initialReminders} />
+    </section>
   )
 }

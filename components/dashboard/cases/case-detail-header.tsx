@@ -1,209 +1,179 @@
+"use client"
+
 import Link from "next/link"
+import { useState } from "react"
 import {
-  AlertTriangleIcon,
-  BabyIcon,
-  CakeIcon,
-  ClockIcon,
-  MarsIcon,
-  PhoneIcon,
+  DownloadIcon,
+  EllipsisIcon,
+  LockIcon,
+  RotateCcwIcon,
+  Trash2Icon,
+  TriangleAlertIcon,
   UserIcon,
-  VenusIcon,
 } from "lucide-react"
 
+import { AttentionSymbol } from "@/components/dashboard/attention-symbol"
+import { CaseDetailActions } from "@/components/dashboard/cases/case-detail-actions"
+import { CloseCaseWithEarningsDialog } from "@/components/dashboard/cases/close-case-with-earnings-dialog"
+import { ReopenCaseDialog } from "@/components/dashboard/cases/reopen-case-dialog"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
 import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip"
-import { formatBrazilianPhone, formatDate, formatDateTime } from "@/lib/formatters"
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 import { computePediatricAge } from "@/lib/compute-pediatric-age"
-import {
-  formatPediatricAge,
-  formatPediatricAgeAbbrev,
-} from "@/lib/format-pediatric-age"
+import { formatPediatricAgeShort } from "@/lib/format-pediatric-age"
 import { getPatientInitials } from "@/lib/get-patient-initials"
-import { formatPatientSexForDisplay } from "@/modules/patients/patient-sex"
 import type { CaseDetail } from "@/modules/cases/get-case-by-id"
-import { CaseDetailHeaderToolbar } from "@/components/dashboard/cases/case-detail-header-toolbar"
-
-function StatusBadge({ status }: { status: "active" | "closed" }) {
-  if (status === "active") {
-    return (
-      <Badge variant="default" className="gap-1.5">
-        <span className="relative flex h-1.5 w-1.5">
-          <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-primary-foreground opacity-75" />
-          <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-primary-foreground" />
-        </span>
-        Caso ativo
-      </Badge>
-    )
-  }
-
-  return <Badge variant="secondary">Encerrado</Badge>
-}
-
-function getCaseTitle(detail: CaseDetail): string {
-  if (detail.patient?.name) return detail.patient.name
-  if (detail.patient?.responsible) return detail.patient.responsible
-  return "Caso sem paciente"
-}
 
 type CaseDetailHeaderProps = {
   detail: CaseDetail
   /** Signed URL (short-lived) resolvida server-side; null cai para iniciais. */
   photoUrl: string | null
+  /** "06/10 · 09:10 · 22 min", montado no RSC no fuso da clínica. */
+  whenLabel: string
+  /** Links de download de todos os documentos da consulta. */
+  documentHrefs: string[]
   /** Lançamentos não-anulados do caso; `null` = a leitura falhou (S7 bloqueia). */
   earningsCount: number | null
   earningsTotalCents: number | null
+  todayLabel: string
 }
 
+/** Cabeçalho da consulta (protótipo b2): quem, quando, documentos; reabrir e excluir no ⋯. */
 export function CaseDetailHeader({
   detail,
   photoUrl,
+  whenLabel,
+  documentHrefs,
   earningsCount,
   earningsTotalCents,
+  todayLabel,
 }: CaseDetailHeaderProps) {
-  const title = getCaseTitle(detail)
-
+  const [dialog, setDialog] = useState<"status" | "delete" | null>(null)
   const patient = detail.patient
+  const title = patient?.name ?? patient?.responsible ?? "Consulta sem paciente"
   const age = patient
     ? computePediatricAge(patient.birth_date, new Date(), patient.gestational_age_weeks)
     : null
-  const ageAbbrev = age ? formatPediatricAgeAbbrev(age) : ""
-  const ageFull = age ? formatPediatricAge(age) : ""
-  const correctedAbbrev =
-    age?.corrected
-      ? formatPediatricAgeAbbrev({
-          status: "ok",
-          band: age.corrected.band,
-          parts: age.corrected.parts,
-        })
-      : ""
-  const correctedFull =
-    age?.corrected
-      ? formatPediatricAge({
-          status: "ok",
-          band: age.corrected.band,
-          parts: age.corrected.parts,
-        })
-      : ""
-  const showAge = age?.status === "ok" && ageAbbrev !== ""
-  const sexLabel = patient ? formatPatientSexForDisplay(patient.sex) : null
-  const SexIcon = patient?.sex === "feminino" ? VenusIcon : MarsIcon
+  const ageLabel = age?.status === "ok" ? formatPediatricAgeShort(age) : ""
+  const isActive = detail.status === "active"
+
+  // ponytail: um download por documento; o navegador pede permissão uma vez para
+  // vários. Um .zip no servidor resolve se virar incômodo.
+  function downloadAll() {
+    documentHrefs.forEach((href, index) => {
+      setTimeout(() => {
+        const a = document.createElement("a")
+        a.href = href
+        a.download = ""
+        a.click()
+      }, index * 400)
+    })
+  }
 
   return (
-    <div className="flex flex-col gap-4">
-      <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-        <div className="flex min-w-0 flex-1 items-start gap-3">
-          <Avatar size="lg" className="mt-0.5 border border-border/80">
-            {photoUrl && patient ? (
-              <AvatarImage src={photoUrl} alt={`Foto de ${patient.name}`} />
+    <header className="flex flex-col gap-3">
+      <nav className="text-caption text-subtle-foreground" aria-label="Você está em">
+        <Link href="/dashboard/cases" className="hover:text-foreground hover:underline">
+          Consultas
+        </Link>{" "}
+        › {title} · {whenLabel.split(" · ")[0]}
+      </nav>
+      <div className="flex flex-wrap items-start gap-4">
+        <Avatar className="size-12">
+          {photoUrl && patient ? <AvatarImage src={photoUrl} alt={`Foto de ${patient.name}`} /> : null}
+          <AvatarFallback className="bg-primary-soft text-title font-semibold text-primary-ink-strong">
+            {patient ? getPatientInitials(patient.name) : <UserIcon className="size-5" />}
+          </AvatarFallback>
+        </Avatar>
+        <div className="min-w-0 flex-1">
+          <div className="flex flex-wrap items-center gap-2">
+            <h1 className="font-display text-page font-semibold">{title}</h1>
+            {ageLabel ? <Badge variant="secondary">{ageLabel}</Badge> : null}
+            <Badge variant={isActive ? "default" : "secondary"}>
+              {isActive ? "Em andamento" : "Encerrada"}
+            </Badge>
+            {patient?.allergies?.trim() ? (
+              <AttentionSymbol icon={TriangleAlertIcon} kind="danger" title="Alergia" detail={patient.allergies} />
             ) : null}
-            <AvatarFallback className="bg-primary/10 text-sm font-semibold text-primary">
-              {patient ? getPatientInitials(patient.name) : <UserIcon className="h-5 w-5" />}
-            </AvatarFallback>
-          </Avatar>
-          <div className="min-w-0 flex-1">
-            <div className="flex flex-wrap items-center gap-2">
-              <h1 className="text-2xl font-semibold tracking-tight">
-                {patient ? (
-                  <Link
-                    href={`/dashboard/patients/${patient.id}`}
-                    className="underline-offset-4 hover:underline"
-                    title="Ver ficha do paciente"
-                  >
-                    {title}
-                  </Link>
-                ) : (
-                  title
-                )}
-              </h1>
-              <StatusBadge status={detail.status} />
-            </div>
-            <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1.5 text-sm text-muted-foreground">
-              {showAge && patient ? (
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Badge variant="secondary" className="gap-1.5 font-normal">
-                        <BabyIcon className="h-3.5 w-3.5 shrink-0 opacity-70" aria-hidden />
-                        <span>
-                          {ageAbbrev}
-                          {correctedAbbrev ? " (corr.)" : ""}
-                        </span>
-                      </Badge>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <p>
-                        {correctedFull ? "Idade cronológica: " : ""}
-                        {ageFull}
-                      </p>
-                      {correctedFull ? <p>Idade corrigida: {correctedFull}</p> : null}
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
-              ) : null}
-              {patient?.birth_date ? (
-                <span className="flex items-center gap-1.5">
-                  <CakeIcon className="h-3.5 w-3.5 shrink-0" aria-hidden />
-                  {formatDate(patient.birth_date)}
-                </span>
-              ) : null}
-              {sexLabel ? (
-                <span className="flex items-center gap-1.5">
-                  <SexIcon className="h-3.5 w-3.5 shrink-0" aria-hidden />
-                  {sexLabel}
-                </span>
-              ) : null}
-              {patient?.responsible ? (
-                <span className="flex items-center gap-1.5">
-                  <UserIcon className="h-3.5 w-3.5 shrink-0" aria-hidden />
-                  {patient.responsible}
-                </span>
-              ) : null}
-              {patient?.contact_phone ? (
-                <span className="flex items-center gap-1.5">
-                  <PhoneIcon className="h-3.5 w-3.5 shrink-0" aria-hidden />
-                  {formatBrazilianPhone(patient.contact_phone)}
-                </span>
-              ) : null}
-              {detail.ended_at ? (
-                <span className="flex items-center gap-1.5">
-                  <ClockIcon className="h-3.5 w-3.5 shrink-0" aria-hidden />
-                  Encerrado em {formatDateTime(detail.ended_at)}
-                </span>
-              ) : null}
-              {patient?.allergies ? (
-                <span className="flex items-center gap-1.5 font-medium text-destructive">
-                  <AlertTriangleIcon className="h-3.5 w-3.5 shrink-0" aria-hidden />
-                  {patient.allergies}
-                </span>
-              ) : null}
-            </div>
           </div>
+          <div className="mt-1 text-muted-foreground">
+            <span className="num">{whenLabel}</span>
+            {patient ? (
+              <>
+                {" · "}
+                <Link href={`/dashboard/patients/${patient.id}`} className="text-primary-ink hover:underline">
+                  Ver ficha
+                </Link>
+              </>
+            ) : null}
+          </div>
+          {detail.awaiting_patient_choice || detail.awaiting_intent ? (
+            <div className="mt-2 flex flex-wrap gap-2">
+              {detail.awaiting_patient_choice ? (
+                <Badge variant="outline">Aguardando associação de paciente</Badge>
+              ) : null}
+              {detail.awaiting_intent ? (
+                <Badge variant="outline">Aguardando resposta do responsável</Badge>
+              ) : null}
+            </div>
+          ) : null}
         </div>
-        <CaseDetailHeaderToolbar
-          caseId={detail.id}
-          earningsCount={earningsCount}
-          earningsTotalCents={earningsTotalCents}
-        />
+        <div className="flex shrink-0 items-center gap-2">
+          {documentHrefs.length ? (
+            <Button variant="outline" onClick={downloadAll}>
+              <DownloadIcon data-icon="inline-start" />
+              {documentHrefs.length === 1 ? "Baixar documento" : "Baixar documentos"}
+            </Button>
+          ) : null}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="icon" aria-label="Mais ações">
+                <EllipsisIcon />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-52">
+              <DropdownMenuItem onSelect={() => setDialog("status")}>
+                {isActive ? <LockIcon aria-hidden /> : <RotateCcwIcon aria-hidden />}
+                {isActive ? "Encerrar consulta" : "Reabrir consulta"}
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem variant="destructive" onSelect={() => setDialog("delete")}>
+                <Trash2Icon aria-hidden />
+                Excluir consulta
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
       </div>
 
-      {(detail.awaiting_patient_choice || detail.awaiting_intent) && (
-        <div className="flex flex-wrap gap-2">
-          {detail.awaiting_patient_choice ? (
-            <Badge variant="outline">Aguardando associação de paciente</Badge>
-          ) : null}
-          {detail.awaiting_intent ? (
-            <Badge variant="outline" className="text-muted-foreground">
-              Aguardando resposta do responsável
-            </Badge>
-          ) : null}
-        </div>
+      {isActive ? (
+        <CloseCaseWithEarningsDialog
+          caseId={detail.id}
+          open={dialog === "status"}
+          onOpenChange={(open) => setDialog(open ? "status" : null)}
+          todayLabel={todayLabel}
+        />
+      ) : (
+        <ReopenCaseDialog
+          caseId={detail.id}
+          open={dialog === "status"}
+          onOpenChange={(open) => setDialog(open ? "status" : null)}
+        />
       )}
-    </div>
+      <CaseDetailActions
+        caseId={detail.id}
+        open={dialog === "delete"}
+        onOpenChange={(open) => setDialog(open ? "delete" : null)}
+        earningsCount={earningsCount}
+        earningsTotalCents={earningsTotalCents}
+      />
+    </header>
   )
 }

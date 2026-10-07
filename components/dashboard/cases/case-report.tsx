@@ -18,13 +18,12 @@ import {
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable"
 import { CSS } from "@dnd-kit/utilities"
-import { GripVertical, Sparkles, Loader2, AlertTriangle, Trash2, FileText, Eye, Download } from "lucide-react"
+import { Check, GripVertical, Sparkles, Loader2, Pencil, Trash2, FileText, Download } from "lucide-react"
 
 import type { CaseReport as CaseReportType, CaseReportSection } from "@/modules/cases/get-case-report"
 import type { ReportTemplateWithSections } from "@/modules/report-templates/get-report-template-by-id"
 import { generateCaseReportAction, downloadCaseReportPdfAction, improveReportSectionAction, updateCaseReportAction, deleteCaseReportAction } from "@/actions"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import {
@@ -42,7 +41,6 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip"
-import { Badge } from "@/components/ui/badge"
 import { Skeleton } from "@/components/ui/skeleton"
 import { cn } from "@/lib/utils"
 import { formatDateTime } from "@/lib/formatters"
@@ -53,46 +51,11 @@ import {
   caseReportGenerateDisabledReason,
 } from "@/lib/case-report-generate-eligibility"
 
-function reportSourceLabel(source: string): string {
-  if (source === "web") return "Web"
-  if (source === "whatsapp") return "Outro canal"
-  return source.charAt(0).toUpperCase() + source.slice(1)
-}
-
-function ReportCardSkeleton({
-  label,
-  ariaLabel,
-}: {
-  label: string
-  ariaLabel: string
-}) {
-  return (
-    <div
-      className="flex flex-col gap-2 rounded-lg border border-border bg-card p-4"
-      aria-busy="true"
-      aria-label={ariaLabel}
-    >
-      <div className="flex items-center gap-2">
-        <Skeleton className="h-5 w-5 shrink-0 rounded" />
-        <Skeleton className="h-5 w-14 rounded-md" />
-      </div>
-      <Skeleton className="h-4 w-full max-w-[180px] rounded" />
-      <Skeleton className="h-3 w-20 rounded" />
-      <p className="flex items-center gap-1.5 text-sm text-muted-foreground">
-        <Loader2 className="h-4 w-4 animate-spin shrink-0" aria-hidden />
-        {label}
-      </p>
-    </div>
-  )
-}
-
 type CaseReportProps = {
   template: ReportTemplateWithSections
   caseReports: CaseReportType[]
   caseId: string
   hasMessages: boolean
-  patientName: string
-  /** When true, "Gerar relatório" is shown only in the case toolbar; this block lists/edits only. */
 }
 
 function sortSections(sections: CaseReportSection[] | null | undefined): CaseReportSection[] {
@@ -136,11 +99,11 @@ function previewTextForSection(section: CaseReportSection): string {
 
 function SectionPreview({ section }: { section: CaseReportSection }) {
   return (
-    <div className="border-border border-b pb-4 last:border-0 last:pb-0">
-      <h3 className="text-sm font-semibold text-foreground tracking-tight">
+    <div>
+      <h3 className="text-label font-semibold text-muted-foreground">
         {section.name}
       </h3>
-      <div className="mt-1.5 text-sm leading-relaxed text-foreground whitespace-pre-wrap">
+      <div className="mt-1 whitespace-pre-wrap text-read">
         {previewTextForSection(section)}
       </div>
     </div>
@@ -235,10 +198,12 @@ export function CaseReport({
   caseReports,
   caseId,
   hasMessages,
-  patientName,
 }: CaseReportProps) {
   const router = useRouter()
-  const [selectedReportId, setSelectedReportId] = useState<string | null>(null)
+  // O relatório mais recente já vem aberto: quem abre uma consulta encerrada quer lê-lo.
+  const [selectedReportId, setSelectedReportId] = useState<string | null>(
+    caseReports[0]?.id ?? null,
+  )
   const selectedReport = selectedReportId
     ? caseReports.find((r) => r.id === selectedReportId) ?? null
     : null
@@ -278,7 +243,7 @@ export function CaseReport({
       selectedReportId &&
       !caseReports.some((r) => r.id === selectedReportId)
     ) {
-      setSelectedReportId(null)
+      setSelectedReportId(caseReports[0]?.id ?? null)
     }
   }, [caseReports, selectedReportId])
 
@@ -292,7 +257,7 @@ export function CaseReport({
   }, [caseReports, deletingReportId])
 
   const handleCardClick = useCallback((reportId: string) => {
-    setSelectedReportId((prev) => (prev === reportId ? null : reportId))
+    setSelectedReportId(reportId)
   }, [])
 
   const handleGenerateReport = useCallback(async () => {
@@ -471,270 +436,168 @@ export function CaseReport({
     useSensor(KeyboardSensor),
   )
 
+  const generateButton = canGenerateReport ? (
+    <Button
+      onClick={handleGenerateReport}
+      disabled={isGenerating}
+      variant={caseReports.length ? "ghost" : "default"}
+      size={caseReports.length ? "sm" : "default"}
+    >
+      {isGenerating ? <Loader2 className="animate-spin" /> : <Sparkles />}
+      {caseReports.length ? "Gerar de novo" : "Gerar relatório"}
+    </Button>
+  ) : caseReports.length ? null : (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <span className="inline-block">
+          <Button disabled>
+            <Sparkles />
+            Gerar relatório
+          </Button>
+        </span>
+      </TooltipTrigger>
+      <TooltipContent>
+        {generateDisabledReason ?? "Informações insuficientes para gerar o relatório."}
+      </TooltipContent>
+    </Tooltip>
+  )
+
   if (caseReports.length === 0) {
     return (
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-base font-medium">
-            <Sparkles className="h-4 w-4 text-primary" />
-            Relatório do atendimento
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          {/* Estado vazio no mesmo desenho dos documentos do caso, com o botão no centro. */}
-          <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-border px-6 py-12 text-center">
-            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-muted">
-              <FileText className="h-6 w-6 text-muted-foreground" aria-hidden />
-            </div>
-            <p className="mt-4 font-medium text-muted-foreground">
-              Nenhum relatório gerado para este caso
-            </p>
-            <p className="mt-1 max-w-sm text-sm text-muted-foreground/80">
-              O relatório é montado pela IA a partir do histórico da consulta e do seu modelo.
-            </p>
-            <div className="mt-5">
-              {canGenerateReport ? (
-                <Button onClick={handleGenerateReport} disabled={isGenerating}>
-                  {isGenerating ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  ) : (
-                    <Sparkles className="h-4 w-4" />
-                  )}
-                  <span className="ml-1.5">Gerar relatório</span>
-                </Button>
-              ) : (
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <span className="inline-block">
-                      <Button disabled>
-                        <Sparkles className="h-4 w-4" />
-                        <span className="ml-1.5">Gerar relatório</span>
-                      </Button>
-                    </span>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    {generateDisabledReason ?? "Informações insuficientes para gerar o relatório."}
-                  </TooltipContent>
-                </Tooltip>
-              )}
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+      <section className="rounded-xl border border-border bg-card p-6">
+        <h2 className="font-display text-section font-semibold">Relatório da consulta</h2>
+        <div className="mt-4 flex flex-col items-center rounded-lg border border-dashed border-border px-6 py-10 text-center">
+          <FileText className="size-6 text-subtle-foreground" aria-hidden />
+          <p className="mt-3 font-medium">Nenhum relatório desta consulta</p>
+          <p className="mt-1 max-w-sm text-muted-foreground">
+            A IA monta o relatório a partir da consulta e do seu modelo.
+          </p>
+          <div className="mt-5">{generateButton}</div>
+        </div>
+      </section>
     )
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-          <CardTitle className="flex items-center gap-2 text-base font-medium">
-            <Sparkles className="h-4 w-4 text-primary" />
-            Relatório do atendimento
-          </CardTitle>
-          {canGenerateReport ? (
+    <section className="rounded-xl border border-border bg-card p-6">
+      <div className="flex flex-wrap items-center gap-2">
+        <h2 className="mr-auto font-display text-section font-semibold">Relatório da consulta</h2>
+        {generateButton}
+        {selectedReport ? (
+          <>
+            {canEdit ? (
+              <Button
+                type="button"
+                variant={hasUnsavedEdits ? "default" : "outline"}
+                size="sm"
+                disabled={isFinalizing}
+                onClick={() => handleFinalizeChange(true)}
+              >
+                {isFinalizing ? <Loader2 className="animate-spin" /> : <Check />}
+                {hasUnsavedEdits ? "Salvar e concluir" : "Concluir edição"}
+              </Button>
+            ) : (
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                disabled={isFinalizing}
+                onClick={handleBackToEdit}
+              >
+                <Pencil />
+                Editar
+              </Button>
+            )}
             <Button
-              onClick={handleGenerateReport}
-              disabled={isGenerating}
+              type="button"
               variant="outline"
               size="sm"
+              disabled={isDownloading}
+              onClick={handleDownloadPdf}
             >
-              {isGenerating ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                <Sparkles className="h-4 w-4" />
-              )}
-              <span className="ml-1.5">Gerar relatório</span>
+              {isDownloading ? <Loader2 className="animate-spin" /> : <Download />}
+              Baixar PDF
             </Button>
-          ) : null}
-        </div>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-          {caseReports.map((report) => {
-            if (report.id === deletingReportId) {
-              return (
-                <ReportCardSkeleton
-                  key={report.id}
-                  label="Excluindo…"
-                  ariaLabel="Excluindo relatório"
-                />
-              )
-            }
-            const isSelected = selectedReportId === report.id
-            const isExternalChannel = report.source === "whatsapp"
-            return (
+            <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+              <AlertDialogTrigger asChild>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon-sm"
+                  disabled={isDeleting}
+                  aria-label="Excluir relatório"
+                  className="text-muted-foreground hover:bg-danger-soft hover:text-danger-text"
+                >
+                  <Trash2 />
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent className="max-w-md">
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Excluir relatório?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    Este relatório será removido. Você poderá gerar um novo
+                    depois, se quiser.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel disabled={isDeleting}>Cancelar</AlertDialogCancel>
+                  <Button variant="destructive" disabled={isDeleting} onClick={handleDeleteReport}>
+                    {isDeleting ? "Excluindo…" : "Excluir"}
+                  </Button>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          </>
+        ) : null}
+      </div>
+
+      {/* Mais de uma versão (gerou de novo, ou veio do WhatsApp): chips por data. */}
+      {caseReports.length > 1 || isGenerating ? (
+        <div className="mt-3 flex flex-wrap items-center gap-1.5">
+          <span className="text-caption text-subtle-foreground">Versões:</span>
+          {caseReports.map((report) =>
+            report.id === deletingReportId ? null : (
               <button
                 key={report.id}
                 type="button"
                 onClick={() => handleCardClick(report.id)}
-                aria-pressed={isSelected}
-                aria-label={`Relatório de ${patientName}, ${formatDateTime(report.created_at)}, via ${reportSourceLabel(report.source)}. Clique para visualizar.`}
+                aria-pressed={selectedReportId === report.id}
                 className={cn(
-                  "flex flex-col gap-2 rounded-lg border border-border bg-card p-4 text-left transition-colors hover:bg-muted/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
-                  isSelected && "ring-2 ring-primary bg-primary/5",
+                  "rounded-full border border-border px-2.5 py-0.5 text-caption num transition-colors hover:bg-accent",
+                  selectedReportId === report.id &&
+                    "border-primary bg-primary-soft text-primary-ink-strong",
                 )}
               >
-                <div className="flex items-center justify-between gap-2">
-                  <div className="flex min-w-0 flex-1 items-center gap-2">
-                    <FileText className="h-5 w-5 shrink-0 text-muted-foreground" />
-                    <Badge
-                      variant={isExternalChannel ? "secondary" : "default"}
-                      className={cn(
-                        "shrink-0 text-xs",
-                        isExternalChannel &&
-                          "border-transparent bg-muted text-muted-foreground hover:bg-muted/80",
-                      )}
-                    >
-                      {reportSourceLabel(report.source)}
-                    </Badge>
-                  </div>
-                  {isSelected && (
-                    <Eye className="h-4 w-4 shrink-0 text-primary" aria-hidden />
-                  )}
-                </div>
-                <h3 className="line-clamp-1 text-sm font-semibold text-foreground">
-                  Relatório de {patientName}
-                </h3>
-                <p className="text-xs text-muted-foreground">
-                  {formatDateTime(report.created_at)}
-                </p>
+                {formatDateTime(report.created_at)}
+                {report.source === "whatsapp" ? " · WhatsApp" : ""}
               </button>
-            )
-          })}
-          {isGenerating && (
-            <ReportCardSkeleton
-              key="generating"
-              label="Gerando…"
-              ariaLabel="Gerando relatório"
-            />
+            ),
           )}
+          {isGenerating ? <Skeleton className="h-5 w-28 rounded-full" /> : null}
         </div>
+      ) : null}
 
-        {selectedReport && (
-          <div className="space-y-4 border-t border-border pt-4">
-            <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-end">
-
-              <div className="flex items-center gap-4">
-                {canEdit ? (
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        disabled={isFinalizing}
-                        onClick={() => handleFinalizeChange(true)}
-                        className={cn(
-                          hasUnsavedEdits &&
-                          "border-amber-500/50 text-amber-600 hover:bg-amber-500/10 hover:text-amber-600 dark:text-amber-400 dark:hover:bg-amber-500/10",
-                        )}
-                      >
-                        {hasUnsavedEdits ? (
-                          <>
-                            <AlertTriangle className="mr-2 h-4 w-4" />
-                            Salvar e finalizar edição
-                          </>
-                        ) : (
-                          "Voltar para visualização"
-                        )}
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      {hasUnsavedEdits
-                        ? "Há alterações não salvas. Clique para salvar e finalizar."
-                        : "Finaliza a edição e exibe o relatório em modo somente leitura."}
-                    </TooltipContent>
-                  </Tooltip>
-                ) : (
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    disabled={isFinalizing}
-                    onClick={handleBackToEdit}
-                  >
-                    Voltar a editar
-                  </Button>
-                )}
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  disabled={isDownloading}
-                  onClick={handleDownloadPdf}
-                >
-                  {isDownloading ? (
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  ) : (
-                    <Download className="mr-2 h-4 w-4" />
-                  )}
-                  Baixar PDF
-                </Button>
-                <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-                  <AlertDialogTrigger asChild>
-                    <Button
-                      type="button"
-                      variant="destructive"
-                      size="sm"
-                      disabled={isDeleting}
-                      className="text-destructive hover:bg-destructive/10 hover:text-destructive"
-                    >
-                      <Trash2 className="mr-2 h-4 w-4" />
-                      Excluir relatório
-                    </Button>
-                  </AlertDialogTrigger>
-                  <AlertDialogContent className="max-w-md">
-                    <AlertDialogHeader>
-                      <AlertDialogTitle>Excluir relatório?</AlertDialogTitle>
-                      <AlertDialogDescription>
-                        Este relatório será removido. Você poderá gerar um novo
-                        depois, se quiser.
-                      </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                      <AlertDialogCancel disabled={isDeleting}>
-                        Cancelar
-                      </AlertDialogCancel>
-                      <Button
-                        variant="destructive"
-                        disabled={isDeleting}
-                        onClick={handleDeleteReport}
-                      >
-                        {isDeleting ? "Excluindo…" : "Excluir"}
-                      </Button>
-                    </AlertDialogFooter>
-                  </AlertDialogContent>
-                </AlertDialog>
-              </div>
+      {selectedReport ? (
+        <DndContext sensors={sensors} onDragEnd={handleDragEnd}>
+          <SortableContext
+            items={sections.map((s) => s.name)}
+            strategy={verticalListSortingStrategy}
+          >
+            <div className={cn("mt-5", canEdit ? "space-y-3" : "max-w-[68ch] space-y-5")}>
+              {sections.map((section) => (
+                <SectionBlock
+                  key={section.name}
+                  section={section}
+                  canEdit={canEdit}
+                  isImproving={improvingSection === section.name}
+                  onContentChange={handleContentChange}
+                  onImprove={handleImproveSection}
+                />
+              ))}
             </div>
-            <DndContext sensors={sensors} onDragEnd={handleDragEnd}>
-              <SortableContext
-                items={sections.map((s) => s.name)}
-                strategy={verticalListSortingStrategy}
-              >
-                <div
-                  className={cn(
-                    "space-y-3",
-                    !canEdit && "space-y-6",
-                  )}
-                >
-                  {sections.map((section) => (
-                    <SectionBlock
-                      key={section.name}
-                      section={section}
-                      canEdit={canEdit}
-                      isImproving={improvingSection === section.name}
-                      onContentChange={handleContentChange}
-                      onImprove={handleImproveSection}
-                    />
-                  ))}
-                </div>
-              </SortableContext>
-            </DndContext>
-          </div>
-        )}
-      </CardContent>
-    </Card>
+          </SortableContext>
+        </DndContext>
+      ) : null}
+    </section>
   )
 }
