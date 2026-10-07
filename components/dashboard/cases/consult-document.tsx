@@ -1,6 +1,6 @@
 "use client"
 
-import { EyeIcon, LinkIcon, PlusIcon } from "lucide-react"
+import { EyeIcon, PlusIcon } from "lucide-react"
 import { toast } from "sonner"
 
 import type { ConsultDoctor } from "@/components/dashboard/cases/consult-prescription-panel"
@@ -65,16 +65,6 @@ export function DocStep({
       </div>
       {children}
     </section>
-  )
-}
-
-/** Selo de valor que veio da consulta ou da ficha: o médico só confere. */
-export function FromBadge({ children = "da consulta" }: { children?: React.ReactNode }) {
-  return (
-    <span className="inline-flex items-center gap-1 rounded-full border border-primary-soft-border bg-primary-soft px-2 py-0.5 text-caption font-normal text-primary-ink-strong">
-      <LinkIcon className="size-3" aria-hidden />
-      {children}
-    </span>
   )
 }
 

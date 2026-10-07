@@ -2,10 +2,10 @@
 
 import { useState } from "react"
 import { format } from "date-fns"
-import { ActivityIcon, BedIcon, CircleCheckIcon, ClockIcon, DownloadIcon, UsersIcon, type LucideIcon } from "lucide-react"
+import { ActivityIcon, BedIcon, CircleCheckIcon, ClockIcon, InfoIcon, DownloadIcon, UsersIcon, type LucideIcon } from "lucide-react"
 
 import { generateMedicalCertificateAction } from "@/actions"
-import { DocLayout, DocPaper, DocStep, emitAndDownloadPdf, FromBadge, PanelFooter } from "@/components/dashboard/cases/consult-document"
+import { DocLayout, DocPaper, DocStep, emitAndDownloadPdf, PanelFooter } from "@/components/dashboard/cases/consult-document"
 import type { ConsultDoctor } from "@/components/dashboard/cases/consult-prescription-panel"
 import {
   CertificateFormCard,
@@ -23,6 +23,13 @@ const TYPES: Array<[MedicalCertificateType, string, string, LucideIcon]> = [
   ["acompanhante", "Acompanhante", "Para o responsável apresentar no trabalho", UsersIcon],
   ["aptidao_fisica", "Aptidão física", "Liberado para esporte ou natação", ActivityIcon],
 ]
+
+/** Avisa o que já veio preenchido pela consulta atual (o prefill abaixo). */
+const PREFILL_NOTE: Partial<Record<MedicalCertificateType, string>> = {
+  comparecimento: "Data e horário preenchidos com os da consulta atual: do início dela até agora.",
+  acompanhante: "Data e horário preenchidos com os da consulta atual: do início dela até agora.",
+  medico: "Data de início preenchida com a data da consulta atual.",
+}
 
 /** Tudo o que a consulta já sabe: criança, responsável, data e horário de hoje. */
 function prefill(
@@ -127,7 +134,13 @@ export function ConsultCertificatePanel({
           })}
         </div>
       </DocStep>
-      <DocStep n={2} title="Confira os dados" aside={<FromBadge>data e horário desta consulta</FromBadge>}>
+      <DocStep n={2} title="Confira os dados">
+        {PREFILL_NOTE[type] ? (
+          <p className="flex items-center gap-2 rounded-lg bg-primary-soft px-3 py-2 text-label text-primary-ink-strong">
+            <InfoIcon className="size-4 shrink-0" aria-hidden />
+            {PREFILL_NOTE[type]}
+          </p>
+        ) : null}
         <CertificateFormCard type={type} currentPayload={current} setPayload={setPayload} selectedPatient={patient} embedded />
       </DocStep>
     </>
