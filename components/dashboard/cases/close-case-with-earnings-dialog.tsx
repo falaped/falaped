@@ -50,7 +50,7 @@ type CloseCaseWithEarningsDialogProps = {
    */
   todayLabel: string
   /**
-   * `"close"` (default): as duas etapas — encerra o caso, depois pergunta o que foi cobrado.
+   * `"close"` (default): abre na cobrança e encerra o caso no botão final.
    *
    * `"earnings"`: SÓ a etapa 2, para um caso que JÁ está encerrado. Existe porque encerrar
    * um caso não acontece só pelo botão `Ações → Encerrar caso`: o assistente encerra dentro
@@ -74,16 +74,16 @@ type FieldErrors = {
 const NO_ERRORS: FieldErrors = { procedures: {} }
 
 /**
- * Encerrar caso em DUAS etapas dentro do mesmo `AlertDialog` (S3, EARN-01).
+ * Encerrar consulta pela cobrança (protótipo a10b, S3, EARN-01).
  *
  * Renderizado como IRMÃO do popover de ações, nunca como descendente: o conteúdo do
  * popover desmonta ao fechar e levaria os valores digitados com ele.
  *
- * A máquina de status do caso NÃO é alterada: são duas chamadas de action sequenciais,
- * nunca uma combinada. O encerramento commita ANTES do form aparecer, então a etapa de
- * lançamento não pode bloqueá-lo nem revertê-lo — nada aqui devolve o caso ao estado
- * anterior. Uma etapa 2 falhada, abandonada ou vazia deixa um caso corretamente
- * encerrado com zero lançamentos, que é exatamente cortesia (D-09).
+ * Abrir vai direto para a cobrança com a consulta AINDA aberta; "Voltar à consulta" não
+ * muda nada. Só "Encerrar e salvar" / "Sem cobrança" encerram — e encerram ANTES de
+ * lançar (duas actions em sequência, a máquina de status intacta). Se o lançamento falha
+ * depois do encerramento, o caso fica encerrado sem lançamento e a faixa de pendências
+ * da consulta oferece lançar de novo.
  */
 export function CloseCaseWithEarningsDialog({
   caseId,
@@ -177,44 +177,22 @@ export function CloseCaseWithEarningsDialog({
     return "ok"
   }
 
-  function handleConfirmClose() {
-    startClosing(async () => {
-      // Sem revalidar no servidor: na Consulta isso redirecionaria antes da etapa 2.
-      // Todo caminho de saída daqui chama router.refresh().
-      const closed = await updateCaseStatusAction(caseId, "closed", { deferRevalidate: true })
-      if (!closed.ok) {
-        // O caso simplesmente não foi encerrado — a etapa 2 nunca é atingida.
-        resetForm()
-        onOpenChange(false)
-        toast.error(getFriendlyToastMessage(closed.error))
-        router.refresh()
-        return
-      }
-
-      const outcome = await loadEarningsStep()
-      if (outcome === "already-billed") {
-        closeAndRefresh("Caso encerrado.")
-        return
-      }
-      if (outcome === "error") {
-        // O caso ESTÁ encerrado — dizer isso, e dizer também que o lançamento não abriu.
-        // O caminho do card de pendência (modo `earnings`) continua disponível depois.
-        resetForm()
-        onOpenChange(false)
-        toast.error("Caso encerrado, mas não foi possível abrir o lançamento. Você pode lançar pelo caso.")
-        router.refresh()
-        return
-      }
-      // Sem refresh aqui de propósito: a etapa 2 está aberta, e re-renderizar o RSC da
-      // página do caso (que vive dentro de um `Suspense`, com `cacheComponents`) pode
-      // remontar o boundary e levar o diálogo embora. O refresh acontece ao FECHAR.
-    })
+  /**
+   * Encerra de fato — só no botão final da cobrança (protótipo a10b), nunca ao abrir.
+   * Sem revalidar no servidor: na Consulta isso redirecionaria com o diálogo aberto.
+   * No modo `earnings` o caso já está encerrado e não há nada a fazer.
+   */
+  async function closeCase(): Promise<boolean> {
+    if (mode !== "close") return true
+    const closed = await updateCaseStatusAction(caseId, "closed", { deferRevalidate: true })
+    if (!closed.ok) toast.error(getFriendlyToastMessage(closed.error))
+    return closed.ok
   }
 
-  // Modo `earnings`: o caso já está encerrado, então não há etapa 1 para atravessar —
-  // buscar o pré-preenchimento assim que o diálogo abre.
+  // Abrir já vai para a cobrança (a10b): busca o pré-preenchimento assim que o diálogo
+  // abre. No modo `close` a consulta continua aberta até o botão final.
   useEffect(() => {
-    if (!open || mode !== "earnings" || step !== "confirm") return
+    if (!open || step !== "confirm") return
     startClosing(async () => {
       const outcome = await loadEarningsStep()
       if (outcome === "ok") return
@@ -224,7 +202,7 @@ export function CloseCaseWithEarningsDialog({
         // Alguém lançou entre a renderização e o clique. Nada a fazer, e nada a esconder.
         toast.info("Este caso já tem lançamentos.")
       } else {
-        toast.error("Não foi possível abrir o lançamento. Tente novamente.")
+        toast.error("Não foi possível abrir a cobrança. Tente novamente.")
       }
       router.refresh()
     })
@@ -270,8 +248,13 @@ export function CloseCaseWithEarningsDialog({
    */
   function handleDismiss() {
     startSaving(async () => {
+      if (!(await closeCase())) return
       await markCaseEarningsPromptedAction(caseId)
-      closeAndRefresh(billed.count > 0 ? "Caso encerrado." : "Caso encerrado sem lançamento.")
+      closeAndRefresh(
+        mode === "close"
+          ? billed.count > 0 ? "Consulta encerrada." : "Consulta encerrada sem cobrança."
+          : "Registrado sem cobrança.",
+      )
     })
   }
 
@@ -302,15 +285,26 @@ export function CloseCaseWithEarningsDialog({
 
     setErrors(NO_ERRORS)
     startSaving(async () => {
+      if (!(await closeCase())) return
       const result = await createCaseFinancialEntriesAction(raw)
       if (!result.ok) {
+        if (mode === "close") {
+          // A consulta JÁ está encerrada: dizer isso, e que o lançamento ficou para depois.
+          resetForm()
+          onOpenChange(false)
+          toast.error("Consulta encerrada, mas a cobrança não foi salva. Lance pela consulta.")
+          router.refresh()
+          return
+        }
         toast.error(getFriendlyToastMessage(result.error))
         return
       }
       // `created === 0` acontece quando todas as linhas eram de valor zero (procedimento
       // gratuito): nada foi lançado, então prometer "Lançamento registrado." seria mentira.
       closeAndRefresh(
-        result.created > 0 ? "Lançamento registrado." : "Caso encerrado sem lançamento.",
+        mode === "close"
+          ? result.created > 0 ? "Consulta encerrada e cobrança lançada." : "Consulta encerrada sem cobrança."
+          : result.created > 0 ? "Lançamento registrado." : "Nada foi lançado.",
       )
     })
   }
@@ -337,44 +331,24 @@ export function CloseCaseWithEarningsDialog({
           if (step === "earnings" && isDirty) e.preventDefault()
         }}
       >
-        {step === "confirm" && mode === "earnings" ? (
-          // Modo `earnings` nunca mostra a etapa 1: o caso já está encerrado. Este é o
-          // intervalo entre abrir e o pré-preenchimento chegar — sem ele, a confirmação
-          // de "Encerrar caso?" piscaria na tela de um caso que já está encerrado.
+        {step === "confirm" ? (
+          // Intervalo entre abrir e o pré-preenchimento chegar.
           <AlertDialogHeader>
-            <AlertDialogTitle>Registrar o que foi cobrado</AlertDialogTitle>
+            <AlertDialogTitle>{mode === "close" ? "Encerrar consulta" : "Registrar o que foi cobrado"}</AlertDialogTitle>
             <AlertDialogDescription>Carregando os valores…</AlertDialogDescription>
           </AlertDialogHeader>
-        ) : step === "confirm" ? (
-          <>
-            <AlertDialogHeader>
-              <AlertDialogTitle>Encerrar caso?</AlertDialogTitle>
-              <AlertDialogDescription>
-                O caso será marcado como encerrado. Você poderá reabri-lo depois.
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel disabled={isClosing}>Cancelar</AlertDialogCancel>
-              {/* `Button` puro, NUNCA `AlertDialogAction`: no Radix, `AlertDialogAction` É
-                  o `DialogPrimitive.Close` (`<DialogPrimitive.Close …actionProps />`), então
-                  o clique dispara `onOpenChange(false)` no MESMO evento — o diálogo fecha e
-                  `resetForm()` devolve o `step` para `"confirm"` antes do `loadEarningsStep()`
-                  assíncrono terminar, e a etapa 2 nunca tem onde aparecer. `if (isPending)
-                  return` não protege: `isClosing` no closure ainda é `false` no clique.
-                  Mesmo padrão do rodapé da etapa 2 abaixo. */}
-              <Button type="button" disabled={isClosing} onClick={handleConfirmClose}>
-                Encerrar
-              </Button>
-            </AlertDialogFooter>
-          </>
         ) : (
           <>
             <AlertDialogHeader>
-              <AlertDialogTitle>Registrar o que foi cobrado</AlertDialogTitle>
+              <AlertDialogTitle>{mode === "close" ? "Encerrar consulta" : "Registrar o que foi cobrado"}</AlertDialogTitle>
               <AlertDialogDescription>
-                {billed.count > 0
-                  ? "O caso já está encerrado. Lance só o que faltar, se faltar algo."
-                  : "O caso já está encerrado. Registre o valor da consulta e os procedimentos realizados — ou feche sem lançar, se foi cortesia."}
+                {mode === "close"
+                  ? billed.count > 0
+                    ? "Lance só o que faltar, se faltar algo. A consulta é encerrada quando você confirmar."
+                    : "Registre o que foi cobrado. A consulta é encerrada quando você confirmar."
+                  : billed.count > 0
+                    ? "Lance só o que faltar, se faltar algo."
+                    : "Registre o valor da consulta e os procedimentos realizados — ou feche sem lançar, se foi cortesia."}
               </AlertDialogDescription>
             </AlertDialogHeader>
             {billed.count > 0 ? (
@@ -549,10 +523,15 @@ export function CloseCaseWithEarningsDialog({
               </p>
             </div>
 
-            {/* Sem botão de cancelar: aqui "cancelar" leria como "cancelar o
-                encerramento", mas o caso já está encerrado. A saída honesta é a de
-                cortesia, em tamanho normal e sem estilo de punição. */}
+            {/* No modo `earnings` não há cancelar: o caso já está encerrado, e a saída
+                honesta é a de cortesia, em tamanho normal e sem estilo de punição. */}
             <AlertDialogFooter>
+              {mode === "close" ? (
+                // A consulta ainda está aberta: voltar não muda nada.
+                <AlertDialogCancel disabled={isSaving} className="sm:mr-auto">
+                  Voltar à consulta
+                </AlertDialogCancel>
+              ) : null}
               <Button
                 type="button"
                 variant="ghost"
@@ -566,7 +545,7 @@ export function CloseCaseWithEarningsDialog({
                 disabled={isSaving || summaryCount === 0}
                 onClick={handleSaveEntries}
               >
-                {isSaving ? "Salvando…" : "Salvar lançamento"}
+                {isSaving ? "Salvando…" : mode === "close" ? "Encerrar e salvar" : "Salvar lançamento"}
               </Button>
             </AlertDialogFooter>
           </>
