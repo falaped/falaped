@@ -3,7 +3,7 @@
 import * as React from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { LayoutTemplateIcon, PlusIcon } from "lucide-react"
+import { LayoutTemplateIcon } from "lucide-react"
 
 import {
   Sidebar,
@@ -17,7 +17,6 @@ import {
   SidebarMenuItem,
   SidebarRail,
 } from "@/components/ui/sidebar"
-import { Button } from "@/components/ui/button"
 import { NavUser } from "@/components/nav-user"
 import { PatientSearch } from "@/components/dashboard/patient-search"
 import { ChangelogMenuItem } from "@/components/dashboard/changelog/changelog-dialog"
@@ -72,19 +71,7 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
           </span>
           {/* eslint-enable @next/next/no-img-element */}
         </Link>
-        <Button
-          asChild
-          size="lg"
-          className="w-full group-data-[collapsible=icon]:size-10 group-data-[collapsible=icon]:p-0"
-        >
-          <Link href="/dashboard/cases/select-patient" title="Iniciar consulta">
-            <PlusIcon />
-            <span className="group-data-[collapsible=icon]:sr-only">Iniciar consulta</span>
-          </Link>
-        </Button>
-        <div className="mt-3 w-full group-data-[collapsible=icon]:mt-1 group-data-[collapsible=icon]:w-auto">
-          <PatientSearch />
-        </div>
+        <PatientSearch />
       </SidebarHeader>
 
       <SidebarContent className="px-1 pt-2 group-data-[collapsible=icon]:items-center">
