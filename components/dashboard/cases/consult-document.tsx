@@ -1,5 +1,6 @@
 "use client"
 
+import { useEffect, useRef, useState } from "react"
 import { EyeIcon, PlusIcon } from "lucide-react"
 import { toast } from "sonner"
 
@@ -104,20 +105,41 @@ export function ChoiceChip({
 }
 
 /**
- * Folha A4 em miniatura com o cabeçalho e a assinatura do pediatra.
- * ponytail: só a prévia segue o protótipo; o PDF do falaped-kit ainda tem outro layout.
+ * Folha A4 em miniatura com o cabeçalho e a assinatura do pediatra. Quando o conteúdo não
+ * cabe, marca a quebra e avisa por `onPagesChange` quantas folhas vão sair.
+ * ponytail: só a prévia segue o protótipo; o PDF do falaped-kit ainda tem outro layout, então
+ * a contagem de páginas é estimada pela prévia (e só mede em lg+, onde a prévia aparece).
  */
 export function DocPaper({
   doctor,
   patient,
   title,
+  onPagesChange,
   children,
 }: {
   doctor: ConsultDoctor
   patient: { name: string; birth_date: string | null }
   title: string
+  onPagesChange?: (pages: number) => void
   children: React.ReactNode
 }) {
+  const boxRef = useRef<HTMLDivElement>(null)
+  const contentRef = useRef<HTMLDivElement>(null)
+  const [pages, setPages] = useState(1)
+  useEffect(() => {
+    const box = boxRef.current
+    const content = contentRef.current
+    if (!box || !content) return
+    const observer = new ResizeObserver(() => {
+      const room = box.clientHeight
+      setPages(room ? Math.max(1, Math.ceil(content.scrollHeight / room)) : 1)
+    })
+    observer.observe(box)
+    observer.observe(content)
+    return () => observer.disconnect()
+  }, [])
+  useEffect(() => onPagesChange?.(pages), [pages, onPagesChange])
+
   const name = [doctor.first_name, doctor.surname].filter(Boolean).join(" ")
   const registry = [doctor.crm && `CRM ${doctor.crm}`, doctor.rqe && `RQE ${doctor.rqe}`].filter(Boolean).join(" · ")
   const place = [doctor.default_location_city, doctor.default_location_state].filter(Boolean).join(" · ")
@@ -137,7 +159,16 @@ export function DocPaper({
         Paciente: <b className="text-neutral-900">{patient.name}</b>
         {age ? ` · ${age}` : null}
       </div>
-      <div className="mt-3 flex-1 space-y-2 overflow-hidden">{children}</div>
+      <div ref={boxRef} className="relative mt-3 min-h-0 flex-1 overflow-hidden">
+        <div ref={contentRef} className="space-y-2">
+          {children}
+        </div>
+        {pages > 1 ? (
+          <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-white via-white/90 pt-6 text-center font-semibold text-neutral-500">
+            Continua na página 2 · {pages} páginas
+          </div>
+        ) : null}
+      </div>
       <div className="mx-auto mt-4 w-40 border-t border-neutral-400 pt-1 text-center">
         {name}
         <br />

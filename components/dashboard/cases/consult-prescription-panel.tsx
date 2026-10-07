@@ -86,6 +86,7 @@ export function ConsultPrescriptionPanel({
   const [templateId, setTemplateId] = useState<string | null>(null)
   const [templateName, setTemplateName] = useState<string | null>(null)
   const [busy, setBusy] = useState<"emit" | "template" | null>(null)
+  const [pages, setPages] = useState(1)
 
   const filled = medications.filter((m) => m.name.trim() && m.posology.trim())
   const update = (index: number, field: keyof Medication, value: string) =>
@@ -296,7 +297,7 @@ export function ConsultPrescriptionPanel({
   )
 
   const preview = (
-    <DocPaper doctor={doctor} patient={patient} title="Receituário">
+    <DocPaper doctor={doctor} patient={patient} title="Receituário" onPagesChange={setPages}>
       {meds.length ? (
         meds.map((m, i) => (
           <div key={i}>
@@ -330,9 +331,16 @@ export function ConsultPrescriptionPanel({
               <BookmarkIcon data-icon="inline-start" />
               Salvar como modelo
             </Button>
-            <span className="num ml-auto text-caption text-subtle-foreground">
-              {meds.length ? `${meds.length} ${meds.length === 1 ? "medicamento" : "medicamentos"}` : null}
-            </span>
+            {pages > 1 ? (
+              <span className="ml-auto flex items-center gap-1.5 text-caption font-medium text-warning-text">
+                <TriangleAlertIcon className="size-3.5" aria-hidden />
+                Não cabe numa folha: a receita vai sair em {pages} páginas
+              </span>
+            ) : (
+              <span className="num ml-auto text-caption text-subtle-foreground">
+                {meds.length ? `${meds.length} ${meds.length === 1 ? "medicamento" : "medicamentos"}` : null}
+              </span>
+            )}
             <Button onClick={handleEmit} disabled={busy !== null || !meds.length}>
               <DownloadIcon data-icon="inline-start" />
               {busy === "emit" ? "Emitindo…" : "Emitir e download"}
