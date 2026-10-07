@@ -231,11 +231,12 @@ function sidebar(o = {}) {
     <div class="flex flex-col items-center gap-1 border-t border-sidebar-border pt-2">${foot(1)}
       <a data-go="d4" title="Dra. Ana Souza · Seu perfil" class="mt-1 grid size-10 place-items-center rounded-lg hover:bg-accent">${AV("AS", { s: "size-8", t: "text-caption", on: 1 })}</a></div>
   </aside>`;
-  const top = o.active
+  const act = o.active === 1 ? { i: "HD", n: "Helena D.", t: "12:47" } : o.active;
+  const top = act
     ? `<a data-go="a5" class="card-highlight mb-3 flex items-center gap-2.5 p-3 hover:shadow-md">
-        <span class="relative grid size-8 place-items-center rounded-full bg-card text-label font-semibold text-primary-ink-strong">HD<span class="absolute -right-0.5 -top-0.5 size-2.5 rounded-full bg-success ring-2 ring-card"></span></span>
-        <div class="min-w-0 flex-1"><div class="text-label font-semibold">Helena D.</div><div class="text-caption text-muted-foreground">Voltar à consulta</div></div>
-        <span class="text-caption num text-muted-foreground">12:47</span></a>`
+        <span class="relative grid size-8 place-items-center rounded-full bg-card text-label font-semibold text-primary-ink-strong">${act.i}<span class="absolute -right-0.5 -top-0.5 size-2.5 rounded-full bg-success ring-2 ring-card"></span></span>
+        <div class="min-w-0 flex-1"><div class="text-label font-semibold">${act.n}</div><div class="text-caption text-muted-foreground">Voltar à consulta</div></div>
+        <span class="text-caption num text-muted-foreground">${act.t}</span></a>`
     : `<button data-go="a3" class="btn btn-primary btn-lg mb-3 w-full">${I("plus")}Iniciar consulta</button>`;
   return `<aside class="flex w-[248px] shrink-0 flex-col border-r border-sidebar-border bg-sidebar px-3 pb-3 pt-6">
     <img src="../../public/falaped-logo.svg" alt="Falaped" class="mb-6 h-16 self-center dark:hidden"><img src="../../public/falaped-logo-dark.svg" alt="Falaped" class="mb-6 hidden h-16 self-center dark:block">
@@ -266,27 +267,94 @@ const SECTION = (title, count, body, footLabel, footGo) => `<section class="card
 const S = [];
 const add = s => S.push(s);
 
-const KPI = (ic, label, value, note, tone = "") => `<div class="flex flex-col gap-1 px-6 py-5"><div class="flex items-center gap-2 text-label text-muted-foreground">${I(ic, "ic-sm")}${label}</div><div class="font-display text-display font-semibold num">${value}</div><div class="text-caption ${tone || "text-subtle-foreground"}">${note}</div></div>`;
-const inicio = () => APP({ on: "inicio", active: 1 }, PAGE(`
-  ${HEAD("Bom dia, Dra. Ana", "Segunda-feira, 6 de outubro")}
-  ${ACTIVE()}
-  <div class="grid items-stretch gap-5 lg:grid-cols-2">
-    ${SECTION("Precisam de atenção", 4, [
-      [S_VACCINE(), "Gabriel Alves · 6a 2m", "Tríplice viral, 2ª dose atrasada", "Abrir ficha", "b5"],
-      [S_MEASURE(), "Theo Costa · 1a 6m", "Sem peso e altura há 4 meses", "Abrir ficha", "b5"],
-      [SIG("wallet", "warning", "Sem valor lançado", "3 consultas desta semana estão sem cobrança."), "3 consultas", "Sem valor lançado", "Lançar valores", null],
-    ].map(([sig, n, w, b, go]) => `<div class="flex min-h-16 items-center gap-3 px-5 py-3">${sig}<div class="min-w-0 flex-1"><div class="font-semibold">${n}</div><div class="text-caption text-muted-foreground">${w}</div></div><button ${go ? `data-go="${go}"` : ""} class="btn btn-secondary btn-sm">${b}</button></div>`).join(""), "Ver as 4 pendências", null)}
-    ${SECTION("Consultas recentes", 0, [["MS", "Miguel Santos", "4a 1m", "Puericultura · sem alterações", "Hoje", ["Atestado"]], ["LP", "Lara Pereira", "8m", "Bronquiolite leve · retorno em 48 h", "Ontem", ["Receita"]], ["BS", "Bia Souza", "3a", "IVAS · lavagem nasal", "12/09", ["Receita"]]].map(([i, n, a, w, t, d]) => `
-      <a data-go="b2" class="flex min-h-16 items-center gap-3 px-5 py-3 hover:bg-accent">${AV(i)}<div class="min-w-0 flex-1"><div><span class="font-semibold">${n}</span> <span class="text-subtle-foreground">· ${a}</span></div><div class="text-caption text-muted-foreground">${w}</div></div>${d.map(x => `<span class="badge badge-accent">${x}</span>`).join("")}<span class="w-12 text-right text-caption num text-subtle-foreground">${t}</span></a>`).join(""), "Ver todas as consultas", "b1")}
+/* Início do dia a dia v2 (07/10): dados do seed de demonstração (supabase/seed-pediatra-demo.sql). */
+const DOC = { r: ["pill", "Receita"], a: ["file-check", "Atestado"], o: ["book-open", "Orientação"], m: ["file-text", "Relatório médico"], e: ["flask-conical", "Exames"], n: ["send", "Encaminhamento"] };
+const DOCS = ks => ks.map(k => `<span class="inline-flex items-center gap-1 text-caption text-muted-foreground">${I(DOC[k][0], "ic-sm text-subtle-foreground")}${DOC[k][1]}</span>`).join(`<span class="text-border-strong">·</span>`);
+const RECENT = [
+  { i: "HD", n: "Helena Duarte Castro", a: "10m", when: "Hoje, 10:14", why: "Puericultura de 10 meses", sum: "Peso 8,8 kg e comprimento 70,5 cm no P50. APLV em fórmula extensamente hidrolisada, boa aceitação da introdução alimentar.", docs: ["r", "o", "m"], pay: "R$ 350,00 · cartão", draft: 1, sig: () => SIG("triangle-alert", "danger", "Alergia: proteína do leite de vaca", "APLV diagnosticada aos 3 meses. Checada em toda receita.") },
+  { i: "DN", n: "Davi Nogueira Prates", a: "1a 10m", when: "Hoje, 09:04", why: "Diarreia aguda", sum: "Desidratação leve, bom estado geral. Reidratação oral, zinco por 10 dias e ondansetrona se vômitos.", docs: ["r", "a"], pay: "R$ 350,00 · Pix" },
+  { i: "LB", n: "Laura Bittencourt Lima", a: "8a", when: "Ontem, 16:52", why: "Crise de asma leve a moderada", sum: "Sibilos difusos, SatO2 95%, PEWS 1. Salbutamol por 48 h, prednisolona 3 dias, manter budesonida.", docs: ["r", "a"], pay: "R$ 180,00 · convênio" },
+  { i: "SM", n: "Sofia Mendes Carvalho", a: "5a 2m", when: "Dom, 04/10", why: "Puericultura · trocas na fala", sum: "Crescimento adequado. Encaminhada à fonoaudiologia; hemograma e ferritina pela palidez.", docs: ["e", "n", "a"], pay: null },
+  { i: "MA", n: "Miguel Andrade Rocha", a: "4a 6m", when: "29/09", why: "Otite média aguda à direita", sum: "Terceiro episódio no ano. Amoxicilina por 10 dias, evitar dipirona (alergia). Retorno em 8 a 10 dias.", docs: ["r"], pay: "R$ 350,00 · dinheiro" },
+];
+const recentRow = c => `<div class="group flex gap-4 px-5 py-4 hover:bg-accent/60">
+  ${AV(c.i)}
+  <div class="min-w-0 flex-1">
+    <div class="flex flex-wrap items-center gap-x-2 gap-y-1"><a data-go="b2" class="font-semibold hover:underline">${c.n}</a><span class="text-subtle-foreground">· ${c.a}</span>${c.sig ? c.sig() : ""}<span class="ml-auto text-caption num text-subtle-foreground">${c.when}</span></div>
+    <div class="mt-0.5 text-label font-medium text-foreground">${c.why}</div>
+    <p class="mt-0.5 line-clamp-2 max-w-[72ch] text-muted-foreground">${c.sum}</p>
+    <div class="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1">${DOCS(c.docs)}
+      <span class="ml-auto flex items-center gap-2">${c.draft ? `<span class="badge badge-warning">${I("file-pen-line", "ic-sm")}Relatório em rascunho</span>` : ""}${c.pay ? `<span class="text-caption num text-muted-foreground">${c.pay}</span>` : `<span class="badge badge-warning">${I("wallet", "ic-sm")}Sem valor</span>`}</span></div>
+  </div></div>`;
+const TODO = (ic, who, what, from, btn, go) => `<div class="flex items-start gap-3 px-5 py-3">
+  <span class="mt-0.5 grid size-7 shrink-0 place-items-center rounded-full border border-border bg-muted text-muted-foreground">${I(ic, "ic-sm")}</span>
+  <div class="min-w-0 flex-1"><div class="text-body"><span class="font-semibold">${who}</span> <span class="text-muted-foreground">${what}</span></div><div class="text-caption text-subtle-foreground">${from}</div></div>
+  <button ${go ? `data-go="${go}"` : ""} class="btn btn-secondary btn-xs shrink-0">${btn}</button></div>`;
+const WEEK = [["qui", 0], ["sex", 0], ["sáb", 0], ["dom", 1], ["seg", 0], ["ter", 1], ["qua", 3]];
+const inicio = () => APP({ on: "inicio", active: { i: "MA", n: "Miguel A.", t: "12:04" } }, PAGE(`
+  ${HEAD("Bom dia, Dra. Ana", "Quarta-feira, 7 de outubro")}
+  <div class="grid gap-5 xl:grid-cols-12">
+    <section class="card-highlight flex flex-col xl:col-span-8">
+      <div class="flex items-center gap-4 px-6 pb-5 pt-6">
+        <span class="relative">${AV("MA", { s: "size-12", t: "text-body", on: 1 })}<span class="absolute -right-0.5 -top-0.5 size-3 animate-pulse rounded-full bg-success ring-2 ring-card"></span></span>
+        <div class="min-w-0">
+          <div class="text-caption font-medium uppercase tracking-wide text-primary-ink">Em consulta agora · há 12 min</div>
+          <div class="mt-0.5 flex items-center gap-2"><span class="font-display text-section font-semibold">Miguel Andrade Rocha</span><span class="text-muted-foreground">· 4a 6m</span>${SIG("triangle-alert", "danger", "Alergia: dipirona", "Urticária. Checada em toda receita.")}</div>
+          <div class="text-muted-foreground">Retorno da otite à direita · terminou a amoxicilina ontem</div>
+        </div>
+        <button data-go="a5" class="btn btn-primary btn-lg ml-auto">Voltar à consulta${I("arrow-right")}</button>
+      </div>
+      <div class="mt-auto border-t border-primary-soft-border/70 px-6 py-4">
+        <div class="mb-2 flex items-center gap-2 text-label text-muted-foreground">Quem é o próximo?<span class="text-subtle-foreground">· um clique já inicia a consulta</span></div>
+        <div class="flex flex-wrap items-center gap-2">
+          <button data-go="a3" class="input flex h-9 w-56 items-center gap-2 text-left text-subtle-foreground">${I("search")}<span class="flex-1">Buscar paciente</span><span class="kbd">⌘K</span></button>
+          ${[["HD", "Helena", "10m"], ["DN", "Davi", "1a 10m"], ["LB", "Laura", "8a"], ["SM", "Sofia", "5a 2m"]].map(([i, n, a]) => `<button data-go="a3" class="inline-flex h-9 items-center gap-2 rounded-full border border-border bg-card pl-1 pr-3 shadow-xs hover:border-border-strong hover:bg-accent">${AV(i, { s: "size-7", t: "text-caption" })}<span class="font-medium">${n}</span><span class="text-caption text-subtle-foreground">${a}</span></button>`).join("")}
+        </div>
+      </div>
+    </section>
+    <section class="card flex flex-col xl:col-span-4">
+      <div class="flex items-center px-5 pb-3 pt-4"><h2 class="t-section">Hoje</h2><span class="ml-auto text-caption text-subtle-foreground">até agora</span></div>
+      <div class="grid grid-cols-3 divide-x divide-border border-y border-border">
+        ${[["Consultas", "2", "+1 em andamento"], ["Documentos", "5", "2 receitas"], ["Recebido", "R$ 700", "2 de 2 lançadas"]].map(([l, v, n]) => `<div class="px-4 py-3"><div class="text-caption text-muted-foreground">${l}</div><div class="font-display text-page font-semibold num">${v}</div><div class="text-caption text-subtle-foreground">${n}</div></div>`).join("")}
+      </div>
+      <div class="flex flex-1 flex-col px-5 pb-4 pt-3">
+        <div class="flex items-center text-caption text-muted-foreground">Consultas nos últimos 7 dias<span class="ml-auto num">5</span></div>
+        <div class="mt-2 grid flex-1 grid-cols-7 items-end gap-2" style="min-height:72px">
+          ${WEEK.map(([d, n], k) => `<div class="flex h-full flex-col items-center justify-end gap-1"><span class="text-caption num ${n ? "text-muted-foreground" : "text-transparent"}">${n}</span><span class="w-full rounded-md ${k === 6 ? "bg-primary" : n ? "bg-primary-soft-border" : "bg-muted"}" style="height:${n ? n * 16 : 4}px"></span><span class="text-caption ${k === 6 ? "font-semibold text-foreground" : "text-subtle-foreground"}">${d}</span></div>`).join("")}
+        </div>
+      </div>
+    </section>
   </div>
-  <section class="card">
-    <div class="flex items-center gap-2 px-5 pb-1 pt-4"><h2 class="t-section">Seus números</h2><a class="btn btn-link btn-sm ml-auto">Ver financeiro${I("arrow-right", "ic-sm")}</a></div>
-    <div class="grid grid-cols-4 divide-x divide-border">
-      ${KPI("users", "Pacientes cadastrados", "148", "no total")}
-      ${KPI("stethoscope", "Consultas no histórico", "312", "298 encerradas")}
-      ${KPI("pill", "Receitas emitidas", "187", "no total")}
-      ${KPI("wallet", "Recebido em outubro", "R$ 9.800,00", "3 consultas sem valor lançado", "text-warning-text")}
-    </div>
+  <div class="grid items-start gap-5 xl:grid-cols-12">
+    <section class="card xl:col-span-7">
+      <div class="flex items-center gap-2 px-5 pb-3 pt-4"><h2 class="t-section">Últimas consultas</h2><a data-go="b1" class="btn btn-link btn-sm ml-auto">Ver todas${I("arrow-right", "ic-sm")}</a></div>
+      <div class="divide-y divide-border border-t border-border">${RECENT.map(recentRow).join("")}</div>
+    </section>
+    <section class="card xl:col-span-5">
+      <div class="flex items-center gap-2 px-5 pb-3 pt-4"><h2 class="t-section">Para não esquecer</h2><span class="badge badge-neutral num">8</span></div>
+      <div class="border-t border-border">
+        <div class="bg-muted px-5 py-1.5 text-caption font-medium text-muted-foreground">Seus lembretes</div>
+        <div class="divide-y divide-border">
+          ${TODO("bell", "Davi", "Ligar para a Renata e saber se a diarreia melhorou", "Consulta de hoje, 09:04", "Ver consulta", "b2")}
+          ${TODO("bell", "Helena", "Conferir se tomou a Meningo B na clínica de vacinas", "Consulta de hoje, 10:14", "Ver consulta", "b2")}
+          ${TODO("bell", "Laura", "Revisar a técnica do espaçador no próximo retorno", "Consulta de ontem", "Ver consulta", "b2")}
+          ${TODO("bell", "Sofia", "Cobrar o resultado do hemograma e da ferritina", "Consulta de 04/10", "Ver consulta", "b2")}
+          ${TODO("bell", "Miguel", "Se a otite voltar, encaminhar ao otorrino", "Consulta de 29/09", "Ver consulta", "b2")}
+        </div>
+        <div class="border-t border-border bg-muted px-5 py-1.5 text-caption font-medium text-muted-foreground">Pendências</div>
+        <div class="divide-y divide-border">
+          ${TODO("file-pen-line", "Helena", "relatório da consulta em rascunho", "Consulta de hoje, 10:14", "Finalizar", "b2")}
+          ${TODO("wallet", "Sofia", "consulta sem valor lançado", "Consulta de 04/10", "Lançar valor", null)}
+          ${TODO("ruler", "Laura", "sem peso e altura há 8 meses", "Última medida em 10/02", "Abrir ficha", "b5")}
+        </div>
+      </div>
+    </section>
+  </div>
+  <section class="card flex flex-wrap items-center gap-x-8 gap-y-2 px-5 py-3">
+    <h2 class="t-card">Outubro</h2>
+    ${[["4", "consultas"], ["13", "documentos"], ["R$ 880,00", "recebidos"], ["R$ 293,33", "por consulta"]].map(([v, l]) => `<span><span class="font-semibold num">${v}</span> <span class="text-muted-foreground">${l}</span></span>`).join("")}
+    <span class="badge badge-warning">1 consulta sem valor</span>
+    <a class="btn btn-link btn-sm ml-auto">Ver financeiro${I("arrow-right", "ic-sm")}</a>
   </section>`));
 
 add({ id: "d1", t: "Menu", obj: "Os três estados do menu: sem consulta aberta (botão Iniciar consulta), com consulta aberta (cartão para voltar) e recolhido durante a consulta.",
@@ -295,7 +363,7 @@ add({ id: "d1", t: "Menu", obj: "Os três estados do menu: sem consulta aberta (
     <div class="card-sunken self-start p-5 text-muted-foreground"><div class="t-card text-foreground">O que observar</div><ul class="mt-2 list-disc space-y-1 pl-5"><li>Logo empilhada no topo; a compacta no recolhido.</li><li>Uma ação colorida: Iniciar consulta. Com consulta aberta, ela vira o cartão de destaque com o tempo.</li><li>Item ativo em azul suave com texto forte.</li><li>Modelos, Novidades e conta separados do uso diário.</li></ul></div>
   </div>` });
 
-add({ id: "a12", t: "Início", obj: "O dia do médico: a consulta em andamento, quem já foi atendido e o que pede atenção, com a ação pronta em cada linha.", html: inicio });
+add({ id: "a12", t: "Início", obj: "Versão 2 (07/10), com os dados do seed de demonstração. Topo: a consulta em andamento e, logo abaixo, quem é o próximo (busca e crianças atendidas há pouco). Ao lado, o dia em números. Embaixo, as últimas consultas com o resumo, os documentos e o valor, e tudo o que ficou para fazer: lembretes deixados nas consultas e pendências. O mês vira uma faixa fina.", html: inicio });
 
 const dialog = (w, body, bg = inicio) => `<div class="relative h-full"><div class="pointer-events-none h-full opacity-100">${bg()}</div>
   <div class="absolute inset-0" style="background:oklch(0.21 0.012 255.41 / 0.3)"></div>
