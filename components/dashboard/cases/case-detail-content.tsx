@@ -33,6 +33,8 @@ import { CaseReport } from "@/components/dashboard/cases/case-report"
 import { ConsultationTimerWidget } from "@/components/dashboard/cases/consultation-timer-widget"
 import { CaseConsultSummary } from "@/components/dashboard/cases/case-consult-summary"
 import { CasePendingStrip } from "@/components/dashboard/cases/case-pending-strip"
+import { CaseClosedDialog } from "@/components/dashboard/cases/case-closed-dialog"
+import { formatCentsToBRL } from "@/lib/formatters"
 import { CaseRemindersCard } from "@/components/dashboard/cases/case-reminders-card"
 import { PreviousCaseSummaryDialog } from "@/components/dashboard/cases/previous-case-summary-dialog"
 
@@ -247,6 +249,28 @@ export async function CaseDetailContent({ id }: { id: string }) {
         </div>
       </div>
       </div>
+      {!isActive ? (
+        <CaseClosedDialog
+          caseId={id}
+          firstName={patient?.name.split(" ")[0] ?? null}
+          summary={[
+            durationMin ? `${durationMin} min` : null,
+            earningsTotals && earningsTotals.count > 0
+              ? `${formatCentsToBRL(earningsTotals.totalCents)} lançado`
+              : caseDetail.earnings_prompted_at
+                ? "sem cobrança"
+                : null,
+            latestReport ? (latestReport.is_finalized ? "relatório pronto" : "relatório em rascunho") : null,
+            caseReminders.length
+              ? `${caseReminders.length} ${caseReminders.length === 1 ? "lembrete" : "lembretes"} para a próxima`
+              : null,
+          ]
+            .filter(Boolean)
+            .join(" · ")}
+          documents={documents}
+          reportId={latestReport?.id ?? null}
+        />
+      ) : null}
       {previousCarryover && patient ? (
         <PreviousCaseSummaryDialog carryover={previousCarryover} patientName={patient.name} />
       ) : null}

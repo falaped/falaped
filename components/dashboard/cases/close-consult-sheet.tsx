@@ -17,7 +17,8 @@ import { toast } from "sonner"
 
 import { updateCaseStatusAction } from "@/actions"
 import type { CaseDocument } from "@/components/dashboard/cases/case-detail-documents"
-import { CaseEarningsForm, type EarningsOutcome } from "@/components/dashboard/cases/case-earnings-form"
+import { JUST_CLOSED_PARAM } from "@/components/dashboard/cases/case-closed-dialog"
+import { CaseEarningsForm } from "@/components/dashboard/cases/case-earnings-form"
 import { CaseRemindersForm } from "@/components/dashboard/cases/case-reminders-form"
 import { CaseReport } from "@/components/dashboard/cases/case-report"
 import type { SheetKind } from "@/components/dashboard/cases/consult-tools"
@@ -42,12 +43,6 @@ const MORE_DOCS: Array<[SheetKind, string]> = [
   ["exam-request", "Pedido de exame"],
   ["referral", "Encaminhamento"],
 ]
-
-const MESSAGE: Record<EarningsOutcome, string> = {
-  charged: "Consulta encerrada e cobrança lançada.",
-  "no-charge": "Consulta encerrada.",
-  "failed-after-commit": "",
-}
 
 function Steps({ step }: { step: 0 | 1 }) {
   return (
@@ -233,11 +228,9 @@ export function CloseConsultSheet({
               close()
               if (outcome === "failed-after-commit") {
                 toast.error("Consulta encerrada, mas a cobrança não foi salva. Lance pela consulta.")
-              } else {
-                toast.success(MESSAGE[outcome])
               }
-              // A Consulta encerrada redireciona para o detalhe, com o que ficou.
-              router.refresh()
+              // O detalhe abre o "Consulta encerrada" (a11) com o que ficou.
+              router.push(`/dashboard/cases/${caseId}?${JUST_CLOSED_PARAM}=1`)
             }}
             footer={({ submit, isSaving, canSubmit }) => (
               <div className="flex shrink-0 items-center gap-2 border-t border-border px-6 py-3">
