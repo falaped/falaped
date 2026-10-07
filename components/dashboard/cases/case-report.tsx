@@ -208,9 +208,10 @@ export function CaseReport({
   const [selectedReportId, setSelectedReportId] = useState<string | null>(
     caseReports[0]?.id ?? null,
   )
-  const selectedReport = selectedReportId
-    ? caseReports.find((r) => r.id === selectedReportId) ?? null
-    : null
+  // Seleção que (ainda) não está na lista cai no mais recente: logo depois de gerar, o id
+  // novo chega antes do refresh que traz o relatório.
+  const selectedReport =
+    caseReports.find((r) => r.id === selectedReportId) ?? caseReports[0] ?? null
   const [sections, setSections] = useState<CaseReportSection[]>(() =>
     selectedReport ? sortSections(selectedReport.sections ?? []) : [],
   )
@@ -241,15 +242,6 @@ export function CaseReport({
       setSections(sortSections(selectedReport.sections ?? []))
     }
   }, [selectedReport?.id, selectedReport?.updated_at, selectedReport?.sections])
-
-  useEffect(() => {
-    if (
-      selectedReportId &&
-      !caseReports.some((r) => r.id === selectedReportId)
-    ) {
-      setSelectedReportId(caseReports[0]?.id ?? null)
-    }
-  }, [caseReports, selectedReportId])
 
   useEffect(() => {
     if (
@@ -602,10 +594,10 @@ export function CaseReport({
                 key={report.id}
                 type="button"
                 onClick={() => handleCardClick(report.id)}
-                aria-pressed={selectedReportId === report.id}
+                aria-pressed={selectedReport?.id === report.id}
                 className={cn(
                   "rounded-full border border-border px-2.5 py-0.5 text-caption num transition-colors hover:bg-accent",
-                  selectedReportId === report.id &&
+                  selectedReport?.id === report.id &&
                     "border-primary bg-primary-soft text-primary-ink-strong",
                 )}
               >
