@@ -1,0 +1,368 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Componentes atuais do Falaped</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Inter:wght@400;500;600;700;900&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+<style type="text/tailwindcss">
+/* Tokens copiados de app/globals.css em 06/10/2026 (valores efetivos: o 2º bloco :root/.dark sobrescreve o 1º). */
+@custom-variant dark (&:is(.dark *));
+:root {
+  --background: oklch(1 0 0); --foreground: oklch(0.145 0 0);
+  --card: oklch(1 0 0); --card-foreground: oklch(0.145 0 0);
+  --popover: oklch(1 0 0); --popover-foreground: oklch(0.145 0 0);
+  --primary: oklch(0.7603 0.0916 255.41); --primary-foreground: oklch(0.98 0.01 255);
+  --primary-ink: oklch(0.52 0.11 255);
+  --secondary: oklch(0.967 0.001 286.375); --secondary-foreground: oklch(0.21 0.006 285.885);
+  --muted: oklch(0.97 0 0); --muted-foreground: oklch(0.556 0 0);
+  --accent: oklch(0.97 0 0); --accent-foreground: oklch(0.205 0 0);
+  --destructive: oklch(0.58 0.22 27);
+  --border: oklch(0.922 0 0); --input: oklch(0.922 0 0); --ring: oklch(0.76 0.09 255.41);
+  --radius: 0.625rem;
+  --sidebar: oklch(0.985 0 0); --sidebar-foreground: oklch(0.145 0 0);
+  --sidebar-accent: oklch(0.97 0 0); --sidebar-accent-foreground: oklch(0.205 0 0);
+  --sidebar-border: oklch(0.922 0 0); --sidebar-ring: oklch(0.708 0 0);
+}
+.dark {
+  --background: oklch(0.145 0 0); --foreground: oklch(0.985 0 0);
+  --card: oklch(0.205 0 0); --card-foreground: oklch(0.985 0 0);
+  --popover: oklch(0.205 0 0); --popover-foreground: oklch(0.985 0 0);
+  --primary: oklch(0.78 0.09 255.41); --primary-foreground: oklch(0.22 0.04 255);
+  --primary-ink: oklch(0.82 0.08 255);
+  --secondary: oklch(0.274 0.006 286.033); --secondary-foreground: oklch(0.985 0 0);
+  --muted: oklch(0.269 0 0); --muted-foreground: oklch(0.708 0 0);
+  --accent: oklch(0.371 0 0); --accent-foreground: oklch(0.985 0 0);
+  --destructive: oklch(0.704 0.191 22.216);
+  --border: oklch(1 0 0 / 10%); --input: oklch(1 0 0 / 15%); --ring: oklch(0.76 0.09 255.41);
+  --sidebar: oklch(0.205 0 0); --sidebar-foreground: oklch(0.985 0 0);
+  --sidebar-accent: oklch(0.269 0 0); --sidebar-accent-foreground: oklch(0.985 0 0);
+  --sidebar-border: oklch(1 0 0 / 10%); --sidebar-ring: oklch(0.556 0 0);
+}
+@theme inline {
+  --font-sans: "Geist", ui-sans-serif, system-ui, sans-serif;
+  --color-background: var(--background); --color-foreground: var(--foreground);
+  --color-card: var(--card); --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover); --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary); --color-primary-foreground: var(--primary-foreground);
+  --color-primary-ink: var(--primary-ink);
+  --color-secondary: var(--secondary); --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted); --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent); --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border); --color-input: var(--input); --color-ring: var(--ring);
+  --color-sidebar: var(--sidebar); --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-accent: var(--sidebar-accent); --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border); --color-sidebar-ring: var(--sidebar-ring);
+  --radius-sm: calc(var(--radius) - 4px); --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius); --radius-xl: calc(var(--radius) + 4px);
+  --radius-2xl: calc(var(--radius) + 8px); --radius-4xl: calc(var(--radius) + 16px);
+}
+@layer base {
+  * { @apply border-border outline-ring/50; }
+  body { @apply bg-background text-foreground font-sans antialiased; }
+}
+/* estilos só desta página (não são do app) */
+.doc-sec { @apply border-t border-border pt-8 mt-10; }
+.doc-h2 { @apply text-lg font-semibold tracking-tight mb-1; }
+.doc-p { @apply text-sm text-muted-foreground mb-5 max-w-3xl; }
+.doc-lbl { @apply text-[11px] font-medium text-muted-foreground mb-2 font-mono; }
+.doc-flag { @apply inline-flex items-center gap-1 rounded-md border border-dashed border-foreground/40 px-2 py-0.5 text-[11px] font-medium text-foreground; }
+.doc-swatch { @apply h-14 rounded-lg ring-1 ring-foreground/10; }
+.doc-tile { @apply rounded-xl border border-dashed border-foreground/15 p-5; }
+</style>
+</head>
+<body>
+<div class="mx-auto max-w-6xl px-6 py-8">
+
+  <header class="flex flex-wrap items-end gap-4">
+    <div>
+      <div class="text-xs text-muted-foreground">Falaped 2.0 · retrato do app em 06/10/2026</div>
+      <h1 class="text-2xl font-semibold tracking-tight">Componentes atuais e tokens</h1>
+      <p class="mt-1 max-w-3xl text-sm text-muted-foreground">Tokens copiados de <code class="font-mono text-xs">app/globals.css</code> e classes copiadas de <code class="font-mono text-xs">components/ui/*.tsx</code>, renderizados com Tailwind 4. É o "antes": a ficha de design (Etapa 2) vai partir daqui. Os avisos tracejados apontam os itens da auditoria.</p>
+    </div>
+    <div class="ml-auto flex items-center gap-2 text-sm">
+      <span class="text-muted-foreground">Tema</span>
+      <button id="themeBtn" class="border-border bg-background hover:bg-muted rounded-lg border h-8 px-3 text-sm font-medium">Ver escuro</button>
+    </div>
+  </header>
+
+  <!-- MARCA -->
+  <section class="doc-sec">
+    <h2 class="doc-h2">Marca</h2>
+    <p class="doc-p">Logo nova (17/09/2026) já usada na landing e nos criativos. O app ainda mostra a antiga no menu lateral.</p>
+    <div class="grid gap-4 md:grid-cols-4">
+      <div class="doc-tile flex flex-col items-center justify-center gap-3"><img src="../../public/falaped-logo.svg" alt="" class="h-24"><div class="doc-lbl">principal (empilhada)</div></div>
+      <div class="doc-tile flex flex-col items-center justify-center gap-3"><img src="../../public/falaped-logo-horizontal.svg" alt="" class="h-12"><div class="doc-lbl">horizontal · landing</div></div>
+      <div class="doc-tile flex flex-col items-center justify-center gap-3"><img src="https://www.falaped.com.br/logo/falaped-icon.svg" alt="" class="h-14"><div class="doc-lbl">compacta (ícone F/P) · landing</div></div>
+      <div class="doc-tile flex flex-col items-center justify-center gap-3 bg-muted"><img src="../../public/full-logo.svg" alt="" class="h-10"><div class="doc-lbl">antiga · hoje no menu do app</div><span class="doc-flag">⚠ M1 trocar</span></div>
+    </div>
+    <div class="mt-3 flex flex-wrap gap-2">
+      <span class="doc-flag">M1 · menu usa <code>/full-logo.svg</code> (app-sidebar.tsx:66)</span>
+      <span class="doc-flag">M2 · a compacta não está em <code>public/</code> do app; o menu recolhido vai precisar dela</span>
+    </div>
+  </section>
+
+  <!-- TIPOGRAFIA -->
+  <section class="doc-sec">
+    <h2 class="doc-h2">Tipografia</h2>
+    <p class="doc-p">Três famílias na marca hoje. A ficha de design precisa escolher a do app.</p>
+    <div class="grid gap-4 md:grid-cols-3">
+      <div class="doc-tile"><div class="doc-lbl">App · Geist</div><div style="font-family:Geist" class="text-3xl font-semibold tracking-tight">Helena Duarte</div><div style="font-family:Geist" class="mt-1 text-sm text-muted-foreground">2a 3m · Carla Duarte (mãe) · R$ 350,00</div></div>
+      <div class="doc-tile"><div class="doc-lbl">Landing · Inter</div><div style="font-family:Inter" class="text-3xl font-semibold tracking-tight">Helena Duarte</div><div style="font-family:Inter" class="mt-1 text-sm text-muted-foreground">2a 3m · Carla Duarte (mãe) · R$ 350,00</div></div>
+      <div class="doc-tile"><div class="doc-lbl">Logo · Lexend Mega 900 (em curvas)</div><div class="text-sm text-muted-foreground">Só na logo, já convertida em desenho. Não entra como fonte de texto.</div></div>
+    </div>
+    <div class="mt-3 flex flex-wrap gap-2"><span class="doc-flag">M3 · app (Geist) ≠ landing (Inter): o médico vê duas marcas</span><span class="doc-flag">T1 · Noto Sans carregada sem uso</span></div>
+
+    <div class="mt-6 doc-lbl">Tamanhos em uso hoje (sem escala nomeada · T2)</div>
+    <div class="space-y-3 rounded-xl ring-1 ring-foreground/10 p-5">
+      <div class="flex items-baseline gap-4"><code class="w-56 shrink-0 font-mono text-xs text-muted-foreground">h1 · text-2xl semibold (32×)</code><span class="text-2xl font-semibold tracking-tight">Pacientes</span></div>
+      <div class="flex items-baseline gap-4"><code class="w-56 shrink-0 font-mono text-xs text-muted-foreground">h1 · text-[28px] / [26px] (2×)</code><span class="text-[28px] font-semibold leading-tight tracking-tight">Bom dia, Dra. Ana</span></div>
+      <div class="flex items-baseline gap-4"><code class="w-56 shrink-0 font-mono text-xs text-muted-foreground">CardTitle · text-base semibold</code><span class="text-base font-semibold">Última consulta</span></div>
+      <div class="flex items-baseline gap-4"><code class="w-56 shrink-0 font-mono text-xs text-muted-foreground">CardTitle · xs uppercase</code><span class="text-xs font-medium uppercase tracking-wide text-muted-foreground">Consultas hoje</span></div>
+      <div class="flex items-baseline gap-4"><code class="w-56 shrink-0 font-mono text-xs text-muted-foreground">corpo · text-sm (469×)</code><span class="text-sm">Febre há 2 dias, otalgia à direita, aceitando bem a dieta.</span></div>
+      <div class="flex items-baseline gap-4"><code class="w-56 shrink-0 font-mono text-xs text-muted-foreground">legenda · text-xs muted (249×)</code><span class="text-xs text-muted-foreground">Atualizado há 3 dias</span></div>
+    </div>
+  </section>
+
+  <!-- CORES -->
+  <section class="doc-sec">
+    <h2 class="doc-h2">Cores (tokens)</h2>
+    <p class="doc-p">Troque o tema no topo para ver os valores do modo escuro. Contraste calculado pela fórmula WCAG a partir dos valores oklch.</p>
+    <div class="grid grid-cols-2 gap-4 md:grid-cols-6">
+      <div><div class="doc-swatch bg-primary"></div><div class="mt-1 text-xs font-medium">primary</div><div class="font-mono text-[10px] text-muted-foreground">0.76 0.09 255 · #8AB4EB</div></div>
+      <div><div class="doc-swatch bg-primary-ink"></div><div class="mt-1 text-xs font-medium">primary-ink</div><div class="font-mono text-[10px] text-muted-foreground">0.52 0.11 255</div></div>
+      <div><div class="doc-swatch bg-foreground"></div><div class="mt-1 text-xs font-medium">foreground</div><div class="font-mono text-[10px] text-muted-foreground">0.145</div></div>
+      <div><div class="doc-swatch bg-muted-foreground"></div><div class="mt-1 text-xs font-medium">muted-foreground</div><div class="font-mono text-[10px] text-muted-foreground">0.556</div></div>
+      <div><div class="doc-swatch bg-destructive"></div><div class="mt-1 text-xs font-medium">destructive</div><div class="font-mono text-[10px] text-muted-foreground">0.58 0.22 27</div></div>
+      <div><div class="doc-swatch bg-ring"></div><div class="mt-1 text-xs font-medium">ring</div><div class="font-mono text-[10px] text-muted-foreground">= primary</div></div>
+      <div><div class="doc-swatch bg-background"></div><div class="mt-1 text-xs font-medium">background</div><div class="font-mono text-[10px] text-muted-foreground">1 (branco)</div></div>
+      <div><div class="doc-swatch bg-card"></div><div class="mt-1 text-xs font-medium">card</div><div class="font-mono text-[10px] text-muted-foreground">1</div></div>
+      <div><div class="doc-swatch bg-sidebar"></div><div class="mt-1 text-xs font-medium">sidebar</div><div class="font-mono text-[10px] text-muted-foreground">0.985</div></div>
+      <div><div class="doc-swatch bg-muted"></div><div class="mt-1 text-xs font-medium">muted / accent</div><div class="font-mono text-[10px] text-muted-foreground">0.97</div></div>
+      <div><div class="doc-swatch bg-secondary"></div><div class="mt-1 text-xs font-medium">secondary</div><div class="font-mono text-[10px] text-muted-foreground">0.967 · matiz 286 ⚠ C5</div></div>
+      <div><div class="doc-swatch bg-border"></div><div class="mt-1 text-xs font-medium">border / input</div><div class="font-mono text-[10px] text-muted-foreground">0.922</div></div>
+    </div>
+
+    <div class="mt-6 doc-lbl">Contraste dos pares que importam</div>
+    <div class="overflow-hidden rounded-xl ring-1 ring-foreground/10">
+      <table class="w-full text-sm">
+        <thead class="bg-muted/50"><tr class="border-b"><th class="h-10 px-4 text-left font-medium text-muted-foreground">Par</th><th class="px-4 text-left font-medium text-muted-foreground">Exemplo</th><th class="px-4 text-left font-medium text-muted-foreground">Claro</th><th class="px-4 text-left font-medium text-muted-foreground">Escuro</th></tr></thead>
+        <tbody>
+          <tr class="border-b"><td class="p-4">Botão principal (primary-foreground sobre primary)</td><td class="p-4"><span class="bg-primary text-primary-foreground rounded-lg px-2.5 py-1.5 text-sm font-medium">Iniciar consulta</span></td><td class="p-4 font-semibold">2,0:1 ✕</td><td class="p-4">8,7:1 ✓</td></tr>
+          <tr class="border-b"><td class="p-4">Texto azul com <code class="font-mono text-xs">text-primary</code> (62 usos)</td><td class="p-4 text-primary font-medium">Ver ficha →</td><td class="p-4 font-semibold">2,1:1 ✕</td><td class="p-4">ok</td></tr>
+          <tr class="border-b"><td class="p-4">Texto azul com <code class="font-mono text-xs">text-primary-ink</code> (17 usos)</td><td class="p-4 text-primary-ink font-medium">Ver ficha →</td><td class="p-4">5,5:1 ✓</td><td class="p-4">11,4:1 ✓</td></tr>
+          <tr class="border-b"><td class="p-4">Borda do checkbox (primary sobre branco)</td><td class="p-4"><span class="inline-block h-4 w-4 rounded-sm border border-primary shadow-sm align-middle"></span></td><td class="p-4 font-semibold">2,1:1 ✕ (mín. 3:1)</td><td class="p-4">ok</td></tr>
+          <tr class="border-b"><td class="p-4">Texto secundário (muted-foreground)</td><td class="p-4 text-muted-foreground">Atualizado há 3 dias</td><td class="p-4">4,7:1 ✓ (4,3 sobre muted)</td><td class="p-4">7,6:1 ✓</td></tr>
+          <tr><td class="p-4">Erro (destructive)</td><td class="p-4 text-destructive">Não foi possível salvar.</td><td class="p-4">4,8:1 ✓</td><td class="p-4">ok</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="mt-2 text-xs text-muted-foreground">No escuro o botão já usa texto escuro sobre o azul e passa com folga. A correção do claro pode simplesmente seguir o escuro.</p>
+
+    <div class="mt-6 doc-lbl">Cores de status escritas à mão (não são tokens · C3)</div>
+    <div class="flex flex-wrap gap-2">
+      <span class="h-5 gap-1 rounded-4xl border border-transparent px-2 py-0.5 text-xs font-medium inline-flex items-center bg-emerald-100 text-emerald-800">emerald · 54 usos</span>
+      <span class="h-5 gap-1 rounded-4xl border border-transparent px-2 py-0.5 text-xs font-medium inline-flex items-center bg-amber-100 text-amber-800">amber · 45</span>
+      <span class="h-5 gap-1 rounded-4xl border border-transparent px-2 py-0.5 text-xs font-medium inline-flex items-center bg-orange-100 text-orange-800">orange · 26</span>
+      <span class="h-5 gap-1 rounded-4xl border border-transparent px-2 py-0.5 text-xs font-medium inline-flex items-center bg-destructive/10 text-destructive">destructive (token)</span>
+      <span class="doc-flag">sem equivalente no modo escuro</span>
+    </div>
+  </section>
+
+  <!-- RAIO E SOMBRA -->
+  <section class="doc-sec">
+    <h2 class="doc-h2">Raios e sombras em uso</h2>
+    <p class="doc-p">Sete raios e seis sombras sem regra de quando usar cada um (S4).</p>
+    <div class="flex flex-wrap items-end gap-4">
+      <div class="text-center"><div class="h-16 w-20 rounded-sm bg-muted ring-1 ring-foreground/10"></div><div class="doc-lbl mt-1">sm</div></div>
+      <div class="text-center"><div class="h-16 w-20 rounded-md bg-muted ring-1 ring-foreground/10"></div><div class="doc-lbl mt-1">md · 96</div></div>
+      <div class="text-center"><div class="h-16 w-20 rounded-lg bg-muted ring-1 ring-foreground/10"></div><div class="doc-lbl mt-1">lg · 131</div></div>
+      <div class="text-center"><div class="h-16 w-20 rounded-xl bg-muted ring-1 ring-foreground/10"></div><div class="doc-lbl mt-1">xl · 55 (Card)</div></div>
+      <div class="text-center"><div class="h-16 w-20 rounded-2xl bg-muted ring-1 ring-foreground/10"></div><div class="doc-lbl mt-1">2xl · 15</div></div>
+      <div class="text-center"><div class="h-16 w-20 rounded-4xl bg-muted ring-1 ring-foreground/10"></div><div class="doc-lbl mt-1">4xl (Badge)</div></div>
+      <div class="w-6"></div>
+      <div class="text-center"><div class="h-16 w-20 rounded-lg bg-card shadow-xs ring-1 ring-foreground/5"></div><div class="doc-lbl mt-1">shadow-xs · 22</div></div>
+      <div class="text-center"><div class="h-16 w-20 rounded-lg bg-card shadow-sm ring-1 ring-foreground/5"></div><div class="doc-lbl mt-1">sm · 26</div></div>
+      <div class="text-center"><div class="h-16 w-20 rounded-lg bg-card shadow-md ring-1 ring-foreground/5"></div><div class="doc-lbl mt-1">md · 11</div></div>
+      <div class="text-center"><div class="h-16 w-20 rounded-lg bg-card shadow-lg ring-1 ring-foreground/5"></div><div class="doc-lbl mt-1">lg · 7</div></div>
+    </div>
+  </section>
+
+  <!-- BOTÕES -->
+  <section class="doc-sec">
+    <h2 class="doc-h2">Botões <code class="font-mono text-xs text-muted-foreground">components/ui/button.tsx</code></h2>
+    <p class="doc-p">Passe o mouse: o principal (default) não muda quando é <code class="font-mono text-xs">&lt;button&gt;</code>, só quando é link (S1). Altura padrão de 32 px (S2).</p>
+    <div class="space-y-4">
+      <div class="flex flex-wrap items-center gap-3">
+        <button class="focus-visible:border-ring focus-visible:ring-ring/50 rounded-lg border border-transparent bg-clip-padding text-sm font-medium focus-visible:ring-3 inline-flex items-center justify-center whitespace-nowrap transition-all outline-none select-none h-8 gap-1.5 px-2.5 bg-primary text-primary-foreground [a]:hover:bg-primary/80">Iniciar consulta</button>
+        <button class="focus-visible:border-ring focus-visible:ring-ring/50 rounded-lg border bg-clip-padding text-sm font-medium focus-visible:ring-3 inline-flex items-center justify-center whitespace-nowrap transition-all outline-none select-none h-8 gap-1.5 px-2.5 border-border bg-background hover:bg-muted hover:text-foreground dark:bg-input/30 dark:border-input dark:hover:bg-input/50">Editar</button>
+        <button class="rounded-lg border border-transparent text-sm font-medium inline-flex items-center justify-center whitespace-nowrap transition-all outline-none select-none h-8 gap-1.5 px-2.5 bg-secondary text-secondary-foreground hover:bg-secondary/80">Secundário</button>
+        <button class="rounded-lg border border-transparent text-sm font-medium inline-flex items-center justify-center whitespace-nowrap transition-all outline-none select-none h-8 gap-1.5 px-2.5 hover:bg-muted hover:text-foreground dark:hover:bg-muted/50">Ghost</button>
+        <button class="rounded-lg border border-transparent text-sm font-medium inline-flex items-center justify-center whitespace-nowrap transition-all outline-none select-none h-8 gap-1.5 px-2.5 bg-destructive/10 hover:bg-destructive/20 dark:bg-destructive/20 text-destructive dark:hover:bg-destructive/30">Excluir</button>
+        <button class="rounded-lg border border-transparent text-sm font-medium inline-flex items-center justify-center whitespace-nowrap transition-all outline-none select-none h-8 gap-1.5 px-2.5 text-primary underline-offset-4 hover:underline">Link</button>
+        <button disabled class="rounded-lg border border-transparent text-sm font-medium inline-flex items-center justify-center whitespace-nowrap transition-all outline-none select-none h-8 gap-1.5 px-2.5 bg-primary text-primary-foreground disabled:pointer-events-none disabled:opacity-50">Desabilitado</button>
+      </div>
+      <div class="flex flex-wrap items-center gap-3">
+        <span class="doc-lbl mb-0">tamanhos →</span>
+        <button class="rounded-[min(var(--radius-md),10px)] border border-transparent font-medium inline-flex items-center h-6 gap-1 px-2 text-xs bg-primary text-primary-foreground">xs 24</button>
+        <button class="rounded-[min(var(--radius-md),12px)] border border-transparent font-medium inline-flex items-center h-7 gap-1 px-2.5 text-[0.8rem] bg-primary text-primary-foreground">sm 28</button>
+        <button class="rounded-lg border border-transparent text-sm font-medium inline-flex items-center h-8 gap-1.5 px-2.5 bg-primary text-primary-foreground">default 32</button>
+        <button class="rounded-lg border border-transparent text-sm font-medium inline-flex items-center h-9 gap-1.5 px-2.5 bg-primary text-primary-foreground">lg 36</button>
+        <span class="doc-flag">S1 sem hover/clique · S2 alvo baixo · C1 contraste</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- SELOS -->
+  <section class="doc-sec">
+    <h2 class="doc-h2">Selos <code class="font-mono text-xs text-muted-foreground">badge.tsx</code></h2>
+    <p class="doc-p">Quatro variantes, usadas sem papel fixo para status (S5).</p>
+    <div class="flex flex-wrap items-center gap-3">
+      <span class="h-5 gap-1 rounded-4xl border border-transparent px-2 py-0.5 text-xs font-medium inline-flex items-center bg-primary text-primary-foreground">default · 4</span>
+      <span class="h-5 gap-1 rounded-4xl border border-transparent px-2 py-0.5 text-xs font-medium inline-flex items-center bg-secondary text-secondary-foreground">secondary · 19</span>
+      <span class="h-5 gap-1 rounded-4xl border px-2 py-0.5 text-xs font-medium inline-flex items-center border-border text-foreground">outline · 17</span>
+      <span class="h-5 gap-1 rounded-4xl border border-transparent px-2 py-0.5 text-xs font-medium inline-flex items-center bg-destructive/10 text-destructive dark:bg-destructive/20">destructive · 1</span>
+    </div>
+  </section>
+
+  <!-- FORMULÁRIO -->
+  <section class="doc-sec">
+    <h2 class="doc-h2">Formulário</h2>
+    <p class="doc-p">Campos de 32 px, borda clara (0.922) e foco em azul a 50% (input usa só 5%: <code class="font-mono text-xs">ring-ring/5</code>).</p>
+    <div class="grid gap-6 md:grid-cols-2">
+      <div class="space-y-4">
+        <div class="space-y-2"><label class="flex items-center gap-2 text-sm leading-none font-medium">Nome da criança</label><input placeholder="Helena Duarte" class="dark:bg-input/30 border-input focus-visible:border-ring focus-visible:ring-ring/5 placeholder:text-muted-foreground h-8 w-full min-w-0 rounded-lg border bg-transparent px-2.5 py-1 text-base transition-colors outline-none focus-visible:ring-3 md:text-sm"></div>
+        <div class="space-y-2"><label class="flex items-center gap-2 text-sm leading-none font-medium">Com erro</label><input aria-invalid="true" value="31 9888" class="border-input h-8 w-full rounded-lg border bg-transparent px-2.5 py-1 text-sm outline-none aria-invalid:ring-destructive/20 aria-invalid:border-destructive aria-invalid:ring-3"><p class="text-destructive text-xs">Telefone incompleto</p></div>
+        <div class="space-y-2"><label class="flex items-center gap-2 text-sm leading-none font-medium">Observações</label><textarea placeholder="Descreva…" class="border-input dark:bg-input/30 focus-visible:border-ring focus-visible:ring-ring/50 placeholder:text-muted-foreground flex min-h-16 w-full rounded-lg border bg-transparent px-2.5 py-2 text-sm transition-colors outline-none focus-visible:ring-3"></textarea></div>
+      </div>
+      <div class="space-y-4">
+        <div class="space-y-2"><label class="flex items-center gap-2 text-sm leading-none font-medium">Forma de pagamento</label><button class="border-input dark:bg-input/30 dark:hover:bg-input/50 flex w-48 items-center justify-between gap-1.5 rounded-lg border bg-transparent py-2 pr-2 pl-2.5 text-sm h-8">Pix <span class="text-muted-foreground">▾</span></button></div>
+        <div class="flex items-center gap-4">
+          <label class="flex items-center gap-2 text-sm"><span class="flex h-4 w-4 shrink-0 items-center justify-center rounded-sm border border-primary shadow-sm"></span>Nebulização</label>
+          <label class="flex items-center gap-2 text-sm"><span class="flex h-4 w-4 shrink-0 items-center justify-center rounded-sm border border-primary shadow-sm bg-primary text-primary-foreground text-[10px]">✓</span>Teste do pezinho</label>
+          <span class="doc-flag">borda 2,1:1</span>
+        </div>
+        <div class="space-y-2"><div class="doc-lbl">Tabs</div>
+          <div class="inline-flex h-9 items-center justify-center rounded-lg bg-muted p-1 text-muted-foreground">
+            <span data-state="active" class="inline-flex items-center justify-center rounded-md px-3 py-1.5 text-sm font-medium data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-xs">Resumo</span>
+            <span class="inline-flex items-center justify-center rounded-md px-3 py-1.5 text-sm font-medium">Crescimento</span>
+            <span class="inline-flex items-center justify-center rounded-md px-3 py-1.5 text-sm font-medium">Vacinas</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CARDS E TABELA -->
+  <section class="doc-sec">
+    <h2 class="doc-h2">Cards e tabela</h2>
+    <p class="doc-p">O card padrão é branco, com anel de 10% e sem sombra, então destaque, item comum e apoio ficam no mesmo plano. Comparar com a faixa de gradiente do Perfil (S7).</p>
+    <div class="grid gap-4 md:grid-cols-3">
+      <div class="ring-foreground/10 bg-card text-card-foreground flex flex-col gap-4 overflow-hidden rounded-xl py-4 text-sm ring-1">
+        <div class="grid gap-1 px-4"><div class="text-base font-semibold">Última consulta · 29/09</div><div class="text-muted-foreground text-sm">IVAS · receita emitida</div></div>
+        <div class="px-4 text-sm">Reavaliar peso no próximo retorno.</div>
+      </div>
+      <div class="ring-foreground/10 bg-card flex flex-col gap-2 overflow-hidden rounded-xl py-4 text-sm ring-1">
+        <div class="px-4 text-xs font-medium uppercase tracking-wide text-muted-foreground">Consultas hoje</div>
+        <div class="px-4 text-2xl font-semibold tracking-tight tabular-nums">3</div>
+      </div>
+      <div class="ring-foreground/10 bg-card overflow-hidden rounded-xl ring-1">
+        <div class="h-16 bg-gradient-to-r from-primary/25 via-primary/10 to-transparent"></div>
+        <div class="px-4 py-3 text-sm"><b>Perfil</b> · gradiente só na faixa</div>
+      </div>
+    </div>
+    <div class="mt-5 overflow-hidden rounded-xl ring-1 ring-foreground/10">
+      <table class="w-full caption-bottom text-sm">
+        <thead><tr class="border-b border-border"><th class="h-10 px-4 text-left align-middle font-medium text-muted-foreground">Data</th><th class="h-10 px-4 text-left font-medium text-muted-foreground">Paciente</th><th class="h-10 px-4 text-left font-medium text-muted-foreground">Status</th><th class="h-10 px-4 text-left font-medium text-muted-foreground">Ações</th></tr></thead>
+        <tbody>
+          <tr class="border-b border-border transition-colors hover:bg-muted/50"><td class="p-4 tabular-nums">06/10/2026</td><td class="p-4">Miguel Santos</td><td class="p-4"><span class="h-5 rounded-4xl px-2 py-0.5 text-xs font-medium inline-flex items-center bg-secondary text-secondary-foreground">Encerrado</span></td><td class="p-4"><button class="rounded-lg border border-transparent text-sm font-medium h-8 px-2.5 bg-primary text-primary-foreground">Reabrir caso</button></td></tr>
+          <tr class="border-b border-border transition-colors hover:bg-muted/50"><td class="p-4 tabular-nums">06/10/2026</td><td class="p-4">Lara Pereira</td><td class="p-4"><span class="h-5 rounded-4xl border px-2 py-0.5 text-xs font-medium inline-flex items-center border-border">Painel</span></td><td class="p-4"><button class="rounded-lg border text-sm font-medium h-8 px-2.5 border-border bg-background hover:bg-muted">Abrir caso</button></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- NAVEGAÇÃO -->
+  <section class="doc-sec">
+    <h2 class="doc-h2">Menu lateral <code class="font-mono text-xs text-muted-foreground">sidebar.tsx</code></h2>
+    <p class="doc-p">Item ativo só muda o fundo para 0.97 sobre 0.985: quase invisível (teste do porta-malas). A variante outline usa <code class="font-mono text-xs">hsl(var(--sidebar-border))</code> com token oklch, a mesma quebra do C6.</p>
+    <div class="w-64 overflow-hidden rounded-xl bg-sidebar ring-1 ring-foreground/10">
+      <div class="flex justify-center border-b border-border border-t-8 border-t-primary py-4"><img src="../../public/full-logo.svg" alt="" class="h-12"></div>
+      <div class="p-2">
+      <div class="px-2 py-1.5 text-xs font-medium text-sidebar-foreground/70">Plataforma</div>
+      <div class="flex h-8 items-center gap-2 rounded-md p-2 text-sm hover:bg-sidebar-accent">Início</div>
+      <div data-active class="flex h-8 items-center gap-2 rounded-md p-2 text-sm data-active:bg-sidebar-accent data-active:text-sidebar-accent-foreground font-medium">Atendimentos (ativo)</div>
+      <div class="flex h-8 items-center gap-2 rounded-md p-2 text-sm hover:bg-sidebar-accent">Serviços</div>
+      <div class="flex h-8 items-center gap-2 rounded-md p-2 text-sm hover:bg-sidebar-accent">Financeiro</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- SOBREPOSIÇÕES -->
+  <section class="doc-sec">
+    <h2 class="doc-h2">Sobreposições</h2>
+    <p class="doc-p">Desenhadas no lugar (sem <code class="font-mono text-xs">fixed</code>). Cada uma tem um fundo diferente: o Dialog escurece 80%, o Sheet e o AlertDialog 10% com blur, e o Dialog tem borda e sombra, enquanto o AlertDialog tem anel e nenhuma sombra.</p>
+    <div class="grid gap-5 md:grid-cols-3">
+      <div class="relative h-64 overflow-hidden rounded-xl bg-black/80 p-4">
+        <div class="doc-lbl text-white/70">Dialog · fundo black/80</div>
+        <div class="bg-background mx-auto grid max-w-xs gap-4 rounded-xl border border-border p-6 shadow-lg">
+          <div class="flex flex-col gap-1.5"><div class="text-lg font-semibold leading-none">Encerrar caso?</div><div class="text-muted-foreground text-sm">Você pode reabrir depois.</div></div>
+          <div class="flex justify-end gap-2"><button class="rounded-lg border text-sm font-medium h-8 px-2.5 border-border bg-background">Salvar e continuar</button><button class="rounded-lg text-sm font-medium h-8 px-2.5 bg-primary text-primary-foreground">Encerrar</button></div>
+        </div>
+      </div>
+      <div class="relative h-64 overflow-hidden rounded-xl bg-black/10 p-4 ring-1 ring-foreground/10">
+        <div class="doc-lbl">AlertDialog · black/10 + blur</div>
+        <div class="bg-background ring-foreground/10 mx-auto grid max-w-xs gap-4 rounded-xl p-4 ring-1">
+          <div class="text-base font-medium">Excluir paciente?</div><div class="text-muted-foreground text-sm">Essa ação não pode ser desfeita.</div>
+          <div class="bg-muted/50 -mx-4 -mb-4 flex justify-end gap-2 rounded-b-xl border-t p-4"><button class="rounded-lg border text-sm font-medium h-8 px-2.5 border-border bg-background">Cancelar</button><button class="rounded-lg text-sm font-medium h-8 px-2.5 bg-destructive/10 text-destructive">Excluir</button></div>
+        </div>
+      </div>
+      <div class="relative h-64 overflow-hidden rounded-xl bg-black/10 ring-1 ring-foreground/10">
+        <div class="doc-lbl p-4">Sheet · painel lateral</div>
+        <div class="bg-background absolute inset-y-0 right-0 flex w-3/5 flex-col gap-4 text-sm shadow-lg">
+          <div class="flex flex-col gap-0.5 p-4"><div class="text-foreground text-base font-medium">Documentos</div><div class="text-muted-foreground text-sm">Receitas e atestados</div></div>
+        </div>
+      </div>
+    </div>
+    <div class="mt-5 flex flex-wrap items-start gap-6">
+      <div><div class="doc-lbl">Dropdown</div>
+        <div class="ring-foreground/10 bg-popover text-popover-foreground w-44 rounded-lg p-1 shadow-md ring-1">
+          <div class="flex items-center gap-1.5 rounded-md px-1.5 py-1 text-sm bg-accent">Ver ficha</div>
+          <div class="flex items-center gap-1.5 rounded-md px-1.5 py-1 text-sm">Novo atendimento</div>
+          <div class="bg-border -mx-1 my-1 h-px"></div>
+          <div class="flex items-center gap-1.5 rounded-md px-1.5 py-1 text-sm text-destructive">Excluir paciente</div>
+        </div>
+      </div>
+      <div><div class="doc-lbl">Tooltip</div><div class="bg-foreground text-background w-fit rounded-md px-3 py-1.5 text-xs">Encerrar consulta</div></div>
+      <div><div class="doc-lbl">Toast (sonner)</div><div class="bg-popover text-popover-foreground flex w-72 items-center gap-2 rounded-[var(--radius)] border border-border p-4 text-sm shadow-lg">✓ Lançamento anulado <span class="ml-auto text-xs font-medium underline">Desfazer</span></div></div>
+    </div>
+  </section>
+
+  <!-- FEEDBACK -->
+  <section class="doc-sec">
+    <h2 class="doc-h2">Carregando, vazio e avatar</h2>
+    <p class="doc-p">O skeleton está pronto e é bom. O estado vazio é só uma frase, sem ação (S3).</p>
+    <div class="grid gap-5 md:grid-cols-3">
+      <div class="space-y-2 rounded-xl p-4 ring-1 ring-foreground/10"><div class="doc-lbl">Skeleton</div><div class="bg-muted animate-pulse rounded-md h-4 w-3/4"></div><div class="bg-muted animate-pulse rounded-md h-4 w-1/2"></div><div class="bg-muted animate-pulse rounded-md h-16 w-full"></div></div>
+      <div class="rounded-xl p-4 ring-1 ring-foreground/10"><div class="doc-lbl">Vazio (hoje)</div><p class="text-sm text-muted-foreground">Nenhum caso ativo.</p><span class="doc-flag mt-3">S3 sem ação</span></div>
+      <div class="rounded-xl p-4 ring-1 ring-foreground/10"><div class="doc-lbl">Avatar</div><div class="flex items-center gap-3">
+        <span class="relative flex size-6 shrink-0 rounded-full"><span class="bg-muted text-muted-foreground flex size-full items-center justify-center rounded-full text-xs">HD</span></span>
+        <span class="relative flex size-8 shrink-0 rounded-full"><span class="bg-muted text-muted-foreground flex size-full items-center justify-center rounded-full text-sm">HD</span></span>
+        <span class="relative flex size-10 shrink-0 rounded-full"><span class="bg-muted text-muted-foreground flex size-full items-center justify-center rounded-full text-sm">HD</span></span>
+      </div></div>
+    </div>
+  </section>
+
+  <p class="mt-12 text-xs text-muted-foreground">Fidelidade: as classes são as do código em 06/10/2026, mas animações, ícones Lucide e o comportamento do Radix não estão aqui. Se um componente de <code class="font-mono">components/ui</code> mudar, esta página precisa ser atualizada.</p>
+</div>
+<script>
+const btn = document.getElementById("themeBtn");
+function setDark(on) { document.documentElement.classList.toggle("dark", on); btn.textContent = on ? "Ver claro" : "Ver escuro"; }
+btn.onclick = () => setDark(!document.documentElement.classList.contains("dark"));
+try { const t = new URLSearchParams(location.search).get("tema"); if (t === "escuro") setDark(true); } catch (e) {}
+</script>
+</body>
+</html>

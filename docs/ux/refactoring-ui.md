@@ -102,6 +102,9 @@ Modelos · Novidades · Avatar (Perfil, WhatsApp, Sair) · Admin (só para o ges
 - [ ] Vacinas: em Documentos (comprovantes) ou na ficha (calendário)? Proposta: as duas, com papéis diferentes.
 - [ ] Motivo da consulta na lista: de onde tirar o resumo (`case_reports`?). Custo a levantar.
 - [ ] Pendências do paciente (vacina atrasada, retorno vencido, ficha incompleta): cruzar o calendário vacinal, os lembretes e `patient-chart-incomplete.ts`. Custo a levantar.
+- [ ] **Fonte do app:** Geist (atual) ou Inter (a da landing)? Decidir na Etapa 2 (auditoria M3).
+- [ ] **Logo no app:** trocar a antiga (`full-logo.svg`) pela nova e trazer a compacta (`falaped-icon.svg`) para o menu recolhido (auditoria M1, M2).
+- [ ] **Botão principal:** texto escuro sobre o azul (como no modo escuro) ou botão no azul escuro (auditoria C1).
 - [ ] `app/dashboard/agenda/page.tsx` existe no código, mas a tela não é usada: decidir se sai do código. A Agenda já saiu do protótipo.
 
 ## 6. Skills da reestruturação
@@ -159,3 +162,4 @@ Ganhos rápidos que podem entrar antes da etapa 5, porque não dependem do desig
 - **06/10/2026:** wireframe aprovado pelo gestor ("ficou muito bom"). Regra nova: um commit local ao fim de cada etapa. Iniciada a Etapa 1 (auditoria visual).
 - **06/10/2026:** Etapa 1 concluída: `auditoria-visual.md`, nota visual 6/10. Três problemas de gravidade 3 na ação principal: texto branco sobre o azul claro (contraste de 2:1), `text-primary` usado como texto (62 usos) e botão principal sem hover nem resposta ao clique. Faltam tokens de status, escala tipográfica, sistema de cards e estado vazio padrão. A lista do que a Etapa 2 precisa definir está no fim da auditoria.
 - **06/10/2026:** a auditoria virou a aba "Auditoria visual" no `fluxo-falaped-2.0.html` (o `.md` continua sendo a fonte), com uma demonstração em cor do contraste do botão principal.
+- **06/10/2026:** a auditoria ganhou a seção Marca (logo antiga no menu, falta a compacta, fonte Geist no app e Inter na landing) e a observação de que o modo escuro já resolve o contraste do botão. Nova aba **Componentes atuais** no HTML (`componentes-atuais.html`): tokens e componentes de `components/ui` renderizados com as classes reais, nos modos claro e escuro, como ponto de partida da Etapa 2. A aba Auditoria agora é gerada do `.md` por `gerar-aba-auditoria.py`.
