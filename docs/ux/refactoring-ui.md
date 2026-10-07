@@ -184,3 +184,4 @@ Ganhos rápidos que podem entrar antes da etapa 5, porque não dependem do desig
   - **Ficha refeita em três faixas:** resumo clínico em números; última consulta e "O que fazer" lado a lado; histórico e crescimento.
   - **Tela nova de Perfil** com o índice das seções: dados profissionais, marca nos documentos com prévia do cabeçalho, relatório, valores, WhatsApp, aparência, plano e conta.
   - O protótipo agora tem 18 telas.
+- **08/10/2026:** Início do 1º acesso refeito como no fluxo ideal: uma ação principal (Iniciar consulta, que leva à busca com cadastro na hora), passos "Conta criada → Atenda o primeiro paciente → Emita uma receita ou atestado → Personalize o cabeçalho" e contadores zerados. Pacientes, consultas e documentos são dados que o app já tem; a agenda do dia não existe, por isso o Início normal mostra "Consultas recentes".
