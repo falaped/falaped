@@ -4,14 +4,18 @@ import { toDbPhoneFormat } from "@/lib/parsers";
 export type SignUpWithEmailPayload = {
   email: string;
   password: string;
-  fullName: string;
+  firstName: string;
+  surname: string;
+  crm: string;
   phone: string;
   emailRedirectTo?: string;
 };
 
 /**
  * Registers a new user with email and password.
- * Stores full_name and phone (DB format: 55 + DDD + number) in user_metadata.
+ * Stores full_name and phone (DB format: 55 + DDD + number) in user_metadata, which the
+ * handle_new_auth_user trigger reads. first_name, surname and crm also go in the metadata
+ * and reach the profile on the first dashboard visit (see applySignupMetadata).
  * Use in Client Components: createClient() then signUpWithEmail(supabase, payload).
  * @throws AuthError on sign-up failure
  */
@@ -30,7 +34,10 @@ export async function signUpWithEmail(
     password: payload.password,
     options: {
       data: {
-        full_name: payload.fullName,
+        full_name: `${payload.firstName} ${payload.surname}`,
+        first_name: payload.firstName,
+        surname: payload.surname,
+        crm: payload.crm,
         phone: phoneDb,
       },
       emailRedirectTo: payload.emailRedirectTo ?? undefined,

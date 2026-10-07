@@ -20,13 +20,19 @@ const phoneRefine = (val: string) => isValidBrazilianPhone(val);
 export const signUpSchema = z.object({
   firstName: z.string().trim().min(2, "Digite seu nome"),
   lastName: z.string().trim().min(2, "Digite seu sobrenome"),
+  // Mesmo formato do Perfil ("12345 MG"), que é o que sai nos documentos.
+  crm: z
+    .string()
+    .trim()
+    .min(1, "Digite seu CRM e a UF")
+    .regex(/^\d{3,7}\s*[-/]?\s*[A-Za-z]{2}$/, "Confira o CRM e a UF. Ex.: 12345 MG"),
   email: z.email("Confira o e-mail. Ex.: ana@consultorio.com.br"),
   phone: z
     .string()
     .min(1, "Digite seu celular com DDD")
     .refine(phoneRefine, "Confira o número com DDD. Ex.: (31) 99781-5503"),
   // Sem "repetir senha": o campo tem botão de mostrar (guia: só o essencial agora).
-  password: z.string().min(6, "A senha precisa de pelo menos 6 caracteres"),
+  password: z.string().min(8, "A senha precisa de pelo menos 8 caracteres"),
 });
 
 export const forgotPasswordSchema = z.object({
@@ -36,6 +42,11 @@ export const forgotPasswordSchema = z.object({
 export const updatePasswordSchema = z.object({
   password: z.string().min(6, "Senha deve ter pelo menos 6 caracteres"),
 });
+
+/** "12345/mg", "12345-MG" → "12345 MG". Espera um CRM já validado pelo signUpSchema. */
+export function normalizeCrm(crm: string): string {
+  return `${crm.match(/\d+/)?.[0]} ${crm.trim().slice(-2).toUpperCase()}`;
+}
 
 export type LoginFormData = z.infer<typeof loginSchema>;
 export type SignUpFormData = z.infer<typeof signUpSchema>;

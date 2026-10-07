@@ -9,7 +9,7 @@ import { ArrowRight, Eye, EyeOff, TriangleAlert } from "lucide-react";
 
 import { createClient } from "@/lib/supabase/client";
 import { signUpWithEmail } from "@/modules/supabase/sign-up-with-email";
-import { signUpSchema, type SignUpFormData } from "@/lib/schemas/auth";
+import { normalizeCrm, signUpSchema, type SignUpFormData } from "@/lib/schemas/auth";
 import { parsePhone } from "@/lib/parsers";
 import { authErrorMessage } from "@/lib/auth-error-message";
 import { Button } from "@/components/ui/button";
@@ -31,7 +31,7 @@ export function SignUpForm() {
 
   const form = useForm<SignUpFormData>({
     resolver: zodResolver(signUpSchema),
-    defaultValues: { firstName: "", lastName: "", email: "", phone: "", password: "" },
+    defaultValues: { firstName: "", lastName: "", crm: "", email: "", phone: "", password: "" },
   });
   const { errors, isSubmitting } = form.formState;
 
@@ -43,7 +43,9 @@ export function SignUpForm() {
       await signUpWithEmail(supabase, {
         email: data.email,
         password: data.password,
-        fullName: `${data.firstName.trim()} ${data.lastName.trim()}`,
+        firstName: data.firstName.trim(),
+        surname: data.lastName.trim(),
+        crm: normalizeCrm(data.crm),
         phone: parsePhone(data.phone),
         emailRedirectTo: `${window.location.origin}/dashboard`,
       });
@@ -88,6 +90,52 @@ export function SignUpForm() {
               </Field>
             </div>
 
+            <div className="grid grid-cols-2 gap-4 *:min-w-0">
+              <Field data-invalid={!!errors.crm}>
+                <FieldLabel htmlFor="crm">CRM e UF</FieldLabel>
+                <FieldContent>
+                  <Input
+                    id="crm"
+                    placeholder="12345 MG"
+                    autoComplete="off"
+                    aria-invalid={!!errors.crm}
+                    {...form.register("crm")}
+                  />
+                  {errors.crm ? (
+                    <FieldError errors={[errors.crm]} />
+                  ) : (
+                    <FieldDescription>Sai nas receitas e atestados.</FieldDescription>
+                  )}
+                </FieldContent>
+              </Field>
+              <Field data-invalid={!!errors.phone}>
+                <FieldLabel htmlFor="phone">WhatsApp</FieldLabel>
+                <FieldContent>
+                  <Controller
+                    control={form.control}
+                    name="phone"
+                    render={({ field }) => (
+                      <PhoneInput
+                        ref={field.ref}
+                        id="phone"
+                        value={field.value}
+                        onChange={field.onChange}
+                        onBlur={field.onBlur}
+                        aria-invalid={!!errors.phone}
+                        aria-required
+                        required
+                      />
+                    )}
+                  />
+                  {errors.phone ? (
+                    <FieldError errors={[errors.phone]} />
+                  ) : (
+                    <FieldDescription>Com DDD.</FieldDescription>
+                  )}
+                </FieldContent>
+              </Field>
+            </div>
+
             <Field data-invalid={!!errors.email}>
               <FieldLabel htmlFor="email">E-mail</FieldLabel>
               <FieldContent>
@@ -102,32 +150,6 @@ export function SignUpForm() {
               </FieldContent>
             </Field>
 
-            <Field data-invalid={!!errors.phone}>
-              <FieldLabel htmlFor="phone">Celular</FieldLabel>
-              <FieldContent>
-                <Controller
-                  control={form.control}
-                  name="phone"
-                  render={({ field }) => (
-                    <PhoneInput
-                      ref={field.ref}
-                      id="phone"
-                      value={field.value}
-                      onChange={field.onChange}
-                      onBlur={field.onBlur}
-                      aria-invalid={!!errors.phone}
-                      aria-required
-                      required
-                    />
-                  )}
-                />
-                {errors.phone ? (
-                  <FieldError errors={[errors.phone]} />
-                ) : (
-                  <FieldDescription>Com DDD. É o número do seu WhatsApp.</FieldDescription>
-                )}
-              </FieldContent>
-            </Field>
 
             <Field data-invalid={!!errors.password}>
               <FieldLabel htmlFor="password">Senha</FieldLabel>
@@ -154,7 +176,7 @@ export function SignUpForm() {
                 {errors.password ? (
                   <FieldError errors={[errors.password]} />
                 ) : (
-                  <FieldDescription>Pelo menos 6 caracteres.</FieldDescription>
+                  <FieldDescription>Pelo menos 8 caracteres.</FieldDescription>
                 )}
               </FieldContent>
             </Field>
