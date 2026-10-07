@@ -124,7 +124,7 @@ export function ConsultTools({
 
       {patient ? (
         <Sheet open={sheet !== null} onOpenChange={(next) => !next && setSheet(null)}>
-          <SheetContent className="w-[max(45vw,560px)] gap-0 rounded-l-2xl bg-card sm:max-w-none">
+          <SheetContent className="gap-0 rounded-l-2xl bg-card data-[side=right]:w-[max(45vw,560px)] data-[side=right]:sm:max-w-none">
             <SheetHeader className="border-b border-border px-6 py-4">
               <SheetTitle className="font-display text-section font-semibold">{title}</SheetTitle>
               <SheetDescription className="text-caption text-subtle-foreground">{subtitle}</SheetDescription>

@@ -1155,7 +1155,7 @@ export function NewCaseWorkspace({
       </div>
 
       <Sheet open={railOpen} onOpenChange={setRailOpen}>
-        <SheetContent className="w-[380px] gap-0 rounded-l-2xl bg-card sm:max-w-[380px]">
+        <SheetContent className="gap-0 rounded-l-2xl bg-card data-[side=right]:w-[380px] data-[side=right]:sm:max-w-[380px]">
           <SheetHeader className="border-b border-border px-6 py-4">
             <SheetTitle className="font-display text-section font-semibold">Nesta consulta</SheetTitle>
             <SheetDescription className="text-caption text-subtle-foreground">{panelSubtitle}</SheetDescription>
