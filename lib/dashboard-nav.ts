@@ -8,7 +8,6 @@ import {
   HomeIcon,
   ChartLineIcon,
   FilterIcon,
-  MessageCircleQuestionIcon,
   PillIcon,
   MailsIcon,
   ShieldIcon,
@@ -118,13 +117,6 @@ export const dashboardNav: DashboardNavSection[] = [
         icon: FilePlusIcon,
       },
     ],
-  },
-  {
-    title: "Pergunte ao assistente",
-    description: "Converse com o assistente sobre condutas clínicas.",
-    url: "/dashboard/discussions",
-    icon: MessageCircleQuestionIcon,
-    items: [],
   },
   {
     title: "Financeiro",

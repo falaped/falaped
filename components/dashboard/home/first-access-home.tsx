@@ -8,7 +8,6 @@ import {
   FilesIcon,
   GiftIcon,
   MessageCircleIcon,
-  MessageCircleQuestionIcon,
   MicIcon,
   PillIcon,
   PlusIcon,
@@ -28,10 +27,6 @@ import { cn } from "@/lib/utils"
 
 export type FirstAccessHomeProps = {
   firstName: string | null
-  fullName: string
-  crm: string | null
-  logoUrl: string | null
-  place: string | null
   trialEndsAt: string | null
 }
 
@@ -40,7 +35,6 @@ const DAY_MS = 24 * 60 * 60 * 1000
 const DEMO_CALL_URL = `https://wa.me/5531997815503?text=${encodeURIComponent("Olá! Acabei de criar minha conta no Falaped e queria marcar uma chamada rápida para conhecer o app.")}`
 
 const MORE: { icon: LucideIcon; title: string; detail: string; href: string }[] = [
-  { icon: MessageCircleQuestionIcon, title: "Pergunte ao assistente", detail: "Uma dúvida de conduta ou de dose, a qualquer hora.", href: "/dashboard/discussions" },
   { icon: FilesIcon, title: "Documento avulso", detail: "Receita, atestado ou encaminhamento sem abrir consulta.", href: "/dashboard/services" },
   { icon: SyringeIcon, title: "Vacinas", detail: "Calendário da criança e comprovante para imprimir.", href: "/dashboard/vaccines" },
   { icon: FilePlusIcon, title: "Receituário em branco", detail: "Seu papel timbrado, para escrever à mão.", href: "/dashboard/prescriptions/new?mode=blank" },
@@ -48,8 +42,7 @@ const MORE: { icon: LucideIcon; title: string; detail: string; href: string }[] 
 
 /**
  * Início enquanto o médico ainda não atendeu ninguém (protótipo a12o, versão 2):
- * a ação única Iniciar consulta, a prévia do cabeçalho dos documentos e o que
- * acontece numa consulta, com prévias da interface. Os dados das prévias são de exemplo.
+ * a ação única Iniciar consulta e o que acontece numa consulta, com prévias da interface. Os dados das prévias são de exemplo.
  */
 export function FirstAccessHome(props: FirstAccessHomeProps) {
   const trialDaysLeft =
@@ -59,87 +52,32 @@ export function FirstAccessHome(props: FirstAccessHomeProps) {
 
   return (
     <div className="flex w-full max-w-[1440px] flex-col gap-8">
-      <div className="grid grid-cols-12 gap-6">
-        <section className="col-span-12 flex flex-col justify-center rounded-xl border border-primary-soft-border bg-highlight p-10 shadow-sm xl:col-span-8">
-          {trialDaysLeft != null ? (
-            <Badge className="w-fit">
-              <GiftIcon aria-hidden />
-              Teste grátis · {trialDaysLeft} {trialDaysLeft === 1 ? "dia" : "dias"}
-            </Badge>
-          ) : null}
-          <h1 className="mt-5 font-display text-[34px] leading-[42px] font-semibold tracking-[-0.02em]">
-            {props.firstName ? `Olá, ${props.firstName}.` : "Olá."}
-            <br />
-            Vamos para a 1ª consulta?
-          </h1>
-          <p className="mt-3 max-w-[52ch] text-read text-muted-foreground">
-            Busque ou cadastre a criança, grave um áudio ou digite o que viu, e o Falaped organiza a consulta e os
-            documentos.
-          </p>
-          <div className="mt-7 flex items-center gap-4">
-            <Button asChild size="lg" className="px-5">
-              <Link href="/dashboard/cases/select-patient">
-                <PlusIcon data-icon="inline-start" />
-                Iniciar consulta
-              </Link>
-            </Button>
-            <span className="text-caption text-subtle-foreground">ou use a busca do menu em qualquer tela</span>
-          </div>
-        </section>
-
-        <section className="col-span-12 flex flex-col rounded-xl border border-border bg-card p-6 xl:col-span-4">
-          <div className="flex items-center justify-between">
-            <h2 className="text-title font-semibold">Seus documentos</h2>
-            <Badge variant="secondary">Prévia</Badge>
-          </div>
-          <p className="mt-1 text-caption text-muted-foreground">É assim que o cabeçalho sai na receita e no atestado.</p>
-          <div className="mt-4 flex-1 rounded-lg border border-border bg-background p-4 shadow-xs">
-            <div className="flex items-center gap-3 border-b border-border pb-3">
-              {props.logoUrl ? (
-                // eslint-disable-next-line @next/next/no-img-element -- logo do médico no Storage
-                <img src={props.logoUrl} alt="Sua logo" className="size-11 shrink-0 rounded-md object-contain" />
-              ) : (
-                <span className="grid size-11 shrink-0 place-items-center rounded-md border border-dashed border-border-strong text-center text-[9px] leading-tight text-subtle-foreground">
-                  Sua
-                  <br />
-                  logo
-                </span>
-              )}
-              <div className="min-w-0 leading-tight">
-                <div className="truncate text-label font-semibold">{props.fullName}</div>
-                <div className="text-[11px] text-muted-foreground">
-                  {props.crm ? `CRM ${props.crm}` : <span className="italic text-subtle-foreground">CRM</span>}
-                </div>
-                <div className="mt-0.5 truncate text-[11px] text-subtle-foreground">
-                  {props.place ?? <span className="italic">Endereço do consultório</span>}
-                </div>
-              </div>
-            </div>
-            <div className="mt-3 text-[11px] font-semibold tracking-wide text-muted-foreground">RECEITUÁRIO</div>
-            <div className="mt-2 flex flex-col gap-1.5" aria-hidden>
-              <span className="h-1.5 w-11/12 rounded bg-muted" />
-              <span className="h-1.5 w-9/12 rounded bg-muted" />
-              <span className="h-1.5 w-10/12 rounded bg-muted" />
-            </div>
-          </div>
-          <div className="mt-4 flex items-center gap-2">
-            <span className="flex flex-1 items-center gap-1.5 text-caption text-success-text">
-              {props.crm ? (
-                <>
-                  <CheckIcon className="size-3.5" aria-hidden />
-                  Nome e CRM do cadastro
-                </>
-              ) : null}
-            </span>
-            <Button asChild variant="outline" size="sm">
-              <Link href="/dashboard/profile">
-                {props.logoUrl ? "Editar no Perfil" : "Adicionar logo"}
-                <ArrowRightIcon data-icon="inline-end" />
-              </Link>
-            </Button>
-          </div>
-        </section>
-      </div>
+      <section className="flex flex-col justify-center rounded-xl border border-primary-soft-border bg-highlight p-10 shadow-sm">
+        {trialDaysLeft != null ? (
+          <Badge className="w-fit">
+            <GiftIcon aria-hidden />
+            Teste grátis · {trialDaysLeft} {trialDaysLeft === 1 ? "dia" : "dias"}
+          </Badge>
+        ) : null}
+        <h1 className="mt-5 font-display text-[34px] leading-[42px] font-semibold tracking-[-0.02em]">
+          {props.firstName ? `Olá, ${props.firstName}.` : "Olá."}
+          <br />
+          Vamos para a 1ª consulta?
+        </h1>
+        <p className="mt-3 max-w-[52ch] text-read text-muted-foreground">
+          Busque ou cadastre a criança, grave um áudio ou digite o que viu, e o Falaped organiza a consulta e os
+          documentos.
+        </p>
+        <div className="mt-7 flex items-center gap-4">
+          <Button asChild size="lg" className="px-5">
+            <Link href="/dashboard/cases/select-patient">
+              <PlusIcon data-icon="inline-start" />
+              Iniciar consulta
+            </Link>
+          </Button>
+          <span className="text-caption text-subtle-foreground">ou use a busca do menu em qualquer tela</span>
+        </div>
+      </section>
 
       <section>
         <h2 className="font-display text-section font-semibold">Como é uma consulta no Falaped</h2>
@@ -198,7 +136,7 @@ export function FirstAccessHome(props: FirstAccessHomeProps) {
 
       <section>
         <h2 className="font-display text-section font-semibold">Também dá para usar fora da consulta</h2>
-        <div className="mt-4 grid grid-cols-2 gap-4 xl:grid-cols-4">
+        <div className="mt-4 grid grid-cols-3 gap-4">
           {MORE.map(({ icon: Icon, title, detail, href }) => (
             <Link
               key={title}
