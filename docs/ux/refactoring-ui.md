@@ -148,6 +148,13 @@ Instaladas em `~/.agents/skills` em 06/10/2026.
 - [x] **Etapa 3:** protótipo com a ficha (`prototipo.html`, aba "Protótipo"). Rodada 1 (8 telas sem a Consulta) aprovada em 07/10/2026; rodada 2 (Consulta e painéis) aprovada
 - [ ] **Etapa 4:** revisão de usabilidade (`ux-heuristics`) da versão com design
 - [ ] **Etapa 5:** implementação, por ordem de dor: Consulta → Pacientes → Ficha → Consultas → Menu → Início e cadastro
+- [ ] **Depois das etapas (pedido do gestor em 08/10/2026): Guia de design do Falaped.** A `ficha-design.html` vira a fonte única de verdade para toda feature nova. Ganha 4 seções:
+  - **Princípios de uso:** as heurísticas viram regras curtas.
+  - **Layout e grid:** depende da resposta sobre tablet e celular.
+  - **Modelos de página:** Início, lista, ficha, consulta com painel e configurações.
+  - **Checklist de feature nova:** modelo, ação principal, tokens, texto, estados, claro/escuro, sem mexer no Supabase.
+
+  Depois, um parágrafo no `CLAUDE.md` passa a apontar para o guia.
 
 Ganhos rápidos que podem entrar antes da etapa 5, porque não dependem do design:
 - [ ] Voltar à consulta depois de cadastrar o paciente (`patient-form.tsx:79` → `/dashboard/cases/select-patient?patientId=`)
