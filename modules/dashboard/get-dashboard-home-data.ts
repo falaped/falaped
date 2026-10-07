@@ -7,6 +7,7 @@ import type { CaseOrigin } from "@/modules/cases/types"
 export interface DashboardHomeActiveCasePatient {
   name: string | null
   birthDate: string | null
+  allergies: string | null
   responsible: string | null
   contactPhone: string | null
 }
@@ -34,6 +35,10 @@ export interface DashboardHomeRecentClosedCase {
   endedAt: string | null
   patientName: string | null
   responsible: string | null
+  birthDate: string | null
+  /** Documentos emitidos nesta consulta. */
+  prescriptionsCount: number
+  certificatesCount: number
 }
 
 export interface DashboardHomeData {
@@ -58,12 +63,14 @@ type ActiveCaseRow = {
         birth_date: string | null
         responsible: string | null
         contact_phone: string | null
+        allergies: string | null
       }
     | {
         name: string
         birth_date: string | null
         responsible: string | null
         contact_phone: string | null
+        allergies: string | null
       }[]
     | null
 }
@@ -73,8 +80,8 @@ type ClosedCaseRow = {
   started_at: string
   ended_at: string | null
   patient:
-    | { name: string; responsible: string | null }
-    | { name: string; responsible: string | null }[]
+    | { name: string; responsible: string | null; birth_date: string | null }
+    | { name: string; responsible: string | null; birth_date: string | null }[]
     | null
 }
 
@@ -89,17 +96,19 @@ function normalizeActivePatient(
     birthDate: row.birth_date ?? null,
     responsible: row.responsible ?? null,
     contactPhone: row.contact_phone ?? null,
+    allergies: row.allergies?.trim() || null,
   }
 }
 
 function normalizeClosedPatient(
   patient: ClosedCaseRow["patient"],
-): { name: string | null; responsible: string | null } {
-  if (patient == null) return { name: null, responsible: null }
+): { name: string | null; responsible: string | null; birthDate: string | null } {
+  if (patient == null) return { name: null, responsible: null, birthDate: null }
   const row = Array.isArray(patient) ? patient[0] : patient
   return {
     name: row?.name ?? null,
     responsible: row?.responsible ?? null,
+    birthDate: row?.birth_date ?? null,
   }
 }
 
@@ -156,7 +165,8 @@ export async function getDashboardHomeData(
         name,
         birth_date,
         responsible,
-        contact_phone
+        contact_phone,
+        allergies
       )
     `,
       )
@@ -174,7 +184,8 @@ export async function getDashboardHomeData(
       ended_at,
       patient:patients(
         name,
-        responsible
+        responsible,
+        birth_date
       )
     `,
       )
@@ -266,6 +277,26 @@ export async function getDashboardHomeData(
   }
 
   const closedRows = (closedRecentResult.data ?? []) as ClosedCaseRow[]
+  const closedIds = closedRows.map((row) => row.id)
+  const [recentPrescriptions, recentCertificates] = closedIds.length
+    ? await Promise.all([
+        supabase.from("prescriptions").select("case_id").eq("profile_id", profileId).in("case_id", closedIds),
+        supabase.from("medical_certificates").select("case_id").eq("profile_id", profileId).in("case_id", closedIds),
+      ])
+    : [{ data: [], error: null }, { data: [], error: null }]
+  if (recentPrescriptions.error || recentCertificates.error) {
+    throw new Error(
+      `[DASHBOARD_HOME] Failed to load documents of recent cases: ${(recentPrescriptions.error ?? recentCertificates.error)?.message}`,
+    )
+  }
+  const countByCase = (rows: { case_id: string | null }[] | null) => {
+    const counts = new Map<string, number>()
+    for (const row of rows ?? []) if (row.case_id) counts.set(row.case_id, (counts.get(row.case_id) ?? 0) + 1)
+    return counts
+  }
+  const prescriptionsByCase = countByCase(recentPrescriptions.data)
+  const certificatesByCase = countByCase(recentCertificates.data)
+
   const recentClosedCases: DashboardHomeRecentClosedCase[] = closedRows.map(
     (row) => {
       const p = normalizeClosedPatient(row.patient)
@@ -275,6 +306,9 @@ export async function getDashboardHomeData(
         endedAt: row.ended_at,
         patientName: p.name,
         responsible: p.responsible,
+        birthDate: p.birthDate,
+        prescriptionsCount: prescriptionsByCase.get(row.id) ?? 0,
+        certificatesCount: certificatesByCase.get(row.id) ?? 0,
       }
     },
   )

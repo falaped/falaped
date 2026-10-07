@@ -1,62 +1,42 @@
-import { Card } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
 
 /**
- * Suspense fallback for the dashboard home screen.
+ * Suspense fallback for the dashboard home screen: same blocks as the Início
+ * (title, the two panels and the numbers), so nothing jumps when it loads.
  */
 export function DashboardHomeLoading() {
   return (
-    <div
-      className="flex flex-col gap-6"
-      aria-busy="true"
-      aria-label="Carregando início"
-    >
+    <div className="flex w-full max-w-[1440px] flex-col gap-6" aria-busy="true" aria-label="Carregando início">
       <div>
-        <Skeleton className="h-8 w-40 rounded-md" />
-        <Skeleton className="mt-2 h-4 w-full max-w-xl rounded-md" />
+        <Skeleton className="h-8 w-56 rounded-md" />
+        <Skeleton className="mt-2 h-4 w-48 rounded-md" />
       </div>
-
-      <Card className="border-primary/20 p-4">
-        <div className="flex flex-col gap-4 sm:flex-row sm:justify-between">
-          <div className="space-y-2">
-            <Skeleton className="h-6 w-48 rounded-md" />
-            <Skeleton className="h-4 w-full max-w-md rounded-md" />
-          </div>
-          <Skeleton className="h-9 w-28 shrink-0 rounded-md" />
-        </div>
-        <div className="mt-4 grid gap-4 sm:grid-cols-3">
-          {Array.from({ length: 3 }).map((_, index) => (
-            <div key={index} className="space-y-2">
-              <Skeleton className="h-3 w-24 rounded-md" />
-              <Skeleton className="h-5 w-full rounded-md" />
+      <div className="grid gap-6 lg:grid-cols-2">
+        {Array.from({ length: 2 }).map((_, panel) => (
+          <div key={panel} className="rounded-xl border border-border bg-card">
+            <Skeleton className="mx-5 mt-4 mb-3 h-6 w-48 rounded-md" />
+            <div className="divide-y divide-border border-t border-border">
+              {Array.from({ length: 3 }).map((_, row) => (
+                <div key={row} className="flex min-h-16 items-center gap-3 px-5 py-3">
+                  <Skeleton className="size-8 rounded-full" />
+                  <div className="flex-1 space-y-1.5">
+                    <Skeleton className="h-4 w-40 rounded-md" />
+                    <Skeleton className="h-3 w-56 rounded-md" />
+                  </div>
+                </div>
+              ))}
             </div>
-          ))}
-        </div>
-      </Card>
-
-      <div>
-        <Skeleton className="h-4 w-40 rounded-md" />
-        <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-          {Array.from({ length: 4 }).map((_, index) => (
-            <Card key={index} className="p-4">
-              <Skeleton className="h-3 w-28 rounded-md" />
-              <Skeleton className="mt-2 h-8 w-14 rounded-md" />
-            </Card>
-          ))}
-        </div>
+          </div>
+        ))}
       </div>
-
-      <Card className="overflow-hidden p-0">
-        <div className="border-b border-border p-4">
-          <Skeleton className="h-5 w-56 rounded-md" />
-          <Skeleton className="mt-2 h-4 w-72 rounded-md" />
-        </div>
-        <div className="space-y-3 p-4">
-          {Array.from({ length: 4 }).map((_, index) => (
-            <Skeleton key={index} className="h-12 w-full rounded-md" />
-          ))}
-        </div>
-      </Card>
+      <div className="grid grid-cols-4 divide-x divide-border rounded-xl border border-border bg-card">
+        {Array.from({ length: 4 }).map((_, index) => (
+          <div key={index} className="space-y-2 px-6 py-5">
+            <Skeleton className="h-3 w-28 rounded-md" />
+            <Skeleton className="h-8 w-20 rounded-md" />
+          </div>
+        ))}
+      </div>
     </div>
   )
 }
