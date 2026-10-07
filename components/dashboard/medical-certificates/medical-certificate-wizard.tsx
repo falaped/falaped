@@ -189,7 +189,7 @@ export function CertificateFormCard({
           {embedded ? null : <h4 className="text-sm font-medium text-muted-foreground">Dados do atestado</h4>}
           {isComparecimento && (
             <>
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+              <div className="grid grid-cols-1 gap-4 sm:auto-cols-fr sm:grid-flow-col">
                 <DatePickerField
                   label="Data do atendimento"
                   value={(currentPayload as { attendanceDate?: string }).attendanceDate ?? ""}
@@ -420,28 +420,7 @@ export function CertificateFormCard({
             <>
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <Field>
-                  <div className="flex flex-wrap items-center justify-between gap-2">
-                    <FieldLabel>Nome do acompanhante</FieldLabel>
-                    {responsibleName ? (
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        className="h-auto py-1 text-xs text-muted-foreground hover:text-foreground"
-                        onClick={() =>
-                          setPayload((prev) => ({
-                            ...prev,
-                            acompanhante: {
-                              ...prev.acompanhante!,
-                              companionName: responsibleName,
-                            },
-                          }))
-                        }
-                      >
-                        Usar nome do responsável
-                      </Button>
-                    ) : null}
-                  </div>
+                  <FieldLabel>Nome do acompanhante</FieldLabel>
                   <FieldContent>
                     <Input
                       value={(currentPayload as { companionName?: string }).companionName ?? ""}
@@ -457,6 +436,26 @@ export function CertificateFormCard({
                       placeholder="Nome completo"
                     />
                   </FieldContent>
+                  {responsibleName &&
+                  (currentPayload as { companionName?: string }).companionName?.trim() !== responsibleName ? (
+                    <Button
+                      type="button"
+                      variant="link"
+                      size="sm"
+                      className="h-auto w-fit p-0 text-caption"
+                      onClick={() =>
+                        setPayload((prev) => ({
+                          ...prev,
+                          acompanhante: {
+                            ...prev.acompanhante!,
+                            companionName: responsibleName,
+                          },
+                        }))
+                      }
+                    >
+                      Usar nome do responsável
+                    </Button>
+                  ) : null}
                 </Field>
                 <Field>
                   <FieldLabel>Nome do paciente acompanhado</FieldLabel>
@@ -477,7 +476,7 @@ export function CertificateFormCard({
                   </FieldContent>
                 </Field>
               </div>
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+              <div className="grid grid-cols-1 gap-4 sm:auto-cols-fr sm:grid-flow-col">
                 <DatePickerField
                   label="Data da consulta"
                   value={(currentPayload as { consultationDate?: string }).consultationDate ?? ""}

@@ -31,8 +31,11 @@ function prefill(
 ): WizardPayload {
   const now = new Date()
   const today = format(now, "yyyy-MM-dd")
-  const timeStart = format(new Date(startedAt), "HH:mm")
-  const timeEnd = format(now, "HH:mm")
+  // O campo de horário é livre ("09:00 às 11:00"): início e fim vão juntos nele.
+  const start = format(new Date(startedAt), "HH:mm")
+  const end = format(now, "HH:mm")
+  const timeStart = start === end ? start : `${start} às ${end}`
+  const timeEnd = ""
   const who = { patientName: patient.name, birthDate: patient.birth_date ?? "" }
   return {
     comparecimento: { ...initialPayload.comparecimento!, ...who, attendanceDate: today, timeStart, timeEnd },
