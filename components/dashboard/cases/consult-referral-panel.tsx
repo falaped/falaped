@@ -2,10 +2,10 @@
 
 import { useState } from "react"
 import { format } from "date-fns"
-import { CheckIcon, PlusIcon, PrinterIcon } from "lucide-react"
+import { CheckIcon, PlusIcon, DownloadIcon } from "lucide-react"
 
 import { generateReferralAction } from "@/actions"
-import { ChoiceChip, DocLayout, DocPaper, DocStep, emitAndOpenPdf, PanelFooter } from "@/components/dashboard/cases/consult-document"
+import { ChoiceChip, DocLayout, DocPaper, DocStep, emitAndDownloadPdf, PanelFooter } from "@/components/dashboard/cases/consult-document"
 import type { ConsultDoctor } from "@/components/dashboard/cases/consult-prescription-panel"
 import { SPECIALTY_OPTIONS, URGENCY_OPTIONS } from "@/components/dashboard/referrals/referral-wizard"
 import { Button } from "@/components/ui/button"
@@ -45,7 +45,7 @@ export function ConsultReferralPanel({
 
   async function handleEmit() {
     setBusy(true)
-    const ok = await emitAndOpenPdf(
+    const ok = await emitAndDownloadPdf(
       () =>
         generateReferralAction({
           payload: {
@@ -165,8 +165,8 @@ export function ConsultReferralPanel({
       <DocLayout form={form} preview={preview} />
       <PanelFooter>
         <Button className="ml-auto" onClick={handleEmit} disabled={busy || !ready}>
-          <PrinterIcon data-icon="inline-start" />
-          {busy ? "Emitindo…" : "Emitir e imprimir"}
+          <DownloadIcon data-icon="inline-start" />
+          {busy ? "Emitindo…" : "Emitir e download"}
         </Button>
       </PanelFooter>
     </>

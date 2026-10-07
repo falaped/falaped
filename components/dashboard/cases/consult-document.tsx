@@ -158,17 +158,13 @@ export function DocPaper({
 }
 
 /**
- * "Emitir e imprimir": a aba abre já no clique (depois do await o navegador bloquearia o
- * pop-up) e recebe o PDF quando ele fica pronto; sem aba, cai no download. O aviso de
- * sucesso oferece "Baixar de novo". Devolve true quando emitiu.
- * ponytail: a URL do PDF não é revogada (a aba e o "Baixar de novo" dependem dela).
+ * "Emitir e download": gera o PDF e baixa direto. O aviso de sucesso oferece "Baixar de novo".
+ * Devolve true quando emitiu.
+ * ponytail: a URL do PDF não é revogada (o "Baixar de novo" depende dela).
  */
-export async function emitAndOpenPdf(generate: () => Promise<PdfResult>, successMessage: string): Promise<boolean> {
-  const tab = window.open("", "_blank")
-  tab?.document.write("<p style='font-family:sans-serif;padding:24px'>Gerando o PDF…</p>")
+export async function emitAndDownloadPdf(generate: () => Promise<PdfResult>, successMessage: string): Promise<boolean> {
   const result = await generate().catch(() => ({ ok: false, error: "Não foi possível gerar o PDF." }) as const)
   if (!result.ok) {
-    tab?.close()
     toast.error(getFriendlyToastMessage(result.error))
     return false
   }
@@ -181,8 +177,7 @@ export async function emitAndOpenPdf(generate: () => Promise<PdfResult>, success
     link.download = result.filename
     link.click()
   }
-  if (tab) tab.location.href = url
-  else download()
+  download()
   toast.success(successMessage, { action: { label: "Baixar de novo", onClick: download } })
   return true
 }

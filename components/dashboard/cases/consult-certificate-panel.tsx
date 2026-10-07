@@ -2,10 +2,10 @@
 
 import { useState } from "react"
 import { format } from "date-fns"
-import { ActivityIcon, BedIcon, CircleCheckIcon, ClockIcon, PrinterIcon, UsersIcon, type LucideIcon } from "lucide-react"
+import { ActivityIcon, BedIcon, CircleCheckIcon, ClockIcon, DownloadIcon, UsersIcon, type LucideIcon } from "lucide-react"
 
 import { generateMedicalCertificateAction } from "@/actions"
-import { DocLayout, DocPaper, DocStep, emitAndOpenPdf, FromBadge, PanelFooter } from "@/components/dashboard/cases/consult-document"
+import { DocLayout, DocPaper, DocStep, emitAndDownloadPdf, FromBadge, PanelFooter } from "@/components/dashboard/cases/consult-document"
 import type { ConsultDoctor } from "@/components/dashboard/cases/consult-prescription-panel"
 import {
   CertificateFormCard,
@@ -72,7 +72,7 @@ export function ConsultCertificatePanel({
 
   async function handleEmit() {
     setBusy(true)
-    const ok = await emitAndOpenPdf(
+    const ok = await emitAndDownloadPdf(
       () =>
         generateMedicalCertificateAction({
           type,
@@ -148,8 +148,8 @@ export function ConsultCertificatePanel({
       />
       <PanelFooter>
         <Button className="ml-auto" onClick={handleEmit} disabled={busy}>
-          <PrinterIcon data-icon="inline-start" />
-          {busy ? "Emitindo…" : "Emitir e imprimir"}
+          <DownloadIcon data-icon="inline-start" />
+          {busy ? "Emitindo…" : "Emitir e download"}
         </Button>
       </PanelFooter>
     </>

@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import { format } from "date-fns"
-import { BookmarkIcon, PlusIcon, PrinterIcon, ScaleIcon, Trash2Icon, TriangleAlertIcon } from "lucide-react"
+import { BookmarkIcon, PlusIcon, DownloadIcon, ScaleIcon, Trash2Icon, TriangleAlertIcon } from "lucide-react"
 import { toast } from "sonner"
 
 import { createPrescriptionTemplateAction, generatePrescriptionAction } from "@/actions"
@@ -12,7 +12,7 @@ import {
   DocLayout,
   DocPaper,
   DocStep,
-  emitAndOpenPdf,
+  emitAndDownloadPdf,
   PanelFooter,
 } from "@/components/dashboard/cases/consult-document"
 import { Button } from "@/components/ui/button"
@@ -126,7 +126,7 @@ export function ConsultPrescriptionPanel({
   async function handleEmit() {
     if (!meds.length) return void toast.error("Adicione pelo menos um medicamento com nome e posologia.")
     setBusy("emit")
-    const ok = await emitAndOpenPdf(
+    const ok = await emitAndDownloadPdf(
       () =>
         generatePrescriptionAction({
           payload: { patientName: patient.name, birthDate: patient.birth_date ?? undefined, medications: meds, ...extras },
@@ -334,8 +334,8 @@ export function ConsultPrescriptionPanel({
               {meds.length ? `${meds.length} ${meds.length === 1 ? "medicamento" : "medicamentos"}` : null}
             </span>
             <Button onClick={handleEmit} disabled={busy !== null || !meds.length}>
-              <PrinterIcon data-icon="inline-start" />
-              {busy === "emit" ? "Emitindo…" : "Emitir e imprimir"}
+              <DownloadIcon data-icon="inline-start" />
+              {busy === "emit" ? "Emitindo…" : "Emitir e download"}
             </Button>
           </>
         ) : (

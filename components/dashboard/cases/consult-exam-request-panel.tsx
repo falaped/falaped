@@ -2,7 +2,7 @@
 
 import { useState } from "react"
 import { format } from "date-fns"
-import { BookmarkIcon, PlusIcon, PrinterIcon, XIcon } from "lucide-react"
+import { BookmarkIcon, PlusIcon, DownloadIcon, XIcon } from "lucide-react"
 import { toast } from "sonner"
 
 import { createExamPanelAction, generateExamRequestAction } from "@/actions"
@@ -12,7 +12,7 @@ import {
   DocLayout,
   DocPaper,
   DocStep,
-  emitAndOpenPdf,
+  emitAndDownloadPdf,
   PanelFooter,
 } from "@/components/dashboard/cases/consult-document"
 import type { ConsultDoctor } from "@/components/dashboard/cases/consult-prescription-panel"
@@ -56,7 +56,7 @@ export function ConsultExamRequestPanel({
   async function handleEmit() {
     if (!exams.length) return void toast.error("Adicione pelo menos um exame ao pedido.")
     setBusy("emit")
-    const ok = await emitAndOpenPdf(
+    const ok = await emitAndDownloadPdf(
       () =>
         generateExamRequestAction({
           payload: {
@@ -178,8 +178,8 @@ export function ConsultExamRequestPanel({
             </Button>
             <span className="num ml-auto text-caption text-subtle-foreground">{exams.length ? count : null}</span>
             <Button onClick={handleEmit} disabled={busy !== null || !exams.length}>
-              <PrinterIcon data-icon="inline-start" />
-              {busy === "emit" ? "Emitindo…" : "Emitir e imprimir"}
+              <DownloadIcon data-icon="inline-start" />
+              {busy === "emit" ? "Emitindo…" : "Emitir e download"}
             </Button>
           </>
         ) : (
