@@ -249,7 +249,7 @@ function sidebar(o = {}) {
   </aside>`;
 }
 const APP = (o, main) => `<div class="flex h-full">${sidebar(o)}<main class="min-w-0 flex-1 overflow-auto bg-background">${main}</main></div>`;
-const PAGE = body => `<div class="mx-auto flex max-w-[1180px] flex-col gap-6 px-8 py-8">${body}</div>`;
+const PAGE = body => `<div class="flex max-w-[1440px] flex-col gap-6 px-8 py-8">${body}</div>`;
 const HEAD = (t, sub, right = "") => `<div class="flex items-end gap-4"><div><h1 class="t-page">${t}</h1>${sub ? `<p class="mt-0.5 text-muted-foreground">${sub}</p>` : ""}</div><div class="ml-auto flex items-center gap-2">${right}</div></div>`;
 const TABS = (items, on) => `<div class="flex gap-1 border-b border-border">${items.map((t, i) => `<button class="-mb-px border-b-2 px-3 py-2 ${i === on ? "border-foreground font-semibold" : "border-transparent text-muted-foreground hover:text-foreground"}">${t}</button>`).join("")}</div>`;
 const SEARCH = (ph, w = "w-80") => `<label class="input flex ${w} items-center gap-2 text-subtle-foreground">${I("search")}<span>${ph}</span></label>`;
@@ -573,7 +573,7 @@ const curve = () => `<svg viewBox="0 0 220 70" preserveAspectRatio="none" class=
 const FACT = (label, value, note, tone, ic) => `<div class="flex flex-col gap-1 px-5 py-4"><div class="flex items-center gap-1.5 text-label text-muted-foreground">${ic ? I(ic, "ic-sm " + (tone || "")) : ""}${label}</div><div class="text-[18px] font-semibold leading-7 num">${value}</div><div class="text-caption ${tone || "text-subtle-foreground"}">${note}</div></div>`;
 add({ id: "b5", t: "Ficha", obj: "Entender a criança em 10 segundos. Leitura em três faixas: quem é (cabeçalho com símbolos de atenção), o essencial em números (resumo clínico) e o que fazer agora (última consulta e pendências lado a lado, na mesma altura). O detalhe da alergia está aberto para mostrar o comportamento do símbolo.",
   html: () => APP({ on: "pacientes" }, `
-    <div class="border-b border-border bg-card"><div class="mx-auto max-w-[1180px] px-8 pt-6">
+    <div class="border-b border-border bg-card"><div class="max-w-[1440px] px-8 pt-6">
       <div class="mb-3 text-caption text-subtle-foreground"><a data-go="b4" class="hover:text-foreground hover:underline">Pacientes</a> › Helena Duarte</div>
       <div class="flex items-start gap-4">
         ${AV("HD", { s: "size-14", t: "text-section", on: 1 })}
@@ -676,7 +676,7 @@ add({ id: "b2", t: "Consulta encerrada", obj: "O registro de uma consulta que j�
 const PSEC = ["Dados profissionais", "Sua marca nos documentos", "Relatório da consulta", "Valores e procedimentos", "WhatsApp", "Aparência", "Plano e conta"];
 const PCARD = (id, title, desc, body) => `<section id="${id}" class="card scroll-mt-6"><div class="border-b border-border px-6 py-4"><h2 class="t-section">${title}</h2><p class="text-muted-foreground">${desc}</p></div><div class="space-y-5 px-6 py-5">${body}</div></section>`;
 add({ id: "d4", t: "Perfil", obj: "Onde o médico define como aparece para as famílias: dados profissionais, a marca nos documentos com prévia ao vivo, valores, WhatsApp e conta. A barra de salvar aparece só quando há mudança.",
-  html: () => APP({ on: "perfil" }, `<div class="mx-auto max-w-[1180px] px-8 pb-28 pt-8">
+  html: () => APP({ on: "perfil" }, `<div class="max-w-[1440px] px-8 pb-28 pt-8">
     <div class="card-highlight flex items-center gap-5 p-6">
       <span class="relative">${AV("AS", { s: "size-20", t: "text-page font-display", on: 1 })}<button class="absolute -bottom-1 -right-1 grid size-8 place-items-center rounded-full border border-border bg-card shadow-xs hover:bg-accent" aria-label="Trocar foto">${I("camera", "ic-sm")}</button></span>
       <div class="min-w-0"><h1 class="t-page">Dra. Ana Clara Souza</h1><div class="mt-1 text-muted-foreground">Pediatria · <span class="num">CRM-MG 54.321</span> · <span class="num">RQE 6789</span> · Belo Horizonte, MG</div>
