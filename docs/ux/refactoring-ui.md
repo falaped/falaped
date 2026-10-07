@@ -145,7 +145,7 @@ Instaladas em `~/.agents/skills` em 06/10/2026.
 - [ ] **Próximo pedido do gestor (guardado em 06/10/2026):** fluxo de IA no workspace da consulta. Retomar antes da Etapa 1.
 - [x] **Etapa 1:** auditoria visual do app atual (`redesign-existing-projects`): [`auditoria-visual.md`](./auditoria-visual.md), nota 6/10
 - [x] **Etapa 2:** ficha de design (`ficha-design.html`, aba "Ficha de design"): tokens de tipografia, espaçamento, cor, raio, sombra, estados e densidade
-- [ ] **Etapa 3:** protótipo com a ficha (`prototipo.html`, aba "Protótipo"). Rodada 1 (8 telas sem a Consulta) aprovada em 07/10/2026; rodada 2 (Consulta e painéis) pronta, aguardando validação
+- [x] **Etapa 3:** protótipo com a ficha (`prototipo.html`, aba "Protótipo"). Rodada 1 (8 telas sem a Consulta) aprovada em 07/10/2026; rodada 2 (Consulta e painéis) aprovada
 - [ ] **Etapa 4:** revisão de usabilidade (`ux-heuristics`) da versão com design
 - [ ] **Etapa 5:** implementação, por ordem de dor: Consulta → Pacientes → Ficha → Consultas → Menu → Início e cadastro
 
@@ -175,3 +175,4 @@ Ganhos rápidos que podem entrar antes da etapa 5, porque não dependem do desig
 - **06/10/2026:** Etapa 3, rodada 1: `prototipo.html` (aba "Protótipo") com 8 telas fora da Consulta: menu (3 estados), Início, Buscar paciente, Cadastro rápido, Pacientes, Ficha (Resumo), Consultas (com o menu ⋯ aberto) e Consulta encerrada. Tokens copiados da ficha, ícones Lucide (os do app), textos do guia de escrita, modo claro e escuro, telas ligadas por clique. As demais telas vão do wireframe + ficha direto para o código. Rodada 2 (Consulta) depende do fluxo de IA.
 - **07/10/2026:** gestor aprovou a rodada 1 do protótipo ("ficou tudo muito bom"), incluindo as decisões de botão com contorno quando já existe uma ação azul na tela. Próximo: fluxo de IA no workspace, depois rodada 2 (Consulta) e Etapa 4.
 - **07/10/2026:** fluxo de IA adiado sem data pelo gestor. Etapa 3, rodada 2: 8 telas da Consulta no `prototipo.html`, com a área do assistente como no wireframe (Consulta, Receita, Receita emitida, Atestado com prévia, Escala com escore ao vivo, Ler exame com valor fora da faixa em destaque, Encerrar consulta e Consulta encerrada). Na Consulta, "Encerrar consulta" é a ação azul e "Enviar" fica com contorno.
+- **08/10/2026:** gestor aprovou a rodada 2. Etapa 3 concluída (16 telas no protótipo).
