@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from "react"
 import { useRouter, usePathname } from "next/navigation"
 import { toast } from "sonner"
 import { getFriendlyToastMessage } from "@/lib/get-friendly-toast-message"
+import { caseDocumentsHref } from "@/lib/case-documents-href"
 import { format } from "date-fns"
 import { ptBR } from "date-fns/locale"
 import {
@@ -349,7 +350,7 @@ export function ExamRequestWizard({
           a.click()
           URL.revokeObjectURL(url)
           toast.success("Pedido de exames gerado. Download iniciado.")
-          router.push("/dashboard/exam-requests")
+          router.push(initialCaseId?.trim() ? caseDocumentsHref(initialCaseId.trim()) : "/dashboard/exam-requests")
           router.refresh()
         } else {
           toast.error(getFriendlyToastMessage(result.error))

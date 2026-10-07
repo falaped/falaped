@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from "react"
 import { useRouter, usePathname } from "next/navigation"
 import { toast } from "sonner"
 import { getFriendlyToastMessage } from "@/lib/get-friendly-toast-message"
+import { caseDocumentsHref } from "@/lib/case-documents-href"
 import { format } from "date-fns"
 import { ptBR } from "date-fns/locale"
 import { UserPlus, ClipboardList, Save, FileText, Share2 } from "lucide-react"
@@ -310,7 +311,7 @@ export function ReferralWizard({
           a.click()
           URL.revokeObjectURL(url)
           toast.success("Encaminhamento gerado. Download iniciado.")
-          router.push("/dashboard/referrals")
+          router.push(initialCaseId?.trim() ? caseDocumentsHref(initialCaseId.trim()) : "/dashboard/referrals")
           router.refresh()
         } else {
           toast.error(getFriendlyToastMessage(result.error))
