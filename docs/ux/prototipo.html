@@ -269,7 +269,7 @@ const add = s => S.push(s);
 
 /* Início do dia a dia v3 (07/10): dados do seed de demonstração (supabase/seed-pediatra-demo.sql). */
 const RECENT = [
-  { i: "HD", n: "Helena Duarte Castro", a: "10m", when: "Hoje, 10:14", why: "Puericultura de 10 meses", sig: () => SIG("triangle-alert", "danger", "Alergia: proteína do leite de vaca", "APLV diagnosticada aos 3 meses. Checada em toda receita.") },
+  { i: "HD", n: "Helena Duarte Castro", a: "10m", when: "Hoje, 10:14", why: "Puericultura de 10 meses" },
   { i: "DN", n: "Davi Nogueira Prates", a: "1a 10m", when: "Hoje, 09:04", why: "Diarreia aguda" },
   { i: "LB", n: "Laura Bittencourt Lima", a: "8a", when: "Ontem, 16:52", why: "Crise de asma leve a moderada" },
 ];
@@ -338,7 +338,7 @@ const inicio = () => APP({ on: "inicio", active: { i: "MA", n: "Miguel A.", t: "
   </section>
   <section class="card">
     <div class="flex items-center gap-2 px-5 pb-3 pt-4"><h2 class="t-section">Últimas consultas</h2><a data-go="b1" class="btn btn-link btn-sm ml-auto">Ver todas${I("arrow-right", "ic-sm")}</a></div>
-    <div class="divide-y divide-border border-t border-border">${RECENT.map(c => `<a data-go="b2" class="flex items-center gap-3 px-5 py-3 hover:bg-accent">${AV(c.i)}<div class="min-w-0 flex-1"><div class="flex items-center gap-2"><span class="font-semibold">${c.n}</span><span class="text-subtle-foreground">· ${c.a}</span>${c.sig ? c.sig() : ""}</div><div class="text-caption text-muted-foreground">${c.why}</div></div><span class="text-caption num text-subtle-foreground">${c.when}</span>${I("chevron-right", "ic-sm text-subtle-foreground")}</a>`).join("")}</div>
+    <div class="divide-y divide-border border-t border-border">${RECENT.map(c => `<a data-go="b2" class="flex items-center gap-3 px-5 py-3 hover:bg-accent">${AV(c.i)}<div class="min-w-0 flex-1"><div class="flex items-center gap-2"><span class="font-semibold">${c.n}</span><span class="text-subtle-foreground">· ${c.a}</span></div><div class="text-caption text-muted-foreground">${c.why}</div></div><span class="text-caption num text-subtle-foreground">${c.when}</span>${I("chevron-right", "ic-sm text-subtle-foreground")}</a>`).join("")}</div>
   </section>`));
 
 add({ id: "d1", t: "Menu", obj: "Os três estados do menu: sem consulta aberta (botão Iniciar consulta), com consulta aberta (cartão para voltar) e recolhido durante a consulta.",
