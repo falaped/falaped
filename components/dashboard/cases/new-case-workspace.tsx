@@ -56,13 +56,17 @@ import { CLINICAL_NOTATION_SUMMARY_MESSAGE } from "@/lib/format-clinical-assista
 import { CloseCaseWithEarningsDialog } from "@/components/dashboard/cases/close-case-with-earnings-dialog"
 import { ConsultRail, type ConsultDocuments } from "@/components/dashboard/cases/consult-rail"
 import { ConsultTimer } from "@/components/dashboard/cases/consult-timer"
+import type { ConsultDoctor } from "@/components/dashboard/cases/consult-prescription-panel"
 import { ConsultTools } from "@/components/dashboard/cases/consult-tools"
 import type { ExamReadingWithPages } from "@/components/dashboard/exam-readings/exam-reading-card"
 import type { CaseCarryover } from "@/modules/cases/get-previous-case-carryover"
 import type { CasePatientDetail } from "@/modules/cases/get-case-by-id"
 import type { CaseReminder } from "@/modules/cases/types"
 import type { PatientAttachment } from "@/modules/patient-attachments/types"
+import type { ExamCatalogItem } from "@/modules/exam-catalog/types"
+import type { ExamPanel } from "@/modules/exam-panels/types"
 import type { Measurement } from "@/modules/patient-growth/types"
+import type { PrescriptionTemplateOption } from "@/modules/prescription-templates/types"
 import type { ScaleResult } from "@/modules/patient-scales/types"
 
 type WorkspaceMessage = {
@@ -565,6 +569,10 @@ export function NewCaseWorkspace({
   ageMonths,
   todayIso,
   todayLabel,
+  doctor,
+  prescriptionTemplates,
+  examCatalog,
+  examPanels,
 }: {
   caseId: string
   initialMessages: WorkspaceMessage[]
@@ -590,6 +598,10 @@ export function NewCaseWorkspace({
   /** Hoje no fuso da clínica: "yyyy-MM-dd" e "dd/MM/yyyy". */
   todayIso: string
   todayLabel: string
+  doctor: ConsultDoctor
+  prescriptionTemplates: PrescriptionTemplateOption[]
+  examCatalog: ExamCatalogItem[]
+  examPanels: ExamPanel[]
 }) {
   const scrollRef = useRef<HTMLDivElement | null>(null)
   const sendInFlightRef = useRef(false)
@@ -905,6 +917,12 @@ export function NewCaseWorkspace({
   const fullAge = formatPediatricAgeFull(patient?.birth_date ?? null, new Date())
   const todayMeasurement =
     measurements.findLast((m) => m.measured_on === todayIso) ?? null
+  const lastWeight = measurements.findLast((m) => m.weight_grams !== null)
+  const weightLabel = lastWeight
+    ? `${(lastWeight.weight_grams! / 1000).toFixed(2).replace(".", ",")} kg · ${
+        lastWeight.measured_on === todayIso ? "hoje" : formatDate(lastWeight.measured_on)
+      }`
+    : null
   const docCount = Object.values(documents).reduce((total, list) => total + list.length, 0)
   const panelSubtitle = [patient?.name ?? "Paciente não associado", age].filter(Boolean).join(" · ")
 
@@ -963,6 +981,15 @@ export function NewCaseWorkspace({
         scaleResults={scaleResults}
         attachments={attachments}
         examReadings={examReadings}
+        documentData={{
+          allergies,
+          weightLabel,
+          startedAt,
+          doctor,
+          prescriptionTemplates,
+          examCatalog,
+          examPanels,
+        }}
       />
 
       <div className="flex min-h-0 flex-1 flex-col">

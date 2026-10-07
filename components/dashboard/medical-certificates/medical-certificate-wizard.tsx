@@ -87,7 +87,7 @@ const TYPES: {
     },
   ]
 
-type WizardPayload = {
+export type WizardPayload = {
   comparecimento?: {
     patientName: string
     birthDate: string
@@ -124,7 +124,7 @@ type WizardPayload = {
   }
 }
 
-const initialPayload: WizardPayload = {
+export const initialPayload: WizardPayload = {
   comparecimento: {
     patientName: "",
     birthDate: "",
@@ -165,14 +165,18 @@ type CertificateFormCardProps = {
   type: MedicalCertificateType
   currentPayload: NonNullable<WizardPayload[MedicalCertificateType]>
   setPayload: React.Dispatch<React.SetStateAction<WizardPayload>>
-  selectedPatient: Patient | null
+  /** Só o responsável é usado (atalho "Usar nome do responsável"). */
+  selectedPatient: Pick<Patient, "responsible"> | null
+  /** Sem o cartão e o título de passo: dentro do painel da Consulta. */
+  embedded?: boolean
 }
 
-function CertificateFormCard({
+export function CertificateFormCard({
   type,
   currentPayload,
   setPayload,
   selectedPatient,
+  embedded = false,
 }: CertificateFormCardProps) {
   const isComparecimento = type === "comparecimento"
   const isAptidao = type === "aptidao_fisica"
@@ -180,17 +184,9 @@ function CertificateFormCard({
   const isAcompanhante = type === "acompanhante"
   const responsibleName = selectedPatient?.responsible?.trim() ?? ""
 
-  return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="text-base">Passo 3 — Dados do atestado</CardTitle>
-        <CardDescription className="mt-1">
-          Preencha os campos. Use a localização do navegador ou digite o Estado no perfil.
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-6">
+  const fields = (
         <section className="space-y-4">
-          <h4 className="text-sm font-medium text-muted-foreground">Dados do atestado</h4>
+          {embedded ? null : <h4 className="text-sm font-medium text-muted-foreground">Dados do atestado</h4>}
           {isComparecimento && (
             <>
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
@@ -575,7 +571,18 @@ function CertificateFormCard({
             </>
           )}
         </section>
-      </CardContent>
+  )
+  if (embedded) return fields
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="text-base">Passo 3 — Dados do atestado</CardTitle>
+        <CardDescription className="mt-1">
+          Preencha os campos. Use a localização do navegador ou digite o Estado no perfil.
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-6">{fields}</CardContent>
     </Card>
   )
 }
@@ -589,18 +596,21 @@ type CertificatePreviewShortProfile = {
   default_location_city?: string | null
 }
 
-function CertificatePreviewShort({
+export function CertificatePreviewShort({
   type,
   currentPayload,
   profile,
   issuedAt,
   selectedPatient,
+  embedded = false,
 }: {
   type: MedicalCertificateType
   currentPayload: NonNullable<WizardPayload[MedicalCertificateType]>
   profile: CertificatePreviewShortProfile
   issuedAt: string
-  selectedPatient: Patient | null
+  selectedPatient: Pick<Patient, "responsible"> | null
+  /** Só a folha, sem o cartão do passo: dentro do painel da Consulta. */
+  embedded?: boolean
 }) {
   const location = getProfileDefaultLocation(profile)
   const issuedAtFormatted = issuedAt
@@ -631,15 +641,7 @@ function CertificatePreviewShort({
     selectedPatient?.responsible ?? null,
   )
 
-  return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="text-base">Passo 4 — Preview</CardTitle>
-        <CardDescription className="mt-1">
-          Visualização resumida do atestado. O PDF gerado seguirá o mesmo conteúdo.
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
+  const sheet = (
         <div className="space-y-2 rounded-md border border-border bg-muted/30 p-4 text-xs leading-relaxed text-foreground">
           <p className="font-semibold uppercase tracking-wide">{preview.title}</p>
           <p>
@@ -678,7 +680,18 @@ function CertificatePreviewShort({
             <p>{preview.footerLines[1]}</p>
           </div>
         </div>
-      </CardContent>
+  )
+  if (embedded) return sheet
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="text-base">Passo 4 — Preview</CardTitle>
+        <CardDescription className="mt-1">
+          Visualização resumida do atestado. O PDF gerado seguirá o mesmo conteúdo.
+        </CardDescription>
+      </CardHeader>
+      <CardContent>{sheet}</CardContent>
     </Card>
   )
 }

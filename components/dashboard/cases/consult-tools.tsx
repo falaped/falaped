@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import Link from "next/link"
+import { useRouter } from "next/navigation"
 import {
   FileCheckIcon,
   FlaskConicalIcon,
@@ -14,6 +14,11 @@ import {
   type LucideIcon,
 } from "lucide-react"
 
+import { ConsultCertificatePanel } from "@/components/dashboard/cases/consult-certificate-panel"
+import { PanelBody } from "@/components/dashboard/cases/consult-document"
+import { ConsultExamRequestPanel } from "@/components/dashboard/cases/consult-exam-request-panel"
+import { ConsultPrescriptionPanel, type ConsultDoctor } from "@/components/dashboard/cases/consult-prescription-panel"
+import { ConsultReferralPanel } from "@/components/dashboard/cases/consult-referral-panel"
 import { AttachmentsSection } from "@/components/dashboard/attachments/attachments-section"
 import { ExamReadingsSection } from "@/components/dashboard/exam-readings/exam-readings-section"
 import type { ExamReadingWithPages } from "@/components/dashboard/exam-readings/exam-reading-card"
@@ -21,22 +26,52 @@ import { MeasurementForm } from "@/components/dashboard/patients/growth/measurem
 import { ScalesSection } from "@/components/dashboard/scales/scales-section"
 import { Button } from "@/components/ui/button"
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet"
+import { cn } from "@/lib/utils"
 import type { PatientAttachment } from "@/modules/patient-attachments/types"
+import type { ExamCatalogItem } from "@/modules/exam-catalog/types"
+import type { ExamPanel } from "@/modules/exam-panels/types"
 import type { ScaleResult } from "@/modules/patient-scales/types"
+import type { PrescriptionTemplateOption } from "@/modules/prescription-templates/types"
 
-type SheetKind = "scale" | "exam" | "measure" | "attachment"
+type SheetKind = "prescription" | "certificate" | "exam-request" | "referral" | "scale" | "exam" | "measure" | "attachment"
 
-const SHEET_TITLE: Record<SheetKind, string> = {
-  scale: "Aplicar escala",
-  exam: "Ler exame",
-  measure: "Registrar medidas",
-  attachment: "Anexos",
+const SHEET: Record<SheetKind, { title: string; width: string }> = {
+  prescription: { title: "Nova receita", width: "w-[560px] sm:max-w-[560px]" },
+  certificate: { title: "Novo atestado", width: "w-[620px] sm:max-w-[620px]" },
+  "exam-request": { title: "Pedido de exame", width: "w-[560px] sm:max-w-[560px]" },
+  referral: { title: "Encaminhamento", width: "w-[560px] sm:max-w-[560px]" },
+  scale: { title: "Aplicar escala", width: "w-[640px] sm:max-w-[640px]" },
+  exam: { title: "Ler exame", width: "w-[640px] sm:max-w-[640px]" },
+  measure: { title: "Registrar medidas", width: "w-[640px] sm:max-w-[640px]" },
+  attachment: { title: "Anexos", width: "w-[640px] sm:max-w-[640px]" },
+}
+
+const TOOLS: Array<[SheetKind, string, LucideIcon]> = [
+  ["prescription", "Receita", PillIcon],
+  ["certificate", "Atestado", FileCheckIcon],
+  ["exam-request", "Pedido de exame", FlaskConicalIcon],
+  ["referral", "Encaminhamento", SendIcon],
+  ["scale", "Escala", ListChecksIcon],
+  ["exam", "Ler exame", ScanTextIcon],
+  ["measure", "Medidas", RulerIcon],
+  ["attachment", "Anexo", PaperclipIcon],
+]
+
+/** O que os painéis de documento precisam além da criança. */
+export type ConsultDocumentData = {
+  allergies: string[]
+  /** "12,4 kg · hoje"; null sem medida de peso. */
+  weightLabel: string | null
+  startedAt: string
+  doctor: ConsultDoctor
+  prescriptionTemplates: PrescriptionTemplateOption[]
+  examCatalog: ExamCatalogItem[]
+  examPanels: ExamPanel[]
 }
 
 /**
- * Barra de ferramentas da Consulta (protótipo a5). Escala, Ler exame, Anexo e Medidas abrem
- * aqui mesmo, num painel lateral; os documentos ainda abrem o assistente de cada um e voltam para a consulta.
- * ponytail: Receita e Atestado viram painel lateral nos PRs a6/a7.
+ * Barra de ferramentas da Consulta (protótipos a5–a9): tudo abre num painel lateral, sem
+ * sair da consulta. Documento emitido fecha o painel e aparece em "Nesta consulta".
  */
 export function ConsultTools({
   caseId,
@@ -46,99 +81,126 @@ export function ConsultTools({
   scaleResults,
   attachments,
   examReadings,
+  documentData,
 }: {
   caseId: string
-  patient: { id: string; sex: string | null; birth_date: string | null } | null
+  patient: { id: string; name: string; sex: string | null; birth_date: string | null; responsible: string | null } | null
   /** "Helena Duarte · 2a 3m", repetido no topo de cada painel. */
   subtitle: string
   ageMonths: number | null
   scaleResults: ScaleResult[]
   attachments: PatientAttachment[]
   examReadings: ExamReadingWithPages[]
+  documentData: ConsultDocumentData
 }) {
+  const router = useRouter()
   const [sheet, setSheet] = useState<SheetKind | null>(null)
-
-  const query = patient ? new URLSearchParams({ caseId, patientId: patient.id }).toString() : ""
-  const links: Array<[string, LucideIcon, string]> = [
-    ["Receita", PillIcon, `/dashboard/prescriptions/new?${query}`],
-    ["Atestado", FileCheckIcon, `/dashboard/medical-certificates/new?${query}`],
-    ["Pedido de exame", FlaskConicalIcon, `/dashboard/exam-requests/new?${query}`],
-    ["Encaminhamento", SendIcon, `/dashboard/referrals/new?${query}`],
-  ]
-  const panels: Array<[string, LucideIcon, () => void]> = [
-    ["Escala", ListChecksIcon, () => setSheet("scale")],
-    ["Ler exame", ScanTextIcon, () => setSheet("exam")],
-    ["Medidas", RulerIcon, () => setSheet("measure")],
-    ["Anexo", PaperclipIcon, () => setSheet("attachment")],
-  ]
-  const toolClass = "text-muted-foreground hover:text-foreground"
+  // O título fica enquanto o painel anima para fora.
+  const [lastSheet, setLastSheet] = useState<SheetKind>("prescription")
+  const open = (kind: SheetKind) => {
+    setLastSheet(kind)
+    setSheet(kind)
+  }
+  const onDone = () => {
+    setSheet(null)
+    router.refresh()
+  }
+  const { title, width } = SHEET[sheet ?? lastSheet]
 
   return (
     <div className="flex shrink-0 flex-wrap gap-1 border-b border-border bg-card px-5 py-2">
-      {links.map(([label, Icon, href]) =>
-        patient ? (
-          <Button key={label} asChild variant="ghost" size="sm" className={toolClass}>
-            <Link href={href}>
-              <Icon data-icon="inline-start" />
-              {label}
-            </Link>
-          </Button>
-        ) : (
-          <Button key={label} variant="ghost" size="sm" className={toolClass} disabled>
-            <Icon data-icon="inline-start" />
-            {label}
-          </Button>
-        ),
-      )}
-      {panels.map(([label, Icon, onClick]) => (
-        <Button key={label} variant="ghost" size="sm" className={toolClass} disabled={!patient} onClick={onClick}>
+      {TOOLS.map(([kind, label, Icon]) => (
+        <Button
+          key={kind}
+          variant="ghost"
+          size="sm"
+          className="text-muted-foreground hover:text-foreground"
+          disabled={!patient}
+          onClick={() => open(kind)}
+        >
           <Icon data-icon="inline-start" />
           {label}
         </Button>
       ))}
 
       {patient ? (
-          <Sheet open={sheet !== null} onOpenChange={(open) => !open && setSheet(null)}>
-            <SheetContent className="w-[640px] gap-0 rounded-l-2xl bg-card sm:max-w-[640px]">
-              <SheetHeader className="border-b border-border px-6 py-4">
-                <SheetTitle className="font-display text-section font-semibold">{sheet ? SHEET_TITLE[sheet] : ""}</SheetTitle>
-                <SheetDescription className="text-caption text-subtle-foreground">{subtitle}</SheetDescription>
-              </SheetHeader>
-              <div className="flex-1 overflow-auto px-6 py-5">
-                {sheet === "scale" ? (
-                  <ScalesSection
-                    patientId={patient.id}
-                    caseId={caseId}
-                    ageMonths={ageMonths}
-                    results={scaleResults}
-                    title="Escalas desta consulta"
-                    description="O registro fica também no histórico da criança."
-                  />
-                ) : null}
-                {sheet === "exam" ? (
-                  <ExamReadingsSection patientId={patient.id} caseId={caseId} readings={examReadings} />
-                ) : null}
-                {sheet === "measure" ? (
-                  <MeasurementForm
-                    patientId={patient.id}
-                    patientSex={patient.sex}
-                    patientBirthDate={patient.birth_date}
-                    open
-                    onOpenChange={(open) => !open && setSheet(null)}
-                  />
-                ) : null}
-                {sheet === "attachment" ? (
-                  <AttachmentsSection
-                    patientId={patient.id}
-                    caseId={caseId}
-                    attachments={attachments}
-                    title="Anexos desta consulta"
-                    description="Os arquivos ficam também na ficha da criança."
-                  />
-                ) : null}
-              </div>
-            </SheetContent>
-          </Sheet>
+        <Sheet open={sheet !== null} onOpenChange={(next) => !next && setSheet(null)}>
+          <SheetContent className={cn("gap-0 rounded-l-2xl bg-card", width)}>
+            <SheetHeader className="border-b border-border px-6 py-4">
+              <SheetTitle className="font-display text-section font-semibold">{title}</SheetTitle>
+              <SheetDescription className="text-caption text-subtle-foreground">{subtitle}</SheetDescription>
+            </SheetHeader>
+            {sheet === "prescription" ? (
+              <ConsultPrescriptionPanel
+                caseId={caseId}
+                patient={patient}
+                allergies={documentData.allergies}
+                weightLabel={documentData.weightLabel}
+                templates={documentData.prescriptionTemplates}
+                doctor={documentData.doctor}
+                onDone={onDone}
+              />
+            ) : null}
+            {sheet === "certificate" ? (
+              <ConsultCertificatePanel
+                caseId={caseId}
+                patient={patient}
+                startedAt={documentData.startedAt}
+                doctor={documentData.doctor}
+                onDone={onDone}
+              />
+            ) : null}
+            {sheet === "exam-request" ? (
+              <ConsultExamRequestPanel
+                caseId={caseId}
+                patient={patient}
+                catalog={documentData.examCatalog}
+                panels={documentData.examPanels}
+                onDone={onDone}
+              />
+            ) : null}
+            {sheet === "referral" ? <ConsultReferralPanel caseId={caseId} patient={patient} onDone={onDone} /> : null}
+            {sheet === "scale" ? (
+              <PanelBody>
+                <ScalesSection
+                  patientId={patient.id}
+                  caseId={caseId}
+                  ageMonths={ageMonths}
+                  results={scaleResults}
+                  title="Escalas desta consulta"
+                  description="O registro fica também no histórico da criança."
+                />
+              </PanelBody>
+            ) : null}
+            {sheet === "exam" ? (
+              <PanelBody>
+                <ExamReadingsSection patientId={patient.id} caseId={caseId} readings={examReadings} />
+              </PanelBody>
+            ) : null}
+            {sheet === "measure" ? (
+              <PanelBody>
+                <MeasurementForm
+                  patientId={patient.id}
+                  patientSex={patient.sex}
+                  patientBirthDate={patient.birth_date}
+                  open
+                  onOpenChange={(next) => !next && setSheet(null)}
+                />
+              </PanelBody>
+            ) : null}
+            {sheet === "attachment" ? (
+              <PanelBody>
+                <AttachmentsSection
+                  patientId={patient.id}
+                  caseId={caseId}
+                  attachments={attachments}
+                  title="Anexos desta consulta"
+                  description="Os arquivos ficam também na ficha da criança."
+                />
+              </PanelBody>
+            ) : null}
+          </SheetContent>
+        </Sheet>
       ) : null}
     </div>
   )

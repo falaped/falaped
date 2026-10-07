@@ -58,7 +58,7 @@ import type { ReferralTemplateSnapshot } from "@/modules/referral-templates/type
 import type { ReferralTemplateOption } from "@/modules/referral-templates/get-referral-templates-by-profile-id"
 
 /** Common pediatric referral destinations (D-07: picklist + free-text). */
-const SPECIALTY_OPTIONS = [
+export const SPECIALTY_OPTIONS = [
   "Otorrinolaringologia",
   "Oftalmologia",
   "Neuropediatria",
@@ -72,7 +72,7 @@ const SPECIALTY_OPTIONS = [
   "Outro",
 ]
 
-const URGENCY_OPTIONS: { value: ReferralUrgency; label: string }[] = [
+export const URGENCY_OPTIONS: { value: ReferralUrgency; label: string }[] = [
   { value: "rotina", label: "Rotina" },
   { value: "prioritario", label: "Prioritário" },
   { value: "urgente", label: "Urgente" },

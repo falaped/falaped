@@ -18,6 +18,9 @@ import { listAttachmentsByCase } from "@/modules/patient-attachments/list-attach
 import { listExamReadingsByCase } from "@/modules/exam-readings/list-exam-readings-by-case"
 import { getExamReadingPageUrls } from "@/modules/exam-readings/get-exam-reading-page-urls"
 import { getMeasurementsByPatient } from "@/modules/patient-growth/get-measurements-by-patient"
+import { getPrescriptionTemplatesByProfileId } from "@/modules/prescription-templates/get-prescription-templates-by-profile-id"
+import { getExamCatalogItems } from "@/modules/exam-catalog/get-exam-catalog-items"
+import { getExamPanelsByProfileId } from "@/modules/exam-panels/get-exam-panels-by-profile-id"
 import { computePediatricAge } from "@/lib/compute-pediatric-age"
 import { NewCaseWorkspace } from "@/components/dashboard/cases/new-case-workspace"
 
@@ -53,6 +56,9 @@ export default async function NewCaseWorkspacePage({
     attachments,
     examReadings,
     measurements,
+    prescriptionTemplates,
+    examCatalog,
+    examPanels,
   ] = await Promise.all([
     getPhoneByProfileId(supabase, profile.id).catch(() => null),
     listCaseReminders(supabase, profile.id, caseId).catch(() => []),
@@ -65,6 +71,9 @@ export default async function NewCaseWorkspacePage({
     listAttachmentsByCase(supabase, profile.id, caseId).catch(() => []),
     listExamReadingsByCase(supabase, profile.id, caseId).catch(() => []),
     patientId ? getMeasurementsByPatient(supabase, profile.id, patientId).catch(() => []) : [],
+    getPrescriptionTemplatesByProfileId(supabase, profile.id).catch(() => []),
+    getExamCatalogItems(supabase, profile.id).catch(() => []),
+    getExamPanelsByProfileId(supabase, profile.id).catch(() => []),
   ])
 
   // O que a consulta anterior desta criança deixou; sem ela, só não aparece o cartão.
@@ -104,6 +113,17 @@ export default async function NewCaseWorkspacePage({
       ageMonths={computePediatricAge(caseDetail.patient?.birth_date ?? null, now).totalMonths ?? null}
       todayIso={todayIso}
       todayLabel={todayLabel}
+      doctor={{
+        first_name: profile.first_name,
+        surname: profile.surname,
+        crm: profile.crm,
+        rqe: profile.rqe,
+        default_location_state: profile.default_location_state,
+        default_location_city: profile.default_location_city,
+      }}
+      prescriptionTemplates={prescriptionTemplates}
+      examCatalog={examCatalog}
+      examPanels={examPanels}
     />
   )
 }
