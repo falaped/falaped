@@ -2,17 +2,20 @@
 
 import { useState } from "react"
 import { format } from "date-fns"
-import { CalendarIcon, CheckIcon, InfoIcon, Loader2Icon, TrendingDownIcon, TrendingUpIcon } from "lucide-react"
+import { ptBR } from "date-fns/locale"
+import { CalendarIcon, CheckIcon, ChevronDownIcon, InfoIcon, Loader2Icon, TrendingDownIcon, TrendingUpIcon } from "lucide-react"
 import { toast } from "sonner"
 
 import { createMeasurementAction } from "@/actions"
 import { AddFieldButton, PanelFooter } from "@/components/dashboard/cases/consult-document"
 import { GrowthChart } from "@/components/dashboard/patients/growth/growth-chart"
 import { Button } from "@/components/ui/button"
+import { Calendar } from "@/components/ui/calendar"
 import { Input } from "@/components/ui/input"
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { classifyBloodPressure } from "@/lib/bp-classification"
 import { BP_REFERENCE_SOURCE } from "@/lib/bp-reference"
-import { maskBrazilianDateInput, parseBirthDateFormValueToIso } from "@/lib/brazilian-date-form"
+import { parseBirthDateFormValueToIso } from "@/lib/brazilian-date-form"
 import { computePediatricAge } from "@/lib/compute-pediatric-age"
 import { formatDate } from "@/lib/formatters"
 import { getFriendlyToastMessage } from "@/lib/get-friendly-toast-message"
@@ -69,13 +72,14 @@ export function ConsultMeasurePanel({
   const today = format(new Date(), "dd/MM/yyyy")
   const [values, setValues] = useState<Record<FieldKey, string>>({ weight: "", length_height: "", head_circumference: "" })
   const [measuredOn, setMeasuredOn] = useState(today)
-  const [editingDate, setEditingDate] = useState(false)
+  const [pickingDate, setPickingDate] = useState(false)
   const [bp, setBp] = useState<{ systolic: string; diastolic: string } | null>(null)
   const [indicator, setIndicator] = useState<GrowthIndicator>("weight-for-age")
   const [busy, setBusy] = useState(false)
 
   const sex = normalizePatientSexFromDb(patient.sex)
   const measuredOnIso = parseBirthDateFormValueToIso(measuredOn)
+  const measuredOnDate = measuredOnIso ? new Date(`${measuredOnIso}T12:00:00`) : undefined
   const history = [...measurements].sort((a, b) => a.measured_on.localeCompare(b.measured_on))
   const weight = toNumber(values.weight)
   const heightCm = toNumber(values.length_height)
@@ -175,27 +179,38 @@ export function ConsultMeasurePanel({
           </div>
 
           <div className="flex flex-wrap items-center gap-3">
-            {editingDate ? (
-              <label className="flex items-center gap-2">
-                <span className="text-label font-medium">Data da medição</span>
-                <Input
-                  autoFocus
-                  value={measuredOn}
-                  onChange={(e) => setMeasuredOn(maskBrazilianDateInput(e.target.value))}
-                  placeholder="dd/mm/aaaa"
-                  className="num h-8 w-32"
-                />
-              </label>
-            ) : (
-              <>
-                <span className="num inline-flex items-center gap-1 rounded-full border border-border bg-muted px-2.5 py-0.5 text-label text-muted-foreground">
+            <Popover open={pickingDate} onOpenChange={setPickingDate}>
+              <PopoverTrigger asChild>
+                <button
+                  type="button"
+                  className="num inline-flex h-8 items-center gap-1.5 rounded-full border border-border bg-muted px-3 text-label text-muted-foreground hover:bg-accent hover:text-foreground"
+                >
                   <CalendarIcon className="size-3.5" aria-hidden />
-                  Hoje, {today}
-                </span>
-                <Button variant="link" size="sm" className="h-auto p-0" onClick={() => setEditingDate(true)}>
-                  Outra data
-                </Button>
-              </>
+                  {measuredOn === today ? `Hoje, ${today}` : measuredOn}
+                  <ChevronDownIcon className="size-3.5" aria-hidden />
+                </button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="start">
+                <Calendar
+                  mode="single"
+                  locale={ptBR}
+                  selected={measuredOnDate}
+                  defaultMonth={measuredOnDate}
+                  disabled={{ after: new Date() }}
+                  onSelect={(d) => {
+                    if (!d) return
+                    setMeasuredOn(format(d, "dd/MM/yyyy"))
+                    setPickingDate(false)
+                  }}
+                />
+              </PopoverContent>
+            </Popover>
+            {measuredOn !== today ? (
+              <Button variant="link" size="sm" className="h-auto p-0" onClick={() => setMeasuredOn(today)}>
+                Voltar para hoje
+              </Button>
+            ) : (
+              <span className="text-caption text-subtle-foreground">Clique para medir em outra data</span>
             )}
             <span className="ml-auto" />
             {bp === null ? <AddFieldButton onClick={() => setBp({ systolic: "", diastolic: "" })}>Pressão arterial</AddFieldButton> : null}
