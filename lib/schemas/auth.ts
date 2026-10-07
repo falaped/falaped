@@ -40,7 +40,7 @@ export const forgotPasswordSchema = z.object({
 });
 
 export const updatePasswordSchema = z.object({
-  password: z.string().min(6, "A senha precisa de pelo menos 6 caracteres"),
+  password: z.string().min(8, "A senha precisa de pelo menos 8 caracteres"),
 });
 
 /** "12345/mg", "12345-MG" → "12345 MG". Espera um CRM já validado pelo signUpSchema. */

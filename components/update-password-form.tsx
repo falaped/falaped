@@ -62,7 +62,7 @@ export function UpdatePasswordForm() {
               {errors.password ? (
                 <FieldError errors={[errors.password]} />
               ) : (
-                <FieldDescription>Pelo menos 6 caracteres.</FieldDescription>
+                <FieldDescription>Pelo menos 8 caracteres.</FieldDescription>
               )}
             </FieldContent>
           </Field>
