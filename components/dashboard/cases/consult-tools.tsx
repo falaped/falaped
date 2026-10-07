@@ -26,7 +26,6 @@ import { MeasurementForm } from "@/components/dashboard/patients/growth/measurem
 import { ScalesSection } from "@/components/dashboard/scales/scales-section"
 import { Button } from "@/components/ui/button"
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet"
-import { cn } from "@/lib/utils"
 import type { PatientAttachment } from "@/modules/patient-attachments/types"
 import type { ExamCatalogItem } from "@/modules/exam-catalog/types"
 import type { ExamPanel } from "@/modules/exam-panels/types"
@@ -35,15 +34,15 @@ import type { PrescriptionTemplateOption } from "@/modules/prescription-template
 
 type SheetKind = "prescription" | "certificate" | "exam-request" | "referral" | "scale" | "exam" | "measure" | "attachment"
 
-const SHEET: Record<SheetKind, { title: string; width: string }> = {
-  prescription: { title: "Nova receita", width: "w-[560px] sm:max-w-[560px]" },
-  certificate: { title: "Novo atestado", width: "w-[620px] sm:max-w-[620px]" },
-  "exam-request": { title: "Pedido de exame", width: "w-[560px] sm:max-w-[560px]" },
-  referral: { title: "Encaminhamento", width: "w-[560px] sm:max-w-[560px]" },
-  scale: { title: "Aplicar escala", width: "w-[640px] sm:max-w-[640px]" },
-  exam: { title: "Ler exame", width: "w-[640px] sm:max-w-[640px]" },
-  measure: { title: "Registrar medidas", width: "w-[640px] sm:max-w-[640px]" },
-  attachment: { title: "Anexos", width: "w-[640px] sm:max-w-[640px]" },
+const SHEET_TITLE: Record<SheetKind, string> = {
+  prescription: "Nova receita",
+  certificate: "Novo atestado",
+  "exam-request": "Pedido de exame",
+  referral: "Encaminhamento",
+  scale: "Aplicar escala",
+  exam: "Ler exame",
+  measure: "Registrar medidas",
+  attachment: "Anexos",
 }
 
 const TOOLS: Array<[SheetKind, string, LucideIcon]> = [
@@ -105,7 +104,7 @@ export function ConsultTools({
     setSheet(null)
     router.refresh()
   }
-  const { title, width } = SHEET[sheet ?? lastSheet]
+  const title = SHEET_TITLE[sheet ?? lastSheet]
 
   return (
     <div className="flex shrink-0 flex-wrap gap-1 border-b border-border bg-card px-5 py-2">
@@ -125,7 +124,7 @@ export function ConsultTools({
 
       {patient ? (
         <Sheet open={sheet !== null} onOpenChange={(next) => !next && setSheet(null)}>
-          <SheetContent className={cn("gap-0 rounded-l-2xl bg-card", width)}>
+          <SheetContent className="w-[max(45vw,560px)] gap-0 rounded-l-2xl bg-card sm:max-w-none">
             <SheetHeader className="border-b border-border px-6 py-4">
               <SheetTitle className="font-display text-section font-semibold">{title}</SheetTitle>
               <SheetDescription className="text-caption text-subtle-foreground">{subtitle}</SheetDescription>
