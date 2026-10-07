@@ -18,12 +18,12 @@ import { ConsultCertificatePanel } from "@/components/dashboard/cases/consult-ce
 import { PanelBody } from "@/components/dashboard/cases/consult-document"
 import { ConsultExamRequestPanel } from "@/components/dashboard/cases/consult-exam-request-panel"
 import { ConsultPrescriptionPanel, type ConsultDoctor } from "@/components/dashboard/cases/consult-prescription-panel"
+import { ConsultScalePanel } from "@/components/dashboard/cases/consult-scale-panel"
 import { ConsultReferralPanel } from "@/components/dashboard/cases/consult-referral-panel"
 import { AttachmentsSection } from "@/components/dashboard/attachments/attachments-section"
 import { ExamReadingsSection } from "@/components/dashboard/exam-readings/exam-readings-section"
 import type { ExamReadingWithPages } from "@/components/dashboard/exam-readings/exam-reading-card"
 import { MeasurementForm } from "@/components/dashboard/patients/growth/measurement-form"
-import { ScalesSection } from "@/components/dashboard/scales/scales-section"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet"
@@ -47,7 +47,7 @@ const SHEET_TITLE: Record<SheetKind, string> = {
 }
 
 /** Documentos levam a folha ao lado (protótipo a6): painel bem mais largo que os outros. */
-const DOCUMENT_KINDS: SheetKind[] = ["prescription", "certificate", "exam-request", "referral"]
+const DOCUMENT_KINDS: SheetKind[] = ["prescription", "certificate", "exam-request", "referral", "scale"]
 
 const TOOLS: Array<[SheetKind, string, LucideIcon]> = [
   ["prescription", "Receita", PillIcon],
@@ -172,16 +172,7 @@ export function ConsultTools({
             ) : null}
             {sheet === "referral" ? <ConsultReferralPanel caseId={caseId} patient={patient} doctor={documentData.doctor} onDone={onDone} /> : null}
             {sheet === "scale" ? (
-              <PanelBody>
-                <ScalesSection
-                  patientId={patient.id}
-                  caseId={caseId}
-                  ageMonths={ageMonths}
-                  results={scaleResults}
-                  title="Escalas desta consulta"
-                  description="O registro fica também no histórico da criança."
-                />
-              </PanelBody>
+              <ConsultScalePanel patientId={patient.id} caseId={caseId} ageMonths={ageMonths} history={scaleResults} onDone={onDone} />
             ) : null}
             {sheet === "exam" ? (
               <PanelBody>

@@ -14,6 +14,7 @@ import { getMedicalCertificatesByCaseId } from "@/modules/medical-certificates/g
 import { getExamRequestsByCaseId } from "@/modules/exam-requests/get-exam-requests-by-case-id"
 import { getReferralsByCaseId } from "@/modules/referrals/get-referrals-by-case-id"
 import { getScaleResultsByCase } from "@/modules/patient-scales/get-scale-results-by-case"
+import { getScaleResultsByPatient } from "@/modules/patient-scales/get-scale-results-by-patient"
 import { listAttachmentsByCase } from "@/modules/patient-attachments/list-attachments-by-case"
 import { listExamReadingsByCase } from "@/modules/exam-readings/list-exam-readings-by-case"
 import { getExamReadingPageUrls } from "@/modules/exam-readings/get-exam-reading-page-urls"
@@ -67,7 +68,11 @@ export default async function NewCaseWorkspacePage({
     getMedicalCertificatesByCaseId(supabase, profile.id, caseId).catch(() => []),
     getExamRequestsByCaseId(supabase, profile.id, caseId).catch(() => []),
     getReferralsByCaseId(supabase, profile.id, caseId).catch(() => []),
-    getScaleResultsByCase(supabase, profile.id, caseId).catch(() => []),
+    // Histórico da criança: o painel separa o desta consulta das vezes anteriores.
+    (patientId
+      ? getScaleResultsByPatient(supabase, profile.id, patientId)
+      : getScaleResultsByCase(supabase, profile.id, caseId)
+    ).catch(() => []),
     listAttachmentsByCase(supabase, profile.id, caseId).catch(() => []),
     listExamReadingsByCase(supabase, profile.id, caseId).catch(() => []),
     patientId ? getMeasurementsByPatient(supabase, profile.id, patientId).catch(() => []) : [],
