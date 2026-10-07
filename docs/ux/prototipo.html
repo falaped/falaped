@@ -280,6 +280,8 @@ const TODO = (ic, who, what, from, btn, go) => `<div class="flex items-center ga
 /* abas do protótipo: troca o painel visível dentro da mesma seção */
 const TAB = (el, k) => { const s = el.closest("section"); s.querySelectorAll("[data-tab]").forEach(b => { const on = b.dataset.tab === k; b.setAttribute("aria-selected", on); b.classList.toggle("border-foreground", on); b.classList.toggle("font-semibold", on); b.classList.toggle("text-foreground", on); b.classList.toggle("border-transparent", !on); b.classList.toggle("text-muted-foreground", !on); }); s.querySelectorAll("[data-panel]").forEach(p => p.hidden = p.dataset.panel !== k); };
 const TABBTN = (k, label, extra, on) => `<button role="tab" data-tab="${k}" aria-selected="${!!on}" onclick="TAB(this,'${k}')" class="-mb-px flex items-center gap-1.5 border-b-2 px-1 pb-2.5 ${on ? "border-foreground font-semibold text-foreground" : "border-transparent text-muted-foreground hover:text-foreground"}">${label}${extra}</button>`;
+/* protótipo: abre/fecha a lista de consultas sem valor do financeiro */
+const UNBILLED = b => { const open = b.getAttribute("aria-expanded") !== "true"; b.setAttribute("aria-expanded", open); document.getElementById("unbilled").hidden = !open; b.querySelector("svg:last-child")?.classList.toggle("rotate-180", open); };
 const MONEY = (ic, label, value, note, big) => `<div class="flex flex-col gap-1 px-6 py-5"><div class="flex items-center gap-2 text-label text-muted-foreground">${I(ic, "ic-sm")}${label}</div><div class="font-display ${big ? "text-display" : "text-page"} font-semibold num">${value}</div><div class="text-caption text-subtle-foreground">${note}</div></div>`;
 const inicio = () => APP({ on: "inicio", active: { i: "MA", n: "Miguel A.", t: "12:04" } }, PAGE(`
   <section class="card-highlight flex items-center gap-6 px-8 py-7">
@@ -322,7 +324,11 @@ const inicio = () => APP({ on: "inicio", active: { i: "MA", n: "Miguel A.", t: "
     </section>
   </div>
   <section class="card-highlight">
-    <div class="flex items-center gap-2 px-6 pt-5"><h2 class="t-section">Financeiro de outubro</h2><span class="badge badge-warning">${I("wallet", "ic-sm")}1 consulta sem valor</span><a class="btn btn-link btn-sm ml-auto">Ver financeiro${I("arrow-right", "ic-sm")}</a></div>
+    <div class="flex items-center gap-2 px-6 pt-5"><h2 class="t-section">Financeiro de outubro</h2><button aria-expanded="false" aria-controls="unbilled" onclick="UNBILLED(this)" class="badge badge-warning cursor-pointer hover:border-warning-text/40">${I("wallet", "ic-sm")}1 consulta sem valor${I("chevron-down", "ic-sm transition-transform")}</button><a class="btn btn-link btn-sm ml-auto">Ver financeiro${I("arrow-right", "ic-sm")}</a></div>
+    <div id="unbilled" hidden class="mx-6 mt-3 rounded-lg border border-warning-border bg-card">
+      <div class="px-4 py-2 text-caption font-medium text-warning-text">Consultas de outubro sem valor lançado</div>
+      ${[["SM", "Sofia Mendes Carvalho", "5a 2m", "Puericultura · trocas na fala", "Dom, 04/10"]].map(([i, n, a, w, d]) => `<div class="flex items-center gap-3 border-t border-border px-4 py-2.5">${AV(i, { s: "size-8", t: "text-caption" })}<div class="min-w-0 flex-1"><div><span class="font-semibold">${n}</span> <span class="text-subtle-foreground">· ${a}</span></div><div class="text-caption text-muted-foreground">${w} · ${d}</div></div><button class="btn btn-primary btn-xs">Lançar valor</button><button data-go="b2" class="btn btn-secondary btn-xs">Abrir consulta</button></div>`).join("")}
+    </div>
     <div class="grid grid-cols-4 divide-x divide-primary-soft-border/70">
       ${MONEY("wallet", "Recebido no mês", "R$ 880,00", "R$ 880,00 nesta semana", 1)}
       ${MONEY("stethoscope", "Consultas", "4", "3 com valor lançado")}
@@ -341,7 +347,7 @@ add({ id: "d1", t: "Menu", obj: "Os três estados do menu: sem consulta aberta (
     <div class="card-sunken self-start p-5 text-muted-foreground"><div class="t-card text-foreground">O que observar</div><ul class="mt-2 list-disc space-y-1 pl-5"><li>Logo empilhada no topo; a compacta no recolhido.</li><li>Uma ação colorida: Iniciar consulta. Com consulta aberta, ela vira o cartão de destaque com o tempo.</li><li>Item ativo em azul suave com texto forte.</li><li>Modelos, Novidades e conta separados do uso diário.</li></ul></div>
   </div>` });
 
-add({ id: "a12", t: "Início", obj: "Versão 3 (07/10), com os dados do seed de demonstração. Saudação em destaque, a consulta em andamento numa linha só, o dia em números ao lado do que ficou para fazer (lembretes e pendências em abas, 3 de cada), o financeiro do mês em destaque e as 3 últimas consultas.", html: inicio });
+add({ id: "a12", t: "Início", obj: "Versão 3 (07/10), com os dados do seed de demonstração. Saudação em destaque, a consulta em andamento numa linha só, o dia em números ao lado do que ficou para fazer (lembretes e pendências em abas, 3 de cada), o financeiro do mês em destaque (o selo de consultas sem valor abre a lista, com Lançar valor e Abrir consulta) e as 3 últimas consultas.", html: inicio });
 
 const dialog = (w, body, bg = inicio) => `<div class="relative h-full"><div class="pointer-events-none h-full opacity-100">${bg()}</div>
   <div class="absolute inset-0" style="background:oklch(0.21 0.012 255.41 / 0.3)"></div>
