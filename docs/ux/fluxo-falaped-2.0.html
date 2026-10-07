@@ -149,23 +149,91 @@ a{color:inherit}
 .node:hover{background:var(--ink);color:#fff}
 .node i{font-style:normal;font-weight:700;font-size:11px;border:1px solid currentColor;border-radius:4px;padding:0 4px}
 .arr{color:var(--w4)}
+
+/* abas do arquivo */
+.ptabs{display:inline-flex;border:1.5px solid var(--ink);border-radius:7px;overflow:hidden}
+.ptabs button{border:0!important;border-radius:0!important;padding:5px 14px!important}
+.ptabs button.on{background:var(--ink)!important;color:#fff}
+body.audit-on .wf-only{display:none!important}
+/* auditoria */
+.audit{width:min(90vw,1200px);margin:18px auto 80px;background:#fff;border:1px solid var(--w3);border-radius:12px;padding:28px 36px}
+.audit .ahead{display:flex;align-items:flex-end;gap:20px;border-bottom:2px solid var(--ink);padding-bottom:16px;margin-bottom:8px}
+.audit .ahead h1{margin:4px 0 0;font-size:26px;letter-spacing:-.02em}
+.audit .score{margin-left:auto;text-align:right;line-height:1}
+.audit .score b{font-size:46px;letter-spacing:-.03em}.audit .score span{font-size:20px;color:var(--w5)}
+.audit .score small{display:block;font-size:12px;color:var(--w5);margin-top:6px}
+.audit h2{font-size:18px;margin:30px 0 10px;letter-spacing:-.01em}
+.audit h3{font-size:14px;margin:22px 0 8px;text-transform:none}
+.audit p,.audit li{max-width:80ch}
+.audit li{margin:4px 0}
+.audit code{font:12px ui-monospace,SFMono-Regular,Menlo,monospace;background:var(--w1);border:1px solid var(--w2);border-radius:4px;padding:0 4px}
+.audit .note{border-left:3px solid var(--ink);background:var(--w1);padding:10px 14px;border-radius:0 8px 8px 0;margin:12px 0}
+.audit .legend{font-size:12px;color:var(--w5);margin:10px 0 0;display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+table.aud{width:100%;border-collapse:collapse;font-size:13px;margin:6px 0 4px}
+table.aud th{text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--w5);border-bottom:1.5px solid var(--ink);padding:6px 8px}
+table.aud td{border-bottom:1px solid var(--w2);padding:9px 8px;vertical-align:top}
+table.aud td:first-child{width:40px}table.aud td:nth-child(3){width:30%;color:var(--w5);font-size:12px}table.aud td:last-child{width:70px}
+.sev{display:inline-grid;place-items:center;width:22px;height:22px;border-radius:5px;font:700 12px/1 ui-sans-serif,system-ui;border:1.5px solid var(--ink)}
+.sev.s0,.sev.s1{border-color:var(--w3);color:var(--w5)}.sev.s2{border-color:var(--w5)}.sev.s3{background:var(--ink);color:#fff}.sev.s4{background:var(--ink);color:#fff;outline:2px solid var(--ink);outline-offset:1px}
+.demo{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:14px;border:1px dashed var(--w4);border-radius:10px;padding:16px}
+.demo>div{display:flex;flex-direction:column;gap:8px;align-items:flex-start}
+.demo small{font-size:12px;color:var(--w5)}
+.dbtn{display:inline-block;padding:9px 16px;border-radius:8px;font-weight:600;font-size:14px}
 </style>
 </head>
 <body>
 <div class="top">
-  <b>Falaped 2.0 · Wireframes do fluxo</b>
-  <select id="sel" aria-label="Escolher tela"></select>
-  <button id="prev">← Anterior</button>
-  <span id="pos" class="muted"></span>
-  <button id="next" class="p">Próxima →</button>
+  <b>Falaped 2.0</b>
+  <span class="ptabs"><button data-tab="wf" class="on">Wireframes</button><button data-tab="audit">Auditoria visual</button></span>
+  <select class="wf-only" id="sel" aria-label="Escolher tela"></select>
+  <button class="wf-only" id="prev">← Anterior</button>
+  <span id="pos" class="muted wf-only"></span>
+  <button id="next" class="p wf-only">Próxima →</button>
   <span class="sp"></span>
-  <label><input type="checkbox" id="hot"> Mostrar áreas clicáveis</label>
-  <label><input type="checkbox" id="mk" checked> Números</label>
+  <label class="wf-only"><input type="checkbox" id="hot"> Mostrar áreas clicáveis</label>
+  <label class="wf-only"><input type="checkbox" id="mk" checked> Números</label>
 </div>
-<div class="head"><span class="code" id="code"></span><h1 id="title"></h1><span class="grp" id="grp"></span></div>
-<div class="trail" id="trail"></div>
-<div class="wf" id="wf"></div>
-<div class="notes" id="notes"></div>
+<div class="head wf-only"><span class="code" id="code"></span><h1 id="title"></h1><span class="grp" id="grp"></span></div>
+<div class="trail wf-only" id="trail"></div>
+<div class="wf wf-only" id="wf"></div>
+<div class="notes wf-only" id="notes"></div>
+<div id="pane-audit" class="audit" hidden>
+  <div class="ahead">
+    <div><div class="muted">Etapa 1 · 06/10/2026 · skill <code>redesign-existing-projects</code></div><h1>Auditoria visual do app atual</h1></div>
+    <div class="score"><b>6</b><span>/10</span><small>3 problemas de gravidade 3</small></div>
+  </div>
+  <div class="legend">Gravidade: <span class="sev s0">0</span> não é problema <span class="sev s1">1</span> cosmético <span class="sev s2">2</span> menor <span class="sev s3">3</span> grave <span class="sev s4">4</span> impede a tarefa</div>
+<p>Leitura do código de <code>app/</code> e <code>components/</code> (291 arquivos <code>.tsx</code>, sem Books e sem Admin quando indicado) e dos tokens em <code>app/globals.css</code>. A auditoria não muda nada no app: ela alimenta a <b>ficha de design (Etapa 2)</b>. A gravidade segue a escala da <code>ux-heuristics</code>, de 0 (não é problema) a 4 (impede a tarefa).</p>
+<div class="note">Limite: a auditoria foi feita pelo código, não pelas telas logadas. Os pontos marcados com 👁 precisam ser confirmados no <code>yarn dev</code>.</div>
+<h2>Resumo</h2>
+<p>A base é boa e deve ser mantida: Geist, tokens em oklch, um azul de marca só, cinzas neutros, <code>tabular-nums</code> em 32 arquivos, skeletons e <code>loading.tsx</code> em 13 rotas, nenhum <code>alert()</code>. Os problemas não vêm de excesso de estilo, e sim da <b>falta de sistema</b>:</p>
+<ol><li><b>Contraste do azul:</b> o azul da marca é claro demais para levar texto branco ou ser usado como cor de texto.</li><li><b>Botão principal sem estado:</b> sem hover e sem resposta ao clique.</li><li><b>Status sem tokens:</b> verde, âmbar e laranja escritos à mão, só no admin.</li><li><b>Estados vazios:</b> são uma frase solta (o "bloco de notas" que o gestor rejeitou).</li><li><b>Tipografia e cards sem escala:</b> cada tela decide tamanhos, cards e raios.</li></ol>
+<h2>Demonstração dos problemas de cor (C1 e C2)</h2>
+<p class="muted">Única parte em cor deste arquivo: os tokens reais do app, para ver o contraste.</p>
+<div class="demo">
+  <div><span class="dbtn" style="background:oklch(0.7603 0.0916 255.41);color:oklch(0.98 0.01 255)">Iniciar consulta</span><small>Hoje: texto branco no azul da marca · ≈ 2:1 ✕</small></div>
+  <div><span class="dbtn" style="background:oklch(0.7603 0.0916 255.41);color:oklch(0.22 0.04 255)">Iniciar consulta</span><small>Opção A: texto escuro no mesmo azul · ≈ 8:1 ✓</small></div>
+  <div><span class="dbtn" style="background:oklch(0.52 0.11 255);color:#fff">Iniciar consulta</span><small>Opção B: botão no azul escuro (primary-ink) · ≈ 6:1 ✓</small></div>
+  <div><span style="color:oklch(0.7603 0.0916 255.41);font-weight:600">Ver ficha →</span><small>Hoje: <code>text-primary</code> como texto · ≈ 2:1 ✕</small></div>
+  <div><span style="color:oklch(0.52 0.11 255);font-weight:600">Ver ficha →</span><small><code>text-primary-ink</code> · ≈ 5,5:1 ✓</small></div>
+</div>
+<h2>Achados</h2>
+<h3>Cor e contraste</h3>
+<table class="aud"><tr><th>#</th><th>Achado</th><th>Evidência</th><th>Grav.</th></tr><tr><td><b>C1</b></td><td><b>Botão principal com texto branco sobre o azul claro</b>: contraste ≈ 2:1 (o mínimo AA é 4,5:1). Afeta o CTA mais importante de cada tela, como Iniciar consulta e Salvar.</td><td><code>--primary</code> L 0,76 com <code>--primary-foreground</code> L 0,98 (<code>globals.css</code>). <code>bg-primary</code> aparece 44 vezes.</td><td><span class="sev s3">3</span></td></tr><tr><td><b>C2</b></td><td><b>Azul claro usado como cor de texto</b>, com contraste ≈ 2:1. O token <code>--primary-ink</code> existe para isso, mas é pouco usado.</td><td><code>text-primary</code>: 62 usos. <code>text-primary-ink</code>: 17.</td><td><span class="sev s3">3</span></td></tr><tr><td><b>C3</b></td><td><b>Não há tokens de status</b> (sucesso, atenção, erro suave, informação). Verde, âmbar e laranja são escritos à mão, quase todos no admin. Os selos da 2.0 (Atenção, Vacina atrasada, Sem valor) vão precisar deles.</td><td>Usos de cor fixa: <code>emerald</code> 54, <code>amber</code> 45, <code>orange</code> 26 (admin, menu lateral, vacinas).</td><td><span class="sev s2">2</span></td></tr><tr><td><b>C4</b></td><td><b>Tokens duplicados e conflitantes</b>: há dois blocos <code>:root</code> e dois <code>.dark</code>, e o segundo sobrescreve o primeiro. O fundo do app é branco (L 1), apesar do comentário "mesmo tom do menu" (L 0,985).</td><td><code>globals.css</code> blocos 1 e 2 (separados por <code>---break---</code>)</td><td><span class="sev s2">2</span></td></tr><tr><td><b>C5</b></td><td><b>Cinzas de duas famílias</b>: <code>secondary</code> tem matiz 286 (frio, puxado para o roxo) e todo o resto é cinza neutro.</td><td><code>--secondary</code>, <code>--secondary-foreground</code></td><td><span class="sev s1">1</span></td></tr><tr><td><b>C6</b></td><td><b>Cor quebrada no editor de texto</b>: o placeholder do Tiptap usa <code>hsl(var(--muted-foreground))</code>, mas o token é oklch e a cor não é aplicada. 👁</td><td><code>globals.css</code>, regra <code>.ProseMirror</code></td><td><span class="sev s1">1</span></td></tr><tr><td><b>C7</b></td><td><b>Tokens mortos da Agenda</b> (cerca de 60 linhas de <code>--agenda-*</code>), já que a tela saiu do produto.</td><td><code>globals.css</code>, bloco "Agenda"</td><td><span class="sev s1">1</span></td></tr></table>
+<h3>Tipografia</h3>
+<table class="aud"><tr><th>#</th><th>Achado</th><th>Evidência</th><th>Grav.</th></tr><tr><td><b>T1</b></td><td><b>Duas fontes carregadas e só uma usada</b>: a Noto Sans vira <code>--font-sans</code>, mas o <code>body</code> usa a Geist. Custo de download sem efeito.</td><td><code>app/layout.tsx:9</code>, <code>:36</code></td><td><span class="sev s1">1</span></td></tr><tr><td><b>T2</b></td><td><b>Sem escala tipográfica definida</b>: o título da página tem 5 variações (<code>text-2xl</code>, <code>text-[26px]</code>, <code>text-[28px]</code>, <code>text-xl</code>) e o <code>CardTitle</code> também tem 5. Na prática, a hierarquia depende do <code>text-sm</code> (469 usos) e do <code>text-xs</code> (249).</td><td><code>&lt;h1&gt;</code>: 32 iguais e 5 variantes. <code>CardTitle</code>: base, base semibold, lg, 2xl e xs uppercase.</td><td><span class="sev s2">2</span></td></tr><tr><td><b>T3</b></td><td><b>Rótulos em CAIXA ALTA espalhados</b> (61 usos em 12 arquivos): ficha, crescimento, encerramento, início.</td><td><code>patient-clinical-overview.tsx</code>, <code>close-case-with-earnings-dialog.tsx</code>…</td><td><span class="sev s1">1</span></td></tr><tr><td><b>T4</b></td><td><b><code>lang="en"</code></b> em um app todo em PT-BR: hifenização, leitor de tela e corretor saem errados.</td><td><code>app/layout.tsx:35</code></td><td><span class="sev s2">2</span></td></tr><tr><td><b>T5</b></td><td><b>Títulos de aba</b>: só 10 das 42 páginas definem <code>metadata</code>. As outras mostram "@falaped - IA para pediatras" em todas as abas.</td><td><code>grep metadata app/dashboard</code></td><td><span class="sev s1">1</span></td></tr></table>
+<h3>Componentes e estados</h3>
+<table class="aud"><tr><th>#</th><th>Achado</th><th>Evidência</th><th>Grav.</th></tr><tr><td><b>S1</b></td><td><b>Botão principal sem hover</b>: o hover só vale quando o botão é um link (<code>[a]:hover</code>). Um <code>&lt;button&gt;</code> comum não reage ao mouse. Também não há resposta ao clique (<code>active:</code>).</td><td><code>components/ui/button.tsx</code>, variante <code>default</code></td><td><span class="sev s3">3</span></td></tr><tr><td><b>S2</b></td><td><b>Botão padrão baixo</b> (32 px, <code>h-8</code>), inclusive nos CTAs principais. No consultório, com pressa, um alvo pequeno gera clique errado.</td><td><code>button.tsx</code>, tamanho <code>default</code></td><td><span class="sev s2">2</span></td></tr><tr><td><b>S3</b></td><td><b>Estados vazios são uma frase solta</b>: "Nenhum caso ativo.", "Nenhum atestado gerado". Não há componente de vazio com ação ("Iniciar consulta", "Emitir atestado").</td><td>12+ textos "Nenhum…" e nenhum componente <code>Empty</code>.</td><td><span class="sev s2">2</span></td></tr><tr><td><b>S4</b></td><td><b>Cards sem sistema</b>: o card base usa anel de 10%, sem sombra e com <code>rounded-xl</code>, e cada tela soma sombra e raio por conta própria. Sombras de 6 tipos, raios de 7 tipos. Fica tudo no mesmo plano, sem diferenciar destaque, item comum e área de apoio.</td><td><code>shadow-xs</code> 22 · <code>sm</code> 26 · <code>md</code> 11 · <code>lg</code> 7. <code>rounded-lg</code> 131 · <code>md</code> 96 · <code>full</code> 98 · <code>xl</code> 55 · <code>2xl</code> 15.</td><td><span class="sev s2">2</span></td></tr><tr><td><b>S5</b></td><td><b>Selos sem papel definido</b>: <code>secondary</code> (19) e <code>outline</code> (17) são usados ao acaso para status. O médico não aprende o que cada selo significa.</td><td>Variantes de <code>&lt;Badge&gt;</code></td><td><span class="sev s2">2</span></td></tr><tr><td><b>S6</b></td><td><b>Altura calculada à mão</b> na área de atendimento e em listas (<code>h-[calc(100dvh-2rem)]</code>, <code>h-[calc(100svh-16rem)]</code>). Uma pequena mudança de layout corta o compositor (já apontado no diagnóstico do fluxo).</td><td><code>new-case-workspace.tsx</code>, listas</td><td><span class="sev s2">2</span></td></tr><tr><td><b>S7</b></td><td><b>Gradiente da marca só como faixa</b> no topo do Perfil, e não no card inteiro, como foi aprovado no admin.</td><td><code>profile-content.tsx:495</code></td><td><span class="sev s1">1</span></td></tr><tr><td><b>S8</b></td><td><b>Páginas-hub com 3 cards iguais</b> (o layout mais genérico, segundo a skill). Já saem na 2.0 com o novo menu.</td><td><code>section-hub.tsx</code></td><td><span class="sev s0">0</span> (já resolvido no fluxo)</td></tr></table>
+<h3>Iconografia e outros</h3>
+<table class="aud"><tr><th>#</th><th>Achado</th><th>Evidência</th><th>Grav.</th></tr><tr><td><b>I1</b></td><td>Lucide em 148 arquivos, consistente. A skill sugere trocar, mas <b>manter</b>: a troca não traz ganho de uso e o shadcn depende do Lucide.</td><td></td><td><span class="sev s0">0</span></td></tr><tr><td><b>I2</b></td><td><b>Ícone em "chip" azul sem regra</b>: <code>bg-primary/10</code> em um lugar, <code>/15</code> em outro, e às vezes <code>text-primary</code> (contraste baixo).</td><td><code>profile-content.tsx:125</code>, <code>funil/[id]/page.tsx:236</code></td><td><span class="sev s1">1</span></td></tr><tr><td><b>I3</b></td><td>Restos do starter do Supabase (<code>hero.tsx</code>, <code>deploy-button.tsx</code>, <code>next-logo.tsx</code>, <code>supabase-logo.tsx</code>, <code>env-var-warning.tsx</code>), sem nenhum import: podem ser apagados.</td><td><code>components/</code></td><td><span class="sev s0">0</span></td></tr></table>
+<h2>O que manter (não mexer)</h2>
+<ul><li>Geist como fonte única.</li><li>Um azul de marca só, com tokens em oklch.</li><li>Cinzas neutros.</li><li><code>tabular-nums</code> nos números.</li><li>Skeletons e <code>loading.tsx</code>.</li><li>Telas de 404 e erro ilustradas (PR #74).</li><li><code>focus-visible</code> no <code>Button</code> (81 usos).</li><li>Toasts com desfazer.</li><li>Shadcn com <code>cva</code>.</li><li>Lucide.</li></ul>
+<h2>O que a Etapa 2 (ficha de design) precisa definir</h2>
+<p>Em ordem de impacto, seguindo a ordem de correção sugerida pela skill:</p>
+<ol><li><b>Cor do botão principal e do texto azul</b> (C1, C2):<ul><li>Texto escuro sobre o azul da marca, <b>ou</b> um azul mais escuro para o botão, mantendo o <code>#8AB4EB</code> nos fundos, chips e gradiente.</li><li><code>text-primary</code> vira <code>text-primary-ink</code> em todo lugar.</li></ul></li><li><b>Tokens de status</b> (C3, S5): sucesso, atenção, perigo e informação, cada um com fundo, contorno e texto, em claro e escuro. Selos com papéis fixos: status, alerta clínico (alergia), pendência e canal.</li><li><b>Estados do botão</b> (S1, S2): hover, clique e desabilitado, e altura mínima de 36 a 40 px para as ações principais.</li><li><b>Escala tipográfica</b> (T2, T3): 5 ou 6 degraus nomeados (título da página, título de seção, título de card, corpo, rótulo, legenda), com sentence case no lugar da caixa alta.</li><li><b>Superfícies</b> (S4, S7): 3 níveis de card (destaque com gradiente no card inteiro, item comum, área de apoio), com uma escala de sombra e uma de raio.</li><li><b>Estado vazio padrão</b> (S3): ilustração ou ícone, uma frase e a ação.</li><li><b>Limpeza sem risco</b>, que pode entrar já na implementação:<ul><li>Unificar os blocos de token (C4).</li><li>Cinzas de uma família só (C5).</li><li>Corrigir o placeholder do editor (C6).</li><li>Apagar os tokens da Agenda (C7).</li><li>Tirar a Noto Sans (T1).</li><li><code>lang="pt-BR"</code> (T4).</li><li>Título nas abas (T5).</li></ul></li></ol>
+<h2>Pontuação</h2>
+<p>Pela escala da <code>ux-heuristics</code> aplicada ao visual: <b>6/10</b>. Há três problemas de gravidade 3: o contraste do botão principal, o texto azul claro e o botão sem hover. Os três afetam a ação principal de todas as telas. Para chegar a 10, corrigir os itens 1 a 3 da lista acima (9/10) e depois a escala de tipografia e superfícies.</p>
+</div>
 
 <script>
 /* ---------- primitivos ---------- */
@@ -1062,11 +1130,21 @@ document.getElementById("hot").onchange = e => document.getElementById("wf").cla
 document.getElementById("mk").onchange = e => document.getElementById("wf").classList.toggle("nomk", !e.target.checked);
 document.addEventListener("click", e => { const t = e.target.closest("[data-go]"); if (t) { e.preventDefault(); go(t.dataset.go); } });
 document.addEventListener("keydown", e => {
-  if (e.target.tagName === "SELECT") return;
+  if (e.target.tagName === "SELECT" || document.body.classList.contains("audit-on")) return;
   if (e.key === "ArrowRight") go(S[Math.min(S.length - 1, cur + 1)].id);
   if (e.key === "ArrowLeft") go(S[Math.max(0, cur - 1)].id);
 });
-go(location.hash.slice(1) || "mapa");
+function tab(t) {
+  document.body.classList.toggle("audit-on", t === "audit");
+  document.getElementById("pane-audit").hidden = t !== "audit";
+  document.querySelectorAll(".ptabs button").forEach(b => b.classList.toggle("on", b.dataset.tab === t));
+  if (t === "audit") history.replaceState(null, "", "#auditoria"); else go(S[cur].id);
+  window.scrollTo({ top: 0 });
+}
+document.querySelectorAll(".ptabs button").forEach(b => b.onclick = () => tab(b.dataset.tab));
+const h0 = location.hash.slice(1);
+go(h0 && h0 !== "auditoria" ? h0 : "mapa");
+if (h0 === "auditoria") tab("audit");
 </script>
 </body>
 </html>
