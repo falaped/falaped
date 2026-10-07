@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { ArrowLeftIcon, ChevronRightIcon } from "lucide-react"
+import { ArrowLeftIcon, ArrowRightIcon } from "lucide-react"
 
 import { createPatientAction, type PatientSearchItem } from "@/actions"
 import { Button } from "@/components/ui/button"
@@ -12,10 +12,11 @@ import { maskBrazilianDateInput, parseBirthDateFormValueToIso } from "@/lib/braz
 import { computePediatricAge } from "@/lib/compute-pediatric-age"
 import { formatPediatricAge } from "@/lib/format-pediatric-age"
 import { createPatientSchema } from "@/lib/schemas/patient"
+import { savePatientDraft } from "@/lib/patient-draft"
 import { cn } from "@/lib/utils"
 import type { PatientSex } from "@/modules/patients/patient-sex"
 
-type Field = "name" | "birth_date" | "responsible" | "contact_phone" | "sex" | "gestational_age_weeks"
+type Field = "name" | "birth_date" | "responsible" | "contact_phone" | "sex"
 
 /** "Faltam 5 dígitos" para celular (11 dígitos com DDD) ou fixo (10). */
 function phoneError(phone: string): string | null {
@@ -29,27 +30,28 @@ function phoneError(phone: string): string | null {
 
 /**
  * Cadastro rápido dentro da busca (protótipo a4): só o essencial para abrir a consulta.
- * O resto da ficha é completado depois. Sexo e nascimento são obrigatórios no banco.
+ * Quem quiser a ficha inteira segue para o cadastro completo com o que já digitou.
+ * Sexo e nascimento são obrigatórios no banco.
  */
 export function PatientQuickRegister({
   initialName,
   busy,
   onBack,
   onCreated,
+  onFullForm,
 }: {
   initialName: string
   busy: boolean
   onBack: () => void
   onCreated: (patient: PatientSearchItem) => void
+  /** Leva os dados digitados para a ficha completa (/dashboard/patients/new). */
+  onFullForm: () => void
 }) {
   const [name, setName] = useState(initialName)
   const [birthDate, setBirthDate] = useState("")
   const [responsible, setResponsible] = useState("")
   const [phone, setPhone] = useState("")
   const [sex, setSex] = useState<PatientSex | "">("")
-  const [more, setMore] = useState(false)
-  const [gestationalWeeks, setGestationalWeeks] = useState("")
-  const [allergies, setAllergies] = useState("")
   const [errors, setErrors] = useState<Partial<Record<Field, string>>>({})
   const [formError, setFormError] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
@@ -67,8 +69,6 @@ export function PatientQuickRegister({
       responsible,
       contact_phone: phone,
       sex,
-      gestational_age_weeks: gestationalWeeks,
-      allergies,
     }
     const parsed = createPatientSchema.safeParse(data)
     const next: Partial<Record<Field, string>> = {}
@@ -178,34 +178,15 @@ export function PatientQuickRegister({
 
         <button
           type="button"
-          aria-expanded={more}
-          onClick={() => setMore((value) => !value)}
-          className="flex items-center gap-1.5 text-label font-medium text-muted-foreground hover:text-foreground"
+          onClick={() => {
+            savePatientDraft({ name, birth_date: birthDate, responsible, contact_phone: phone, sex })
+            onFullForm()
+          }}
+          className="flex items-center gap-1 text-label font-medium text-muted-foreground hover:text-foreground"
         >
-          <ChevronRightIcon className={cn("size-4 transition-transform", more && "rotate-90")} aria-hidden />
-          Mais dados: idade gestacional, alergias
+          Precisa de alergias, histórico ou outros dados? Abrir a ficha completa
+          <ArrowRightIcon className="size-3.5" aria-hidden />
         </button>
-        {more ? (
-          <div className="grid grid-cols-2 gap-4">
-            <div className="flex flex-col gap-1.5">
-              <Label htmlFor="quick-gestational_age_weeks">Idade gestacional ao nascer (semanas)</Label>
-              <Input
-                id="quick-gestational_age_weeks"
-                inputMode="numeric"
-                placeholder="Ex.: 38"
-                className="num"
-                value={gestationalWeeks}
-                onChange={(e) => setGestationalWeeks(e.target.value.replace(/\D/g, "").slice(0, 2))}
-                {...invalid("gestational_age_weeks")}
-              />
-              {fieldError("gestational_age_weeks")}
-            </div>
-            <div className="flex flex-col gap-1.5">
-              <Label htmlFor="quick-allergies">Alergias</Label>
-              <Input id="quick-allergies" placeholder="Ex.: APLV, dipirona" value={allergies} onChange={(e) => setAllergies(e.target.value)} />
-            </div>
-          </div>
-        ) : null}
         {formError ? (
           <p role="alert" className="text-caption text-danger-text">
             {formError}
