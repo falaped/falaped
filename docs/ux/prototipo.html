@@ -302,6 +302,41 @@ const dialog = (w, body) => `<div class="relative h-full"><div class="pointer-ev
   <div class="absolute inset-0" style="background:oklch(0.21 0.012 255.41 / 0.3)"></div>
   <div class="absolute inset-x-0 top-[12vh] mx-auto ${w} overflow-hidden rounded-2xl border border-border bg-popover shadow-lg">${body}</div></div>`;
 
+const ONB_STEPS = [
+  [1, "user-round-check", "Complete seu perfil", "CRM, cidade e contato saem em todo documento.", "Feito", "d4"],
+  [0, "image", "Coloque sua logo nos documentos", "Receita e atestado com a sua marca. Leva 1 minuto.", "Enviar logo", "d4"],
+  [0, "user-plus", "Cadastre o primeiro paciente", "Só nome e data de nascimento. O resto pode ficar para depois.", "Cadastrar", "a4"],
+  [0, "stethoscope", "Faça a primeira consulta", "Descreva ou grave; o assistente organiza o relatório e a receita.", "Iniciar consulta", "a3"],
+  [0, "message-circle", "Vincule seu WhatsApp", "Use o assistente pelo celular, sem abrir o computador.", "Vincular", null],
+];
+add({ id: "a12o", t: "Início (1º acesso)", obj: "O que o médico vê logo depois de se cadastrar: um caminho curto até a primeira receita. Cada passo sai de dados que o app já tem (perfil, logo, pacientes, consultas, WhatsApp), sem tabela nova. Some quando os 4 primeiros passos estão feitos; os números só aparecem depois da primeira consulta.",
+  html: () => APP({ on: "inicio" }, PAGE(`
+  <div class="card-highlight flex items-center gap-6 p-6">
+    <div class="min-w-0 flex-1"><div class="flex items-center gap-2"><span class="badge badge-accent">Teste grátis · 14 dias</span></div>
+      <h1 class="t-page mt-3">Boas-vindas ao Falaped, Dra. Ana</h1>
+      <p class="mt-1 max-w-[56ch] text-muted-foreground">Em 4 passos você sai da primeira consulta com receita impressa e com a sua marca.</p></div>
+    <div class="w-56 shrink-0"><div class="flex items-baseline justify-between"><span class="text-label font-medium">Seu progresso</span><span class="text-label num text-muted-foreground">1 de 4</span></div>
+      <div class="mt-2 h-2 rounded-full bg-primary-soft-border"><div class="h-2 w-1/4 rounded-full bg-primary"></div></div></div>
+  </div>
+  <div class="grid items-stretch gap-5 lg:grid-cols-[1.4fr_1fr]">
+    <section class="card flex flex-col">
+      <div class="px-5 pb-3 pt-4"><h2 class="t-section">Primeiros passos</h2></div>
+      <ol class="flex-1 divide-y divide-border border-t border-border">${ONB_STEPS.map(([done, ic, t, d, b, go], i) => {
+        const next = i === 1;
+        return `<li class="flex min-h-16 items-center gap-4 px-5 py-3.5 ${next ? "bg-primary-soft/50" : ""}">
+          <span class="grid size-8 shrink-0 place-items-center rounded-full ${done ? "bg-success-soft text-success-text" : next ? "bg-primary text-primary-foreground" : "border border-border-strong text-muted-foreground"}">${done ? I("check", "ic-sm") : I(ic, "ic-sm")}</span>
+          <div class="min-w-0 flex-1"><div class="font-semibold ${done ? "text-muted-foreground line-through decoration-border-strong" : ""}">${t}${i === 4 ? ` <span class="font-normal text-subtle-foreground">(opcional)</span>` : ""}</div><div class="text-caption text-muted-foreground">${d}</div></div>
+          ${done ? `<span class="text-caption text-success-text">Feito</span>` : `<button ${go ? `data-go="${go}"` : ""} class="btn ${next ? "btn-primary" : "btn-secondary"} btn-sm">${b}</button>`}</li>`;
+      }).join("")}</ol>
+    </section>
+    <section class="card flex flex-col p-5">
+      <h2 class="t-section">Como é uma consulta</h2>
+      <ol class="mt-4 flex-1 space-y-5">${[["mic", "Descreva ou grave", "Fale como no prontuário: queixa, exame, conduta."], ["sparkles", "O assistente organiza", "Relatório pronto e sugestão de receita, checando a alergia."], ["printer", "Imprima e encerre", "Receita, atestado e pedido de exame com a sua marca."]].map(([ic, t, d], i) => `<li class="flex gap-3"><span class="grid size-8 shrink-0 place-items-center rounded-lg bg-primary-soft text-primary-ink-strong">${I(ic, "ic-sm")}</span><div><div class="font-medium"><span class="num text-subtle-foreground">${i + 1}.</span> ${t}</div><div class="text-caption text-muted-foreground">${d}</div></div></li>`).join("")}</ol>
+      <div class="mt-5 flex items-center gap-3 border-t border-border pt-4"><span class="text-caption text-muted-foreground">Prefere que a gente mostre?</span><button class="btn btn-ghost btn-sm ml-auto">${I("video", "ic-sm")}Chamada de alguns minutinhos</button></div>
+    </section>
+  </div>
+  <section class="card-sunken flex items-center gap-4 px-5 py-4 text-muted-foreground">${I("chart-no-axes-column", "text-subtle-foreground")}<span>Seus números (pacientes, consultas, receitas e recebidos) aparecem aqui depois da primeira consulta.</span></section>`)) });
+
 add({ id: "a3", t: "Buscar paciente", obj: "Achar a criança por nome, responsável ou telefone, ou decidir cadastrar, sem sair de onde o médico está.",
   html: () => dialog("w-[600px]", `
     <div class="flex items-center gap-3 border-b border-border px-5 py-3">${I("search", "text-subtle-foreground")}<span class="flex-1 text-read">Nome, responsável ou telefone<span class="ml-px inline-block h-5 w-px translate-y-1 animate-pulse bg-foreground"></span></span><span class="kbd">Esc</span></div>
