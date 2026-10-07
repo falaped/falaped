@@ -301,33 +301,77 @@ const dialog = (w, body, bg = inicio) => `<div class="relative h-full"><div clas
   <div class="absolute inset-0" style="background:oklch(0.21 0.012 255.41 / 0.3)"></div>
   <div class="absolute inset-x-0 top-[12vh] mx-auto ${w} overflow-hidden rounded-2xl border border-border bg-popover shadow-lg">${body}</div></div>`;
 
-const ONB_STEPS = [
-  [1, "Conta criada", "CRM 54.321/MG já vai nos documentos.", null],
-  [0, "Atenda o primeiro paciente", "Busque ou cadastre a criança e converse com o assistente.", null],
-  [0, "Emita uma receita ou atestado", "Direto da consulta, sem trocar de tela.", null],
-  [0, "Personalize o cabeçalho dos documentos", "Logo e endereço do consultório.", "d4"],
+/* Início do 1º acesso, versão 2 (07/10/2026): mostra o resultado em vez de pedir tarefas */
+const ONB_FLOW = [
+  ["search", "Ache ou cadastre a criança", "Pelo nome, responsável ou telefone. Sem cadastro? Cria na hora.", `
+    <div class="flex h-8 items-center gap-2 rounded-lg border border-input bg-card px-2.5 text-subtle-foreground">${I("search", "ic-sm")}<span class="text-foreground">Hel</span><span class="-ml-1.5 inline-block h-4 w-px animate-pulse bg-foreground"></span></div>
+    <div class="mt-2 flex flex-col gap-1">${[["HD", "Helena Duarte", "2a 3m · Carla (mãe)", 1], ["HM", "Heitor Martins", "8m · Paulo (pai)", 0]].map(([i, n, s, on]) => `<div class="flex items-center gap-2 rounded-md px-2 py-1.5 ${on ? "bg-accent" : ""}">${AV(i, { s: "size-6", t: "text-[10px]" })}<span class="min-w-0 flex-1 truncate text-caption"><span class="font-semibold text-foreground">${n}</span> <span class="text-subtle-foreground">· ${s}</span></span></div>`).join("")}
+      <div class="flex items-center gap-2 px-2 py-1.5 text-caption font-medium text-primary-ink">${I("user-plus", "ic-sm")}Cadastrar paciente</div></div>`],
+  ["mic", "Grave ou digite, o assistente organiza", "Você conta o que viu; ele monta o resumo e sugere as escalas da idade.", `
+    <div class="ml-auto flex w-fit items-center gap-2 rounded-lg bg-primary px-2.5 py-1.5 text-caption font-medium text-primary-foreground">${I("mic", "ic-sm")}Áudio <span class="num">0:42</span></div>
+    <div class="mt-2 rounded-lg border border-border bg-card p-2.5 text-caption">
+      <div class="mb-1 flex items-center gap-1.5 font-semibold text-foreground">${I("sparkles", "ic-sm text-primary-ink")}Resumo da consulta</div>
+      <div class="text-muted-foreground"><span class="font-medium text-foreground">Queixa:</span> febre há 2 dias, irritada.</div>
+      <div class="text-muted-foreground"><span class="font-medium text-foreground">Exame:</span> otoscopia com hiperemia à direita.</div>
+      <div class="mt-2 flex flex-wrap gap-1"><span class="badge badge-accent">Escala sugerida · M-CHAT-R</span><span class="badge badge-neutral">${I("scan-text", "size-3")}Ler exame por foto</span></div>
+    </div>`],
+  ["printer", "Revise e imprima", "Receita, atestado e relatório saem prontos, com o seu cabeçalho.", `
+    <div class="flex flex-col gap-1.5">${[["pill", "Receita", "Amoxicilina, dose pelo peso"], ["file-check", "Atestado", "Comparecimento, 1 dia"], ["file-text", "Relatório da consulta", "Resumo, escalas e conduta"]].map(([ic, t, d]) => `<div class="flex items-center gap-2.5 rounded-lg border border-border bg-card px-2.5 py-2">
+      <span class="grid size-7 shrink-0 place-items-center rounded-md bg-primary-soft text-primary-ink-strong">${I(ic, "ic-sm")}</span>
+      <div class="min-w-0 flex-1 leading-tight"><div class="text-caption font-semibold text-foreground">${t}</div><div class="truncate text-[11px] text-subtle-foreground">${d}</div></div>
+      <span class="badge badge-success h-5 px-1.5 text-[11px]">${I("check", "size-3")}Pronto</span></div>`).join("")}</div>`],
 ];
-add({ id: "a12o", t: "Início (1º acesso)", obj: "Como no fluxo ideal: logo depois do cadastro, uma única ação principal, Iniciar consulta, que leva direto à busca, onde dá para cadastrar a criança na hora. Os passos ao lado só mostram o caminho; personalizar a marca fica por último, para não atrasar a primeira consulta. Cada passo sai de dados que o app já tem.",
-  html: () => APP({ on: "inicio" }, PAGE(`
-  <section class="card-highlight grid items-center gap-8 p-8 lg:grid-cols-[1.15fr_1fr]">
-    <div>
-      <span class="badge badge-accent">Teste grátis · 15 dias</span>
-      <h1 class="t-display mt-4">Olá, Dra. Ana.<br>Vamos para a 1ª consulta?</h1>
-      <p class="mt-3 max-w-[46ch] text-read text-muted-foreground">Leva uns 2 minutos. Você pode cadastrar o paciente na hora.</p>
-      <div class="mt-6 flex items-center gap-4"><button data-go="a3" class="btn btn-primary btn-lg">${I("plus")}Iniciar consulta</button><span class="flex items-center gap-1.5 text-caption text-subtle-foreground">ou aperte <span class="kbd">⌘K</span></span></div>
-    </div>
-    <ol class="rounded-xl border border-border bg-card p-2 shadow-xs">${ONB_STEPS.map(([done, t, d, go], i) => {
-      const next = i === 1;
-      return `<li class="flex items-start gap-3 rounded-lg px-3 py-3 ${next ? "bg-primary-soft" : ""}">
-        <span class="mt-0.5 grid size-7 shrink-0 place-items-center rounded-full text-caption font-semibold num ${done ? "bg-success-soft text-success-text" : next ? "bg-primary text-primary-foreground" : "border border-border-strong text-muted-foreground"}">${done ? I("check", "size-3.5") : i + 1}</span>
-        <div class="min-w-0 flex-1"><div class="font-semibold ${done ? "text-muted-foreground" : ""}">${t}</div><div class="text-caption text-muted-foreground">${d}</div></div>
-        ${go ? `<button data-go="${go}" class="btn btn-ghost btn-xs mt-0.5">Perfil${I("arrow-right", "size-3.5")}</button>` : ""}</li>`;
-    }).join("")}</ol>
+const ONB_MORE = [
+  ["message-circle-question", "Pergunte ao assistente", "Uma dúvida de conduta ou de dose, a qualquer hora."],
+  ["files", "Documento avulso", "Receita, atestado ou encaminhamento sem abrir consulta."],
+  ["syringe", "Vacinas", "Calendário da criança e comprovante para imprimir."],
+  ["file-plus", "Receituário em branco", "Seu papel timbrado, para escrever à mão."],
+];
+add({ id: "a12o", t: "Início (1º acesso)", obj: "Versão 2, depois do retorno do gestor (07/10): sem contadores zerados e sem lista de tarefas. O topo tem a ação única e, ao lado, o cabeçalho dos documentos já com o nome e o CRM do cadastro. Embaixo, o que acontece numa consulta (com prévias da interface) e o que dá para usar fora dela. Some depois da primeira consulta.",
+  html: () => APP({ on: "inicio" }, `<div class="flex max-w-[1440px] flex-col gap-8 px-8 py-8">
+  <div class="grid grid-cols-12 gap-6">
+    <section class="card-highlight col-span-8 flex flex-col justify-center p-10">
+      <span class="badge badge-accent w-fit">${I("gift", "size-3")}Teste grátis · 14 dias</span>
+      <h1 class="t-display mt-5 text-[34px] leading-[42px]">Olá, Ana.<br>Vamos para a 1ª consulta?</h1>
+      <p class="mt-3 max-w-[52ch] text-read text-muted-foreground">Busque ou cadastre a criança, grave um áudio ou digite o que viu, e o Falaped organiza a consulta e os documentos.</p>
+      <div class="mt-7 flex items-center gap-4"><button data-go="a3" class="btn btn-primary btn-lg px-5">${I("plus")}Iniciar consulta</button><span class="flex items-center gap-1.5 text-caption text-subtle-foreground">ou aperte <span class="kbd">⌘K</span> em qualquer tela</span></div>
+    </section>
+    <section class="card col-span-4 flex flex-col p-6">
+      <div class="flex items-center justify-between"><h2 class="t-card">Seus documentos</h2><span class="badge badge-neutral">Prévia</span></div>
+      <p class="mt-1 text-caption text-muted-foreground">É assim que o cabeçalho sai na receita e no atestado.</p>
+      <div class="mt-4 flex-1 rounded-lg border border-border bg-white p-4 text-[#1f2430] shadow-xs">
+        <div class="flex items-center gap-3 border-b border-[#e3e6ec] pb-3">
+          <span class="grid size-11 shrink-0 place-items-center rounded-md border border-dashed border-[#b9c0cc] text-center text-[9px] leading-tight text-[#7a8291]">Sua<br>logo</span>
+          <div class="leading-tight"><div class="text-label font-semibold">Dra. Ana Souza</div><div class="text-[11px] text-[#5b6372]">Pediatra · CRM 54321 MG</div><div class="mt-0.5 text-[11px] italic text-[#9aa1ad]">Endereço do consultório</div></div>
+        </div>
+        <div class="mt-3 text-[11px] font-semibold tracking-wide text-[#5b6372]">RECEITUÁRIO</div>
+        <div class="mt-2 flex flex-col gap-1.5"><span class="h-1.5 w-11/12 rounded bg-[#eceef2]"></span><span class="h-1.5 w-9/12 rounded bg-[#eceef2]"></span><span class="h-1.5 w-10/12 rounded bg-[#eceef2]"></span></div>
+      </div>
+      <div class="mt-4 flex items-center gap-2"><span class="flex flex-1 items-center gap-1.5 text-caption text-success-text">${I("check", "ic-sm")}Nome e CRM do cadastro</span><button data-go="d4" class="btn btn-secondary btn-sm">Adicionar logo${I("arrow-right", "ic-sm")}</button></div>
+    </section>
+  </div>
+
+  <section>
+    <div class="mb-4 flex items-end justify-between"><div><h2 class="t-section">Como é uma consulta no Falaped</h2><p class="mt-0.5 text-muted-foreground">Três passos, numa tela só. Você revisa tudo antes de imprimir.</p></div></div>
+    <div class="grid grid-cols-3 gap-6">${ONB_FLOW.map(([ic, t, d, prev], i) => `<article class="card flex flex-col overflow-hidden transition-shadow hover:shadow-md">
+      <div class="card-sunken m-2 mb-0 h-[188px] overflow-hidden rounded-lg p-4">${prev}</div>
+      <div class="flex gap-3 p-5"><span class="num grid size-8 shrink-0 place-items-center rounded-full bg-primary-soft text-label font-semibold text-primary-ink-strong">${i + 1}</span>
+        <div><div class="t-card">${t}</div><p class="mt-0.5 text-caption text-muted-foreground">${d}</p></div></div></article>`).join("")}</div>
   </section>
-  <section class="card grid grid-cols-3 divide-x divide-border">
-    ${[["users", "Pacientes", "0"], ["stethoscope", "Consultas", "0"], ["file-text", "Documentos emitidos", "0"]].map(([ic, l, v]) => `<div class="flex items-center gap-3 px-6 py-4 text-muted-foreground">${I(ic, "text-subtle-foreground")}<span class="font-display text-section font-semibold num text-foreground">${v}</span>${l}</div>`).join("")}
+
+  <section>
+    <h2 class="t-section mb-4">Também dá para usar fora da consulta</h2>
+    <div class="grid grid-cols-4 gap-4">${ONB_MORE.map(([ic, t, d]) => `<a class="card group flex items-start gap-3 p-4 transition-[box-shadow,border-color] hover:border-primary-soft-border hover:shadow-sm">
+      <span class="grid size-10 shrink-0 place-items-center rounded-lg bg-primary-soft text-primary-ink-strong">${I(ic)}</span>
+      <div class="min-w-0 flex-1"><div class="flex items-center gap-1 font-semibold">${t}${I("arrow-right", "ic-sm text-subtle-foreground transition-transform group-hover:translate-x-0.5")}</div><p class="mt-0.5 text-caption text-muted-foreground">${d}</p></div></a>`).join("")}</div>
   </section>
-  <p class="text-caption text-subtle-foreground">Prefere que a gente mostre? <a class="text-primary-ink hover:underline">Marque uma chamada de alguns minutinhos.</a></p>`)) });
+
+  <div class="flex items-center gap-3 rounded-xl border border-dashed border-border-strong px-5 py-4">
+    <span class="grid size-9 shrink-0 place-items-center rounded-full bg-success-soft text-success-text">${I("video")}</span>
+    <p class="flex-1 text-muted-foreground"><span class="font-semibold text-foreground">Prefere que a gente mostre?</span> Uma chamada de vídeo rápida, de alguns minutinhos, no horário que for melhor para você.</p>
+    <button class="btn btn-secondary btn-sm">${I("message-circle", "ic-sm")}Marcar pelo WhatsApp</button>
+  </div>
+</div>`) });
 
 add({ id: "a3", t: "Buscar paciente", obj: "Achar a criança por nome, responsável ou telefone, ou decidir cadastrar, sem sair de onde o médico está.",
   html: () => dialog("w-[600px]", `
