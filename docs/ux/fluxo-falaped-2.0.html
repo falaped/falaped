@@ -184,7 +184,7 @@ table.aud td:first-child{white-space:nowrap}table.find td:first-child{width:40px
 <body>
 <div class="top">
   <b>Falaped 2.0</b>
-  <span class="ptabs"><button data-tab="wf" class="on">Wireframes</button><button data-tab="audit">Auditoria visual</button><button data-tab="comp">Componentes atuais</button><button data-tab="ficha">Ficha de design</button></span>
+  <span class="ptabs"><button data-tab="wf" class="on">Wireframes</button><button data-tab="audit">Auditoria visual</button><button data-tab="comp">Componentes atuais</button><button data-tab="ficha">Ficha de design</button><button data-tab="proto">Protótipo</button></span>
   <select class="wf-only" id="sel" aria-label="Escolher tela"></select>
   <button class="wf-only" id="prev">← Anterior</button>
   <span id="pos" class="muted wf-only"></span>
@@ -253,6 +253,7 @@ table.aud td:first-child{white-space:nowrap}table.find td:first-child{width:40px
 <p>Pela escala da <code>ux-heuristics</code> aplicada ao visual: <b>6/10</b>. Há três problemas de gravidade 3: o contraste do botão principal, o texto azul claro e o botão sem hover. Os três afetam a ação principal de todas as telas. Para chegar a 10, corrigir os itens 1 a 3 da lista acima (9/10) e depois a escala de tipografia e superfícies.</p>
 </div>
 <!-- /pane-audit -->
+<div id="pane-proto" hidden><iframe src="prototipo.html" title="Protótipo" style="display:block;width:100%;height:calc(100vh - 52px);border:0;background:#fff"></iframe></div>
 <div id="pane-ficha" hidden><iframe src="ficha-design.html" title="Ficha de design" style="display:block;width:100%;height:calc(100vh - 52px);border:0;background:#fff"></iframe></div>
 <div id="pane-comp" hidden><iframe src="componentes-atuais.html" title="Componentes atuais" style="display:block;width:100%;height:calc(100vh - 52px);border:0;background:#fff"></iframe></div>
 <script>
@@ -1159,16 +1160,18 @@ function tab(t) {
   document.getElementById("pane-audit").hidden = t !== "audit";
   document.getElementById("pane-comp").hidden = t !== "comp";
   document.getElementById("pane-ficha").hidden = t !== "ficha";
+  document.getElementById("pane-proto").hidden = t !== "proto";
   document.querySelectorAll(".ptabs button").forEach(b => b.classList.toggle("on", b.dataset.tab === t));
-  if (t === "wf") go(S[cur].id); else history.replaceState(null, "", {audit: "#auditoria", comp: "#componentes", ficha: "#ficha"}[t]);
+  if (t === "wf") go(S[cur].id); else history.replaceState(null, "", {audit: "#auditoria", comp: "#componentes", ficha: "#ficha", proto: "#prototipo"}[t]);
   window.scrollTo({ top: 0 });
 }
 document.querySelectorAll(".ptabs button").forEach(b => b.onclick = () => tab(b.dataset.tab));
 const h0 = location.hash.slice(1);
-go(h0 && !["auditoria", "componentes", "ficha"].includes(h0) ? h0 : "mapa");
+go(h0 && !["auditoria", "componentes", "ficha", "prototipo"].includes(h0) ? h0 : "mapa");
 if (h0 === "auditoria") tab("audit");
 if (h0 === "componentes") tab("comp");
 if (h0 === "ficha") tab("ficha");
+if (h0 === "prototipo") tab("proto");
 </script>
 </body>
 </html>

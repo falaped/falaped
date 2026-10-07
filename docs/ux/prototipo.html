@@ -1,0 +1,447 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Protótipo 2.0</title>
+<!-- Etapa 3 · rodada 1. Tokens copiados de ficha-design.html (fonte da verdade): ao mudar a ficha, recopiar o bloco de estilo. -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Lexend:wght@500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+<script src="https://unpkg.com/lucide@0.511.0/dist/umd/lucide.min.js"></script>
+<style type="text/tailwindcss">
+/*
+  Falaped 2.0 · ficha de design (Etapa 2) · 06/10/2026
+  Fonte da verdade dos tokens: este bloco, com os nomes do shadcn (marcados NOVO os que não existem hoje). A implementação copia :root/.dark/@theme para app/globals.css.
+  Rampas em oklch, matiz da marca 255.41. Contraste medido (WCAG) para todos os pares listados na seção Cores.
+*/
+@custom-variant dark (&:is(.dark *));
+:root {
+  /* primitivos: neutros frios (matiz da marca, croma baixo) */
+  --n-0: oklch(1 0 0); --n-25: oklch(0.985 0.003 255.41); --n-50: oklch(0.97 0.004 255.41);
+  --n-100: oklch(0.945 0.006 255.41); --n-200: oklch(0.915 0.007 255.41); --n-300: oklch(0.87 0.009 255.41);
+  --n-400: oklch(0.66 0.013 255.41); --n-500: oklch(0.54 0.014 255.41); --n-600: oklch(0.46 0.015 255.41);
+  --n-700: oklch(0.37 0.015 255.41); --n-900: oklch(0.21 0.012 255.41);
+  /* primitivos: marca */
+  --b-50: oklch(0.975 0.012 255.41); --b-100: oklch(0.95 0.021 255.41); --b-200: oklch(0.91 0.04 255.41);
+  --b-300: oklch(0.85 0.068 255.41); --b-400: oklch(0.7603 0.0916 255.41); --b-450: oklch(0.72 0.1 255.41);
+  --b-500: oklch(0.66 0.11 255.41); --b-600: oklch(0.58 0.12 255.41); --b-700: oklch(0.52 0.11 255.41);
+  --b-800: oklch(0.42 0.09 255.41); --b-ink-on: oklch(0.22 0.04 255.41);
+  /* primitivos: status */
+  --ok-50: oklch(0.97 0.02 155); --ok-200: oklch(0.89 0.06 155); --ok-600: oklch(0.6 0.13 155); --ok-700: oklch(0.48 0.11 155);
+  --wa-50: oklch(0.975 0.02 80); --wa-200: oklch(0.9 0.08 80); --wa-500: oklch(0.78 0.15 75); --wa-700: oklch(0.5 0.1 60);
+  --da-50: oklch(0.97 0.012 27); --da-200: oklch(0.89 0.05 27); --da-600: oklch(0.55 0.2 27); --da-700: oklch(0.5 0.18 27);
+
+  /* semânticos com os nomes do shadcn (os únicos usados em componentes) */
+  --background: var(--n-25);              /* fundo da página */
+  --foreground: var(--n-900);             /* texto principal 17,7:1 */
+  --card: var(--n-0); --card-foreground: var(--n-900);
+  --popover: var(--n-0); --popover-foreground: var(--n-900);
+  --muted: var(--n-50);                   /* superfície de apoio */
+  --muted-foreground: var(--n-600);       /* texto secundário 7,1:1 */
+  --subtle-foreground: var(--n-500);      /* NOVO · legenda e placeholder 5,1:1 (4,6 sobre muted) */
+  --secondary: var(--n-100); --secondary-foreground: var(--n-900);  /* botão cinza */
+  --accent: var(--n-100); --accent-foreground: var(--n-900);        /* hover de item, como no shadcn */
+  --border: var(--n-200);                 /* contorno de card */
+  --border-strong: var(--n-300);          /* NOVO · botão outline */
+  --input: var(--n-400);                  /* contorno de campo 3,1:1 */
+  --ring: var(--b-600);                   /* foco 4,3:1 */
+  --primary: var(--b-400);                /* #8AB4EB, ação principal */
+  --primary-foreground: var(--b-ink-on);  /* texto sobre a marca 8,1:1 */
+  --primary-hover: var(--b-450);          /* NOVO */
+  --primary-active: var(--b-500);         /* NOVO */
+  --primary-soft: var(--b-100);           /* NOVO · chip, item ativo do menu */
+  --primary-soft-border: var(--b-200);    /* NOVO */
+  --primary-ink: var(--b-700);            /* já existe · link e texto azul 5,5:1 */
+  --primary-ink-strong: var(--b-800);     /* NOVO · texto sobre primary-soft 7,3:1 */
+  --destructive: var(--da-600);           /* alergia (sólido) */
+  --destructive-foreground: var(--n-0);   /* branco no vermelho 5,4:1 */
+  --danger-soft: var(--da-50); --danger-border: var(--da-200); --danger-text: var(--da-700);
+  --success: var(--ok-600); --success-soft: var(--ok-50); --success-border: var(--ok-200); --success-text: var(--ok-700);
+  --warning: var(--wa-500); --warning-soft: var(--wa-50); --warning-border: var(--wa-200); --warning-text: var(--wa-700);
+  --sidebar: var(--n-50); --sidebar-foreground: var(--n-600); --sidebar-border: var(--n-200); --sidebar-ring: var(--b-600);
+  --sidebar-primary: var(--b-400); --sidebar-primary-foreground: var(--b-ink-on);
+  --sidebar-accent: var(--b-100); --sidebar-accent-foreground: var(--b-800);
+  --gradient-highlight: radial-gradient(120% 140% at 0% 0%, var(--b-100) 0%, var(--n-0) 55%);
+  --shadow-color: 0.25 0.03 255.41;
+  --radius: 8px;
+}
+.dark {
+  --background: oklch(0.17 0.008 255.41);
+  --foreground: oklch(0.96 0.004 255.41);
+  --card: oklch(0.21 0.009 255.41); --card-foreground: oklch(0.96 0.004 255.41);
+  --popover: oklch(0.21 0.009 255.41); --popover-foreground: oklch(0.96 0.004 255.41);
+  --muted: oklch(0.19 0.009 255.41);
+  --muted-foreground: oklch(0.74 0.012 255.41);
+  --subtle-foreground: oklch(0.62 0.012 255.41);
+  --secondary: oklch(0.25 0.01 255.41); --secondary-foreground: oklch(0.96 0.004 255.41);
+  --accent: oklch(0.25 0.01 255.41); --accent-foreground: oklch(0.96 0.004 255.41);
+  --border: oklch(0.29 0.011 255.41);
+  --border-strong: oklch(0.34 0.012 255.41);
+  --input: oklch(0.52 0.012 255.41);
+  --ring: oklch(0.78 0.09 255.41);
+  --primary: oklch(0.78 0.09 255.41);
+  --primary-foreground: oklch(0.22 0.04 255.41);
+  --primary-hover: oklch(0.74 0.095 255.41);
+  --primary-active: oklch(0.7 0.1 255.41);
+  --primary-soft: oklch(0.3 0.05 255.41);
+  --primary-soft-border: oklch(0.38 0.07 255.41);
+  --primary-ink: oklch(0.82 0.08 255.41);
+  --primary-ink-strong: oklch(0.88 0.06 255.41);
+  --destructive: oklch(0.62 0.19 27); --destructive-foreground: oklch(1 0 0);
+  --danger-soft: oklch(0.29 0.06 27); --danger-border: oklch(0.4 0.1 27); --danger-text: oklch(0.78 0.12 27);
+  --success: oklch(0.7 0.14 155); --success-soft: oklch(0.28 0.05 155); --success-border: oklch(0.38 0.08 155); --success-text: oklch(0.82 0.12 155);
+  --warning: oklch(0.8 0.14 75); --warning-soft: oklch(0.3 0.05 75); --warning-border: oklch(0.42 0.08 75); --warning-text: oklch(0.85 0.12 80);
+  --sidebar: oklch(0.19 0.009 255.41); --sidebar-foreground: oklch(0.74 0.012 255.41); --sidebar-border: oklch(0.29 0.011 255.41); --sidebar-ring: oklch(0.78 0.09 255.41);
+  --sidebar-primary: oklch(0.78 0.09 255.41); --sidebar-primary-foreground: oklch(0.22 0.04 255.41);
+  --sidebar-accent: oklch(0.3 0.05 255.41); --sidebar-accent-foreground: oklch(0.88 0.06 255.41);
+  --gradient-highlight: radial-gradient(120% 140% at 0% 0%, oklch(0.3 0.05 255.41) 0%, oklch(0.21 0.009 255.41) 60%);
+  --shadow-color: 0.05 0.02 255.41;
+}
+@theme inline {
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Lexend", "Inter", ui-sans-serif, sans-serif;
+  --color-background: var(--background); --color-foreground: var(--foreground);
+  --color-card: var(--card); --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover); --color-popover-foreground: var(--popover-foreground);
+  --color-muted: var(--muted); --color-muted-foreground: var(--muted-foreground); --color-subtle-foreground: var(--subtle-foreground);
+  --color-secondary: var(--secondary); --color-secondary-foreground: var(--secondary-foreground);
+  --color-accent: var(--accent); --color-accent-foreground: var(--accent-foreground);
+  --color-border: var(--border); --color-border-strong: var(--border-strong); --color-input: var(--input); --color-ring: var(--ring);
+  --color-primary: var(--primary); --color-primary-foreground: var(--primary-foreground);
+  --color-primary-hover: var(--primary-hover); --color-primary-active: var(--primary-active);
+  --color-primary-soft: var(--primary-soft); --color-primary-soft-border: var(--primary-soft-border);
+  --color-primary-ink: var(--primary-ink); --color-primary-ink-strong: var(--primary-ink-strong);
+  --color-destructive: var(--destructive); --color-destructive-foreground: var(--destructive-foreground);
+  --color-danger-soft: var(--danger-soft); --color-danger-border: var(--danger-border); --color-danger-text: var(--danger-text);
+  --color-success: var(--success); --color-success-soft: var(--success-soft); --color-success-border: var(--success-border); --color-success-text: var(--success-text);
+  --color-warning: var(--warning); --color-warning-soft: var(--warning-soft); --color-warning-border: var(--warning-border); --color-warning-text: var(--warning-text);
+  --color-sidebar: var(--sidebar); --color-sidebar-foreground: var(--sidebar-foreground); --color-sidebar-border: var(--sidebar-border); --color-sidebar-ring: var(--sidebar-ring);
+  --color-sidebar-primary: var(--sidebar-primary); --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent); --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  /* forma (escala do shadcn sobre --radius 8): md 6 selo · lg 8 controle · xl 12 card · 2xl 16 janela */
+  --radius-sm: calc(var(--radius) - 4px); --radius-md: calc(var(--radius) - 2px); --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px); --radius-2xl: calc(var(--radius) + 8px);
+  /* sombras com o matiz da marca (substituem as shadow-hard-*) */
+  --shadow-xs: 0 1px 2px oklch(var(--shadow-color) / 0.06);
+  --shadow-sm: 0 1px 2px oklch(var(--shadow-color) / 0.06), 0 2px 6px oklch(var(--shadow-color) / 0.06);
+  --shadow-md: 0 1px 3px oklch(var(--shadow-color) / 0.08), 0 6px 16px oklch(var(--shadow-color) / 0.10);
+  --shadow-lg: 0 2px 6px oklch(var(--shadow-color) / 0.08), 0 16px 40px oklch(var(--shadow-color) / 0.16);
+  /* escala tipográfica nomeada */
+  --text-display: 30px; --text-display--line-height: 36px; --text-display--letter-spacing: -0.02em;
+  --text-page: 24px; --text-page--line-height: 32px; --text-page--letter-spacing: -0.015em;
+  --text-section: 18px; --text-section--line-height: 26px; --text-section--letter-spacing: -0.01em;
+  --text-title: 15px; --text-title--line-height: 22px;
+  --text-body: 14px; --text-body--line-height: 22px;
+  --text-read: 16px; --text-read--line-height: 26px;
+  --text-label: 13px; --text-label--line-height: 18px;
+  --text-caption: 12px; --text-caption--line-height: 16px;
+  --ease-out-soft: cubic-bezier(0.16, 1, 0.3, 1);
+}
+@layer base {
+  * { @apply border-border; }
+  body { @apply bg-background text-foreground font-sans text-body antialiased; font-feature-settings: "cv11", "ss01"; }
+  .num { font-variant-numeric: tabular-nums; }
+}
+@layer components {
+  /* botões: alturas 28 / 32 / 36 / 40, hover + clique + foco */
+  .btn { @apply inline-flex items-center justify-center gap-2 rounded-lg font-medium text-body whitespace-nowrap select-none transition-[background-color,box-shadow,transform] duration-150 ease-(--ease-out-soft) outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background active:translate-y-px disabled:opacity-50 disabled:pointer-events-none h-9 px-3.5; }
+  .btn-lg { @apply h-10 px-4; } .btn-sm { @apply h-8 px-3 text-label; } .btn-xs { @apply h-7 px-2.5 text-caption; }
+  .btn-primary { @apply bg-primary text-primary-foreground font-semibold shadow-xs hover:bg-primary-hover active:bg-primary-active; }
+  .btn-secondary { @apply bg-card text-foreground border border-border-strong shadow-xs hover:bg-accent; }
+  .btn-ghost { @apply text-foreground hover:bg-accent; }
+  .btn-danger { @apply text-danger-text hover:bg-danger-soft; }
+  .btn-link { @apply h-auto px-0 text-primary-ink underline-offset-4 hover:underline; }
+  /* selos com papel fixo */
+  .badge { @apply inline-flex items-center gap-1 h-6 px-2 rounded-md text-caption font-medium border whitespace-nowrap; }
+  .badge-neutral { @apply bg-muted text-muted-foreground border-border; }
+  .badge-accent { @apply bg-primary-soft text-primary-ink-strong border-primary-soft-border; }
+  .badge-success { @apply bg-success-soft text-success-text border-success-border; }
+  .badge-warning { @apply bg-warning-soft text-warning-text border-warning-border; }
+  .badge-danger { @apply bg-danger-soft text-danger-text border-danger-border; }
+  .badge-clinical { @apply bg-destructive text-destructive-foreground border-transparent font-semibold; }
+  /* campos */
+  .field-label { @apply text-label font-medium text-foreground; }
+  .field-help { @apply text-caption text-subtle-foreground; }
+  .input { @apply h-9 w-full rounded-lg border border-input bg-card px-3 text-body text-foreground placeholder:text-subtle-foreground outline-none transition-shadow focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/25 aria-invalid:border-destructive aria-invalid:ring-3 aria-invalid:ring-destructive/20; }
+  /* superfícies: destaque / comum / apoio */
+  .card { @apply rounded-xl border border-border bg-card; }
+  .card-highlight { @apply rounded-xl border border-primary-soft-border shadow-sm; background: var(--gradient-highlight); }
+  .card-sunken { @apply rounded-xl bg-muted; }
+  /* títulos */
+  .t-display { @apply font-display text-display font-semibold; }
+  .t-page { @apply font-display text-page font-semibold; }
+  .t-section { @apply font-display text-section font-semibold; }
+  .t-card { @apply text-title font-semibold; }
+  /* só desta página */
+  .doc-sec { @apply border-t border-border pt-10 mt-12; }
+  .doc-lead { @apply text-body text-muted-foreground mb-6 max-w-[68ch]; }
+  .doc-k { @apply font-mono text-[11px] text-subtle-foreground; }
+}
+</style>
+<style>
+  .ic { width: 16px; height: 16px; stroke-width: 1.75; flex-shrink: 0; }
+  .ic-sm { width: 14px; height: 14px; }
+  .kbd { font: 500 11px/1 Inter, sans-serif; padding: 3px 5px; border-radius: 4px; border: 1px solid var(--border); color: var(--subtle-foreground); background: var(--card); }
+</style>
+</head>
+<body class="overflow-hidden">
+<div class="flex h-14 items-center gap-3 border-b border-border bg-card px-4">
+  <span class="t-card shrink-0">Protótipo 2.0</span><span class="badge badge-neutral shrink-0">Rodada 1 · sem a Consulta</span>
+  <div id="nav" class="ml-3 flex min-w-0 flex-1 gap-1 overflow-x-auto whitespace-nowrap"></div>
+  <div class="flex shrink-0 items-center gap-2">
+    <button class="btn btn-ghost btn-sm" onclick="step(-1)" aria-label="Tela anterior"><i data-lucide="chevron-left" class="ic"></i></button>
+    <button class="btn btn-ghost btn-sm" onclick="step(1)" aria-label="Próxima tela"><i data-lucide="chevron-right" class="ic"></i></button>
+    <button id="themeBtn" class="btn btn-secondary btn-sm">Ver escuro</button>
+  </div>
+</div>
+<div id="screen" class="h-[calc(100vh-56px)] overflow-hidden"></div>
+
+<script>
+const I = (n, c = "") => `<i data-lucide="${n}" class="ic ${c}"></i>`;
+const AV = (t, o = {}) => `<span class="grid ${o.s || "size-9"} shrink-0 place-items-center rounded-full ${o.on ? "bg-primary-soft text-primary-ink-strong" : "bg-muted text-muted-foreground"} ${o.t || "text-label"} font-semibold">${t}</span>`;
+const ALLERGY = `<span class="badge badge-clinical">${I("triangle-alert", "ic-sm")}Alergia: amoxicilina</span>`;
+
+/* ---------- menu lateral ---------- */
+const NAV = [["inicio", "Início", "house", "a12"], ["consultas", "Consultas", "stethoscope", "b1"], ["pacientes", "Pacientes", "users", "b4"], ["documentos", "Documentos", "file-text", null], ["assistente", "Pergunte ao assistente", "message-circle-question", null], ["financeiro", "Financeiro", "wallet", null]];
+function sidebar(o = {}) {
+  if (o.mini) return `<aside class="flex w-[64px] shrink-0 flex-col items-center gap-1 border-r border-sidebar-border bg-sidebar py-4">
+    <img src="../../public/falaped-icon.svg" alt="Falaped" class="mb-3 h-9 dark:hidden"><img src="../../public/falaped-icon-dark.svg" alt="Falaped" class="mb-3 hidden h-9 dark:block">
+    <a data-go="a12" class="mb-2 grid size-10 place-items-center rounded-lg border border-primary-soft-border bg-primary-soft text-primary-ink-strong" title="Voltar à consulta · Helena D."><span class="relative text-label font-semibold">HD<span class="absolute -right-2 -top-1.5 size-2 rounded-full bg-success ring-2 ring-primary-soft"></span></span></a>
+    ${NAV.map(([k, l, ic, go]) => `<a ${go ? `data-go="${go}"` : ""} title="${l}" class="grid size-10 place-items-center rounded-lg ${o.on === k ? "bg-sidebar-accent text-sidebar-accent-foreground" : "text-sidebar-foreground hover:bg-accent hover:text-foreground"}">${I(ic)}</a>`).join("")}
+  </aside>`;
+  const top = o.active
+    ? `<a data-go="a12" class="card-highlight mb-3 flex items-center gap-2.5 p-3 hover:shadow-md">
+        <span class="relative grid size-8 place-items-center rounded-full bg-card text-label font-semibold text-primary-ink-strong">HD<span class="absolute -right-0.5 -top-0.5 size-2.5 rounded-full bg-success ring-2 ring-card"></span></span>
+        <div class="min-w-0 flex-1"><div class="text-label font-semibold">Helena D.</div><div class="text-caption text-muted-foreground">Voltar à consulta</div></div>
+        <span class="text-caption num text-muted-foreground">12:47</span></a>`
+    : `<button data-go="a3" class="btn btn-primary btn-lg mb-3 w-full">${I("plus")}Iniciar consulta</button>`;
+  return `<aside class="flex w-[248px] shrink-0 flex-col border-r border-sidebar-border bg-sidebar px-3 pb-3 pt-5">
+    <img src="../../public/falaped-logo.svg" alt="Falaped" class="mx-2 mb-5 h-11 self-start dark:hidden"><img src="../../public/falaped-logo-dark.svg" alt="Falaped" class="mx-2 mb-5 hidden h-11 self-start dark:block">
+    ${top}
+    <button data-go="a3" class="mb-3 flex h-9 items-center gap-2 rounded-lg border border-input bg-card px-2.5 text-left text-subtle-foreground hover:border-border-strong">${I("search")}<span class="flex-1">Buscar paciente</span><span class="kbd">⌘K</span></button>
+    <nav class="flex flex-col gap-0.5">${NAV.map(([k, l, ic, go]) => `<a ${go ? `data-go="${go}"` : ""} class="flex h-9 items-center gap-2.5 rounded-lg px-2.5 ${o.on === k ? "bg-sidebar-accent font-semibold text-sidebar-accent-foreground" : "text-sidebar-foreground hover:bg-accent hover:text-foreground"}">${I(ic)}<span class="flex-1">${l}</span>${k === "documentos" ? I("chevron-right", "ic-sm text-subtle-foreground") : ""}</a>`).join("")}</nav>
+    <div class="flex-1"></div>
+    <div class="flex flex-col gap-0.5 border-t border-sidebar-border pt-2">
+      <a class="flex h-9 items-center gap-2.5 rounded-lg px-2.5 text-sidebar-foreground hover:bg-accent hover:text-foreground">${I("layout-template")}Modelos</a>
+      <a class="flex h-9 items-center gap-2.5 rounded-lg px-2.5 text-sidebar-foreground hover:bg-accent hover:text-foreground">${I("megaphone")}Novidades<span class="ml-auto size-2 rounded-full bg-primary"></span></a>
+      <a class="flex h-11 items-center gap-2.5 rounded-lg px-2 hover:bg-accent">${AV("AS", { s: "size-7", t: "text-caption", on: 1 })}<div class="min-w-0 leading-tight"><div class="text-label font-medium">Dra. Ana Souza</div><div class="text-caption text-subtle-foreground">CRM-MG 54.321</div></div>${I("chevrons-up-down", "ic-sm ml-auto text-subtle-foreground")}</a>
+    </div>
+  </aside>`;
+}
+const APP = (o, main) => `<div class="flex h-full">${sidebar(o)}<main class="min-w-0 flex-1 overflow-auto bg-background">${main}</main></div>`;
+const PAGE = body => `<div class="mx-auto flex max-w-[1180px] flex-col gap-6 px-8 py-8">${body}</div>`;
+const HEAD = (t, sub, right = "") => `<div class="flex items-end gap-4"><div><h1 class="t-page">${t}</h1>${sub ? `<p class="mt-0.5 text-muted-foreground">${sub}</p>` : ""}</div><div class="ml-auto flex items-center gap-2">${right}</div></div>`;
+const TABS = (items, on) => `<div class="flex gap-1 border-b border-border">${items.map((t, i) => `<button class="-mb-px border-b-2 px-3 py-2 ${i === on ? "border-foreground font-semibold" : "border-transparent text-muted-foreground hover:text-foreground"}">${t}</button>`).join("")}</div>`;
+const SEARCH = (ph, w = "w-80") => `<label class="input flex ${w} items-center gap-2 text-subtle-foreground">${I("search")}<span>${ph}</span></label>`;
+const ACTIVE = (extra = "") => `<div class="card-highlight flex items-center gap-4 px-5 py-4">
+  <span class="relative">${AV("HD", { s: "size-10", on: 1 })}<span class="absolute -right-0.5 -top-0.5 size-3 animate-pulse rounded-full bg-success ring-2 ring-card"></span></span>
+  <div class="min-w-0"><div class="flex items-center gap-2"><span class="t-card">Helena Duarte</span><span class="text-muted-foreground">· 2a 3m</span>${ALLERGY}</div><div class="text-muted-foreground">Em andamento há 12 min · febre e otalgia${extra}</div></div>
+  <button data-go="a12" class="btn btn-primary ml-auto">Voltar à consulta${I("arrow-right")}</button></div>`;
+
+/* ---------- telas ---------- */
+const S = [];
+const add = s => S.push(s);
+
+const inicio = () => APP({ on: "inicio", active: 1 }, PAGE(`
+  ${HEAD("Bom dia, Dra. Ana", "Segunda-feira, 6 de outubro")}
+  ${ACTIVE()}
+  <div class="grid items-start gap-5 lg:grid-cols-[1.2fr_1fr]">
+    <section class="card">
+      <div class="flex items-center px-5 pb-2 pt-4"><h2 class="t-card">Atendidos hoje</h2><span class="ml-2 text-subtle-foreground num">2</span><a data-go="b1" class="btn btn-link btn-sm ml-auto">Ver todas as consultas</a></div>
+      <div class="divide-y divide-border">
+        ${[["MS", "Miguel Santos", "4a 1m", "Puericultura · sem alterações", "09:10", ["Atestado"]], ["LP", "Lara Pereira", "8m", "Bronquiolite leve · retorno em 48 h", "08:20", ["Receita"]]].map(([i, n, a, w, t, d]) => `
+        <a data-go="b2" class="flex items-center gap-3 px-5 py-3 hover:bg-accent">${AV(i)}<div class="min-w-0 flex-1"><div><span class="font-semibold">${n}</span> <span class="text-subtle-foreground">· ${a}</span></div><div class="text-caption text-muted-foreground">${w}</div></div>${d.map(x => `<span class="badge badge-accent">${x}</span>`).join("")}<span class="w-12 text-right text-caption num text-subtle-foreground">${t}</span></a>`).join("")}
+      </div>
+    </section>
+    <section class="card">
+      <div class="flex items-center px-5 pb-2 pt-4"><h2 class="t-card">Precisam de atenção</h2><span class="ml-2 text-subtle-foreground num">4</span></div>
+      <div class="divide-y divide-border">
+        ${[["Lara Pereira", "Retorno em 2 dias", "Ver ficha", "b5"], ["Gabriel Alves", "Tríplice viral atrasada", "Abrir ficha", "b5"], ["3 consultas", "Sem valor lançado", "Lançar valores", null], ["Pedido pelo WhatsApp", "Sem paciente associado", "Associar", null]].map(([n, w, b, go]) => `
+        <div class="flex items-center gap-3 px-5 py-3"><div class="min-w-0 flex-1"><div class="font-semibold">${n}</div><span class="badge badge-warning mt-1">${w}</span></div><button ${go ? `data-go="${go}"` : ""} class="btn btn-secondary btn-sm">${b}</button></div>`).join("")}
+      </div>
+    </section>
+  </div>
+  <div class="grid gap-4 sm:grid-cols-3">
+    ${[["Consultas hoje", "3"], ["Esta semana", "14"], ["Recebido em outubro", "R$ 9.800,00"]].map(([l, v]) => `<div class="card-sunken px-5 py-4"><div class="text-label text-muted-foreground">${l}</div><div class="mt-1 font-display text-section font-semibold num">${v}</div></div>`).join("")}
+  </div>`));
+
+add({ id: "d1", t: "Menu", obj: "Os três estados do menu: sem consulta aberta (botão Iniciar consulta), com consulta aberta (cartão para voltar) e recolhido durante a consulta.",
+  html: () => `<div class="grid h-full grid-cols-[248px_248px_64px_1fr] gap-6 overflow-auto bg-background p-6">
+    ${[["Sem consulta aberta", sidebar({ on: "inicio" })], ["Consulta aberta", sidebar({ on: "pacientes", active: 1 })], ["Recolhido", sidebar({ mini: 1, on: "consultas" })]].map(([t, h]) => `<div class="flex min-h-[760px] flex-col gap-2"><div class="text-label font-medium text-muted-foreground">${t}</div><div class="flex flex-1 overflow-hidden rounded-xl border border-border shadow-sm">${h}</div></div>`).join("")}
+    <div class="card-sunken self-start p-5 text-muted-foreground"><div class="t-card text-foreground">O que observar</div><ul class="mt-2 list-disc space-y-1 pl-5"><li>Logo empilhada no topo; a compacta no recolhido.</li><li>Uma ação colorida: Iniciar consulta. Com consulta aberta, ela vira o cartão de destaque com o tempo.</li><li>Item ativo em azul suave com texto forte.</li><li>Modelos, Novidades e conta separados do uso diário.</li></ul></div>
+  </div>` });
+
+add({ id: "a12", t: "Início", obj: "O dia do médico: a consulta em andamento, quem já foi atendido e o que pede atenção, com a ação pronta em cada linha.", html: inicio });
+
+const dialog = (w, body) => `<div class="relative h-full"><div class="pointer-events-none h-full opacity-100">${inicio()}</div>
+  <div class="absolute inset-0" style="background:oklch(0.21 0.012 255.41 / 0.3)"></div>
+  <div class="absolute inset-x-0 top-[12vh] mx-auto ${w} overflow-hidden rounded-2xl border border-border bg-popover shadow-lg">${body}</div></div>`;
+
+add({ id: "a3", t: "Buscar paciente", obj: "Achar a criança por nome, responsável ou telefone, ou decidir cadastrar, sem sair de onde o médico está.",
+  html: () => dialog("w-[600px]", `
+    <div class="flex items-center gap-3 border-b border-border px-5 py-3">${I("search", "text-subtle-foreground")}<span class="flex-1 text-read">Nome, responsável ou telefone<span class="ml-px inline-block h-5 w-px translate-y-1 animate-pulse bg-foreground"></span></span><span class="kbd">Esc</span></div>
+    <div class="p-2">
+      <div class="px-3 pb-1 pt-2 text-caption font-medium text-subtle-foreground">Recentes</div>
+      ${[["MS", "Miguel Santos", "4a 1m · Rafael Santos", "Última consulta hoje", `<span class="kbd">↵ Iniciar</span>`, 1], ["LP", "Lara Pereira", "8m · Juliana Pereira", "Retorno marcado para hoje", "", 0], ["HD", "Helena Duarte", "2a 3m · Carla Duarte", `<span class="inline-flex items-center gap-1 text-success-text"><span class="size-1.5 rounded-full bg-success"></span>Consulta em andamento há 12 min</span>`, `<button class="btn btn-secondary btn-sm">Voltar à consulta</button>`, 0]].map(([i, n, s, w, r, on]) => `
+      <div class="flex items-center gap-3 rounded-lg px-3 py-2.5 ${on ? "bg-accent" : "hover:bg-accent"}">${AV(i)}<div class="min-w-0 flex-1"><div><span class="font-semibold">${n}</span> <span class="text-subtle-foreground">· ${s}</span></div><div class="text-caption text-muted-foreground">${w}</div></div>${r}</div>`).join("")}
+    </div>
+    <div class="border-t border-border p-3"><button data-go="a4" class="btn btn-secondary w-full">${I("user-plus")}Cadastrar paciente</button></div>
+    <div class="flex gap-4 border-t border-border bg-muted px-5 py-2 text-caption text-subtle-foreground"><span><span class="kbd">↑↓</span> navegar</span><span><span class="kbd">↵</span> iniciar consulta</span><span><span class="kbd">Esc</span> fechar</span></div>`) });
+
+add({ id: "a4", t: "Cadastro rápido", obj: "Cadastrar só o essencial e já abrir a consulta. O resto da ficha é completado depois.",
+  html: () => dialog("w-[600px]", `
+    <div class="border-b border-border px-5 py-3"><div class="flex items-center gap-3">${I("search", "text-subtle-foreground")}<span class="flex-1 text-read">Sofia</span><span class="kbd">Esc</span></div><div class="mt-1 pl-7 text-caption text-subtle-foreground">Nenhum paciente com "Sofia".</div></div>
+    <div class="space-y-4 px-5 py-5">
+      <h2 class="t-card">Cadastrar Sofia e iniciar a consulta</h2>
+      <div class="grid grid-cols-2 gap-4">
+        <label class="flex flex-col gap-1.5"><span class="field-label">Nome da criança</span><input class="input" value="Sofia Ramos"></label>
+        <label class="flex flex-col gap-1.5"><span class="field-label">Data de nascimento</span><span class="relative"><input class="input num pr-9" value="22/03/2025"><span class="absolute right-2.5 top-2.5 text-subtle-foreground">${I("calendar")}</span></span><span class="field-help">1 ano e 6 meses</span></label>
+        <label class="flex flex-col gap-1.5"><span class="field-label">Responsável</span><input class="input" value="Patrícia Ramos"></label>
+        <label class="flex flex-col gap-1.5"><span class="field-label">Telefone do responsável</span><input class="input num" aria-invalid="true" value="(31) 9888"><span class="text-caption text-danger-text">Faltam 5 dígitos. Ex.: (31) 98888-1111</span></label>
+      </div>
+      <button class="flex items-center gap-1.5 text-label font-medium text-muted-foreground hover:text-foreground">${I("chevron-right", "ic-sm")}Mais dados: sexo, idade gestacional, alergias</button>
+    </div>
+    <div class="flex items-center gap-2 border-t border-border px-5 py-3"><button data-go="a3" class="btn btn-ghost">${I("arrow-left")}Voltar à busca</button><button class="btn btn-primary ml-auto">Cadastrar e iniciar consulta</button></div>`) });
+
+const PAT_ROWS = [
+  ["HD", "Helena Duarte", "2a 3m", "Carla Duarte", "(31) 98888-1111", "Hoje", "Otite média aguda", `${ALLERGY}<span class="badge badge-warning">Vacina atrasada</span>`],
+  ["MS", "Miguel Santos", "4a 1m", "Rafael Santos", "(31) 97777-2222", "Hoje", "Puericultura", ""],
+  ["LP", "Lara Pereira", "8m", "Juliana Pereira", "(31) 96666-3333", "Hoje", "Bronquiolite", `<span class="badge badge-neutral">Retorno em 2 dias</span>`],
+  ["TC", "Theo Costa", "1a 6m", "Paula Costa", "(31) 95555-4444", "Ontem", "Diarreia aguda", ""],
+  ["GA", "Gabriel Alves", "6a 2m", null, null, "Há 3 meses", "Asma · controle", `<span class="badge badge-warning">Ficha incompleta</span><span class="badge badge-warning">Retorno vencido</span>`],
+  ["BS", "Bia Souza", "3a", "Marina Souza", "(31) 97777-5555", "12/09", "IVAS", ""],
+];
+add({ id: "b4", t: "Pacientes", obj: "Achar a criança rápido e ver quem precisa de atenção. Atender começa a consulta direto da linha.",
+  html: () => APP({ on: "pacientes" }, PAGE(`
+    ${HEAD("Pacientes", "148 pacientes · 6 precisam de atenção", `<button data-go="a4" class="btn btn-secondary">${I("user-plus")}Cadastrar paciente</button>`)}
+    <div class="flex items-end gap-4"><div class="flex-1">${TABS(["Atendidos recentemente", "A–Z", `Precisam de atenção <span class="badge badge-warning ml-1 h-5">6</span>`], 0)}</div>${SEARCH("Nome, responsável ou telefone")}</div>
+    <div class="card overflow-hidden">
+      <div class="grid grid-cols-[1.5fr_1.3fr_1.1fr_1.6fr_96px] gap-4 border-b border-border bg-muted px-5 py-2.5 text-label font-medium text-muted-foreground"><span>Paciente</span><span>Responsável</span><span>Última consulta</span><span>Atenção</span><span></span></div>
+      <div class="divide-y divide-border">${PAT_ROWS.map(([i, n, a, r, t, d, w, at]) => `
+        <a data-go="b5" class="group grid min-h-14 grid-cols-[1.5fr_1.3fr_1.1fr_1.6fr_96px] items-center gap-4 px-5 py-2.5 hover:bg-accent">
+          <div class="flex items-center gap-3">${AV(i)}<div><div class="font-semibold">${n}</div><div class="text-caption text-subtle-foreground">${a}</div></div></div>
+          <div>${r ? `<div>${r}</div><div class="text-caption text-subtle-foreground num">${t}</div>` : `<span class="text-subtle-foreground">Não informado</span>`}</div>
+          <div><div>${d}</div><div class="text-caption text-subtle-foreground">${w}</div></div>
+          <div class="flex flex-wrap gap-1">${at}</div>
+          <span class="btn btn-secondary btn-sm justify-self-end">Atender</span></a>`).join("")}
+      </div>
+    </div>`)) });
+
+const curve = () => `<svg viewBox="0 0 220 70" preserveAspectRatio="none" class="mt-3 h-[72px] w-full"><path d="M0 60 C60 40 120 26 220 14 L220 34 C120 44 60 54 0 68Z" fill="var(--primary-soft)"/><path d="M0 64 C60 47 120 35 220 24" fill="none" stroke="var(--primary-soft-border)" stroke-dasharray="3 3"/><polyline points="10,62 50,52 95,44 140,38 180,33" fill="none" stroke="var(--primary-ink)" stroke-width="2" vector-effect="non-scaling-stroke"/></svg><div class="mt-1 flex justify-between text-caption text-subtle-foreground num"><span>6m</span><span>2a 3m</span></div>`;
+add({ id: "b5", t: "Ficha", obj: "Entender a criança em 10 segundos antes de atender, e começar a consulta daqui.",
+  html: () => APP({ on: "pacientes" }, `
+    <div class="border-b border-border bg-card"><div class="mx-auto max-w-[1180px] px-8 pt-6">
+      <div class="mb-3 text-caption text-subtle-foreground"><a data-go="b4" class="hover:text-foreground hover:underline">Pacientes</a> › Helena Duarte</div>
+      <div class="flex items-start gap-4">
+        ${AV("HD", { s: "size-14", t: "text-section", on: 1 })}
+        <div class="min-w-0"><div class="flex flex-wrap items-center gap-2"><h1 class="t-page">Helena Duarte</h1><span class="badge badge-neutral num">2a 3m · nasc. 10/06/2024</span>${ALLERGY}</div>
+          <div class="mt-1 text-muted-foreground">Carla Duarte (mãe) · <span class="num">(31) 98888-1111</span> · IG 38 semanas</div></div>
+        <div class="ml-auto flex items-center gap-2"><button class="btn btn-secondary">${I("pencil")}Editar</button><button class="btn btn-ghost px-2.5" aria-label="Mais ações">${I("ellipsis")}</button><button class="btn btn-primary">${I("stethoscope")}Iniciar consulta</button></div>
+      </div>
+      <div class="mt-5">${TABS(["Resumo", `Consultas <span class="text-subtle-foreground num">5</span>`, "Crescimento", `Vacinas <span class="badge badge-warning ml-1 h-5">1 atrasada</span>`, "Documentos", "Anexos e escalas"], 0).replace("border-b border-border", "")}</div>
+    </div></div>
+    ${PAGE(`<div class="grid gap-5 lg:grid-cols-[1.4fr_1fr]">
+      <div class="flex flex-col gap-5">
+        <section class="card-highlight p-5">
+          <div class="flex items-center"><h2 class="t-card">Última consulta · 29/09</h2><span class="badge badge-neutral ml-2">IVAS</span><button data-go="b2" class="btn btn-ghost btn-sm ml-auto">Ver registro</button></div>
+          <p class="mt-2 text-read">Coriza e tosse há 3 dias, sem febre. Bom estado geral, ausculta limpa. Sintomáticos e lavagem nasal; retorno se febre.</p>
+          <div class="mt-3 flex items-center gap-2 rounded-lg bg-card/70 px-3 py-2 text-label">${I("bell", "ic-sm text-primary-ink")}Lembrete: reavaliar o peso no próximo retorno</div>
+        </section>
+        <section class="card-sunken p-5"><h2 class="t-card">Histórico</h2>
+          <div class="mt-2 divide-y divide-border">${[["29/09", "IVAS", ["Receita"]], ["12/08", "Puericultura · vacinas de 15 meses", []], ["03/06", "Otite média aguda", ["Receita", "Atestado"]]].map(([d, w, docs]) => `<a data-go="b2" class="flex items-center gap-3 py-2.5 hover:text-foreground"><span class="w-12 text-caption num text-subtle-foreground">${d}</span><span class="flex-1">${w}</span>${docs.map(x => `<span class="badge badge-accent">${x}</span>`).join("")}</a>`).join("")}</div>
+          <button class="btn btn-link btn-sm mt-1">Ver as 5 consultas</button></section>
+      </div>
+      <div class="flex flex-col gap-5">
+        <section class="card p-5"><h2 class="t-card">Pendências</h2>
+          <ul class="mt-3 space-y-2.5">
+            <li class="flex items-start gap-2.5"><span class="mt-0.5 text-warning-text">${I("syringe")}</span><div class="flex-1">Tríplice viral, 2ª dose<div class="text-caption text-subtle-foreground">Atrasada desde 10/09</div></div><button class="btn btn-secondary btn-xs">Ver vacinas</button></li>
+            <li class="flex items-start gap-2.5"><span class="mt-0.5 text-warning-text">${I("ruler")}</span><div class="flex-1">Sem medida há 37 dias</div></li>
+            <li class="flex items-start gap-2.5"><span class="mt-0.5 text-warning-text">${I("circle-alert")}</span><div class="flex-1">Falta o sexo na ficha<div class="text-caption text-subtle-foreground">A curva de crescimento depende dele</div></div><button class="btn btn-secondary btn-xs">Completar</button></li>
+          </ul></section>
+        <section class="card p-5"><div class="flex items-center"><h2 class="t-card">Crescimento</h2><button class="btn btn-ghost btn-xs ml-auto">Ver curvas</button></div>
+          <div class="mt-2 grid grid-cols-2 gap-3"><div><div class="text-caption text-subtle-foreground">Peso</div><div class="font-semibold num">12,3 kg <span class="font-normal text-subtle-foreground">· p50</span></div></div><div><div class="text-caption text-subtle-foreground">Altura</div><div class="font-semibold num">87 cm <span class="font-normal text-subtle-foreground">· p50</span></div></div></div>
+          ${curve()}</section>
+        <section class="card-sunken p-5"><h2 class="t-card">Dados clínicos</h2>
+          <dl class="mt-2 grid grid-cols-[auto_1fr] gap-x-4 gap-y-1.5"><dt class="text-subtle-foreground">Alergias</dt><dd>Amoxicilina (exantema, 06/2025)</dd><dt class="text-subtle-foreground">Comorbidades</dt><dd>Nenhuma</dd><dt class="text-subtle-foreground">Uso contínuo</dt><dd>Nenhum</dd><dt class="text-subtle-foreground">Tipo sanguíneo</dt><dd class="text-subtle-foreground">Não informado</dd></dl></section>
+      </div></div>`)}`) });
+
+const row = (o) => `<div class="group relative grid min-h-14 grid-cols-[40px_1fr_auto_96px_96px_36px] items-center gap-4 px-5 py-2.5 hover:bg-accent">
+  ${AV(o.i)}<a ${o.go ? `data-go="${o.go}"` : ""} class="min-w-0"><div><span class="font-semibold">${o.n}</span> <span class="text-subtle-foreground">· ${o.a}</span></div><div class="truncate text-caption text-muted-foreground">${o.w}</div></a>
+  <div class="flex gap-1">${o.d.map(x => `<span class="badge ${x === "WhatsApp" ? "badge-accent" : "badge-neutral"}">${x === "WhatsApp" ? I("message-circle", "ic-sm") : ""}${x}</span>`).join("")}</div>
+  <span class="text-right text-caption num text-subtle-foreground">${o.t}</span><span class="text-right">${o.v}</span>
+  <button class="btn btn-ghost btn-sm px-2" aria-label="Ações" onclick="this.nextElementSibling.classList.toggle('hidden')">${I("ellipsis")}</button>
+  <div class="absolute right-5 top-12 z-10 ${o.menu ? "" : "hidden"} w-56 rounded-xl border border-border bg-popover p-1 shadow-md">
+    <a data-go="b2" class="flex h-8 items-center gap-2 rounded-md px-2.5 hover:bg-accent">${I("file-text", "ic-sm")}Ver relatório</a><a class="flex h-8 items-center gap-2 rounded-md px-2.5 hover:bg-accent">${I("download", "ic-sm")}Baixar documentos</a><a data-go="b5" class="flex h-8 items-center gap-2 rounded-md px-2.5 hover:bg-accent">${I("user", "ic-sm")}Abrir ficha</a><a class="flex h-8 items-center gap-2 rounded-md px-2.5 hover:bg-accent">${I("rotate-ccw", "ic-sm")}Reabrir consulta</a>
+    <div class="my-1 h-px bg-border"></div><a class="flex h-8 items-center gap-2 rounded-md px-2.5 text-danger-text hover:bg-danger-soft">${I("trash-2", "ic-sm")}Excluir consulta</a></div>
+</div>`;
+add({ id: "b1", t: "Consultas", obj: "Encontrar uma consulta pelo que aconteceu nela e ver o que ficou pendente. O menu ⋯ da primeira linha está aberto para mostrar as ações.",
+  html: () => APP({ on: "consultas", active: 1 }, PAGE(`
+    ${HEAD("Consultas", "32 em outubro · 4 com pendência", `<button data-go="a3" class="btn btn-secondary">${I("plus")}Iniciar consulta</button>`)}
+    ${ACTIVE()}
+    <div class="flex items-end gap-4"><div class="flex-1">${TABS(["Todas", `Hoje <span class="text-subtle-foreground num">3</span>`, "Esta semana", `Com pendência <span class="badge badge-warning ml-1 h-5">4</span>`], 0)}</div>${SEARCH("Paciente, responsável ou diagnóstico")}</div>
+    <div class="card">
+      <div class="rounded-t-xl border-b border-border bg-muted px-5 py-2 text-label font-medium text-muted-foreground">Hoje</div>
+      <div class="divide-y divide-border">
+        ${row({ i: "MS", n: "Miguel Santos", a: "4a 1m", w: "Puericultura · sem alterações", d: ["Atestado"], t: "09:10 · 22 min", v: `<span class="font-medium num">R$ 350,00</span>`, go: "b2", menu: 1 })}
+        ${row({ i: "LP", n: "Lara Pereira", a: "8m", w: "Bronquiolite leve · retorno em 48 h", d: ["Receita"], t: "08:20 · 31 min", v: `<span class="badge badge-warning">Sem valor</span>`, go: "b2" })}
+      </div>
+      <div class="border-y border-border bg-muted px-5 py-2 text-label font-medium text-muted-foreground">Ontem</div>
+      <div class="divide-y divide-border">
+        ${row({ i: "?", n: "Pedido pelo WhatsApp", a: "sem paciente", w: "Mãe pergunta a dose de paracetamol para 14 kg", d: ["WhatsApp"], t: "14:02", v: `<button class="btn btn-secondary btn-xs">Associar</button>` })}
+        ${row({ i: "TC", n: "Theo Costa", a: "1a 6m", w: "Diarreia aguda · hidratação oral", d: ["Receita", "Orientação"], t: "17:45 · 18 min", v: `<span class="text-muted-foreground">Cortesia</span>`, go: "b2" })}
+        ${row({ i: "BS", n: "Bia Souza", a: "3a", w: "IVAS · lavagem nasal", d: ["Receita"], t: "15:30 · 19 min", v: `<span class="font-medium num">R$ 350,00</span>`, go: "b2" })}
+      </div>
+    </div>`)) });
+
+add({ id: "b2", t: "Consulta encerrada", obj: "O registro de uma consulta que já terminou: relatório aberto, documentos para reimprimir, cobrança e lembretes. Reabrir e excluir ficam no ⋯.",
+  html: () => APP({ on: "consultas", active: 1 }, PAGE(`
+    <div class="text-caption text-subtle-foreground"><a data-go="b1" class="hover:text-foreground hover:underline">Consultas</a> › Miguel Santos · 06/10</div>
+    <div class="flex items-start gap-4">
+      ${AV("MS", { s: "size-12", t: "text-card" })}
+      <div><div class="flex items-center gap-2"><h1 class="t-page">Miguel Santos</h1><span class="badge badge-neutral">4a 1m</span><span class="badge badge-neutral">Encerrada</span></div>
+        <div class="mt-1 text-muted-foreground num">06/10 · 09:10 · 22 min · <a data-go="b5" class="text-primary-ink hover:underline">Ver ficha</a></div></div>
+      <div class="ml-auto flex items-center gap-2"><button class="btn btn-secondary">${I("download")}Baixar documentos</button><button class="btn btn-ghost px-2.5" aria-label="Mais ações">${I("ellipsis")}</button></div>
+    </div>
+    <div class="grid gap-5 lg:grid-cols-[1.5fr_1fr]">
+      <section class="card p-6">
+        <div class="flex items-center gap-2"><h2 class="t-section">Relatório da consulta</h2><button class="btn btn-ghost btn-sm ml-auto">${I("pencil", "ic-sm")}Editar</button><button class="btn btn-secondary btn-sm">${I("download", "ic-sm")}Baixar PDF</button></div>
+        <div class="mt-4 max-w-[68ch] space-y-5 text-read">
+          ${[["Queixa", "Consulta de rotina. Mãe sem queixas; dorme bem, alimentação variada, frequenta a escola."], ["Exame físico", "Bom estado geral, corado, hidratado. Peso 16,8 kg (p50), altura 103 cm (p50). Otoscopia e oroscopia normais. Ausculta sem alterações."], ["Conduta", "Desenvolvimento adequado para a idade. Orientada alimentação e higiene bucal. Atestado de comparecimento para a mãe. Retorno em 6 meses."]].map(([h, t]) => `<div><h3 class="text-label font-semibold text-muted-foreground">${h}</h3><p class="mt-1">${t}</p></div>`).join("")}
+        </div>
+      </section>
+      <div class="flex flex-col gap-5">
+        <section class="card p-5"><div class="flex items-center"><h2 class="t-card">Documentos</h2><button class="btn btn-ghost btn-sm ml-auto">${I("plus", "ic-sm")}Novo documento</button></div>
+          <div class="mt-3 flex items-center gap-3 rounded-lg border border-border px-3 py-2.5"><span class="grid size-8 place-items-center rounded-md bg-primary-soft text-primary-ink-strong">${I("file-text", "ic-sm")}</span><div class="flex-1"><div class="font-medium">Atestado de comparecimento</div><div class="text-caption text-subtle-foreground num">Emitido às 09:32</div></div><button class="btn btn-ghost btn-sm px-2" aria-label="Baixar">${I("download")}</button></div></section>
+        <section class="card p-5"><div class="flex items-center"><h2 class="t-card">Cobrança</h2><span class="badge badge-success ml-2">${I("check", "ic-sm")}Pago</span><button class="btn btn-ghost btn-sm ml-auto">Ajustar</button></div>
+          <div class="mt-2 font-display text-section font-semibold num">R$ 350,00</div><div class="text-caption text-subtle-foreground">Pix · 06/10</div></section>
+        <section class="card-sunken p-5"><h2 class="t-card">Lembretes para a próxima consulta</h2>
+          <div class="mt-2 flex items-center gap-2">${I("bell", "ic-sm text-primary-ink")}<span class="flex-1">Rever a curva de peso em 6 meses</span><button class="btn btn-ghost btn-xs">Editar</button></div></section>
+        <p class="px-1 text-caption text-subtle-foreground">Escalas, exames e anexos aparecem aqui quando a consulta tiver algum.</p>
+      </div>
+    </div>`)) });
+
+/* ---------- navegação ---------- */
+let cur = 0;
+const nav = document.getElementById("nav"), screen = document.getElementById("screen");
+nav.innerHTML = S.map((s, i) => `<button data-i="${i}" class="h-8 rounded-lg px-2.5 text-label hover:bg-accent">${i + 1}. ${s.t}</button>`).join("");
+nav.onclick = e => { const b = e.target.closest("[data-i]"); if (b) go(S[+b.dataset.i].id); };
+function go(id) {
+  const i = S.findIndex(s => s.id === id); if (i < 0) return; cur = i;
+  screen.innerHTML = S[i].html();
+  nav.querySelectorAll("button").forEach((b, j) => b.className = `h-8 rounded-lg px-2.5 text-label ${j === i ? "bg-primary-soft font-semibold text-primary-ink-strong" : "text-muted-foreground hover:bg-accent hover:text-foreground"}`);
+  history.replaceState(null, "", "#" + id + (document.documentElement.classList.contains("dark") ? "-escuro" : ""));
+  window.lucide && lucide.createIcons();
+}
+const step = d => go(S[(cur + d + S.length) % S.length].id);
+screen.onclick = e => { const a = e.target.closest("[data-go]"); if (a) { e.preventDefault(); go(a.dataset.go); } };
+document.addEventListener("keydown", e => { if (e.key === "ArrowRight" && e.altKey) step(1); if (e.key === "ArrowLeft" && e.altKey) step(-1); });
+const btn = document.getElementById("themeBtn");
+function setDark(on) { document.documentElement.classList.toggle("dark", on); btn.textContent = on ? "Ver claro" : "Ver escuro"; history.replaceState(null, "", "#" + S[cur].id + (on ? "-escuro" : "")); }
+btn.onclick = () => setDark(!document.documentElement.classList.contains("dark"));
+const h = location.hash.slice(1);
+go(h.replace("-escuro", "") || "a12");
+if (h.endsWith("-escuro")) setDark(true);
+</script>
+</body>
+</html>
