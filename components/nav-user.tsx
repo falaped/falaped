@@ -99,7 +99,8 @@ export function NavUser() {
               size="lg"
               className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
             >
-              <Avatar className="h-8 w-8 rounded-lg flex items-center justify-center">
+              {/* O Avatar é um span, e o menu recolhido esconde os spans do botão (os rótulos): flex! o mantém. */}
+              <Avatar className="h-8 w-8 rounded-full flex items-center justify-center group-data-[collapsible=icon]:flex!">
                 <AvatarImage className="object-contain h-6 w-6" src={user.avatar} alt={user.name} />
                 <AvatarFallback className="rounded-full bg-primary-soft text-caption font-semibold text-primary-ink-strong">{initials}</AvatarFallback>
               </Avatar>
