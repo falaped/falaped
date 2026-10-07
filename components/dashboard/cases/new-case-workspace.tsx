@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState, useTransition } from "react"
 import Link from "next/link"
 import {
   ArrowUpIcon,
+  ClipboardListIcon,
   CheckIcon,
   FileTextIcon,
   HistoryIcon,
@@ -12,7 +13,6 @@ import {
   MicIcon,
   PauseIcon,
   PlayIcon,
-  SparklesIcon,
   TriangleAlertIcon,
   XCircleIcon,
   XIcon,
@@ -35,6 +35,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
+import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet"
 import { useSidebar } from "@/components/ui/sidebar"
 import {
   AlertDialog,
@@ -274,12 +275,22 @@ function DateSeparator({ label }: { label: string }) {
   )
 }
 
+/** Marca do assistente na conversa: a logo compacta do Falaped. */
+function AssistantMark({ className }: { className?: string }) {
+  return (
+    <>
+      {/* eslint-disable-next-line @next/next/no-img-element -- SVG estático, sem ganho com next/image */}
+      <img src="/falaped-icon.svg" alt="" className={cn("size-5 dark:hidden", className)} />
+      {/* eslint-disable-next-line @next/next/no-img-element -- SVG estático, sem ganho com next/image */}
+      <img src="/falaped-icon-dark.svg" alt="" className={cn("hidden size-5 dark:block", className)} />
+    </>
+  )
+}
+
 function AssistantStatus({ children }: { children: React.ReactNode }) {
   return (
     <div className="flex items-center gap-2 text-caption text-subtle-foreground">
-      <span className="grid size-5 place-items-center rounded-md bg-primary-soft text-primary-ink-strong">
-        <Loader2Icon className="size-3 animate-spin" aria-hidden />
-      </span>
+      <AssistantMark className="animate-pulse" />
       {children}
     </div>
   )
@@ -353,9 +364,7 @@ function ThreadBubble({
       <div className="flex flex-col gap-1.5">
         {isUser ? null : (
           <div className="flex items-center gap-2 text-caption text-subtle-foreground">
-            <span className="grid size-5 place-items-center rounded-md bg-primary-soft text-primary-ink-strong">
-              <SparklesIcon className="size-3" aria-hidden />
-            </span>
+            <AssistantMark />
             Assistente
             <span className="num">{formatTime(message.created_at)}</span>
           </div>
@@ -600,6 +609,7 @@ export function NewCaseWorkspace({
   const [isAssistantResponding, setIsAssistantResponding] = useState(false)
   const [isSlowNetworkExpanded, setIsSlowNetworkExpanded] = useState(false)
   const [closeOpen, setCloseOpen] = useState(false)
+  const [railOpen, setRailOpen] = useState(false)
   const [showCarryover, setShowCarryover] = useState(true)
   const [transcriptionPreview, setTranscriptionPreview] = useState<string | null>(null)
   const [highlightedMessageId, setHighlightedMessageId] = useState<string | null>(null)
@@ -895,6 +905,7 @@ export function NewCaseWorkspace({
   const fullAge = formatPediatricAgeFull(patient?.birth_date ?? null, new Date())
   const todayMeasurement =
     measurements.findLast((m) => m.measured_on === todayIso) ?? null
+  const docCount = Object.values(documents).reduce((total, list) => total + list.length, 0)
   const panelSubtitle = [patient?.name ?? "Paciente não associado", age].filter(Boolean).join(" · ")
 
   return (
@@ -929,6 +940,14 @@ export function NewCaseWorkspace({
             pausedMs={consultationPausedMs}
             pausedAt={consultationPausedAt}
           />
+          <Button variant="outline" onClick={() => setRailOpen(true)}>
+            <ClipboardListIcon data-icon="inline-start" />
+            Nesta consulta
+            {docCount ? <span className="num text-caption text-subtle-foreground">{docCount}</span> : null}
+            {allergies.length ? (
+              <span className="size-2 rounded-full bg-destructive" aria-label="A criança tem alergia" />
+            ) : null}
+          </Button>
           <Button onClick={() => setCloseOpen(true)}>
             <CheckIcon data-icon="inline-start" />
             Encerrar consulta
@@ -946,8 +965,7 @@ export function NewCaseWorkspace({
         examReadings={examReadings}
       />
 
-      <div className="grid min-h-0 flex-1 grid-cols-[1fr_272px]">
-        <div className="flex min-h-0 flex-col">
+      <div className="flex min-h-0 flex-1 flex-col">
           <div
             ref={scrollRef}
             role="log"
@@ -1107,17 +1125,26 @@ export function NewCaseWorkspace({
               ) : null}
             </div>
           </footer>
-        </div>
-
-        <ConsultRail
-          caseId={caseId}
-          documents={documents}
-          todayMeasurement={todayMeasurement}
-          reminders={reminders}
-          allergies={allergies}
-          patientId={patient?.id ?? null}
-        />
       </div>
+
+      <Sheet open={railOpen} onOpenChange={setRailOpen}>
+        <SheetContent className="w-[380px] gap-0 rounded-l-2xl bg-card sm:max-w-[380px]">
+          <SheetHeader className="border-b border-border px-6 py-4">
+            <SheetTitle className="font-display text-section font-semibold">Nesta consulta</SheetTitle>
+            <SheetDescription className="text-caption text-subtle-foreground">{panelSubtitle}</SheetDescription>
+          </SheetHeader>
+          <div className="flex-1 overflow-auto px-6 py-5">
+            <ConsultRail
+              caseId={caseId}
+              documents={documents}
+              todayMeasurement={todayMeasurement}
+              reminders={reminders}
+              allergies={allergies}
+              patientId={patient?.id ?? null}
+            />
+          </div>
+        </SheetContent>
+      </Sheet>
 
       <CloseCaseWithEarningsDialog
         caseId={caseId}

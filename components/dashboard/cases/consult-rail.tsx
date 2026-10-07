@@ -54,7 +54,7 @@ function DocRow({ icon: Icon, label }: { icon: LucideIcon; label: string }) {
   )
 }
 
-/** Coluna "Nesta consulta" (protótipo a5): o que a consulta já produziu, à vista o tempo todo. */
+/** Conteúdo do painel "Nesta consulta": o que a consulta já produziu e a alergia da criança. */
 export function ConsultRail({
   caseId,
   documents,
@@ -96,8 +96,7 @@ export function ConsultRail({
     : []
 
   return (
-    <aside className="flex flex-col gap-5 overflow-auto border-l border-border bg-muted px-4 py-5">
-      <h2 className="font-display text-section font-semibold">Nesta consulta</h2>
+    <div className="flex flex-col gap-5">
       {allergies.length ? (
         <section className="rounded-xl border border-danger-border bg-danger-soft p-3" aria-label="Alergias">
           <div className="flex items-center gap-2">
@@ -152,6 +151,6 @@ export function ConsultRail({
       <Section title="Relatório">
         <p className="text-label text-subtle-foreground">Gerado ao encerrar, a partir da conversa</p>
       </Section>
-    </aside>
+    </div>
   )
 }
