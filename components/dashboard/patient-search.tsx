@@ -3,7 +3,7 @@
 import { useEffect, useState, useTransition } from "react"
 import { useRouter } from "next/navigation"
 import { differenceInCalendarDays, differenceInMinutes, format } from "date-fns"
-import { PlusIcon, SearchIcon, StethoscopeIcon, UserPlusIcon } from "lucide-react"
+import { PlusIcon, SearchIcon, UserPlusIcon } from "lucide-react"
 import { toast } from "sonner"
 
 import { listPatientsForSearchAction, type PatientSearchItem } from "@/actions"
@@ -11,8 +11,11 @@ import { createDashboardCaseWithPatientAction } from "@/actions/cases/create-das
 import { precheckNewDashboardCaseAction } from "@/actions/cases/precheck-new-dashboard-case"
 import {
   AlertDialog,
+  AlertDialogCancel,
   AlertDialogContent,
   AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
 import { Button } from "@/components/ui/button"
@@ -59,13 +62,17 @@ function lastConsultLabel(iso: string | null): string {
 }
 
 /**
- * "Iniciar consulta" e "Buscar paciente" do menu lateral, com ⌘K / Ctrl+K em qualquer tela.
- * A janela mostra a consulta em andamento e as crianças atendidas por último; o ↵ já abre a
- * consulta. Se houver outra aberta, o médico escolhe antes de ela ser encerrada.
+ * "Iniciar consulta" e "Buscar paciente" do menu lateral (⌘K / Ctrl+K abre a busca).
+ * As duas abrem a mesma janela com a consulta em andamento e as crianças atendidas por último,
+ * mas cada uma com sua tarefa: em "Iniciar consulta" o ↵ abre a consulta; em "Buscar paciente"
+ * o ↵ abre a ficha e a consulta fica num botão da linha. Se houver outra consulta aberta, o
+ * médico escolhe antes de ela ser encerrada.
  */
 export function PatientSearch() {
   const router = useRouter()
   const [open, setOpen] = useState(false)
+  /** "start": ↵ inicia a consulta; "search": ↵ abre a ficha. */
+  const [mode, setMode] = useState<"start" | "search">("search")
   const [query, setQuery] = useState("")
   const [patients, setPatients] = useState<PatientSearchItem[] | null>(null)
   const [activeCase, setActiveCase] = useState<ActiveCase | null>(null)
@@ -81,6 +88,7 @@ export function PatientSearch() {
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key.toLowerCase() === "k" && (event.metaKey || event.ctrlKey)) {
         event.preventDefault()
+        setMode("search")
         setOpen((value) => !value)
       }
     }
@@ -152,6 +160,7 @@ export function PatientSearch() {
     })
   }
 
+  const isStart = mode === "start"
   const activePatient = patients?.find((patient) => patient.id === activeCase?.patientId)
   const recents = (patients ?? [])
     .filter((patient) => patient.lastConsultAt)
@@ -164,7 +173,10 @@ export function PatientSearch() {
     <>
       <Button
         size="lg"
-        onClick={() => setOpen(true)}
+        onClick={() => {
+          setMode("start")
+          setOpen(true)
+        }}
         title="Iniciar consulta"
         className="w-full group-data-[collapsible=icon]:size-10 group-data-[collapsible=icon]:p-0"
       >
@@ -174,7 +186,10 @@ export function PatientSearch() {
       <div className="mt-3 w-full group-data-[collapsible=icon]:mt-1 group-data-[collapsible=icon]:w-auto">
         <button
           type="button"
-          onClick={() => setOpen(true)}
+          onClick={() => {
+            setMode("search")
+            setOpen(true)
+          }}
           title="Buscar paciente"
           className="flex h-9 w-full items-center gap-2 rounded-lg border border-input bg-card px-2.5 text-left text-subtle-foreground shadow-xs transition-colors hover:border-border-strong focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none group-data-[collapsible=icon]:size-10 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:border-transparent group-data-[collapsible=icon]:bg-transparent group-data-[collapsible=icon]:px-0 group-data-[collapsible=icon]:shadow-none group-data-[collapsible=icon]:hover:bg-accent"
         >
@@ -186,9 +201,9 @@ export function PatientSearch() {
         </button>
       </div>
 
-      <CommandDialog open={open} onOpenChange={setOpen} title="Buscar paciente" className="top-[12vh] max-w-[600px] translate-y-0 rounded-2xl">
+      <CommandDialog open={open} onOpenChange={setOpen} title={isStart ? "Iniciar consulta" : "Buscar paciente"} className="top-[12vh] max-w-[600px] translate-y-0 rounded-2xl">
         <Command>
-          <CommandInput value={query} onValueChange={setQuery} placeholder="Nome, responsável ou telefone" />
+          <CommandInput value={query} onValueChange={setQuery} placeholder={isStart ? "Quem você vai atender? Nome, responsável ou telefone" : "Nome, responsável ou telefone"} />
           <CommandList className="max-h-[400px]">
             {patients ? (
               <>
@@ -201,7 +216,7 @@ export function PatientSearch() {
                       <CommandItem
                         key={patient.id}
                         value={`${patient.name} ${patient.responsible ?? ""} ${patient.contactPhone?.replace(/\D/g, "") ?? ""} ${patient.id}`}
-                        onSelect={() => start(patient)}
+                        onSelect={() => (isStart ? start(patient) : go(`/dashboard/patients/${patient.id}`))}
                         disabled={isPending && busyId !== patient.id}
                         className="group gap-3 rounded-lg px-3 py-2.5"
                       >
@@ -226,14 +241,35 @@ export function PatientSearch() {
                         </span>
                         {busyId === patient.id ? (
                           <span className="text-caption text-subtle-foreground">Abrindo…</span>
-                        ) : isActive ? (
-                          <span className="rounded-md border border-border-strong bg-card px-2 py-1 text-caption font-medium text-foreground">
-                            Voltar à consulta
-                          </span>
+                        ) : isStart ? (
+                          isActive ? (
+                            <span className="rounded-md border border-border-strong bg-card px-2 py-1 text-caption font-medium text-foreground">
+                              Voltar à consulta
+                            </span>
+                          ) : (
+                            <kbd className="hidden rounded border border-border bg-card px-1.5 py-0.5 font-sans text-caption text-subtle-foreground group-data-[selected=true]:inline">
+                              ↵ Iniciar
+                            </kbd>
+                          )
                         ) : (
-                          <kbd className="hidden rounded border border-border bg-card px-1.5 py-0.5 font-sans text-caption text-subtle-foreground group-data-[selected=true]:inline">
-                            ↵ Iniciar
-                          </kbd>
+                          <>
+                            <kbd className="hidden rounded border border-border bg-card px-1.5 py-0.5 font-sans text-caption text-subtle-foreground group-data-[selected=true]:inline">
+                              ↵ Abrir ficha
+                            </kbd>
+                            <Button
+                              variant="outline"
+                              size="xs"
+                              disabled={isPending}
+                              className={isActive ? undefined : "invisible group-hover:visible group-data-[selected=true]:visible"}
+                              onPointerDown={(event) => event.stopPropagation()}
+                              onClick={(event) => {
+                                event.stopPropagation()
+                                start(patient)
+                              }}
+                            >
+                              {isActive ? "Voltar à consulta" : "Iniciar consulta"}
+                            </Button>
+                          </>
                         )}
                       </CommandItem>
                     )
@@ -254,42 +290,32 @@ export function PatientSearch() {
           </div>
           <div className="flex gap-4 border-t border-border bg-muted px-5 py-2 text-caption text-subtle-foreground">
             <span>↑↓ navegar</span>
-            <span>↵ iniciar consulta</span>
+            <span>{isStart ? "↵ iniciar consulta" : "↵ abrir ficha"}</span>
             <span>Esc fechar</span>
           </div>
         </Command>
       </CommandDialog>
 
       <AlertDialog open={!!pendingPatient} onOpenChange={(value) => !value && setPendingPatient(null)}>
-        <AlertDialogContent className="max-w-[480px]">
-          <div className="flex items-start gap-3">
-            <span className="grid size-10 shrink-0 place-items-center rounded-full bg-warning-soft text-warning-text">
-              <StethoscopeIcon className="size-5" aria-hidden />
-            </span>
-            <div>
-              <AlertDialogTitle>A consulta {activePatient ? ofChild(activePatient) : "anterior"} ainda está aberta</AlertDialogTitle>
-              <AlertDialogDescription className="mt-1">
-                {activeCase ? `Começou há ${minutesSince(activeCase.startedAt)}. ` : ""}
-                Para atender {pendingPatient ? theChild(pendingPatient) : "outra criança"}, ela será encerrada agora. O relatório e o valor dela ficam nas
-                pendências do Início para revisar depois.
-              </AlertDialogDescription>
-            </div>
-          </div>
-          <div className="mt-2 flex flex-col gap-2">
-            <Button disabled={isPending} onClick={() => pendingPatient && create(pendingPatient)}>
-              {isPending
-                ? "Abrindo…"
-                : `Encerrar a ${activePatient ? ofChild(activePatient) : "anterior"} e atender ${pendingPatient ? theChild(pendingPatient) : ""}`}
-            </Button>
+        <AlertDialogContent className="gap-5 p-6 data-[size=default]:sm:max-w-[560px]">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-title">A consulta {activePatient ? ofChild(activePatient) : "anterior"} ainda está aberta</AlertDialogTitle>
+            <AlertDialogDescription>
+              {activeCase ? `Começou há ${minutesSince(activeCase.startedAt)}. ` : ""}
+              Para atender {pendingPatient ? theChild(pendingPatient) : "outra criança"}, ela será encerrada.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="-mx-6 -mb-6 px-6">
+            <AlertDialogCancel disabled={isPending}>Cancelar</AlertDialogCancel>
             {activeCase ? (
-              <Button variant="outline" onClick={() => go(caseHref(activeCase))}>
-                Voltar à consulta {activePatient ? ofChild(activePatient) : "aberta"}
+              <Button variant="outline" disabled={isPending} onClick={() => go(caseHref(activeCase))}>
+                Voltar à consulta
               </Button>
             ) : null}
-            <Button variant="ghost" onClick={() => setPendingPatient(null)}>
-              Cancelar
+            <Button disabled={isPending} onClick={() => pendingPatient && create(pendingPatient)}>
+              {isPending ? "Abrindo…" : `Encerrar e atender ${pendingPatient ? theChild(pendingPatient) : ""}`}
             </Button>
-          </div>
+          </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
     </>
