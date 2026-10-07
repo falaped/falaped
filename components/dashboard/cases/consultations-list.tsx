@@ -32,6 +32,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
 import { Badge } from "@/components/ui/badge"
+import { SectionTab } from "@/components/dashboard/section-tab"
 import { Button } from "@/components/ui/button"
 import {
   DropdownMenu,
@@ -41,7 +42,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { Input } from "@/components/ui/input"
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Tabs, TabsList } from "@/components/ui/tabs"
 import { CLINIC_TIME_ZONE } from "@/lib/clinic-timezone"
 import { computePediatricAge } from "@/lib/compute-pediatric-age"
 import { formatPediatricAgeShort } from "@/lib/format-pediatric-age"
@@ -112,13 +113,13 @@ export function ConsultationsList({
       <Tabs value={tab} onValueChange={(value) => setTab(value as Tab)} className="gap-0">
         <div className="flex items-end gap-6 px-5 pt-4">
           <TabsList className="h-auto w-auto gap-5 rounded-none bg-transparent p-0 lg:w-auto">
-            <ListTab value="all">Todas</ListTab>
-            <ListTab value="today">
+            <SectionTab value="all">Todas</SectionTab>
+            <SectionTab value="today">
               Hoje
               <span className="num text-caption text-subtle-foreground">{todayCount}</span>
-            </ListTab>
-            <ListTab value="week">Esta semana</ListTab>
-            <ListTab value="pending">
+            </SectionTab>
+            <SectionTab value="week">Esta semana</SectionTab>
+            <SectionTab value="pending">
               Com pendência
               {pendingCount ? (
                 <span
@@ -129,7 +130,7 @@ export function ConsultationsList({
                   {pendingCount}
                 </span>
               ) : null}
-            </ListTab>
+            </SectionTab>
           </TabsList>
           <div className="relative ml-auto mb-2.5 w-80">
             <SearchIcon className="pointer-events-none absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-subtle-foreground" aria-hidden />
@@ -336,17 +337,6 @@ function DeleteConsultationDialog({ row, onClose }: { row: ConsultationRow; onCl
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>
-  )
-}
-
-function ListTab({ value, children }: { value: Tab; children: React.ReactNode }) {
-  return (
-    <TabsTrigger
-      value={value}
-      className="-mb-px flex-none gap-1.5 rounded-none border-b-2 border-transparent px-1 pt-0 pb-2.5 text-body font-normal text-muted-foreground shadow-none hover:text-foreground sm:px-1 sm:text-body data-[state=active]:border-foreground data-[state=active]:bg-transparent data-[state=active]:font-semibold data-[state=active]:text-foreground data-[state=active]:shadow-none"
-    >
-      {children}
-    </TabsTrigger>
   )
 }
 
