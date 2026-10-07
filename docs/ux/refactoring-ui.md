@@ -5,7 +5,7 @@ Documento vivo da versão 2.0. Toda decisão, etapa concluída ou mudança de ru
 - **Protótipo navegável:** [`docs/ux/fluxo-ideal.html`](./fluxo-ideal.html) (abrir no navegador, dados fictícios)
 - **Wireframe final de todas as telas:** [`docs/ux/fluxo-falaped-2.0.html`](./fluxo-falaped-2.0.html) (sem cor; cada elemento numerado com o motivo e a heurística)
 - **Branch:** `falaped-ui-2.0` (a partir da `main`)
-- **Status:** fluxo ideal e wireframe final aprovados em 06/10/2026. Etapa 1 (auditoria visual) concluída; próxima é a Etapa 2, ficha de design.
+- **Status:** fluxo ideal e wireframe final aprovados em 06/10/2026. Etapas 1 (auditoria visual) e 2 (ficha de design) concluídas; próxima é a Etapa 3, aplicar a ficha ao protótipo.
 
 ---
 
@@ -102,9 +102,9 @@ Modelos · Novidades · Avatar (Perfil, WhatsApp, Sair) · Admin (só para o ges
 - [ ] Vacinas: em Documentos (comprovantes) ou na ficha (calendário)? Proposta: as duas, com papéis diferentes.
 - [ ] Motivo da consulta na lista: de onde tirar o resumo (`case_reports`?). Custo a levantar.
 - [ ] Pendências do paciente (vacina atrasada, retorno vencido, ficha incompleta): cruzar o calendário vacinal, os lembretes e `patient-chart-incomplete.ts`. Custo a levantar.
-- [ ] **Fonte do app:** recomendação após a avaliação de nicho: Lexend nos títulos (família da logo, indicada para saúde) e Inter no texto (igual à landing). Alternativas: só Inter ou manter a Geist (auditoria M3).
-- [ ] **Logo no app:** trocar a antiga (`full-logo.svg`) pela nova e trazer a compacta (`falaped-icon.svg`) para o menu recolhido (auditoria M1, M2).
-- [ ] **Botão principal:** texto escuro sobre o azul (como no modo escuro) ou botão no azul escuro (auditoria C1).
+- [x] **Fonte do app (aprovado 06/10/2026):** Lexend nos títulos (família da logo, indicada para saúde) e Inter no texto (igual à landing). Lexend nos títulos e Inter no texto (auditoria M3).
+- [x] **Logo no app (aprovado 06/10/2026):** trocar a antiga (`full-logo.svg`) pela nova e trazer a compacta (`falaped-icon.svg`) para o menu recolhido (auditoria M1, M2).
+- [x] **Botão principal (aprovado 06/10/2026):** opção A, texto escuro sobre o azul da marca, como no modo escuro (auditoria C1).
 - [ ] `app/dashboard/agenda/page.tsx` existe no código, mas a tela não é usada: decidir se sai do código. A Agenda já saiu do protótipo.
 
 ## 6. Skills da reestruturação
@@ -144,7 +144,7 @@ Instaladas em `~/.agents/skills` em 06/10/2026.
 - [x] Wireframe final de todas as telas (`fluxo-falaped-2.0.html`), aprovado em 06/10/2026
 - [ ] **Próximo pedido do gestor (guardado em 06/10/2026):** fluxo de IA no workspace da consulta. Retomar antes da Etapa 1.
 - [x] **Etapa 1:** auditoria visual do app atual (`redesign-existing-projects`): [`auditoria-visual.md`](./auditoria-visual.md), nota 6/10
-- [ ] **Etapa 2:** ficha de design: tokens de tipografia, espaçamento, cor, raio, sombra, estados e densidade
+- [x] **Etapa 2:** ficha de design (`ficha-design.html`, aba "Ficha de design"): tokens de tipografia, espaçamento, cor, raio, sombra, estados e densidade
 - [ ] **Etapa 3:** aplicar a ficha às 9 telas do protótipo e validar com o gestor
 - [ ] **Etapa 4:** revisão de usabilidade (`ux-heuristics`) da versão com design
 - [ ] **Etapa 5:** implementação, por ordem de dor: Consulta → Pacientes → Ficha → Consultas → Menu → Início e cadastro
@@ -166,3 +166,5 @@ Ganhos rápidos que podem entrar antes da etapa 5, porque não dependem do desig
 - **06/10/2026:** a auditoria virou a aba "Auditoria visual" no `fluxo-falaped-2.0.html` (o `.md` continua sendo a fonte), com uma demonstração em cor do contraste do botão principal.
 - **06/10/2026:** a auditoria ganhou a seção Marca (logo antiga no menu, falta a compacta, fonte Geist no app e Inter na landing) e a observação de que o modo escuro já resolve o contraste do botão. Nova aba **Componentes atuais** no HTML (`componentes-atuais.html`): tokens e componentes de `components/ui` renderizados com as classes reais, nos modos claro e escuro, como ponto de partida da Etapa 2. A aba Auditoria agora é gerada do `.md` por `gerar-aba-auditoria.py`.
 - **06/10/2026:** instaladas as skills `ui-ux-pro-max` e `better-colors`. Seção "Encaixe no nicho" na auditoria: o banco indica Accessible & Ethical + Minimalism/Swiss para clínica (a base do shadcn), azul médico calmo com **texto escuro sobre a cor principal** (confirma a opção A) e Lexend para títulos em saúde. Neo-brutalismo fica na logo e no marketing. A `better-colors` deu Block: 2 HIGH (botão 2,02:1 e `text-primary` 2,14:1), rampa azul incompleta e status sem token. Rampas necessárias: sucesso, atenção, perigo.
+- **06/10/2026:** gestor aprovou as três decisões: Lexend (títulos) + Inter (texto); botão principal com texto escuro sobre o azul da marca; logo nova no menu e a compacta no menu recolhido. Iniciada a Etapa 2 (ficha de design).
+- **06/10/2026:** Etapa 2 concluída: `ficha-design.html` (aba "Ficha de design"). O bloco `:root`/`.dark`/`@theme` no topo do arquivo é a fonte dos tokens e vai direto para `app/globals.css`. Rampas oklch no matiz da marca (255,41): neutros frios, marca 50→800, sucesso/atenção/perigo; tokens semânticos (`accent`, `accent-text`, `on-accent`, `text-secondary`…) e todos os pares medidos no AA nos dois modos (botão 2,0→8,1:1; texto azul 2,1→5,5:1; contorno de campo 3,1:1). Escala tipográfica nomeada (Lexend 600 nos títulos, Inter no resto), raios 8/12/16/6, sombras com o matiz da marca, três superfícies (destaque com gradiente no card inteiro, comum, apoio), botões 28–40 px com hover/clique/foco, selos com papel fixo, campos, estado vazio, skeleton e sobreposições com um fundo só. A sombra dura da logo vira a "assinatura" só no Iniciar consulta e no card da consulta aberta (validar no protótipo).
