@@ -204,3 +204,14 @@ Ganhos rápidos que podem entrar antes da etapa 5, porque não dependem do desig
   A agenda não está em uso, então os alertas de retorno saíram das telas e "Sem medida recente" entrou no lugar.
 - **08/10/2026:** a `ficha-design.html` virou o Guia de design do Falaped, a fonte única de verdade. Ganhou índice, "Como usar este guia", 10 princípios de uso, layout e grid, 6 modelos de página e o checklist de feature nova. O `CLAUDE.md` ganhou a seção "Design (fonte única de verdade)", que aponta para o guia. A ordem da Etapa 5 mudou para Cadastro → Login → Início (1º acesso) com o menu lateral.
 - **07/10/2026:** regra do gestor depois do Início do 1º acesso, versão 2: o conteúdo de toda tela ocupa a largura ao lado do menu, alinhado à esquerda, até 1440 px. Fica proibida a coluna estreita centralizada com sobra dos lados. O guia (Layout e grid e o checklist) e o protótipo foram atualizados. Abaixo de 1024 px vale o aviso "funciona no computador", que já está na main (#74).
+- **07/10/2026:** Etapa 5, telas a3, a3c e a4 (PRs #81 e #82).
+  - **Menu lateral:** cada botão tem a sua tarefa, porque dois rótulos com a mesma ação quebram a consistência.
+    - **Iniciar consulta:** o ↵ abre a consulta.
+    - **Buscar paciente (⌘K):** o ↵ abre a ficha, e "Iniciar consulta" fica num botão da linha.
+  - **Janela de busca:** mostra os Recentes (6 crianças) e a consulta em andamento, com blur leve no fundo. A busca exige cada palavra no nome, no responsável ou no telefone, sem acento.
+  - **a3c, consulta já aberta:** diálogo padrão, com título, uma frase e Cancelar · Voltar à consulta · Encerrar e atender lado a lado. A revisão no encerramento chega com a Consulta.
+  - **a4, cadastro rápido:** nome, nascimento (com a idade), responsável, telefone e **sexo**. O sexo saiu de "Mais dados" porque é obrigatório no banco; ficou sem migration.
+    - Busca sem resultado mostra um único botão de cadastrar.
+    - "Mais dados" saiu. Em seu lugar, "Abrir a ficha completa" leva o que foi digitado para o cadastro completo.
+  - **Início do 1º acesso:** saíram "Seus documentos" e "Pergunte ao assistente", que também saiu do menu lateral.
+  - **Próxima tela:** a5, Consulta.
