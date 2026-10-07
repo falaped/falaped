@@ -5,7 +5,7 @@ Documento vivo da versão 2.0. Toda decisão, etapa concluída ou mudança de ru
 - **Protótipo navegável:** [`docs/ux/fluxo-ideal.html`](./fluxo-ideal.html) (abrir no navegador, dados fictícios)
 - **Wireframe final de todas as telas:** [`docs/ux/fluxo-falaped-2.0.html`](./fluxo-falaped-2.0.html) (sem cor; cada elemento numerado com o motivo e a heurística)
 - **Branch:** `falaped-ui-2.0` (a partir da `main`)
-- **Status:** fluxo ideal e wireframe final aprovados em 06/10/2026. Em andamento: Etapa 1, auditoria visual do app atual.
+- **Status:** fluxo ideal e wireframe final aprovados em 06/10/2026. Etapa 1 (auditoria visual) concluída; próxima é a Etapa 2, ficha de design.
 
 ---
 
@@ -138,7 +138,7 @@ Instaladas em `~/.agents/skills` em 06/10/2026.
 - [x] Protótipo do fluxo ideal (`fluxo-ideal.html`, 9 passos)
 - [x] Wireframe final de todas as telas (`fluxo-falaped-2.0.html`), aprovado em 06/10/2026
 - [ ] **Próximo pedido do gestor (guardado em 06/10/2026):** fluxo de IA no workspace da consulta. Retomar antes da Etapa 1.
-- [ ] **Etapa 1:** auditoria visual do app atual (`redesign-existing-projects`)
+- [x] **Etapa 1:** auditoria visual do app atual (`redesign-existing-projects`): [`auditoria-visual.md`](./auditoria-visual.md), nota 6/10
 - [ ] **Etapa 2:** ficha de design: tokens de tipografia, espaçamento, cor, raio, sombra, estados e densidade
 - [ ] **Etapa 3:** aplicar a ficha às 9 telas do protótipo e validar com o gestor
 - [ ] **Etapa 4:** revisão de usabilidade (`ux-heuristics`) da versão com design
@@ -157,3 +157,4 @@ Ganhos rápidos que podem entrar antes da etapa 5, porque não dependem do desig
 - **06/10/2026:** análise do fluxo atual e protótipo do fluxo ideal (cadastro, primeiro acesso, paciente, consulta, encerrada), depois o menu lateral, Consultas, Pacientes e Ficha. Agenda removida do protótipo. Fluxo ideal aprovado. Skills instaladas: `ux-heuristics`, `refactoring-ui` e o pacote `taste-skill`. Plano de 5 etapas aprovado; próxima é a auditoria visual.
 - **06/10/2026:** branch `falaped-ui-2.0` criada a partir da `main`. Wireframe final `fluxo-falaped-2.0.html`: 41 telas em cinza, agrupadas em A (fluxo principal, 12 telas), B (rotina, 11), C (fora do fluxo, 9), D (estrutura: menu, ⌘K, menu do usuário, Perfil, WhatsApp, teste encerrado) e E (acesso e avisos). Cada tela traz objetivo, de onde vem e para onde vai, e o motivo de cada elemento com a regra de usabilidade (`ux-heuristics`). Admin e Books ficaram de fora. Aguardando a aprovação do gestor.
 - **06/10/2026:** wireframe aprovado pelo gestor ("ficou muito bom"). Regra nova: um commit local ao fim de cada etapa. Iniciada a Etapa 1 (auditoria visual).
+- **06/10/2026:** Etapa 1 concluída: `auditoria-visual.md`, nota visual 6/10. Três problemas de gravidade 3 na ação principal: texto branco sobre o azul claro (contraste de 2:1), `text-primary` usado como texto (62 usos) e botão principal sem hover nem resposta ao clique. Faltam tokens de status, escala tipográfica, sistema de cards e estado vazio padrão. A lista do que a Etapa 2 precisa definir está no fim da auditoria.
