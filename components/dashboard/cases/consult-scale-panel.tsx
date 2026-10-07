@@ -261,22 +261,26 @@ export function ConsultScalePanel({
               <div className="h-1.5 rounded-full bg-border">
                 <div className="h-1.5 rounded-full bg-primary" style={{ width: `${total ? (answered / total) * 100 : 0}%` }} />
               </div>
-              {scale.bands.length <= 4 && !scale.hideScore ? (
-                <ul className="grid auto-cols-fr grid-flow-col gap-1 pt-1 text-center text-caption">
-                  {scale.bands.map((band) => (
-                    <li
-                      key={band.label}
-                      className={cn(
-                        "rounded-md px-1 py-1.5",
-                        result?.band.label === band.label ? "bg-primary-soft font-semibold text-primary-ink-strong" : "bg-muted text-muted-foreground",
-                      )}
-                    >
-                      <div className="num font-semibold">{band.min === band.max ? band.min : `${band.min}–${band.max}`}</div>
-                      {band.label}
-                    </li>
-                  ))}
+              {scale.hideScore ? null : (
+                <ul className="flex flex-col gap-1 pt-1">
+                  {scale.bands.map((band) => {
+                    const active = result?.band.label === band.label
+                    return (
+                      <li
+                        key={band.label}
+                        className={cn(
+                          "flex items-center gap-3 rounded-md px-3 py-1.5",
+                          active ? "bg-primary-soft font-semibold text-primary-ink-strong" : "text-muted-foreground",
+                        )}
+                      >
+                        <span className="num w-12 shrink-0 font-semibold">{band.min === band.max ? band.min : `${band.min}–${band.max}`}</span>
+                        <span className="min-w-0 flex-1">{band.label}</span>
+                        {active ? <CheckIcon className="size-4 shrink-0" aria-hidden /> : null}
+                      </li>
+                    )
+                  })}
                 </ul>
-              ) : null}
+              )}
               {result ? null : <p className="text-caption text-muted-foreground">A interpretação sai quando todas as perguntas forem respondidas.</p>}
               <p className="text-caption text-subtle-foreground">{scale.source}</p>
             </div>
