@@ -102,7 +102,7 @@ Modelos · Novidades · Avatar (Perfil, WhatsApp, Sair) · Admin (só para o ges
 - [ ] Vacinas: em Documentos (comprovantes) ou na ficha (calendário)? Proposta: as duas, com papéis diferentes.
 - [ ] Motivo da consulta na lista: de onde tirar o resumo (`case_reports`?). Custo a levantar.
 - [ ] Pendências do paciente (vacina atrasada, retorno vencido, ficha incompleta): cruzar o calendário vacinal, os lembretes e `patient-chart-incomplete.ts`. Custo a levantar.
-- [ ] **Fonte do app:** Geist (atual) ou Inter (a da landing)? Decidir na Etapa 2 (auditoria M3).
+- [ ] **Fonte do app:** recomendação após a avaliação de nicho: Lexend nos títulos (família da logo, indicada para saúde) e Inter no texto (igual à landing). Alternativas: só Inter ou manter a Geist (auditoria M3).
 - [ ] **Logo no app:** trocar a antiga (`full-logo.svg`) pela nova e trazer a compacta (`falaped-icon.svg`) para o menu recolhido (auditoria M1, M2).
 - [ ] **Botão principal:** texto escuro sobre o azul (como no modo escuro) ou botão no azul escuro (auditoria C1).
 - [ ] `app/dashboard/agenda/page.tsx` existe no código, mas a tela não é usada: decidir se sai do código. A Agenda já saiu do protótipo.
@@ -119,6 +119,8 @@ Instaladas em `~/.agents/skills` em 06/10/2026.
 | 2. Ficha de design | `refactoring-ui` | Hierarquia, escalas de espaçamento e cor, profundidade, tokens |
 | 3. Aplicar no protótipo | as três acima | As 9 telas do `fluxo-ideal.html` com a ficha aplicada, validadas no navegador |
 | 4. Revisão | `ux-heuristics` | Garante que a estética não escondeu ações nem atrapalhou a leitura |
+| Apoio às etapas 2 e 3 | `ui-ux-pro-max` | Banco de tipos de produto, estilos, paletas e fontes: confere o encaixe com o nicho de saúde |
+| Apoio às etapas 2 e 3 | `better-colors` | Rampas em oklch, papel de cada cor, tokens de status e medição de contraste |
 | 5. Implementação | `vercel:shadcn` | Tokens no `globals.css`, variantes `cva` e componentes de `components/ui` |
 
 **Fora desta reestruturação:**
@@ -163,3 +165,4 @@ Ganhos rápidos que podem entrar antes da etapa 5, porque não dependem do desig
 - **06/10/2026:** Etapa 1 concluída: `auditoria-visual.md`, nota visual 6/10. Três problemas de gravidade 3 na ação principal: texto branco sobre o azul claro (contraste de 2:1), `text-primary` usado como texto (62 usos) e botão principal sem hover nem resposta ao clique. Faltam tokens de status, escala tipográfica, sistema de cards e estado vazio padrão. A lista do que a Etapa 2 precisa definir está no fim da auditoria.
 - **06/10/2026:** a auditoria virou a aba "Auditoria visual" no `fluxo-falaped-2.0.html` (o `.md` continua sendo a fonte), com uma demonstração em cor do contraste do botão principal.
 - **06/10/2026:** a auditoria ganhou a seção Marca (logo antiga no menu, falta a compacta, fonte Geist no app e Inter na landing) e a observação de que o modo escuro já resolve o contraste do botão. Nova aba **Componentes atuais** no HTML (`componentes-atuais.html`): tokens e componentes de `components/ui` renderizados com as classes reais, nos modos claro e escuro, como ponto de partida da Etapa 2. A aba Auditoria agora é gerada do `.md` por `gerar-aba-auditoria.py`.
+- **06/10/2026:** instaladas as skills `ui-ux-pro-max` e `better-colors`. Seção "Encaixe no nicho" na auditoria: o banco indica Accessible & Ethical + Minimalism/Swiss para clínica (a base do shadcn), azul médico calmo com **texto escuro sobre a cor principal** (confirma a opção A) e Lexend para títulos em saúde. Neo-brutalismo fica na logo e no marketing. A `better-colors` deu Block: 2 HIGH (botão 2,02:1 e `text-primary` 2,14:1), rampa azul incompleta e status sem token. Rampas necessárias: sucesso, atenção, perigo.

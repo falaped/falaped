@@ -72,6 +72,55 @@ A base é boa e deve ser mantida: tokens em oklch, um azul de marca só, cinzas 
 | I2 | **Ícone em "chip" azul sem regra**: `bg-primary/10` em um lugar, `/15` em outro, e às vezes `text-primary` (contraste baixo). | `profile-content.tsx:125`, `funil/[id]/page.tsx:236` | 1 |
 | I3 | Restos do starter do Supabase (`hero.tsx`, `deploy-button.tsx`, `next-logo.tsx`, `supabase-logo.tsx`, `env-var-warning.tsx`), sem nenhum import: podem ser apagados. | `components/` | 0 |
 
+## Encaixe no nicho (06/10/2026)
+
+**Skills:** `ui-ux-pro-max` (busca no banco de tipos de produto, estilos, paletas e fontes) e `better-colors` (papel de cada cor, rampas e contraste). Contexto informado: SaaS clínico em que **o usuário é o pediatra**, uso diário no computador, telas com muita informação.
+
+### O que o banco recomenda para saúde e o que vale para nós
+
+| Tema | O banco diz (Healthcare / Medical Clinic) | Vale para o Falaped? |
+|---|---|---|
+| Estilo | Clínica: **Accessible & Ethical + Minimalism & Swiss Style** (indicado para "SaaS, ferramentas profissionais, dashboards"). App de paciente: Neumorphism e Claymorphism. | **Sim para o primeiro**, que é exatamente a base do shadcn: manter. **Não** para Neumorphism e Claymorphism, que são para apps de paciente e de criança e têm risco alto de acessibilidade. O nosso usuário é o médico. |
+| Cor | "Azul médico calmo + branco de confiança + verde calmo". **Todas** as paletas de saúde usam **texto escuro sobre a cor principal** (`On Primary #000`). | **Sim.** O `#8AB4EB` é um azul médico calmo. O verde já existe para "vacina aplicada". O texto escuro sobre o azul confirma a **opção A** do botão (e o modo escuro já faz isso). |
+| Fonte | Healthcare: **Lexend** (títulos) + Source Sans 3 (corpo), "desenhada para legibilidade". Alternativa de acessibilidade: Atkinson Hyperlegible. Nem Geist nem Inter aparecem para saúde. | A **Lexend** é da mesma família da Lexend Mega da logo: liga o app à marca. Ver as opções abaixo. |
+| Neo-brutalismo | Indicado para "Gen Z, startups, apps estilo Notion"; não aparece para saúde. | **Fica na logo e no marketing.** No app, no máximo um toque (sombra dura) na ação principal ou no card da consulta aberta. |
+| Densidade | Dashboards densos: linha de tabela de 36 px e texto de 12 a 14 px. Acessível: alvo de 44 px e texto de 16 px ou mais. | **Meio-termo:** listas densas (linha de 36 a 40 px, texto de 14 px) e ações principais com 40 px. É desktop com mouse, então os 44 px de toque não são obrigatórios. |
+
+### Opções de fonte para a Etapa 2
+
+| Opção | Títulos | Texto | A favor | Contra |
+|---|---|---|---|---|
+| 1 | Inter | Inter | Igual à landing, ótima em 13–14 px, números alinhados | A mais comum de todas (a skill de gosto desaconselha) |
+| 2 | **Lexend** | **Inter** | Os títulos ecoam a logo (família Lexend) e o texto é igual à landing. Recomendada pelo banco para saúde. | Duas fontes para carregar |
+| 3 | Geist | Geist | Já está no app, sem migração | Diferente da landing e sem ligação com a logo |
+
+**Recomendação: opção 2.** Os títulos em Lexend dão a personalidade da marca e o texto em Inter mantém a coerência com a landing e a leitura densa.
+
+### Cor: avaliação da `better-colors`
+
+O azul da marca (L 0,76, C 0,09, matiz 255) fica no **meio-claro da rampa** (equivalente a um 300–400). O papel dele é **fundo de destaque, preenchimento e ícone**, nunca texto nem botão com texto branco. Hoje a rampa azul tem só dois degraus (0,76 e o `primary-ink`, 0,52) mais transparências (`/10`, `/15`). Faltam os degraus de fundo suave, contorno e hover.
+
+**Rampas de status que o produto realmente mostra:**
+- **Sucesso:** vacina aplicada, pagamento.
+- **Atenção:** vacina atrasada e as pendências da 2.0.
+- **Perigo:** alergia, erro e excluir.
+
+**Informação** não precisa de rampa própria: o azul da marca cumpre esse papel.
+
+| Gravidade | Local | Antes | Depois | Por quê |
+|---|---|---|---|---|
+| HIGH | `app/globals.css` (`--primary-foreground`), 44 botões | Texto 0,98 sobre o azul 0,76: **2,02:1** | Texto escuro (≈ 0,22) sobre o mesmo azul: 8,09:1 | Texto de controle abaixo de 4,5:1 |
+| HIGH | 62 usos de `text-primary` | Azul 0,76 como texto: **2,14:1** | `text-primary-ink`: 5,52:1 | Token usado fora do papel (cor de preenchimento como texto) |
+| MEDIUM | `components/ui/checkbox.tsx` | Borda azul 0,76: **2,14:1** | Degrau de contorno com 3:1 ou mais | Contorno de controle abaixo de 3:1 |
+| MEDIUM | `globals.css` | Azul com 2 degraus + transparências | Rampa com papéis (fundo suave, contorno, preenchimento, hover, texto) | Cada papel sem token faz cada tela inventar o seu |
+| MEDIUM | `patient-vaccine-calendar-section.tsx`, admin, `app-sidebar.tsx:93` | `emerald` (54), `amber` (45), `orange` (26) direto nos componentes | Tokens `success`, `warning` e `danger`, nos modos claro e escuro | Cor crua em componente, sem tema escuro |
+| LOW | `patient-clinical-overview.tsx:53` e botões Excluir | O mesmo vermelho para **alergia** e para **excluir** | Excluir discreto (só texto), para a alergia ser o vermelho mais forte da tela | Uma cor, um sentido: o alerta clínico não pode competir com um botão |
+| LOW | `app-sidebar.tsx:93` | Selo laranja a 20,6° do vermelho de erro | Usar o token de atenção | Duas cores quentes vizinhas confundem |
+
+**Não verificado:** os pares desenhados sobre fundos transparentes (como `bg-primary/10` com texto) e as telas logadas. A medição foi feita a partir dos valores dos tokens, sem navegador logado.
+
+**Veredito da `better-colors`: Block.** Os dois HIGH (botão e texto azul) precisam ser resolvidos na ficha de design antes de aplicar o visual novo.
+
 ## O que manter (não mexer)
 
 - Uma fonte só no app (qual delas é decisão da Etapa 2).
@@ -90,9 +139,9 @@ A base é boa e deve ser mantida: tokens em oklch, um azul de marca só, cinzas 
 
 Em ordem de impacto, seguindo a ordem de correção sugerida pela skill:
 
-0. **Marca** (M1–M3): fonte do app (Geist ou Inter, a mesma da landing), logo nova no menu e a compacta no menu recolhido.
+0. **Marca** (M1–M3): fonte do app (recomendação: Lexend nos títulos e Inter no texto, ver "Encaixe no nicho"), logo nova no menu e a compacta no menu recolhido.
 1. **Cor do botão principal e do texto azul** (C1, C2):
-   - Texto escuro sobre o azul da marca (como o modo escuro já faz), **ou** um azul mais escuro para o botão, mantendo o `#8AB4EB` nos fundos, chips e gradiente.
+   - Texto escuro sobre o azul da marca (como o modo escuro já faz, e como todas as paletas de saúde do banco fazem; recomendada), **ou** um azul mais escuro para o botão, mantendo o `#8AB4EB` nos fundos, chips e gradiente.
    - `text-primary` vira `text-primary-ink` em todo lugar.
 2. **Tokens de status** (C3, S5): sucesso, atenção, perigo e informação, cada um com fundo, contorno e texto, em claro e escuro. Selos com papéis fixos: status, alerta clínico (alergia), pendência e canal.
 3. **Estados do botão** (S1, S2): hover, clique e desabilitado, e altura mínima de 36 a 40 px para as ações principais.

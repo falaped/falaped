@@ -23,7 +23,7 @@ while i<len(md):
             if not re.match(r"^\|[-| ]+\|$",md[i]): rows.append([c.strip() for c in md[i].strip("|").split("|")])
             i+=1
         h,*b=rows
-        t='<table class="aud"><tr>'+"".join(f"<th>{inl(c)}</th>" for c in h)+"</tr>"
+        t=f'<table class="aud{" find" if h[-1]=="Grav." else ""}"><tr>'+"".join(f"<th>{inl(c)}</th>" for c in h)+"</tr>"
         for r in b:
             cs=[inl(c) for c in r]; cs[0]=f"<b>{cs[0]}</b>"; cs[-1]=sev(cs[-1])
             t+="<tr>"+"".join(f"<td>{c}</td>" for c in cs)+"</tr>"
