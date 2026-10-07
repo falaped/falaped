@@ -570,6 +570,103 @@
     </div>
   </section>
 
+  <!-- GUIA DE ESCRITA -->
+  <section class="doc-sec" id="escrita">
+    <h2 class="t-section">Guia de escrita</h2>
+    <p class="doc-lead">Como o app fala com o pediatra. Vale para todo texto que aparece na tela: menu, títulos, botões, rótulos, telas vazias, avisos, erros e confirmações. Aplicado no protótipo (Etapa 3), conferido na revisão (Etapa 4) e varrido no código (Etapa 5).</p>
+
+    <div class="rounded-xl border border-warning-border bg-warning-soft p-5">
+      <div class="font-semibold text-warning-text">Regra zero: muda o texto da tela, nunca o dado</div>
+      <p class="mt-1 text-warning-text">A troca de palavras é só no que o médico lê. Nada desta seção pode afetar o Supabase ou o comportamento do app:</p>
+      <ul class="mt-2 grid list-disc gap-x-8 gap-y-1 pl-5 text-warning-text md:grid-cols-2">
+        <li>Tabelas, colunas, enums, valores de status e tipos salvos no banco ficam como estão (<code class="doc-k">cases</code>, <code class="doc-k">status = "paid"</code>, tipos de documento…). Nenhuma migration por causa de texto.</li>
+        <li>O que já está gravado não é reescrito: modelos do médico, documentos emitidos, mensagens, relatórios e histórico.</li>
+        <li>Código fica igual: nomes de arquivo, função, variável, rota e URL (<code class="doc-k">/dashboard/cases</code> continua). Só muda a string exibida.</li>
+        <li>Quando um valor do banco aparece na tela, a tradução fica num mapa de rótulos no front (ex.: <code class="doc-k">case → "Consulta"</code>), nunca no valor salvo.</li>
+        <li>Prompts e respostas do assistente de IA (<code class="doc-k">modules/falaped-assistant</code>) não entram aqui: mudar prompt muda comportamento. Ficam para o fluxo de IA.</li>
+        <li>Texto que o código compara (<code class="doc-k">if (status === "…")</code>, mensagens usadas como chave) só muda junto com a comparação, e com teste.</li>
+      </ul>
+    </div>
+
+    <div class="mt-6 grid gap-5 lg:grid-cols-[1.3fr_1fr]">
+      <div>
+        <div class="t-card mb-2">Glossário: um termo por conceito</div>
+        <div class="card overflow-hidden">
+          <table class="w-full text-body">
+            <thead class="bg-muted text-label text-muted-foreground"><tr><th class="px-4 py-2.5 text-left font-medium">Use</th><th class="px-4 text-left font-medium">Em vez de</th><th class="px-4 text-left font-medium">Nota</th></tr></thead>
+            <tbody class="divide-y divide-border">
+              <tr><td class="px-4 py-2.5 font-semibold">Consulta</td><td class="px-4 text-muted-foreground">caso, atendimento</td><td class="px-4 text-caption text-subtle-foreground">43 textos com "caso", 28 com "atendimento" hoje. No banco continua <code class="doc-k">cases</code>.</td></tr>
+              <tr><td class="px-4 py-2.5 font-semibold">Paciente</td><td class="px-4 text-muted-foreground">criança (em botões e títulos)</td><td class="px-4 text-caption text-subtle-foreground">"Criança" só em rótulo de campo: "Nome da criança".</td></tr>
+              <tr><td class="px-4 py-2.5 font-semibold">Responsável</td><td class="px-4 text-muted-foreground">mãe/pai (em rótulos)</td><td class="px-4 text-caption text-subtle-foreground">O parentesco aparece entre parênteses: "Carla (mãe)".</td></tr>
+              <tr><td class="px-4 py-2.5 font-semibold">Documento</td><td class="px-4 text-muted-foreground">arquivo, PDF</td><td class="px-4 text-caption text-subtle-foreground">Nome do grupo. Cada um pelo tipo: receita, atestado, relatório, orientação, encaminhamento, pedido de exames.</td></tr>
+              <tr><td class="px-4 py-2.5 font-semibold">Modelo</td><td class="px-4 text-muted-foreground">template</td><td class="px-4 text-caption text-subtle-foreground">O wireframe aprovado já usa "Modelos".</td></tr>
+              <tr><td class="px-4 py-2.5 font-semibold">Assistente</td><td class="px-4 text-muted-foreground">IA, chat, bot, discussão</td><td class="px-4 text-caption text-subtle-foreground">Menu: "Pergunte ao assistente".</td></tr>
+              <tr><td class="px-4 py-2.5 font-semibold">Emitir</td><td class="px-4 text-muted-foreground">gerar (para documento final)</td><td class="px-4 text-caption text-subtle-foreground">"Gerar" fica para rascunho feito pela IA: "Gerar rascunho".</td></tr>
+              <tr><td class="px-4 py-2.5 font-semibold">Encerrar consulta</td><td class="px-4 text-muted-foreground">finalizar, fechar caso</td><td class="px-4 text-caption text-subtle-foreground">O oposto é "Reabrir consulta".</td></tr>
+              <tr><td class="px-4 py-2.5 font-semibold">Excluir</td><td class="px-4 text-muted-foreground">deletar, apagar, remover</td><td class="px-4 text-caption text-subtle-foreground">"Remover" só quando o item continua existindo em outro lugar (tirar da consulta).</td></tr>
+              <tr><td class="px-4 py-2.5 font-semibold">Retorno</td><td class="px-4 text-muted-foreground">revisão, follow-up</td><td class="px-4 text-caption text-subtle-foreground">Consulta marcada para reavaliar.</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div class="flex flex-col gap-4">
+        <div class="card p-5">
+          <div class="t-card">Voz: de colega para colega</div>
+          <ul class="mt-2 list-disc space-y-1 pl-5 text-muted-foreground">
+            <li>Trata por "você". Direto, sem rodeio e sem tom de anúncio.</li>
+            <li>Sem "Ops!", sem exclamação, sem "com sucesso".</li>
+            <li>Termo médico quando é o termo certo (conduta, posologia). Termo técnico de software nunca (sincronizar, token, upload).</li>
+            <li>Números como o médico escreve: <span class="num">3,1 mL</span>, <span class="num">12,4 kg</span>, <span class="num">2a 3m</span>, <span class="num">R$ 350,00</span>.</li>
+            <li>Sentence case: só a primeira letra maiúscula, em tudo.</li>
+          </ul>
+        </div>
+        <div class="card p-5">
+          <div class="t-card">Copy do produto</div>
+          <p class="mt-1 text-muted-foreground">Dentro do app vale o mesmo combinado do marketing: não dizer que o Falaped "escuta a consulta". Falar em consulta organizada, escalas e assistente.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="t-card mb-2 mt-8">Padrão por tipo de texto</div>
+    <div class="card overflow-hidden">
+      <table class="w-full text-body">
+        <thead class="bg-muted text-label text-muted-foreground"><tr><th class="px-4 py-2.5 text-left font-medium">Tipo</th><th class="px-4 text-left font-medium">Fórmula</th><th class="px-4 text-left font-medium">Exemplo</th></tr></thead>
+        <tbody class="divide-y divide-border">
+          <tr><td class="px-4 py-2.5 font-medium">Botão</td><td class="px-4 text-muted-foreground">Verbo + objeto, até 3 palavras</td><td class="px-4">Emitir receita · Iniciar consulta · Salvar valor</td></tr>
+          <tr><td class="px-4 py-2.5 font-medium">Título de tela</td><td class="px-4 text-muted-foreground">Substantivo, igual ao item do menu que levou até ela</td><td class="px-4">Pacientes · Consultas · Modelos</td></tr>
+          <tr><td class="px-4 py-2.5 font-medium">Rótulo de campo</td><td class="px-4 text-muted-foreground">O dado, sem dois-pontos; formato na ajuda</td><td class="px-4">Data de nascimento <span class="text-caption text-subtle-foreground">· dd/mm/aaaa</span></td></tr>
+          <tr><td class="px-4 py-2.5 font-medium">Tela vazia</td><td class="px-4 text-muted-foreground">O que vai aparecer aqui + como começar + botão</td><td class="px-4">Nenhuma consulta hoje. Quando você atender, ela aparece aqui com os documentos. <span class="text-primary-ink">Iniciar consulta</span></td></tr>
+          <tr><td class="px-4 py-2.5 font-medium">Aviso de sucesso</td><td class="px-4 text-muted-foreground">Objeto + particípio, com ponto final se for frase</td><td class="px-4">Receita emitida · Paciente cadastrado</td></tr>
+          <tr><td class="px-4 py-2.5 font-medium">Erro</td><td class="px-4 text-muted-foreground">O que não deu certo + o que fazer (+ botão quando dá)</td><td class="px-4">Não foi possível gerar o PDF. Verifique a conexão e tente de novo. <span class="text-primary-ink">Tentar de novo</span></td></tr>
+          <tr><td class="px-4 py-2.5 font-medium">Erro de campo</td><td class="px-4 text-muted-foreground">O que falta + exemplo</td><td class="px-4">Faltam 5 dígitos. Ex.: (31) 98888-1111</td></tr>
+          <tr><td class="px-4 py-2.5 font-medium">Confirmação</td><td class="px-4 text-muted-foreground">Pergunta com o nome + consequência real + botão com o verbo</td><td class="px-4">Excluir Miguel Santos? Some com 5 consultas e 12 documentos. <span class="text-danger-text">Excluir paciente</span></td></tr>
+          <tr><td class="px-4 py-2.5 font-medium">Carregando</td><td class="px-4 text-muted-foreground">Gerúndio do que está acontecendo, só se passar de 1 s</td><td class="px-4">Gerando rascunho… · Emitindo receita…</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="t-card mb-2 mt-8">Antes e depois (textos reais de hoje)</div>
+    <div class="card overflow-hidden">
+      <table class="w-full text-body">
+        <thead class="bg-muted text-label text-muted-foreground"><tr><th class="px-4 py-2.5 text-left font-medium">Hoje</th><th class="px-4 text-left font-medium">2.0</th><th class="px-4 text-left font-medium">Por quê</th></tr></thead>
+        <tbody class="divide-y divide-border">
+          <tr><td class="px-4 py-2.5 text-muted-foreground">Criar novo caso</td><td class="px-4 font-medium">Iniciar consulta</td><td class="px-4 text-caption text-subtle-foreground">Glossário; é o que o médico faz</td></tr>
+          <tr><td class="px-4 py-2.5 text-muted-foreground">Abrir caso → · Retomar atendimento</td><td class="px-4 font-medium">Voltar à consulta</td><td class="px-4 text-caption text-subtle-foreground">Dois termos e dois cliques viram um</td></tr>
+          <tr><td class="px-4 py-2.5 text-muted-foreground">Encerrar atendimento ativo no painel?</td><td class="px-4 font-medium">Encerrar a consulta de Helena?</td><td class="px-4 text-caption text-subtle-foreground">Nome do paciente no lugar de "ativo no painel"</td></tr>
+          <tr><td class="px-4 py-2.5 text-muted-foreground">Ver todos os casos · Voltar para casos</td><td class="px-4 font-medium">Ver todas as consultas · Consultas</td><td class="px-4 text-caption text-subtle-foreground">Glossário</td></tr>
+          <tr><td class="px-4 py-2.5 text-muted-foreground">Erro ao salvar template. Tente novamente.</td><td class="px-4 font-medium">Não foi possível salvar o modelo. Tente de novo em alguns segundos.</td><td class="px-4 text-caption text-subtle-foreground">"Erro" culpa o sistema sem dizer nada; glossário</td></tr>
+          <tr><td class="px-4 py-2.5 text-muted-foreground">Erro ao gerar link de download</td><td class="px-4 font-medium">Não foi possível baixar o documento. Tente de novo.</td><td class="px-4 text-caption text-subtle-foreground">"Link" é detalhe técnico</td></tr>
+          <tr><td class="px-4 py-2.5 text-muted-foreground">Falha ao transcrever áudio. Tente novamente.</td><td class="px-4 font-medium">Não foi possível transcrever o áudio. Grave de novo ou digite o resumo.</td><td class="px-4 text-caption text-subtle-foreground">Oferece uma saída</td></tr>
+          <tr><td class="px-4 py-2.5 text-muted-foreground">Relatório gerado. Download iniciado.</td><td class="px-4 font-medium">Relatório emitido. O PDF está nos seus downloads.</td><td class="px-4 text-caption text-subtle-foreground">Diz onde está o arquivo</td></tr>
+          <tr><td class="px-4 py-2.5 text-muted-foreground">Nenhum paciente cadastrado.</td><td class="px-4 font-medium">Nenhum paciente ainda. Cadastre o primeiro para começar uma consulta. <span class="text-primary-ink">Cadastrar paciente</span></td><td class="px-4 text-caption text-subtle-foreground">Tela vazia diz como começar</td></tr>
+          <tr><td class="px-4 py-2.5 text-muted-foreground">Close (botão de fechar)</td><td class="px-4 font-medium">Fechar</td><td class="px-4 text-caption text-subtle-foreground">Leitor de tela lê em inglês; e <code class="doc-k">lang="pt-BR"</code></td></tr>
+          <tr><td class="px-4 py-2.5 text-muted-foreground">Resetar · Limpar</td><td class="px-4 font-medium">Limpar campos · Desfazer alterações</td><td class="px-4 text-caption text-subtle-foreground">Verbo + objeto; sem anglicismo</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="mt-3 text-caption text-subtle-foreground">O que já está bom e fica: os avisos de sucesso curtos ("Paciente cadastrado.", "Template salvo." vira só "Modelo salvo.") e as perguntas de exclusão com o objeto ("Excluir atestado?"), que só ganham a consequência. O texto do assistente de IA entra junto com o fluxo de IA.</p>
+  </section>
+
   <!-- MOVIMENTO E DENSIDADE -->
   <section class="doc-sec">
     <h2 class="t-section">Movimento e densidade</h2>
