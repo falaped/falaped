@@ -147,8 +147,8 @@ Instaladas em `~/.agents/skills` em 06/10/2026.
 - [x] **Etapa 2:** ficha de design (`ficha-design.html`, aba "Ficha de design"): tokens de tipografia, espaçamento, cor, raio, sombra, estados e densidade
 - [x] **Etapa 3:** protótipo com a ficha (`prototipo.html`, aba "Protótipo"). Rodada 1 (8 telas sem a Consulta) aprovada em 07/10/2026; rodada 2 (Consulta e painéis) aprovada
 - [x] **Etapa 4:** revisão de usabilidade (`ux-heuristics`) da versão com design: [`revisao-usabilidade.md`](./revisao-usabilidade.md), correções aplicadas em 08/10/2026
-- [ ] **Etapa 5:** implementação, por ordem de dor: Consulta → Pacientes → Ficha → Consultas → Menu → Início e cadastro
-- [ ] **Depois das etapas (pedido do gestor em 08/10/2026): Guia de design do Falaped.** A `ficha-design.html` vira a fonte única de verdade para toda feature nova. Ganha 4 seções:
+- [ ] **Etapa 5:** implementação, 1 PR por tela, na ordem pedida pelo gestor em 08/10/2026: Cadastro → Login → Início (1º acesso) com o menu lateral pronto → demais telas
+- [x] **Guia de design do Falaped (feito em 08/10/2026, antes da Etapa 5 a pedido do gestor).** A `ficha-design.html` vira a fonte única de verdade para toda feature nova. Ganha 4 seções:
   - **Princípios de uso:** as heurísticas viram regras curtas.
   - **Layout e grid:** depende da resposta sobre tablet e celular.
   - **Modelos de página:** Início, lista, ficha, consulta com painel e configurações.
@@ -202,3 +202,4 @@ Ganhos rápidos que podem entrar antes da etapa 5, porque não dependem do desig
   - Cronômetro com rótulo e "ao responsável".
 
   A agenda não está em uso, então os alertas de retorno saíram das telas e "Sem medida recente" entrou no lugar.
+- **08/10/2026:** a `ficha-design.html` virou o Guia de design do Falaped, a fonte única de verdade. Ganhou índice, "Como usar este guia", 10 princípios de uso, layout e grid, 6 modelos de página e o checklist de feature nova. O `CLAUDE.md` ganhou a seção "Design (fonte única de verdade)", que aponta para o guia. A ordem da Etapa 5 mudou para Cadastro → Login → Início (1º acesso) com o menu lateral.
