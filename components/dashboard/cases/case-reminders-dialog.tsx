@@ -8,6 +8,7 @@ import {
   Dialog,
   DialogContent,
   DialogDescription,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
@@ -42,6 +43,11 @@ export function CaseRemindersDialog({
           </DialogDescription>
         </DialogHeader>
         <CaseRemindersForm caseId={caseId} initialReminders={initialReminders} />
+        <DialogFooter>
+          <Button type="button" onClick={() => setOpen(false)}>
+            Concluir
+          </Button>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   )

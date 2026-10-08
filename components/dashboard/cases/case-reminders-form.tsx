@@ -53,6 +53,7 @@ export function CaseRemindersForm({
       if (result.ok) {
         setReminders((prev) => [...prev, result.reminder])
         setText("")
+        toast.success("Lembrete salvo.")
       } else {
         toast.error(getFriendlyToastMessage(result.error))
       }
