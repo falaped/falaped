@@ -58,6 +58,7 @@ type CaseDetailHeaderProps = {
   earningsCount: number | null
   earningsTotalCents: number | null
   todayLabel: string
+  activityAts: string[]
 }
 
 /** Cabeçalho da consulta (protótipo b2): quem, quando, documentos; reabrir e excluir no ⋯. */
@@ -75,6 +76,7 @@ export function CaseDetailHeader({
   earningsCount,
   earningsTotalCents,
   todayLabel,
+  activityAts,
 }: CaseDetailHeaderProps) {
   const [dialog, setDialog] = useState<"status" | "delete" | null>(null)
   const patient = detail.patient
@@ -213,6 +215,8 @@ export function CaseDetailHeader({
           hasMessages={detail.messages.length > 0}
           documents={documents}
           reminders={reminders}
+          startedAt={detail.started_at}
+          activityAts={activityAts}
         />
       ) : (
         <ReopenCaseDialog

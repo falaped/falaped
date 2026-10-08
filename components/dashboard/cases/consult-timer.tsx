@@ -6,7 +6,12 @@ import { PauseIcon, PlayIcon } from "lucide-react"
 import { toast } from "sonner"
 
 import { pauseConsultationAction, resumeConsultationAction } from "@/actions"
+import { format } from "date-fns"
+import { tz } from "@date-fns/tz"
+
 import { useConsultationTimer } from "@/hooks/use-consultation-timer"
+import { CLINIC_TIME_ZONE } from "@/lib/clinic-timezone"
+import { summarizeIdle } from "@/lib/consult-idle"
 import { getFriendlyToastMessage } from "@/lib/get-friendly-toast-message"
 import { cn } from "@/lib/utils"
 
@@ -18,21 +23,29 @@ function formatElapsed(ms: number): string {
   return hours > 0 ? `${hours}:${rest}` : rest
 }
 
-/** Cronômetro dentro do cabeçalho da Consulta (protótipo a5), no lugar do widget flutuante. */
+/**
+ * Cronômetro dentro do cabeçalho da Consulta (protótipo a5), no lugar do widget flutuante.
+ * Intervalos de 2h30 sem nada salvo não contam; parada agora, a consulta congela na última
+ * atividade e volta a contar sozinha quando algo novo é salvo (lib/consult-idle.ts).
+ */
 export function ConsultTimer({
   caseId,
   startedAt,
   pausedMs,
   pausedAt,
+  activityAts,
 }: {
   caseId: string
   startedAt: string
   pausedMs: number
   pausedAt: string | null
+  activityAts: string[]
 }) {
   const router = useRouter()
   const [pending, setPending] = useState(false)
-  const elapsedMs = useConsultationTimer({ startedAt, endedAt: null, pausedMs, pausedAt })
+  const { gapsMs, idleSince } = summarizeIdle(startedAt, activityAts, Date.now())
+  const idle = pausedAt == null ? idleSince : null
+  const elapsedMs = useConsultationTimer({ startedAt, endedAt: null, pausedMs: pausedMs + gapsMs, pausedAt: pausedAt ?? idle })
   const isPaused = pausedAt != null
 
   async function toggle() {
@@ -44,6 +57,22 @@ export function ConsultTimer({
     } finally {
       setPending(false)
     }
+  }
+
+  if (idle) {
+    const since = format(idle, "HH:mm", { in: tz(CLINIC_TIME_ZONE) })
+    return (
+      <span
+        className="inline-flex h-9 items-center gap-2 rounded-lg border border-warning-border bg-warning-soft px-3 text-warning-text"
+        title="Volta a contar quando algo novo for registrado na consulta."
+      >
+        <span className="size-2 rounded-full bg-warning" aria-hidden />
+        <span className="num font-medium">{formatElapsed(elapsedMs)}</span>
+        <span className="text-caption">
+          Sem atividade desde <span className="num">{since}</span>
+        </span>
+      </span>
+    )
   }
 
   const label = isPaused ? "Retomar cronômetro" : "Pausar cronômetro"

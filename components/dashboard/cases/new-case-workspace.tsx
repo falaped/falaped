@@ -59,6 +59,7 @@ import type { ReportTemplateWithSections } from "@/modules/report-templates/get-
 import { toCaseDocuments } from "@/components/dashboard/cases/case-detail-documents"
 import { ConsultRail, type ConsultDocuments } from "@/components/dashboard/cases/consult-rail"
 import { ConsultTimer } from "@/components/dashboard/cases/consult-timer"
+import { closeTiming } from "@/lib/consult-idle"
 import type { ConsultDoctor } from "@/components/dashboard/cases/consult-prescription-panel"
 import { ConsultTools, openConsultTool } from "@/components/dashboard/cases/consult-tools"
 import type { ExamReadingWithPages } from "@/components/dashboard/exam-readings/exam-reading-card"
@@ -578,6 +579,7 @@ export function NewCaseWorkspace({
   examPanels,
   reportTemplate,
   caseReports,
+  activityAts,
 }: {
   caseId: string
   initialMessages: WorkspaceMessage[]
@@ -610,6 +612,8 @@ export function NewCaseWorkspace({
   /** Para a revisão do Encerrar. */
   reportTemplate: ReportTemplateWithSections | null
   caseReports: CaseReportType[]
+  /** Datas do que foi salvo na consulta: mostram se ela ficou esquecida aberta. */
+  activityAts: string[]
 }) {
   const scrollRef = useRef<HTMLDivElement | null>(null)
   const sendInFlightRef = useRef(false)
@@ -966,6 +970,7 @@ export function NewCaseWorkspace({
             startedAt={startedAt}
             pausedMs={consultationPausedMs}
             pausedAt={consultationPausedAt}
+            activityAts={activityAts}
           />
           <Button variant="outline" onClick={() => setRailOpen(true)}>
             <ClipboardListIcon data-icon="inline-start" />
@@ -977,7 +982,12 @@ export function NewCaseWorkspace({
           </Button>
           <Button
             onClick={() => {
-              const minutes = Math.max(1, Math.round((Date.now() - Date.parse(startedAt) - consultationPausedMs) / 60_000))
+              const timing = closeTiming(
+                { startedAt, pausedMs: consultationPausedMs, pausedAt: consultationPausedAt },
+                activityAts,
+                Date.now(),
+              )
+              const minutes = Math.max(1, Math.round((Date.parse(timing.endedAt) - Date.parse(startedAt) - timing.pausedMs) / 60_000))
               setCloseOpen(
                 [panelSubtitle, lastWeight ? `${(lastWeight.weight_grams! / 1000).toFixed(1).replace(".", ",")} kg` : null, `${minutes} min`]
                   .filter(Boolean)
@@ -1203,6 +1213,8 @@ export function NewCaseWorkspace({
         hasMessages={messages.length > 0}
         documents={toCaseDocuments(documents)}
         reminders={reminders}
+        startedAt={startedAt}
+        activityAts={activityAts}
         onOpenTool={openConsultTool}
       />
 

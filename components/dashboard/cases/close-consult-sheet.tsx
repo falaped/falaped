@@ -2,6 +2,8 @@
 
 import { useState } from "react"
 import { useRouter } from "next/navigation"
+import { format } from "date-fns"
+import { TZDate, tz } from "@date-fns/tz"
 import {
   ArrowLeftIcon,
   ArrowRightIcon,
@@ -23,7 +25,10 @@ import { CaseRemindersForm } from "@/components/dashboard/cases/case-reminders-f
 import { CaseReport } from "@/components/dashboard/cases/case-report"
 import type { SheetKind } from "@/components/dashboard/cases/consult-tools"
 import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet"
+import { CLINIC_TIME_ZONE } from "@/lib/clinic-timezone"
+import { summarizeIdle } from "@/lib/consult-idle"
 import { getFriendlyToastMessage } from "@/lib/get-friendly-toast-message"
 import { cn } from "@/lib/utils"
 import type { CaseReport as CaseReportType } from "@/modules/cases/get-case-report"
@@ -86,6 +91,8 @@ export function CloseConsultSheet({
   hasMessages,
   documents,
   reminders,
+  startedAt,
+  activityAts,
   onOpenTool,
 }: {
   caseId: string
@@ -100,21 +107,46 @@ export function CloseConsultSheet({
   hasMessages: boolean
   documents: CaseDocument[]
   reminders: CaseReminder[]
+  startedAt: string
+  /** Datas do que foi salvo na consulta: diz se ela ficou esquecida aberta. */
+  activityAts: string[]
   /** Abre um painel de documento da consulta; sem ele, a revisão não oferece emitir mais. */
   onOpenTool?: (kind: SheetKind) => void
 }) {
   const router = useRouter()
   const [step, setStep] = useState<0 | 1>(0)
   const [reminderCount, setReminderCount] = useState(reminders.length)
+  // Esquecida aberta: o término vem da última atividade, e a médica confirma ou corrige.
+  // Sem atividade nenhuma não há o que sugerir, e o campo começa vazio.
+  const { idleSince } = summarizeIdle(startedAt, activityAts, Date.now())
+  const inClinic = { in: tz(CLINIC_TIME_ZONE) }
+  const [typedEndTime, setEndTime] = useState<string | null>(null)
+  const endTime = typedEndTime ?? (idleSince && idleSince !== startedAt ? format(idleSince, "HH:mm", inClinic) : "")
 
   function close() {
     onOpenChange(false)
     setStep(0)
+    setEndTime(null)
   }
 
   async function closeCase(): Promise<boolean> {
+    let endedAt: string | undefined
+    if (idleSince) {
+      if (!endTime) {
+        toast.error("Informe a que horas a consulta terminou.")
+        return false
+      }
+      const [y, m, d] = format(idleSince, "yyyy-MM-dd", inClinic).split("-").map(Number)
+      const [hh, mm] = endTime.split(":").map(Number)
+      const end = new TZDate(y, m - 1, d, hh, mm, CLINIC_TIME_ZONE)
+      if (end.getTime() < Date.parse(startedAt) - 60_000) {
+        toast.error(`O término precisa ser depois do início (${format(startedAt, "HH:mm", inClinic)}).`)
+        return false
+      }
+      endedAt = new Date(Math.min(end.getTime(), Date.now())).toISOString()
+    }
     // Sem revalidar no servidor: na Consulta isso redirecionaria com o drawer aberto.
-    const closed = await updateCaseStatusAction(caseId, "closed", { deferRevalidate: true })
+    const closed = await updateCaseStatusAction(caseId, "closed", { deferRevalidate: true, endedAt })
     if (!closed.ok) toast.error(getFriendlyToastMessage(closed.error))
     return closed.ok
   }
@@ -255,6 +287,22 @@ export function CloseConsultSheet({
                     Revisar de novo
                   </Button>
                 </div>
+                {idleSince ? (
+                  <div className="flex items-center gap-3 rounded-lg border border-warning-border bg-warning-soft px-4 py-3 text-label">
+                    <label htmlFor="consult-end-time" className="flex-1">
+                      {idleSince === startedAt
+                        ? "Nada foi registrado nesta consulta. A que horas ela terminou?"
+                        : `A consulta ficou sem atividade desde ${format(idleSince, "HH:mm", inClinic)}. Terminou às:`}
+                    </label>
+                    <Input
+                      id="consult-end-time"
+                      type="time"
+                      value={endTime}
+                      onChange={(event) => setEndTime(event.target.value)}
+                      className="num w-28 bg-card"
+                    />
+                  </div>
+                ) : null}
                 <h3 className="font-display text-title font-semibold">Cobrança</h3>
               </>
             }
