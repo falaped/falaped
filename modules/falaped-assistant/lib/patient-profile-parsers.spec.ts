@@ -12,6 +12,7 @@ import {
   parseSexFromMessage,
   detectPatientProfileUpdateCandidate,
   looksLikePatientProfileDictation,
+  parseAllergyAddition,
 } from "@/modules/falaped-assistant/lib/patient-profile-parsers"
 
 const EMPTY_PROFILE = {
@@ -184,4 +185,22 @@ test("looksLikePatientProfileDictation detects blood type patterns", () => {
 
 test("looksLikePatientProfileDictation returns false for plain text", () => {
   assert.equal(looksLikePatientProfileDictation("boa tarde doutor"), false)
+})
+
+test("adicionar alergia sem dois-pontos soma à lista da ficha", () => {
+  assert.equal(parseAllergyAddition("adicionar alergia  amendoim"), "amendoim")
+  assert.equal(parseAllergyAddition("incluir alergia a dipirona"), "dipirona")
+  assert.equal(parseAllergyAddition("nega alergias"), null)
+
+  const added = detectPatientProfileUpdateCandidate({
+    userMessage: "adicionar alergia amendoim",
+    patientProfile: { ...EMPTY_PROFILE, allergies: "Dipirona" },
+  })
+  assert.equal(added?.updates.allergies, "Dipirona, amendoim")
+
+  const repeated = detectPatientProfileUpdateCandidate({
+    userMessage: "adicionar alergia dipirona",
+    patientProfile: { ...EMPTY_PROFILE, allergies: "Dipirona" },
+  })
+  assert.equal(repeated?.updates.allergies, undefined)
 })

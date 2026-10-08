@@ -84,6 +84,19 @@ export function parseLabeledTextValue(
   return null
 }
 
+/**
+ * Pedido explícito para acrescentar uma alergia ("adicionar alergia amendoim",
+ * "incluir alergia a dipirona"). Só com verbo de comando: ditado como "nega
+ * alergias" não vira atualização da ficha.
+ */
+export function parseAllergyAddition(userMessage: string): string | null {
+  const match = userMessage.match(
+    /\b(?:adicion|acrescent|inclu|registr|anot|cadastr|coloc)\w*\s+(?:uma\s+|a\s+)?alergias?(?:\s*[:=]|\s+(?:a|ao|aos|à|às|as|de|do|da)(?=\s))?\s*([^\n.;]+)/i,
+  )
+  const value = match?.[1]?.trim()
+  return value ? value : null
+}
+
 export function parseContactPhoneFromMessage(userMessage: string): string | null {
   const labeled = parseLabeledTextValue(userMessage, [
     "telefone",
@@ -245,7 +258,15 @@ export function detectPatientProfileUpdateCandidate(params: {
     }
   }
 
-  const nextAllergies = parseLabeledTextValue(params.userMessage, ["alergias", "alergia"])
+  const labeledAllergies = parseLabeledTextValue(params.userMessage, ["alergias", "alergia"])
+  const addedAllergy = labeledAllergies ? null : parseAllergyAddition(params.userMessage)
+  // "Adicionar" soma à lista da ficha; "alergias: X" substitui, como antes.
+  const nextAllergies =
+    addedAllergy && profile.allergies?.trim()
+      ? (normalizeComparableText(profile.allergies) ?? "").includes(normalizeComparableText(addedAllergy) ?? "")
+        ? profile.allergies.trim()
+        : `${profile.allergies.trim()}, ${addedAllergy}`
+      : (labeledAllergies ?? addedAllergy)
   if (nextAllergies) {
     const current = normalizeComparableText(profile.allergies)
     const next = normalizeComparableText(nextAllergies)

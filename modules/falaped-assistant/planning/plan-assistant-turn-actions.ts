@@ -1,6 +1,8 @@
 import type { AssistantTurnContext } from "@/modules/falaped-assistant/contracts/turn-context"
 import { extractActionsByLlm } from "@/modules/falaped-assistant/planning/extract-actions-by-llm"
 import { buildCommandMessage } from "@/modules/falaped-assistant/lib/build-command-message"
+import { normalizeText } from "@/modules/falaped-assistant/lib/normalize-text"
+import { detectPatientProfileUpdateCandidate } from "@/modules/falaped-assistant/lib/patient-profile-parsers"
 import {
   hasAnthropometricDivergence,
   shouldInjectGuardianAlertReview,
@@ -59,6 +61,25 @@ export async function planAssistantTurnActions(
     !llmActions.includes("REVIEW_GUARDIAN_ALERT")
   ) {
     actions.push(createAction("REVIEW_GUARDIAN_ALERT", context.userMessage, "rule"))
+  }
+
+  // Dado de ficha pedido no chat (alergia, medicação em uso, histórico...) pede a
+  // confirmação para gravar no paciente. Peso e altura já têm a revisão própria.
+  const profileUpdate = detectPatientProfileUpdateCandidate({
+    userMessage: context.userMessage,
+    patientProfile: context.patientProfile,
+  })
+  const normalizedMessage = normalizeText(context.userMessage)
+  const answersProfileReview =
+    normalizedMessage.includes("confirmar atualizacao dos dados do paciente") ||
+    normalizedMessage.includes("nao atualizar dados do paciente")
+  if (
+    (answersProfileReview ||
+      (profileUpdate &&
+        Object.keys(profileUpdate.updates).some((key) => !["weight", "height", "head_circumference"].includes(key)))) &&
+    !llmActions.includes("REVIEW_PATIENT_PROFILE_UPDATE")
+  ) {
+    actions.push(createAction("REVIEW_PATIENT_PROFILE_UPDATE", context.userMessage, "rule"))
   }
 
   const ordered = orderActions(actions)
