@@ -12,15 +12,17 @@ export function FormCard({
   id,
   title,
   description,
+  className,
   children,
 }: {
   id: string
   title: React.ReactNode
   description: string
+  className?: string
   children: React.ReactNode
 }) {
   return (
-    <section id={id} className="scroll-mt-6 rounded-xl border border-border bg-card">
+    <section id={id} className={cn("scroll-mt-6 rounded-xl border border-border bg-card", className)}>
       <div className="border-b border-border px-6 py-4">
         <h2 className="font-display text-section font-semibold">{title}</h2>
         <p className="text-muted-foreground">{description}</p>

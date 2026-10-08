@@ -517,7 +517,7 @@ export function ProfileContent({
         <div className="flex w-full max-w-[1440px] flex-col pt-8 pb-24">
           {/* Mudanças em outra aba continuam no form: as abas só escondem, não desmontam. */}
           <TabsContent value="documentos" forceMount className="mt-0 data-[state=inactive]:hidden">
-            <div className="grid items-start gap-6 lg:grid-cols-2">
+            <div className="grid gap-6 lg:grid-cols-2">
               <div className="flex flex-col gap-6">
                 <FormCard id="dados" title="Dados profissionais" description="Saem em todo documento, como estão no seu carimbo.">
                   <div className="grid grid-cols-2 gap-4">
@@ -567,7 +567,7 @@ export function ProfileContent({
                   </div>
                 </FormCard>
               </div>
-              <FormCard id="logos" title="Marcas" description="Cada logo é salva assim que você envia.">
+              <FormCard id="logos" title="Marcas" className="h-full" description="Cada logo é salva assim que você envia.">
                 <div className="flex flex-col gap-4">
                   <LogoSlot
                     title="Logo completa"
