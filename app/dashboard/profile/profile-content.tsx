@@ -100,7 +100,6 @@ const TAB_OF_FIELD: Record<keyof UpdateProfileFormValues, ProfileTab> = {
   website: "documentos",
   report_template_id: "consulta",
   consultation_price_cents: "consulta",
-  email: "conta",
 }
 
 /** Nome completo, como já está gravado nos perfis e sai nos documentos. */
@@ -297,7 +296,6 @@ export function ProfileContent({
     defaultValues: {
       first_name: profile.first_name ?? "",
       surname: profile.surname ?? "",
-      email: profile.email ?? "",
       crm: profile.crm ?? "",
       rqe: profile.rqe ?? "",
       social_media_handle: profile.social_media_handle ?? "",
@@ -655,7 +653,7 @@ export function ProfileContent({
                 <FormCard id="acesso" title="Acesso e plano" description="Seu login e a situação da sua assinatura.">
                   <div className="grid grid-cols-2 gap-4">
                     <FieldShell htmlFor="email" label="E-mail de acesso" help="É o seu login. Para trocar, escreva para contato@falaped.com.br.">
-                      <Input id="email" type="email" disabled {...form.register("email")} />
+                      <Input id="email" type="email" value={profile.email ?? ""} disabled readOnly />
                     </FieldShell>
                     <div className="flex flex-col gap-1.5">
                       <span className="text-label font-medium">Plano</span>
