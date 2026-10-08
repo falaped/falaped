@@ -11,6 +11,9 @@ import { updateCaseSummary } from "@/modules/cases/update-case-summary"
 import { getPhoneByProfileId } from "@/modules/authenticated-users/get-phone-by-profile-id"
 import { listCaseReminders } from "@/modules/cases/list-case-reminders"
 import { env } from "@/lib/env"
+import { formatConsultRecordsForAi } from "@/lib/consult-records"
+import { getConsultRecords } from "@/modules/cases/get-consult-records"
+import { assistantMessageToModelText } from "@/modules/falaped-assistant/assistant-model-message"
 import type { SupabaseClient } from "@supabase/supabase-js"
 
 export type UpdateCaseStatusResult =
@@ -72,7 +75,7 @@ export async function updateCaseStatusAction(
 }
 
 /**
- * Monta o material do atendimento (conversa + relatório + lembretes), pede o
+ * Monta o material do atendimento (registros do app + conversa + relatório + lembretes), pede o
  * mini resumo e grava. Carimba `summary_generated_at` mesmo sem texto: "tentou e
  * não saiu" é diferente de "nunca tentou".
  */
@@ -87,8 +90,21 @@ async function generateAndStoreCarryoverSummary(
   const caseDetail = await getCaseById(supabase, caseId, profileId)
   if (!caseDetail) return
 
-  const conversationText = caseDetail.messages
-    .map((m) => `${m.role === "user" ? "Médico" : "Assistente"}: ${m.content}`)
+  // O que foi feito no app (documentos, medidas, escalas...) abre o material:
+  // o resumo da próxima consulta precisa saber, por exemplo, que houve receita.
+  const recordsText = formatConsultRecordsForAi(
+    await getConsultRecords(supabase, profileId, caseDetail),
+  )
+  const conversationText = [
+    recordsText ? `Feito nesta consulta pelo app:\n${recordsText}` : null,
+    ...caseDetail.messages.map(
+      (m) =>
+        `${m.role === "user" ? "Médico" : "Assistente"}: ${
+          m.role === "assistant" ? assistantMessageToModelText(m.content) : m.content
+        }`,
+    ),
+  ]
+    .filter(Boolean)
     .join("\n")
     .trim()
 

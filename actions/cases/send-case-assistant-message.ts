@@ -23,6 +23,8 @@ import { stripAssistantUiLabelsFromReply } from "@/lib/format-clinical-assistant
 import { polishAssistantReplyForDisplay } from "@/modules/groq/assistant-polish-reply"
 import { updatePatient, type UpdatePatientPayload } from "@/modules/patients/update-patient"
 import { assistantMessageToModelText } from "@/modules/falaped-assistant/assistant-model-message"
+import { getConsultRecords } from "@/modules/cases/get-consult-records"
+import { formatConsultRecordsForAi } from "@/lib/consult-records"
 import { processAssistantTurn } from "@/modules/falaped-assistant/orchestrator/process-turn"
 import { updateCaseAssistantTurnQueue } from "@/modules/cases/update-case-assistant-turn-queue"
 import { withBlockedAssistantMessageId } from "@/modules/falaped-assistant/pipeline/assistant-turn-queue"
@@ -101,6 +103,9 @@ type PatientContextSnapshot = {
   responsible: string | null
   weight: string | null
   height: string | null
+  allergies: string | null
+  current_medications: string | null
+  medical_history: string | null
 }
 
 function formatPatientAgeFromBirthDate(birthDate: string | null): string | null {
@@ -132,8 +137,22 @@ function buildPatientContext(patient: PatientContextSnapshot | null): string | n
   if (patient.responsible?.trim()) parts.push(`Responsável: ${patient.responsible.trim()}`)
   if (patient.weight?.trim()) parts.push(`Peso: ${patient.weight.trim()}`)
   if (patient.height?.trim()) parts.push(`Altura/comprimento: ${patient.height.trim()}`)
+  if (patient.allergies?.trim()) parts.push(`Alergias: ${patient.allergies.trim()}`)
+  if (patient.current_medications?.trim()) parts.push(`Medicações em uso: ${patient.current_medications.trim()}`)
+  if (patient.medical_history?.trim()) parts.push(`Histórico: ${patient.medical_history.trim()}`)
 
   return `Contexto do paciente: ${parts.join(" | ")}`
+}
+
+/** Junta o que a consulta já produziu no app ao contexto do paciente. */
+function withConsultRecords(patientContext: string | null, records: string | null): string | null {
+  if (!records) return patientContext
+  return [
+    patientContext,
+    `Feito nesta consulta pelo app (o médico já gerou ou registrou; considere ao responder e não peça de novo):\n${records}`,
+  ]
+    .filter(Boolean)
+    .join("\n\n")
 }
 
 function parseMetricToNumber(value: string | null | undefined): number | null {
@@ -385,16 +404,22 @@ export async function sendCaseAssistantMessageAction(
         created_at: message.created_at,
       })),
       pendingAction: caseRow.pending_action,
-      patientContext: buildPatientContext(
-        caseDetail?.patient
-          ? {
-              name: caseDetail.patient.name,
-              birth_date: caseDetail.patient.birth_date,
-              responsible: caseDetail.patient.responsible,
-              weight: caseDetail.patient.weight,
-              height: caseDetail.patient.height,
-            }
-          : null,
+      patientContext: withConsultRecords(
+        buildPatientContext(
+          caseDetail?.patient
+            ? {
+                name: caseDetail.patient.name,
+                birth_date: caseDetail.patient.birth_date,
+                responsible: caseDetail.patient.responsible,
+                weight: caseDetail.patient.weight,
+                height: caseDetail.patient.height,
+                allergies: caseDetail.patient.allergies,
+                current_medications: caseDetail.patient.current_medications,
+                medical_history: caseDetail.patient.medical_history,
+              }
+            : null,
+        ),
+        caseDetail ? formatConsultRecordsForAi(await getConsultRecords(supabase, profile.id, caseDetail)) : null,
       ),
       conversationSummary: caseRow.dashboard_chat_context_summary,
       patientMetrics: {

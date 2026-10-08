@@ -25,7 +25,9 @@ import {
   SCALE_RESULTS_SECTION_NAME,
   formatScaleResultsSectionContent,
 } from "@/modules/report-templates/format-scale-results-section"
-import { getScaleResultsByCase } from "@/modules/patient-scales/get-scale-results-by-case"
+import { getConsultRecords } from "@/modules/cases/get-consult-records"
+import { formatConsultRecordsForAi } from "@/lib/consult-records"
+import { assistantMessageToModelText } from "@/modules/falaped-assistant/assistant-model-message"
 
 export type GenerateCaseReportResult =
   | { ok: true; reportId: string }
@@ -57,7 +59,7 @@ function toPatientReportContext(
 
 /**
  * Generates the case report from the conversation using the effective template (profile's or default).
- * Validates ownership via getCaseById; requires messages to exist.
+ * Validates ownership via getCaseById; requires a conversation or something recorded in the consult.
  */
 export async function generateCaseReportAction(
   caseId: string,
@@ -72,8 +74,10 @@ export async function generateCaseReportAction(
     const caseDetail = await getCaseById(supabase, caseId, profile.id)
     if (!caseDetail)
       return { ok: false, error: "Caso não encontrado ou você não tem acesso." }
-    if (caseDetail.messages.length === 0)
-      return { ok: false, error: "Necessário ter conversa para gerar o relatório." }
+    const consultRecords = await getConsultRecords(supabase, profile.id, caseDetail)
+    const recordsText = formatConsultRecordsForAi(consultRecords)
+    if (caseDetail.messages.length === 0 && !recordsText)
+      return { ok: false, error: "Registre algo na consulta antes de gerar o relatório." }
 
     const template = profile.report_template_id
       ? await getReportTemplateById(supabase, profile.report_template_id)
@@ -81,10 +85,22 @@ export async function generateCaseReportAction(
     if (!template || !template.sections.length)
       return { ok: false, error: "Nenhum template de relatório configurado." }
 
-    const messages = caseDetail.messages.map((m) => ({
-      role: m.role as "user" | "assistant",
-      content: m.content,
-    }))
+    // O que foi feito no app (documentos, medidas, escalas...) entra como a primeira
+    // fala do médico: a IA precisa saber que existe, sem inventar o conteúdo.
+    const messages = [
+      ...(recordsText
+        ? [
+            {
+              role: "user" as const,
+              content: `Feito nesta consulta pelo app (registros do sistema; cite o que for relevante, sem inventar detalhes que não estão aqui):\n${recordsText}`,
+            },
+          ]
+        : []),
+      ...caseDetail.messages.map((m) => ({
+        role: m.role as "user" | "assistant",
+        content: m.role === "assistant" ? assistantMessageToModelText(m.content) : m.content,
+      })),
+    ]
 
     const normalizedSections = normalizeReportTemplateSections(template.sections)
     const middleForAi = partitionSectionsForAi(template.sections)
@@ -122,9 +138,9 @@ export async function generateCaseReportAction(
     })
 
     // Escalas entram como texto fixo, sem IA, logo depois dos dados clínicos, e
-    // só quando o atendimento tem alguma. Não vão para o prompt: resultado
-    // clínico que ninguém disse na conversa não deve ser redigido pelo modelo.
-    const scaleResults = await getScaleResultsByCase(supabase, profile.id, caseId)
+    // só quando o atendimento tem alguma. O prompt recebe a lista do que
+    // foi feito, mas a seção de escalas do relatório é esta, nunca redigida pelo modelo.
+    const { scaleResults } = consultRecords
     if (scaleResults.length > 0) {
       sections.splice(2, 0, {
         name: SCALE_RESULTS_SECTION_NAME,

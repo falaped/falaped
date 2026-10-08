@@ -52,15 +52,13 @@ import {
   ASSISTANT_POST_RESPONSE_DELAY_MS,
   ASSISTANT_TYPING_MIN_DISPLAY_MS,
 } from "@/lib/constants"
-import { tz } from "@date-fns/tz"
-import { format } from "date-fns"
-import { CLINIC_TIME_ZONE } from "@/lib/clinic-timezone"
 import { CLINICAL_NOTATION_SUMMARY_MESSAGE } from "@/lib/format-clinical-assistant-sections"
 import { CloseConsultSheet } from "@/components/dashboard/cases/close-consult-sheet"
 import type { CaseReport as CaseReportType } from "@/modules/cases/get-case-report"
 import type { ReportTemplateWithSections } from "@/modules/report-templates/get-report-template-by-id"
 import { toCaseDocuments } from "@/components/dashboard/cases/case-detail-documents"
-import { ConsultRail, countConsultRecords, type ConsultDocuments, type ConsultRecords } from "@/components/dashboard/cases/consult-rail"
+import { ConsultRail } from "@/components/dashboard/cases/consult-rail"
+import { clinicDay, countConsultRecords, type ConsultDocuments, type ConsultRecords } from "@/lib/consult-records"
 import { ConsultTimer } from "@/components/dashboard/cases/consult-timer"
 import { closeTiming } from "@/lib/consult-idle"
 import type { ConsultDoctor } from "@/components/dashboard/cases/consult-prescription-panel"
@@ -938,7 +936,7 @@ export function NewCaseWorkspace({
       }`
     : null
   // Dia da consulta no fuso da clínica: a medida é ligada à data, não ao caso.
-  const consultDay = format(startedAt, "yyyy-MM-dd", { in: tz(CLINIC_TIME_ZONE) })
+  const consultDay = clinicDay(startedAt)
   const consultRecords: ConsultRecords = {
     documents,
     measurements: measurements.filter((m) => m.measured_on === consultDay),
@@ -1219,7 +1217,8 @@ export function NewCaseWorkspace({
         todayLabel={todayLabel}
         template={reportTemplate}
         caseReports={caseReports}
-        hasMessages={messages.length > 0}
+        // O relatório sai da conversa ou do que foi feito no app.
+        hasMessages={messages.length > 0 || docCount > 0}
         documents={toCaseDocuments(documents)}
         reminders={reminders}
         startedAt={startedAt}
