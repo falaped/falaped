@@ -5,7 +5,6 @@ import { parseWeightHeightForBmi, stripNeonatalBirthMeasuresFromParsedAnthropome
 import { parseHeadCircumferenceCmFromMessage } from "@/modules/falaped-assistant/lib/patient-profile-parsers"
 import type { CaseMessage } from "@/modules/cases/get-case-by-id"
 import { normalizeText } from "@/modules/falaped-assistant/lib/normalize-text"
-import { formatPtDecimal } from "@/modules/falaped-assistant/lib/formatters"
 
 /** Peso, estatura e PC da última mensagem do médico que trouxe medida (a que gerou a revisão). */
 function latestReviewedAnthropometrics(messages: CaseMessage[]): { weightKg: number | null; heightM: number | null; headCm: number | null } {
@@ -53,7 +52,9 @@ export const handleReviewAnthropometricReference: AssistantIntentHandler = async
     patientMetrics: context.patientMetrics,
   })
 
-  if (!change.hasChange) {
+  // Pedido explícito pelo chip vale mesmo sem medida anterior para comparar.
+  const explicit = normalized.startsWith("alterar medidas")
+  if (!change.hasChange && !(explicit && (change.weightKg != null || change.heightM != null || change.headCm != null))) {
     return {
       intent: "REVIEW_ANTHROPOMETRIC_REFERENCE",
       reply: "Dados antropométricos registrados.",
@@ -64,14 +65,15 @@ export const handleReviewAnthropometricReference: AssistantIntentHandler = async
     }
   }
 
+  const decimal = new Intl.NumberFormat("pt-BR", { maximumFractionDigits: 2 })
   const parts: string[] = []
-  if (change.weightKg != null) parts.push(`peso ${change.weightKg.toFixed(3).replace(/\.?0+$/, "")} kg`)
-  if (change.heightM != null) parts.push(`estatura ${formatPtDecimal(change.heightM * 100, 1)} cm`)
-  if (change.headCm != null) parts.push(`PC ${formatPtDecimal(change.headCm, 1)} cm`)
+  if (change.weightKg != null) parts.push(`peso ${decimal.format(change.weightKg)} kg`)
+  if (change.heightM != null) parts.push(`estatura ${decimal.format(change.heightM * 100)} cm`)
+  if (change.headCm != null) parts.push(`PC ${decimal.format(change.headCm)} cm`)
 
   return {
     intent: "REVIEW_ANTHROPOMETRIC_REFERENCE",
-    reply: `Novos dados antropométricos identificados: ${parts.join(", ")}. Deseja usar esses novos valores como referência para este caso?`,
+    reply: `Novas medidas: ${parts.join(", ")}. Confirma para registrar na consulta e atualizar o IMC?`,
     action: "none",
     showStructuredCard: false,
     showAlert: false,

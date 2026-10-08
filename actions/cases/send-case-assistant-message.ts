@@ -82,6 +82,41 @@ type AssistantPayload = {
     items: AssistantStoredData[]
   }
   blockedAssistantMessageId?: string
+  /** O chat perguntou o dado de um atalho; a próxima mensagem do médico é a resposta. */
+  awaiting?: ChatShortcut
+}
+
+/** Atalhos dos chips: o chat pergunta o dado e completa a frase que o assistente entende. */
+type ChatShortcut = "allergy" | "measures"
+
+const SHORTCUT_PROMPTS: Record<ChatShortcut, { trigger: string; question: string; toCommand: (answer: string) => string }> = {
+  allergy: {
+    trigger: "adicionar alergia",
+    question: "Qual alergia você quer adicionar à ficha? Ex.: dipirona, amendoim, proteína do leite.",
+    toCommand: (answer) => `adicionar alergia a ${answer}`,
+  },
+  measures: {
+    trigger: "alterar medidas",
+    question: "Quais medidas mudaram? Ex.: peso 13 kg, altura 88 cm, PC 47 cm.",
+    toCommand: (answer) => `alterar medidas: ${answer}`,
+  },
+}
+
+/** Atalho cujo chip é exatamente esta mensagem ("Adicionar alergia", "Alterar medidas"). */
+function shortcutTriggeredBy(content: string): ChatShortcut | null {
+  const normalized = content.trim().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+  return (Object.keys(SHORTCUT_PROMPTS) as ChatShortcut[]).find((key) => SHORTCUT_PROMPTS[key].trigger === normalized) ?? null
+}
+
+/** Atalho que a última resposta do chat deixou esperando resposta. */
+function pendingShortcut(lastMessage: { role: string; content: string } | undefined): ChatShortcut | null {
+  if (lastMessage?.role !== "assistant" || !lastMessage.content.startsWith(PAYLOAD_PREFIX)) return null
+  try {
+    const awaiting = (JSON.parse(lastMessage.content.slice(PAYLOAD_PREFIX.length)) as AssistantPayload).awaiting
+    return awaiting && awaiting in SHORTCUT_PROMPTS ? awaiting : null
+  } catch {
+    return null
+  }
 }
 
 function serializeAssistantPayload(payload: AssistantPayload): string {
@@ -391,8 +426,8 @@ export async function sendCaseAssistantMessageAction(
   caseId: string,
   userInput: string,
 ): Promise<SendCaseAssistantMessageActionResult> {
-  const content = userInput.trim()
-  if (!content) return { ok: false, error: "Digite uma mensagem para enviar." }
+  const typed = userInput.trim()
+  if (!typed) return { ok: false, error: "Digite uma mensagem para enviar." }
 
   const supabase = await createClient()
   const { profile } = await getAuthenticatedUser(supabase)
@@ -413,16 +448,44 @@ export async function sendCaseAssistantMessageAction(
   try {
     if (
       caseRow.pending_action &&
-      /cancelar acao|cancelar ação|cancelar/.test(content.toLowerCase())
+      /cancelar acao|cancelar ação|cancelar/.test(typed.toLowerCase())
     ) {
       await updateCasePendingAction(supabase, caseId, profile.id, null)
     }
+
+    // Resposta à pergunta de um atalho vira a frase completa ("dipirona" → "adicionar
+    // alergia a dipirona") e é gravada assim, para a confirmação achar o dado no fio.
+    const awaiting = pendingShortcut((await listCaseMessagesByCaseId(supabase, caseId)).at(-1))
+    const content =
+      awaiting && !/^cancel/i.test(typed) ? SHORTCUT_PROMPTS[awaiting].toCommand(typed) : typed
 
     const insertedUserMessage = await insertCaseMessage(supabase, {
       caseId,
       role: "user",
       content,
     })
+    const userMessageResult = {
+      id: insertedUserMessage.id,
+      role: "user" as const,
+      content: insertedUserMessage.content,
+      created_at: insertedUserMessage.created_at,
+    }
+
+    // Chip de atalho: o chat só pergunta o dado; a próxima mensagem completa o pedido.
+    const shortcut = shortcutTriggeredBy(content)
+    if (shortcut || (awaiting && content === typed)) {
+      const question = await insertCaseMessage(supabase, {
+        caseId,
+        role: "assistant",
+        content: serializeAssistantPayload(
+          shortcut
+            ? { type: "assistant_reply", content: SHORTCUT_PROMPTS[shortcut].question, awaiting: shortcut }
+            : { type: "assistant_reply", content: "Certo, cancelado." },
+        ),
+      })
+      revalidatePath(`/dashboard/cases/new/${caseId}`)
+      return { ok: true, userMessage: userMessageResult, assistantMessage: question, assistantMessages: [question] }
+    }
 
     // Lembrete pedido no chat é gravado direto (é só uma pendência; apaga-se no painel).
     const reminderText = parseReminderRequest(content)
@@ -440,12 +503,7 @@ export async function sendCaseAssistantMessageAction(
       revalidatePath(`/dashboard/cases/new/${caseId}`)
       return {
         ok: true,
-        userMessage: {
-          id: insertedUserMessage.id,
-          role: "user",
-          content: insertedUserMessage.content,
-          created_at: insertedUserMessage.created_at,
-        },
+        userMessage: userMessageResult,
         assistantMessage: reminderReply,
         assistantMessages: [reminderReply],
       }

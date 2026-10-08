@@ -52,8 +52,11 @@ export async function planAssistantTurnActions(
     normalizedInput.includes("usar novos dados antropometricos") ||
     normalizedInput.includes("manter valores anteriores") ||
     normalizedInput.includes("manter dados anteriores")
+  // "alterar medidas: …" (chip Alterar medidas) sempre revisa, mesmo sem medida anterior.
+  const explicitMeasures = normalizedInput.startsWith("alterar medidas")
   if (
-    (answersAnthropometricReview || (anthropometrics.hasInput && anthropometrics.diverges)) &&
+    (answersAnthropometricReview ||
+      (anthropometrics.hasInput && (anthropometrics.diverges || explicitMeasures))) &&
     !llmActions.includes("REVIEW_ANTHROPOMETRIC_REFERENCE")
   ) {
     actions.unshift(
