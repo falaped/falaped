@@ -1,10 +1,24 @@
 import { notFound, redirect } from "next/navigation"
+import { format } from "date-fns"
+import { tz } from "@date-fns/tz"
+import { CLINIC_TIME_ZONE } from "@/lib/clinic-timezone"
 import { createClient } from "@/lib/supabase/server"
 import { getAuthenticatedUser } from "@/modules/supabase/get-authenticated-user"
 import { getCaseById } from "@/modules/cases/get-case-by-id"
 import { getPhoneByProfileId } from "@/modules/authenticated-users/get-phone-by-profile-id"
 import { getPreviousCaseCarryover } from "@/modules/cases/get-previous-case-carryover"
 import { listCaseReminders } from "@/modules/cases/list-case-reminders"
+import { getPatientPhotoSignedUrl } from "@/modules/patients/get-patient-photo-signed-url"
+import { getPrescriptionsByCaseId } from "@/modules/prescriptions/get-prescriptions-by-case-id"
+import { getMedicalCertificatesByCaseId } from "@/modules/medical-certificates/get-medical-certificates-by-case-id"
+import { getExamRequestsByCaseId } from "@/modules/exam-requests/get-exam-requests-by-case-id"
+import { getReferralsByCaseId } from "@/modules/referrals/get-referrals-by-case-id"
+import { getScaleResultsByCase } from "@/modules/patient-scales/get-scale-results-by-case"
+import { listAttachmentsByCase } from "@/modules/patient-attachments/list-attachments-by-case"
+import { listExamReadingsByCase } from "@/modules/exam-readings/list-exam-readings-by-case"
+import { getExamReadingPageUrls } from "@/modules/exam-readings/get-exam-reading-page-urls"
+import { getMeasurementsByPatient } from "@/modules/patient-growth/get-measurements-by-patient"
+import { computePediatricAge } from "@/lib/compute-pediatric-age"
 import { NewCaseWorkspace } from "@/components/dashboard/cases/new-case-workspace"
 
 export default async function NewCaseWorkspacePage({
@@ -22,41 +36,74 @@ export default async function NewCaseWorkspacePage({
   const caseDetail = await getCaseById(supabase, caseId, profile.id)
   if (!caseDetail) notFound()
   if (caseDetail.origin !== "dashboard") redirect(`/dashboard/cases/${caseId}`)
-  if (caseDetail.status !== "active") redirect("/dashboard/cases")
+  // Encerrada (inclusive pelo "Encerrar consulta" daqui): o detalhe mostra o que ficou.
+  if (caseDetail.status !== "active") redirect(`/dashboard/cases/${caseId}`)
 
-  // O que a consulta anterior desta criança deixou. Falha aqui não pode impedir
-  // o atendimento: sem carryover, o workspace abre normal, só sem o modal.
-  const phone = await getPhoneByProfileId(supabase, profile.id).catch(() => null)
+  const patientId = caseDetail.patient?.id ?? null
+  // Tudo abaixo é apoio: falha vira vazio e a consulta abre do mesmo jeito.
+  const [
+    phone,
+    reminders,
+    photoUrl,
+    prescriptions,
+    certificates,
+    examRequests,
+    referrals,
+    scaleResults,
+    attachments,
+    examReadings,
+    measurements,
+  ] = await Promise.all([
+    getPhoneByProfileId(supabase, profile.id).catch(() => null),
+    listCaseReminders(supabase, profile.id, caseId).catch(() => []),
+    getPatientPhotoSignedUrl(supabase, caseDetail.patient?.photo_path ?? null).catch(() => null),
+    getPrescriptionsByCaseId(supabase, profile.id, caseId).catch(() => []),
+    getMedicalCertificatesByCaseId(supabase, profile.id, caseId).catch(() => []),
+    getExamRequestsByCaseId(supabase, profile.id, caseId).catch(() => []),
+    getReferralsByCaseId(supabase, profile.id, caseId).catch(() => []),
+    getScaleResultsByCase(supabase, profile.id, caseId).catch(() => []),
+    listAttachmentsByCase(supabase, profile.id, caseId).catch(() => []),
+    listExamReadingsByCase(supabase, profile.id, caseId).catch(() => []),
+    patientId ? getMeasurementsByPatient(supabase, profile.id, patientId).catch(() => []) : [],
+  ])
+
+  // O que a consulta anterior desta criança deixou; sem ela, só não aparece o cartão.
   const previousCarryover =
-    phone && caseDetail.patient?.id
-      ? await getPreviousCaseCarryover(
-          supabase,
-          profile.id,
-          phone,
-          caseDetail.patient.id,
-          caseDetail.id,
-        ).catch(() => null)
+    phone && patientId
+      ? await getPreviousCaseCarryover(supabase, profile.id, phone, patientId, caseId).catch(() => null)
       : null
 
-  const reminders = await listCaseReminders(
-    supabase,
-    profile.id,
-    caseDetail.id,
-  ).catch(() => [])
+  const examReadingsWithPages = await Promise.all(
+    examReadings.map(async (reading) => ({
+      ...reading,
+      pageUrls: await getExamReadingPageUrls(supabase, reading.page_paths),
+    })),
+  )
+
+  // "Hoje" no fuso da clínica: o host pode estar em UTC (ver case-detail-content.tsx).
+  const now = new Date()
+  const todayIso = format(now, "yyyy-MM-dd", { in: tz(CLINIC_TIME_ZONE) })
+  const todayLabel = format(now, "dd/MM/yyyy", { in: tz(CLINIC_TIME_ZONE) })
 
   return (
     <NewCaseWorkspace
       caseId={caseDetail.id}
       initialMessages={caseDetail.messages}
       patient={caseDetail.patient}
-      userDisplayName={profile.first_name?.trim() || "Pediatra"}
+      photoUrl={photoUrl}
       startedAt={caseDetail.started_at}
-      endedAt={caseDetail.ended_at}
       consultationPausedMs={caseDetail.consultation_paused_ms}
       consultationPausedAt={caseDetail.consultation_paused_at}
       reminders={reminders}
       previousCarryover={previousCarryover}
+      documents={{ prescriptions, certificates, examRequests, referrals }}
+      scaleResults={scaleResults}
+      attachments={attachments}
+      examReadings={examReadingsWithPages}
+      measurements={measurements}
+      ageMonths={computePediatricAge(caseDetail.patient?.birth_date ?? null, now).totalMonths ?? null}
+      todayIso={todayIso}
+      todayLabel={todayLabel}
     />
   )
 }
-

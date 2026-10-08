@@ -85,6 +85,12 @@ export async function CaseDetailContent({ id }: { id: string }) {
     notFound()
   }
 
+  // Consulta aberta do painel tem um lugar só: a própria consulta (protótipo a5). Os
+  // documentos emitidos dela voltam por aqui (caseDocumentsHref) e caem lá.
+  if (caseDetail.status === "active" && caseDetail.origin === "dashboard") {
+    redirect(`/dashboard/cases/new/${id}`)
+  }
+
   // Hoje no fuso da CLÍNICA, derivado aqui e descido como prop até o campo
   // `Recebido em`. Um componente cliente num host em UTC derivaria o dia SEGUINTE
   // depois das 21h de Brasília, e o lançamento cairia no bucket errado — em silêncio,

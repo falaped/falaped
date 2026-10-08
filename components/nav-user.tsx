@@ -78,7 +78,7 @@ export function NavUser() {
         <SidebarMenuItem>
           <SidebarMenuButton size="lg" className="cursor-default">
             <Skeleton className="h-8 w-8 rounded-lg" />
-            <div className="grid flex-1 gap-1">
+            <div className="grid flex-1 gap-1 group-data-[collapsible=icon]:hidden">
               <Skeleton className="h-4 w-24" />
               <Skeleton className="h-3 w-32" />
             </div>
@@ -99,15 +99,16 @@ export function NavUser() {
               size="lg"
               className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
             >
-              <Avatar className="h-8 w-8 rounded-lg flex items-center justify-center">
+              {/* O Avatar é um span, e o menu recolhido esconde os spans do botão (os rótulos): flex! o mantém. */}
+              <Avatar className="h-8 w-8 rounded-full flex items-center justify-center group-data-[collapsible=icon]:flex!">
                 <AvatarImage className="object-contain h-6 w-6" src={user.avatar} alt={user.name} />
                 <AvatarFallback className="rounded-full bg-primary-soft text-caption font-semibold text-primary-ink-strong">{initials}</AvatarFallback>
               </Avatar>
-              <div className="grid flex-1 text-left leading-tight">
+              <div className="grid flex-1 text-left leading-tight group-data-[collapsible=icon]:hidden">
                 <span className="truncate text-label font-medium text-foreground">{user.name}</span>
                 <span className="truncate text-caption text-subtle-foreground">{user.crm ? `CRM ${user.crm}` : user.email}</span>
               </div>
-              <ChevronsUpDown className="ml-auto size-4 shrink-0 opacity-50" />
+              <ChevronsUpDown className="ml-auto size-4 shrink-0 opacity-50 group-data-[collapsible=icon]:hidden" />
             </SidebarMenuButton>
           </DropdownMenuTrigger>
           <DropdownMenuContent

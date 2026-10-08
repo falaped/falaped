@@ -1,7 +1,8 @@
 "use client"
 
 import { useEffect, useState, useTransition } from "react"
-import { useRouter } from "next/navigation"
+import Link from "next/link"
+import { usePathname, useRouter } from "next/navigation"
 import { differenceInCalendarDays, differenceInMinutes, format } from "date-fns"
 import { PlusIcon, SearchIcon, UserPlusIcon } from "lucide-react"
 import { toast } from "sonner"
@@ -82,6 +83,7 @@ export function openStartConsult(patient?: PatientSearchItem) {
  */
 export function PatientSearch() {
   const router = useRouter()
+  const pathname = usePathname()
   const [open, setOpen] = useState(false)
   /** "start": ↵ inicia a consulta; "search": ↵ abre a ficha. */
   const [mode, setMode] = useState<"start" | "search">("search")
@@ -135,6 +137,16 @@ export function PatientSearch() {
       } else setError(result.error)
     })
   }, [open])
+
+  // A consulta aberta no topo do menu acompanha a navegação (abriu ou encerrou em outra tela).
+  // ponytail: busca a lista inteira a cada troca de página; ação só da consulta aberta se pesar.
+  useEffect(() => {
+    listPatientsForSearchAction().then((result) => {
+      if (!result.ok) return
+      setPatients(result.patients)
+      setActiveCase(result.activeCase)
+    })
+  }, [pathname])
 
   // "Atender" de fora da janela: carrega a consulta aberta (o aviso a3c mostra quem é) e segue o mesmo caminho.
   useEffect(() => {
@@ -216,20 +228,43 @@ export function PatientSearch() {
   // Busca sem resultado: o único caminho é cadastrar (↵ também cadastra).
   const noMatch = !!patients && !!query.trim() && listed.length === 0
 
+  const [firstName, ...restName] = activePatient?.name.split(" ") ?? []
+  const shortName = restName.length ? `${firstName} ${restName.at(-1)![0]}.` : firstName
+
   return (
     <>
-      <Button
-        size="lg"
-        onClick={() => {
-          setMode("start")
-          setOpen(true)
-        }}
-        title="Iniciar consulta"
-        className="w-full group-data-[collapsible=icon]:size-10 group-data-[collapsible=icon]:p-0"
-      >
-        <PlusIcon />
-        <span className="group-data-[collapsible=icon]:sr-only">Iniciar consulta</span>
-      </Button>
+      {activeCase && activePatient ? (
+        <Link
+          href={caseHref(activeCase)}
+          title={`Voltar à consulta · ${shortName}`}
+          className="flex w-full items-center gap-2.5 rounded-xl border border-primary-soft-border bg-primary-soft p-3 transition-shadow hover:shadow-md group-data-[collapsible=icon]:size-10 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:rounded-lg group-data-[collapsible=icon]:p-0"
+        >
+          <span className="relative grid size-8 shrink-0 place-items-center rounded-full bg-card text-label font-semibold text-primary-ink-strong group-data-[collapsible=icon]:bg-transparent">
+            {getPatientInitials(activePatient.name)}
+            <span className="absolute -top-0.5 -right-0.5 size-2.5 animate-pulse rounded-full bg-success ring-2 ring-card group-data-[collapsible=icon]:ring-primary-soft" aria-hidden />
+          </span>
+          <span className="min-w-0 flex-1 group-data-[collapsible=icon]:sr-only">
+            <span className="block truncate text-label font-semibold">{shortName}</span>
+            <span className="block text-caption text-muted-foreground">Voltar à consulta</span>
+          </span>
+          <span className="num text-caption text-muted-foreground group-data-[collapsible=icon]:hidden">
+            {minutesSince(activeCase.startedAt)}
+          </span>
+        </Link>
+      ) : (
+        <Button
+          size="lg"
+          onClick={() => {
+            setMode("start")
+            setOpen(true)
+          }}
+          title="Iniciar consulta"
+          className="w-full group-data-[collapsible=icon]:size-10 group-data-[collapsible=icon]:p-0"
+        >
+          <PlusIcon />
+          <span className="group-data-[collapsible=icon]:sr-only">Iniciar consulta</span>
+        </Button>
+      )}
       <div className="mt-3 w-full group-data-[collapsible=icon]:mt-1 group-data-[collapsible=icon]:w-auto">
         <button
           type="button"
