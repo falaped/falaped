@@ -13,3 +13,7 @@ export {
   listPatientsForSearchAction,
   type PatientSearchItem,
 } from "./list-patients-for-search"
+export {
+  getPatientDocumentContextAction,
+  type PatientDocumentContext,
+} from "./get-patient-document-context"

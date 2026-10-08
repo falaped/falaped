@@ -13,6 +13,12 @@ const nextConfig: NextConfig = {
     return [
       { source: "/dashboard/admin/leads", destination: "/dashboard/admin/funil", permanent: true },
       { source: "/dashboard/admin/prospects", destination: "/dashboard/admin/funil", permanent: true },
+      // Documentos virou uma lista só, com a emissão no painel; relatório médico e orientação saíram.
+      {
+        source: "/dashboard/:section(prescriptions|medical-certificates|exam-requests|referrals|medical-reports|guidance)/:path*",
+        destination: "/dashboard/services",
+        permanent: false,
+      },
     ];
   },
   experimental: {

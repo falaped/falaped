@@ -36,8 +36,8 @@ const DEMO_CALL_URL = `https://wa.me/5531997815503?text=${encodeURIComponent("Ol
 
 const MORE: { icon: LucideIcon; title: string; detail: string; href: string }[] = [
   { icon: FilesIcon, title: "Documento avulso", detail: "Receita, atestado ou encaminhamento sem abrir consulta.", href: "/dashboard/services" },
-  { icon: SyringeIcon, title: "Vacinas", detail: "Calendário da criança e comprovante para imprimir.", href: "/dashboard/vaccines" },
-  { icon: FilePlusIcon, title: "Receituário em branco", detail: "Seu papel timbrado, para escrever à mão.", href: "/dashboard/prescriptions/new?mode=blank" },
+  { icon: SyringeIcon, title: "Vacinas", detail: "Calendário do SUS e da rede particular, para consulta.", href: "/dashboard/vaccines" },
+  { icon: FilePlusIcon, title: "Receituário em branco", detail: "Seu papel timbrado, para escrever à mão.", href: "/dashboard/services?novo=em-branco" },
 ]
 
 /**

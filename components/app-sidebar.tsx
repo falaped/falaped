@@ -3,7 +3,7 @@
 import * as React from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { LayoutTemplateIcon } from "lucide-react"
+import { LayoutTemplateIcon, SyringeIcon } from "lucide-react"
 
 import {
   Sidebar,
@@ -112,6 +112,15 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
               <Link href="/dashboard/prescription-templates">
                 <LayoutTemplateIcon />
                 <span>Modelos</span>
+              </Link>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+          {/* Referência, não documento: o calendário do SUS e da rede particular. */}
+          <SidebarMenuItem>
+            <SidebarMenuButton asChild tooltip="Vacinas" isActive={pathname.startsWith("/dashboard/vaccines")}>
+              <Link href="/dashboard/vaccines">
+                <SyringeIcon />
+                <span>Vacinas</span>
               </Link>
             </SidebarMenuButton>
           </SidebarMenuItem>

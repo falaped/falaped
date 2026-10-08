@@ -11,9 +11,8 @@ export const prescriptionMedicationSchema = z.object({
 export const prescriptionPayloadSchema = z.object({
   patientName: z.string().optional(),
   birthDate: z.string().optional(),
-  medications: z
-    .array(prescriptionMedicationSchema)
-    .min(1, "Adicione pelo menos um medicamento"),
+  // Vazio = receituário em branco; o painel da receita é que exige um remédio.
+  medications: z.array(prescriptionMedicationSchema),
   orientations: z.string().optional(),
   warningSigns: z.string().optional(),
   additionalNotes: z.string().optional(),

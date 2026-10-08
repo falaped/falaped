@@ -70,7 +70,8 @@ export function ConsultPrescriptionPanel({
   doctor,
   onDone,
 }: {
-  caseId: string
+  /** null = fora da consulta (Documentos). */
+  caseId: string | null
   patient: { id: string; name: string; birth_date: string | null }
   allergies: string[]
   /** "12,4 kg · hoje"; null sem medida de peso. */

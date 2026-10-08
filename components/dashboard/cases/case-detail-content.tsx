@@ -241,7 +241,12 @@ export async function CaseDetailContent({ id }: { id: string }) {
               attachments={caseAttachments}
             />
           ) : null}
-          <CaseDetailDocuments caseId={id} patientId={patient?.id ?? null} documents={documents} />
+          <CaseDetailDocuments
+            caseId={id}
+            caseDate={format(caseDetail.started_at, "dd/MM", inClinic)}
+            patientId={patient?.id ?? null}
+            documents={documents}
+          />
           <CaseBillingCard
             caseId={id}
             todayLabel={todayLabel}

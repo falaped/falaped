@@ -92,25 +92,30 @@ export function toCaseDocuments(docs: {
   ].sort((a, b) => b.issuedAt.localeCompare(a.issuedAt))
 }
 
-const NEW_DOCUMENTS = [
-  { label: "Receita", path: "/dashboard/prescriptions/new", icon: PillIcon },
-  { label: "Atestado", path: "/dashboard/medical-certificates/new", icon: FileCheckIcon },
-  { label: "Pedido de exame", path: "/dashboard/exam-requests/new", icon: FlaskConicalIcon },
-  { label: "Encaminhamento", path: "/dashboard/referrals/new", icon: SendIcon },
+const NEW_DOCUMENTS: Array<{ label: string; kind: CaseDocument["kind"] }> = [
+  { label: "Receita", kind: "prescription" },
+  { label: "Atestado", kind: "certificate" },
+  { label: "Pedido de exame", kind: "exam-request" },
+  { label: "Encaminhamento", kind: "referral" },
 ]
 
 /** Card Documentos da consulta encerrada (protótipo b2): baixar de novo ou emitir mais um. */
 export function CaseDetailDocuments({
   caseId,
+  caseDate,
   patientId,
   documents,
 }: {
   caseId: string
+  /** "dd/MM" da consulta, para o painel dizer de onde o documento sai. */
+  caseDate: string
   /** Sem paciente não há como emitir documento: o botão de criar some. */
   patientId: string | null
   documents: CaseDocument[]
 }) {
-  const query = patientId ? new URLSearchParams({ caseId, patientId }).toString() : ""
+  // Emite no painel de Documentos, já com a criança e esta consulta (documents-list.tsx).
+  const hrefOf = (kind: CaseDocument["kind"]) =>
+    `/dashboard/services?${new URLSearchParams({ novo: kind, paciente: patientId ?? "", consulta: caseId, data: caseDate })}`
 
   return (
     <section className="rounded-xl border border-border bg-card p-5">
@@ -125,14 +130,17 @@ export function CaseDetailDocuments({
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-48">
-              {NEW_DOCUMENTS.map(({ label, path, icon: Icon }) => (
-                <DropdownMenuItem key={path} asChild>
-                  <Link href={`${path}?${query}`}>
+              {NEW_DOCUMENTS.map(({ label, kind }) => {
+                const Icon = KIND_ICON[kind]
+                return (
+                <DropdownMenuItem key={kind} asChild>
+                  <Link href={hrefOf(kind)}>
                     <Icon aria-hidden />
                     {label}
                   </Link>
                 </DropdownMenuItem>
-              ))}
+                )
+              })}
             </DropdownMenuContent>
           </DropdownMenu>
         ) : null}
