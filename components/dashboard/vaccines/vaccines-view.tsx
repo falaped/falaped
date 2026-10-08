@@ -9,7 +9,7 @@ import { listPatientsForSearchAction, type PatientSearchItem } from "@/actions"
 import { SectionTab } from "@/components/dashboard/section-tab"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { CommandDialog, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command"
+import { Command, CommandDialog, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command"
 import { Tabs, TabsContent, TabsList } from "@/components/ui/tabs"
 import { computePediatricAge } from "@/lib/compute-pediatric-age"
 import { formatPediatricAgeShort } from "@/lib/format-pediatric-age"
@@ -56,6 +56,7 @@ export function VaccinesView({
   child: VaccineChild | null
 }) {
   const [picking, setPicking] = useState(false)
+  const [flash, setFlash] = useState<string | null>(null)
   const current = useRef<HTMLDivElement>(null)
   const susByBand = groupByBand(sus)
   const sbimByBand = groupByBand(sbim)
@@ -64,6 +65,12 @@ export function VaccinesView({
   useEffect(() => {
     current.current?.scrollIntoView({ block: "center" })
   }, [child?.id])
+
+  useEffect(() => {
+    if (!flash) return
+    const timer = setTimeout(() => setFlash(null), 2000)
+    return () => clearTimeout(timer)
+  }, [flash])
 
   return (
     <>
@@ -126,7 +133,13 @@ export function VaccinesView({
                 <nav aria-label="Faixas de idade" className="flex flex-wrap gap-1.5 border-b border-border px-5 py-3">
                   {CANONICAL_VACCINE_BANDS.map(({ label }) => (
                     <Badge key={label} asChild variant={label === child?.band ? "default" : "secondary"}>
-                      <button type="button" onClick={() => document.getElementById(bandId(label))?.scrollIntoView({ block: "start", behavior: "smooth" })}>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          document.getElementById(bandId(label))?.scrollIntoView({ block: "start", behavior: "smooth" })
+                          setFlash(label)
+                        }}
+                      >
                         {label}
                       </button>
                     </Badge>
@@ -148,8 +161,9 @@ export function VaccinesView({
                         ref={isCurrent ? current : undefined}
                         aria-current={isCurrent ? "true" : undefined}
                         className={cn(
-                          "grid scroll-mt-4 grid-cols-[140px_minmax(0,1fr)_minmax(0,1fr)] gap-6 px-5 py-3",
-                          isCurrent && "bg-primary-soft/60 shadow-[inset_3px_0_0_var(--primary)]",
+                          "grid scroll-mt-4 grid-cols-[140px_minmax(0,1fr)_minmax(0,1fr)] gap-6 px-5 py-3 transition-colors duration-700",
+                          label === flash && "bg-highlight",
+                          isCurrent && label !== flash && "bg-primary-soft/60 shadow-[inset_3px_0_0_var(--primary)]",
                         )}
                       >
                         <div className="pt-1">
@@ -260,6 +274,7 @@ function ChildPicker({ open, onOpenChange }: { open: boolean; onOpenChange: (ope
 
   return (
     <CommandDialog open={open} onOpenChange={onOpenChange} title="Ver para uma criança">
+      <Command shouldFilter={false}>
       <CommandInput value={query} onValueChange={setQuery} placeholder="Nome, responsável ou telefone" />
       <CommandList className="max-h-[400px]">
         {patients ? (
@@ -301,6 +316,7 @@ function ChildPicker({ open, onOpenChange }: { open: boolean; onOpenChange: (ope
           </p>
         )}
       </CommandList>
+      </Command>
     </CommandDialog>
   )
 }
