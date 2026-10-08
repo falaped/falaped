@@ -25,6 +25,8 @@ export type ConsultRecords = {
   documents: ConsultDocuments
   /** Medidas com a data da consulta: a medida é ligada à data, não ao caso. */
   measurements: Measurement[]
+  /** Histórico do paciente: completa o IMC de uma medida sem peso ou sem estatura. */
+  measurementHistory?: Measurement[]
   scaleResults: ScaleResult[]
   examReadings: ExamReading[]
   attachments: PatientAttachment[]
@@ -69,17 +71,20 @@ function names(list: unknown, pick: (item: unknown) => unknown = (item) => item)
   return all.length > 3 ? `${all.slice(0, 3).join(" · ")} +${all.length - 3}` : all.join(" · ")
 }
 
-function measurementRow(m: Measurement): ConsultRecordRow {
+function measurementRow(m: Measurement, history: Measurement[] = []): ConsultRecordRow {
   const main = [
     m.weight_grams != null ? `${decimal.format(m.weight_grams / 1000)} kg` : null,
     m.length_height_mm != null ? `${decimal.format(m.length_height_mm / 10)} cm` : null,
     m.head_circumference_mm != null ? `PC ${decimal.format(m.head_circumference_mm / 10)} cm` : null,
   ].filter(Boolean)
   const bp = m.systolic_bp != null && m.diastolic_bp != null ? `PA ${m.systolic_bp}/${m.diastolic_bp}` : undefined
-  // IMC da própria medida (peso e estatura da mesma linha), como na ficha.
+  // IMC da medida; sem peso ou sem estatura nela, usa o último valor registrado até ali.
+  const upTo = history.filter((h) => h.created_at <= m.created_at)
+  const weightGrams = m.weight_grams ?? upTo.findLast((h) => h.weight_grams != null)?.weight_grams ?? null
+  const heightMm = m.length_height_mm ?? upTo.findLast((h) => h.length_height_mm != null)?.length_height_mm ?? null
   const bmi =
-    m.weight_grams != null && m.length_height_mm != null
-      ? computePediatricBmi(m.weight_grams / 1000, m.length_height_mm / 1000)
+    (m.weight_grams != null || m.length_height_mm != null) && weightGrams != null && heightMm != null
+      ? computePediatricBmi(weightGrams / 1000, heightMm / 1000)
       : null
   const bmiText = bmi?.ok ? `IMC ${decimal.format(bmi.bmi)}` : bmi ? "IMC fora da faixa esperada" : null
   const sub = [bmiText, main.length ? bp : null].filter(Boolean).join(" · ") || undefined
@@ -130,7 +135,7 @@ export function consultSections(records: ConsultRecords): { title: string; rows:
         })),
       ]),
     },
-    { title: "Medidas", rows: byTime(records.measurements.map(measurementRow)) },
+    { title: "Medidas", rows: byTime(records.measurements.map((m) => measurementRow(m, records.measurementHistory))) },
     {
       title: "Escalas",
       rows: byTime(

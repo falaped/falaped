@@ -204,20 +204,23 @@ async function saveChatMeasurement(
   }
   const day = clinicDay(consult.started_at)
   const sameDay = patientMeasurements.findLast((m) => m.measured_on === day)
-  // Medida nova parte do último peso/estatura/PC registrado: alterar só um valor
-  // ainda deixa a medida completa, e o IMC sai com o valor novo.
+  // A medida fica completa com o último peso/estatura/PC registrado: alterar só um
+  // valor não deixa a medida pela metade, e o IMC sai com o valor novo.
   const last = <K extends "weight_grams" | "length_height_mm" | "head_circumference_mm">(key: K) =>
     patientMeasurements.findLast((m) => m[key] != null)?.[key] ?? null
+  const complete = {
+    weight_grams: sameDay?.weight_grams ?? last("weight_grams"),
+    length_height_mm: sameDay?.length_height_mm ?? last("length_height_mm"),
+    head_circumference_mm: sameDay?.head_circumference_mm ?? last("head_circumference_mm"),
+    ...values,
+  }
   const saved = sameDay
-    ? await updateMeasurement(supabase, sameDay.id, profileId, consult.patient_id, values)
+    ? await updateMeasurement(supabase, sameDay.id, profileId, consult.patient_id, complete)
     : await createMeasurement(supabase, profileId, consult.patient_id, {
         measured_on: day,
-        weight_grams: last("weight_grams"),
-        length_height_mm: last("length_height_mm"),
-        head_circumference_mm: last("head_circumference_mm"),
         systolic_bp: null,
         diastolic_bp: null,
-        ...values,
+        ...complete,
       })
   revalidatePath(`/dashboard/patients/${consult.patient_id}`)
 

@@ -58,3 +58,10 @@ test("peso, altura e PC mais recentes vêm de medidas diferentes quando preciso"
   })
   assert.deepEqual(latestAnthropometry([]), { weight: null, height: null, head_circumference: null })
 })
+
+test("medida só com peso mostra o IMC com a última estatura registrada", () => {
+  const older = { id: "a", created_at: "2026-10-08T12:00:00Z", weight_grams: 11800, length_height_mm: 850, head_circumference_mm: null, systolic_bp: null, diastolic_bp: null }
+  const onlyWeight = { id: "b", created_at: "2026-10-08T13:00:00Z", weight_grams: 13000, length_height_mm: null, head_circumference_mm: null, systolic_bp: null, diastolic_bp: null }
+  const records = { ...empty, measurements: [onlyWeight], measurementHistory: [older, onlyWeight] } as unknown as ConsultRecords
+  assert.equal(formatConsultRecordsForAi(records), "Medidas:\n• 10:00 13 kg (IMC 18)")
+})

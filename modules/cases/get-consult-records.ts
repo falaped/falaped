@@ -37,6 +37,7 @@ export async function getConsultRecords(
   return {
     documents: { prescriptions, certificates, examRequests, referrals },
     measurements: measurements.filter((m) => m.measured_on === day),
+    measurementHistory: measurements,
     scaleResults,
     examReadings,
     attachments,

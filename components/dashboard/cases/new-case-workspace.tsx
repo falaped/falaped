@@ -940,6 +940,7 @@ export function NewCaseWorkspace({
   const consultRecords: ConsultRecords = {
     documents,
     measurements: measurements.filter((m) => m.measured_on === consultDay),
+    measurementHistory: measurements,
     scaleResults: scaleResults.filter((r) => r.case_id === caseId),
     examReadings,
     attachments: attachments.filter((a) => a.case_id === caseId),
