@@ -28,6 +28,26 @@ export function summarizeIdle(startedAt: string, activityAts: string[], now: num
   return { gapsMs, idleSince: now - prev > IDLE_LIMIT_MS ? new Date(prev).toISOString() : null }
 }
 
+type Timer = { startedAt: string; pausedMs: number; pausedAt: string | null }
+
+/**
+ * Pausa manual seguida de algo salvo na consulta: a médica voltou, então a pausa termina
+ * nessa atividade. Se a pausa caiu num intervalo parado (> limite), ele já é descontado
+ * como intervalo e a pausa só some, sem contar duas vezes. Null quando nada muda.
+ */
+export function resumeByActivity(timer: Timer, activityAts: string[]): { pausedMs: number; pausedAt: null } | null {
+  if (!timer.pausedAt) return null
+  const pausedAt = Date.parse(timer.pausedAt)
+  const points = activityAts.map((iso) => Date.parse(iso)).sort((a, b) => a - b)
+  const after = points.find((t) => t > pausedAt)
+  if (after === undefined) return null
+  const before = Math.max(Date.parse(timer.startedAt), ...points.filter((t) => t <= pausedAt))
+  const insideGap = after - before > IDLE_LIMIT_MS
+  return { pausedMs: timer.pausedMs + (insideGap ? 0 : after - pausedAt), pausedAt: null }
+}
+
+const settle = (timer: Timer, activityAts: string[]): Timer => ({ ...timer, ...resumeByActivity(timer, activityAts) })
+
 /**
  * Fim e pausa a gravar ao encerrar: a consulta esquecida termina na última atividade,
  * os intervalos parados viram pausa, e uma pausa manual aberta fecha onde começou.
@@ -39,6 +59,7 @@ export function closeTiming(
   now: number,
   endedAt?: string,
 ): { endedAt: string; pausedMs: number } {
+  timer = settle(timer, activityAts)
   const start = Date.parse(timer.startedAt)
   const end = endedAt ? Math.max(start, Date.parse(endedAt)) : timer.pausedAt ? Date.parse(timer.pausedAt) : now
   const { gapsMs, idleSince } = summarizeIdle(timer.startedAt, activityAts, end)
@@ -59,6 +80,7 @@ export function consultClock(
   activityAts: string[],
   now: number,
 ): { elapsedMs: number; idleSince: string | null; paused: boolean } {
+  timer = settle(timer, activityAts)
   const end = timer.pausedAt ? Date.parse(timer.pausedAt) : now
   const { gapsMs, idleSince } = summarizeIdle(timer.startedAt, activityAts, end)
   const stop = idleSince ? Date.parse(idleSince) : end

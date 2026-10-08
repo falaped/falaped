@@ -1,7 +1,7 @@
 import test from "node:test"
 import assert from "node:assert/strict"
 
-import { closeTiming, consultClock, summarizeIdle } from "@/lib/consult-idle"
+import { closeTiming, consultClock, resumeByActivity, summarizeIdle } from "@/lib/consult-idle"
 
 const at = (hhmm: string) => `2026-10-08T${hhmm}:00.000Z`
 const t = (hhmm: string) => Date.parse(at(hhmm))
@@ -62,4 +62,18 @@ test("pausada à mão depois de esquecida: continua esquecida", () => {
 test("pausada à mão no meio da consulta: congela na pausa", () => {
   const timer = { startedAt: at("09:10"), pausedMs: 0, pausedAt: at("09:50") }
   assert.deepEqual(consultClock(timer, [at("09:42")], t("20:00")), { elapsedMs: 40 * MIN, idleSince: null, paused: true })
+})
+
+test("salvou algo depois de pausar: a pausa termina nessa atividade", () => {
+  const timer = { startedAt: at("09:10"), pausedMs: 0, pausedAt: at("09:40") }
+  assert.deepEqual(resumeByActivity(timer, [at("09:30"), at("09:50")]), { pausedMs: 10 * MIN, pausedAt: null })
+  assert.equal(resumeByActivity(timer, [at("09:30")]), null)
+})
+
+test("esquecida, pausada tarde e retomada com uma escala: só conta o tempo ativo", () => {
+  // Caso real: 20:30 início, 20:31 relatório, pausa às 06:39, escala às 07:12.
+  const timer = { startedAt: "2026-10-07T20:30:00.000Z", pausedMs: 0, pausedAt: "2026-10-08T06:39:00.000Z" }
+  const acts = ["2026-10-07T20:31:00.000Z", "2026-10-08T07:12:00.000Z"]
+  const clock = consultClock(timer, acts, Date.parse("2026-10-08T07:15:00.000Z"))
+  assert.deepEqual(clock, { elapsedMs: 4 * MIN, idleSince: null, paused: false })
 })
