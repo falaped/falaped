@@ -26,6 +26,9 @@ import { assistantMessageToModelText } from "@/modules/falaped-assistant/assista
 import { getConsultRecords } from "@/modules/cases/get-consult-records"
 import { clinicDay, formatConsultRecordsForAi, latestAnthropometry } from "@/lib/consult-records"
 import { createMeasurement } from "@/modules/patient-growth/create-measurement"
+import { updateMeasurement } from "@/modules/patient-growth/update-measurement"
+import { computePediatricBmi } from "@/lib/parse-anthropometrics-for-bmi"
+import type { Measurement } from "@/modules/patient-growth/types"
 import { processAssistantTurn } from "@/modules/falaped-assistant/orchestrator/process-turn"
 import { updateCaseAssistantTurnQueue } from "@/modules/cases/update-case-assistant-turn-queue"
 import { withBlockedAssistantMessageId } from "@/modules/falaped-assistant/pipeline/assistant-turn-queue"
@@ -164,11 +167,16 @@ function parseMetricToNumber(value: string | null | undefined): number | null {
   return Number(match[1])
 }
 
-/** Grava o peso/estatura confirmados como medida do dia da consulta e devolve a resposta do chat. */
+/**
+ * Grava peso/estatura/PC confirmados no chat na medida do dia da consulta e devolve a resposta.
+ * Se o dia já tem medida, completa a mais recente (o IMC da ficha vem de peso e estatura da
+ * MESMA medida); senão cria uma. A resposta traz o IMC quando a medida tem os dois.
+ */
 async function saveChatMeasurement(
   supabase: Awaited<ReturnType<typeof createClient>>,
   profileId: string,
   consult: { started_at: string; patient_id: string | null },
+  patientMeasurements: Measurement[],
   update: { weightKg: number | null; heightM: number | null; headCm: number | null } | undefined,
 ): Promise<string> {
   const weightKg = update?.weightKg != null && update.weightKg >= 0.3 && update.weightKg <= 180 ? update.weightKg : null
@@ -177,22 +185,42 @@ async function saveChatMeasurement(
   if (!consult.patient_id || (weightKg == null && heightCm == null && headCm == null)) {
     return "Não consegui registrar: confira o valor e use o botão Medidas."
   }
-  await createMeasurement(supabase, profileId, consult.patient_id, {
-    measured_on: clinicDay(consult.started_at),
-    weight_grams: weightKg != null ? Math.round(weightKg * 1000) : null,
-    length_height_mm: heightCm != null ? Math.round(heightCm * 10) : null,
-    head_circumference_mm: headCm != null ? Math.round(headCm * 10) : null,
-    systolic_bp: null,
-    diastolic_bp: null,
-  })
+  const values = {
+    ...(weightKg != null ? { weight_grams: Math.round(weightKg * 1000) } : {}),
+    ...(heightCm != null ? { length_height_mm: Math.round(heightCm * 10) } : {}),
+    ...(headCm != null ? { head_circumference_mm: Math.round(headCm * 10) } : {}),
+  }
+  const day = clinicDay(consult.started_at)
+  const sameDay = patientMeasurements.findLast((m) => m.measured_on === day)
+  const saved = sameDay
+    ? await updateMeasurement(supabase, sameDay.id, profileId, consult.patient_id, values)
+    : await createMeasurement(supabase, profileId, consult.patient_id, {
+        measured_on: day,
+        weight_grams: null,
+        length_height_mm: null,
+        head_circumference_mm: null,
+        systolic_bp: null,
+        diastolic_bp: null,
+        ...values,
+      })
   revalidatePath(`/dashboard/patients/${consult.patient_id}`)
+
   const decimal = new Intl.NumberFormat("pt-BR", { maximumFractionDigits: 2 })
   const parts = [
     weightKg != null ? `peso ${decimal.format(weightKg)} kg` : null,
     heightCm != null ? `estatura ${decimal.format(heightCm)} cm` : null,
     headCm != null ? `PC ${decimal.format(headCm)} cm` : null,
   ].filter(Boolean)
-  return `Medida registrada na consulta: ${parts.join(", ")}. Já aparece na ficha e na curva de crescimento.`
+  const bmi =
+    saved.weight_grams != null && saved.length_height_mm != null
+      ? computePediatricBmi(saved.weight_grams / 1000, saved.length_height_mm / 1000)
+      : null
+  const bmiText = bmi?.ok
+    ? ` IMC atualizado: ${decimal.format(Math.round(bmi.bmi * 10) / 10)} kg/m².`
+    : bmi
+      ? " O IMC não foi atualizado: peso e estatura dão um valor fora do esperado."
+      : " Para o IMC, registre também o peso e a estatura desta consulta."
+  return `Medida registrada na consulta: ${parts.join(", ")}.${bmiText} Já aparece na ficha e na curva de crescimento.`
 }
 
 function truncateConversationWindow(messages: Array<{ role: "user" | "assistant"; content: string }>): {
@@ -522,7 +550,7 @@ export async function sendCaseAssistantMessageAction(
       if (routed.action === "confirm_anthropometric_reference" && caseDetail?.patient?.id) {
         measurementReplies.set(
           segmentIndex,
-          await saveChatMeasurement(supabase, profile.id, caseDetail, routed.anthropometricUpdate),
+          await saveChatMeasurement(supabase, profile.id, caseDetail, consultRecords?.patientMeasurements ?? [], routed.anthropometricUpdate),
         )
       }
 

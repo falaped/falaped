@@ -139,15 +139,20 @@ test("parseSexFromMessage returns null when unspecified", () => {
   assert.equal(parseSexFromMessage("paciente com febre"), null)
 })
 
-test("detectPatientProfileUpdateCandidate detects weight and height updates", () => {
-  const result = detectPatientProfileUpdateCandidate({
-    userMessage: "peso 5kg altura 51cm",
-    patientProfile: EMPTY_PROFILE,
-  })
-  assert.ok(result)
-  assert.ok(result.updates.weight)
-  assert.ok(result.updates.height)
-  assert.ok(result.summaryLines.length >= 2)
+test("chat não altera na ficha peso, estatura, nome, nascimento, responsáveis, telefone, sexo, medicações e histórico", () => {
+  for (const userMessage of [
+    "peso 5kg altura 51cm",
+    "sexo: feminino",
+    "nome do paciente: Ana",
+    "responsável: Maria",
+    "responsável legal: Mãe",
+    "telefone: 31999998888",
+    "data de nascimento: 01/02/2024",
+    "medicações em uso: vitamina D",
+    "histórico médico: asma",
+  ]) {
+    assert.equal(detectPatientProfileUpdateCandidate({ userMessage, patientProfile: EMPTY_PROFILE }), null, userMessage)
+  }
 })
 
 test("detectPatientProfileUpdateCandidate returns null without profile id", () => {
@@ -164,16 +169,6 @@ test("detectPatientProfileUpdateCandidate returns null when no parseable data", 
     patientProfile: EMPTY_PROFILE,
   })
   assert.equal(result, null)
-})
-
-test("detectPatientProfileUpdateCandidate updates sex to enum key", () => {
-  const result = detectPatientProfileUpdateCandidate({
-    userMessage: "sexo: feminino",
-    patientProfile: { ...EMPTY_PROFILE, sex: "masculino" },
-  })
-  assert.ok(result)
-  assert.equal(result.updates.sex, "feminino")
-  assert.ok(result.summaryLines.some((line) => line.includes("Feminino")))
 })
 
 test("looksLikePatientProfileDictation detects weight/height patterns", () => {
