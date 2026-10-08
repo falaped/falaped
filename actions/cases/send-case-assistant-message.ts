@@ -29,6 +29,9 @@ import { createMeasurement } from "@/modules/patient-growth/create-measurement"
 import { updateMeasurement } from "@/modules/patient-growth/update-measurement"
 import { computePediatricBmi } from "@/lib/parse-anthropometrics-for-bmi"
 import type { Measurement } from "@/modules/patient-growth/types"
+import { createCaseReminder } from "@/modules/cases/create-case-reminder"
+import { listCaseReminders } from "@/modules/cases/list-case-reminders"
+import { parseReminderRequest } from "@/modules/falaped-assistant/lib/message-classification"
 import { processAssistantTurn } from "@/modules/falaped-assistant/orchestrator/process-turn"
 import { updateCaseAssistantTurnQueue } from "@/modules/cases/update-case-assistant-turn-queue"
 import { withBlockedAssistantMessageId } from "@/modules/falaped-assistant/pipeline/assistant-turn-queue"
@@ -148,12 +151,21 @@ function buildPatientContext(patient: PatientContextSnapshot | null): string | n
   return `Contexto do paciente: ${parts.join(" | ")}`
 }
 
-/** Junta o que a consulta já produziu no app ao contexto do paciente. */
-function withConsultRecords(patientContext: string | null, records: string | null): string | null {
-  if (!records) return patientContext
+/** Junta o que a consulta já produziu no app e os lembretes ao contexto do paciente. */
+function withConsultRecords(
+  patientContext: string | null,
+  records: string | null,
+  reminders: string[],
+): string | null {
+  if (!records && !reminders.length) return patientContext
   return [
     patientContext,
-    `Feito nesta consulta pelo app (o médico já gerou ou registrou; considere ao responder e não peça de novo):\n${records}`,
+    records
+      ? `Feito nesta consulta pelo app (o médico já gerou ou registrou; considere ao responder e não peça de novo):\n${records}`
+      : null,
+    reminders.length
+      ? `Lembretes registrados nesta consulta (pendências para a próxima):\n${reminders.map((text) => `• ${text}`).join("\n")}`
+      : null,
   ]
     .filter(Boolean)
     .join("\n\n")
@@ -409,11 +421,41 @@ export async function sendCaseAssistantMessageAction(
       content,
     })
 
+    // Lembrete pedido no chat é gravado direto (é só uma pendência; apaga-se no painel).
+    const reminderText = parseReminderRequest(content)
+    if (reminderText) {
+      await createCaseReminder(supabase, profile.id, caseId, reminderText)
+      const reminderReply = await insertCaseMessage(supabase, {
+        caseId,
+        role: "assistant",
+        content: serializeAssistantPayload({
+          type: "assistant_reply",
+          content: `Lembrete salvo: ${reminderText}. Ele aparece em "Nesta consulta" e na abertura da próxima consulta.`,
+        }),
+      })
+      revalidatePath(`/dashboard/cases/${caseId}`)
+      revalidatePath(`/dashboard/cases/new/${caseId}`)
+      return {
+        ok: true,
+        userMessage: {
+          id: insertedUserMessage.id,
+          role: "user",
+          content: insertedUserMessage.content,
+          created_at: insertedUserMessage.created_at,
+        },
+        assistantMessage: reminderReply,
+        assistantMessages: [reminderReply],
+      }
+    }
+
     const threadMessages = await listCaseMessagesByCaseId(supabase, caseId)
     const caseDetail = await getCaseById(supabase, caseId, profile.id)
-    const consultRecords = caseDetail
-      ? await getConsultRecords(supabase, profile.id, caseDetail)
-      : null
+    const [consultRecords, reminders] = caseDetail
+      ? await Promise.all([
+          getConsultRecords(supabase, profile.id, caseDetail),
+          listCaseReminders(supabase, profile.id, caseId).catch(() => []),
+        ])
+      : [null, []]
     // Peso, altura e PC vêm das medidas registradas (consulta ou ficha); o campo do
     // cadastro antigo só vale quando não há medida.
     const latest = latestAnthropometry(consultRecords?.patientMeasurements ?? [])
@@ -471,6 +513,7 @@ export async function sendCaseAssistantMessageAction(
             : null,
         ),
         consultRecords ? formatConsultRecordsForAi(consultRecords) : null,
+        reminders.map((reminder) => reminder.text),
       ),
       conversationSummary: caseRow.dashboard_chat_context_summary,
       patientMetrics: {
