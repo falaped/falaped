@@ -234,7 +234,10 @@ export {
   type UpdateAccountAccessResult,
   addSubscriptionPaymentAction,
   type AddSubscriptionPaymentResult,
+  countNewFeedbackAction,
+  updateFeedbackStatusAction,
 } from "./admin"
+export { sendFeedbackAction, type SendFeedbackResult } from "./feedback"
 export {
   createExamReadingAction,
   type CreateExamReadingResult,
