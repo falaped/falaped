@@ -87,25 +87,30 @@ type AssistantPayload = {
 }
 
 /** Atalhos dos chips: o chat pergunta o dado e completa a frase que o assistente entende. */
-type ChatShortcut = "allergy" | "measures"
+type ChatShortcut = "allergy" | "measures" | "reminder"
 
-const SHORTCUT_PROMPTS: Record<ChatShortcut, { trigger: string; question: string; toCommand: (answer: string) => string }> = {
+const SHORTCUT_PROMPTS: Record<ChatShortcut, { triggers: string[]; question: string; toCommand: (answer: string) => string }> = {
   allergy: {
-    trigger: "adicionar alergia",
+    triggers: ["adicionar alergia"],
     question: "Qual alergia você quer adicionar à ficha? Ex.: dipirona, amendoim, proteína do leite.",
     toCommand: (answer) => `adicionar alergia a ${answer}`,
   },
   measures: {
-    trigger: "alterar medidas",
+    triggers: ["alterar medidas"],
     question: "Quais medidas mudaram? Ex.: peso 13 kg, altura 88 cm, PC 47 cm.",
     toCommand: (answer) => `alterar medidas: ${answer}`,
   },
+  reminder: {
+    triggers: ["adicionar lembrete", "novo lembrete", "criar lembrete", "registrar lembrete", "lembrete"],
+    question: "Qual o lembrete para a próxima consulta? Ex.: reavaliar em 15 dias.",
+    toCommand: (answer) => `lembrete: ${answer}`,
+  },
 }
 
-/** Atalho cujo chip é exatamente esta mensagem ("Adicionar alergia", "Alterar medidas"). */
+/** Atalho pedido sem o dado ("Adicionar alergia", "Alterar medidas", "Adicionar lembrete"). */
 function shortcutTriggeredBy(content: string): ChatShortcut | null {
-  const normalized = content.trim().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "")
-  return (Object.keys(SHORTCUT_PROMPTS) as ChatShortcut[]).find((key) => SHORTCUT_PROMPTS[key].trigger === normalized) ?? null
+  const normalized = content.trim().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[.!]+$/, "")
+  return (Object.keys(SHORTCUT_PROMPTS) as ChatShortcut[]).find((key) => SHORTCUT_PROMPTS[key].triggers.includes(normalized)) ?? null
 }
 
 /** Atalho que a última resposta do chat deixou esperando resposta. */
