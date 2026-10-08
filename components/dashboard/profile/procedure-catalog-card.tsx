@@ -185,7 +185,7 @@ export function ProcedureCatalogCard({ items }: ProcedureCatalogCardProps) {
 
   return (
     <div className="flex flex-col gap-2">
-      <div className="divide-border divide-y overflow-hidden rounded-lg border border-border">
+      <div className="divide-border divide-y overflow-hidden rounded-xl border border-border">
         {list.length === 0 && (
           <div className="px-4 py-6 text-center">
             <p className="text-sm font-medium">Nenhum procedimento cadastrado.</p>
@@ -256,16 +256,16 @@ export function ProcedureCatalogCard({ items }: ProcedureCatalogCardProps) {
           ) : (
             <div
               key={item.id}
-              className="flex items-center justify-between gap-3 px-4 py-3"
+              className="flex items-center justify-between gap-3 px-4 py-2.5"
             >
-              <span className="min-w-0 flex-1 truncate text-sm">{item.name}</span>
-              <span className="shrink-0 text-sm font-medium tabular-nums">
+              <span className="min-w-0 flex-1 truncate">{item.name}</span>
+              <span className="shrink-0 font-medium num">
                 {formatCentsToBRL(item.price_cents)}
               </span>
               <div className="flex shrink-0 items-center">
                 <Button
                   type="button"
-                  size="icon"
+                  size="icon-sm"
                   variant="ghost"
                   aria-label="Editar procedimento"
                   disabled={isPending}
@@ -275,7 +275,7 @@ export function ProcedureCatalogCard({ items }: ProcedureCatalogCardProps) {
                 </Button>
                 <Button
                   type="button"
-                  size="icon"
+                  size="icon-sm"
                   variant="ghost"
                   className="text-destructive hover:bg-destructive/10 hover:text-destructive"
                   aria-label="Remover procedimento"
