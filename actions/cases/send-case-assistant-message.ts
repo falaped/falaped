@@ -87,30 +87,51 @@ type AssistantPayload = {
 }
 
 /** Atalhos dos chips: o chat pergunta o dado e completa a frase que o assistente entende. */
-type ChatShortcut = "allergy" | "measures" | "reminder"
+type ChatShortcut = "allergy" | "measures" | "weight" | "height" | "head" | "reminder"
 
-const SHORTCUT_PROMPTS: Record<ChatShortcut, { triggers: string[]; question: string; toCommand: (answer: string) => string }> = {
+const CHANGE_VERB = "(?:alterar|atualizar|mudar|corrigir|registrar|informar|adicionar|novo|nova)"
+const trigger = (subject: string) => new RegExp(`^(?:${CHANGE_VERB}\\s+)?(?:o\\s+|a\\s+)?(?:${subject})$`)
+/** Só o número ("30") vira a medida com rótulo e unidade, para o assistente reconhecer. */
+const measureCommand = (label: string, unit: string) => (answer: string) =>
+  `alterar medidas: ${/^\d+(?:[.,]\d+)?$/.test(answer) ? `${label} ${answer} ${unit}` : answer}`
+
+const SHORTCUT_PROMPTS: Record<ChatShortcut, { trigger: RegExp; question: string; toCommand: (answer: string) => string }> = {
   allergy: {
-    triggers: ["adicionar alergia"],
+    trigger: new RegExp(`^${CHANGE_VERB}\\s+(?:uma\\s+)?alergias?$`),
     question: "Qual alergia você quer adicionar à ficha? Ex.: dipirona, amendoim, proteína do leite.",
     toCommand: (answer) => `adicionar alergia a ${answer}`,
   },
   measures: {
-    triggers: ["alterar medidas"],
+    trigger: new RegExp(`^${CHANGE_VERB}\\s+(?:as\\s+)?medidas?$`),
     question: "Quais medidas mudaram? Ex.: peso 13 kg, altura 88 cm, PC 47 cm.",
     toCommand: (answer) => `alterar medidas: ${answer}`,
   },
+  weight: {
+    trigger: trigger("peso"),
+    question: "Qual o novo peso, em kg? Ex.: 13,2.",
+    toCommand: measureCommand("peso", "kg"),
+  },
+  height: {
+    trigger: trigger("altura|estatura|comprimento"),
+    question: "Qual a nova estatura, em cm? Ex.: 88.",
+    toCommand: measureCommand("altura", "cm"),
+  },
+  head: {
+    trigger: trigger("pc|perimetro cefalico"),
+    question: "Qual o novo perímetro cefálico, em cm? Ex.: 47.",
+    toCommand: measureCommand("PC", "cm"),
+  },
   reminder: {
-    triggers: ["adicionar lembrete", "novo lembrete", "criar lembrete", "registrar lembrete", "lembrete"],
+    trigger: new RegExp(`^(?:${CHANGE_VERB}\\s+|criar\\s+)?(?:um\\s+)?lembrete$`),
     question: "Qual o lembrete para a próxima consulta? Ex.: reavaliar em 15 dias.",
     toCommand: (answer) => `lembrete: ${answer}`,
   },
 }
 
-/** Atalho pedido sem o dado ("Adicionar alergia", "Alterar medidas", "Adicionar lembrete"). */
+/** Atalho pedido sem o dado ("Adicionar alergia", "Alterar altura", "Adicionar lembrete"). */
 function shortcutTriggeredBy(content: string): ChatShortcut | null {
-  const normalized = content.trim().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[.!]+$/, "")
-  return (Object.keys(SHORTCUT_PROMPTS) as ChatShortcut[]).find((key) => SHORTCUT_PROMPTS[key].triggers.includes(normalized)) ?? null
+  const normalized = content.trim().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[.!]+$/, "").replace(/\s+/g, " ")
+  return (Object.keys(SHORTCUT_PROMPTS) as ChatShortcut[]).find((key) => SHORTCUT_PROMPTS[key].trigger.test(normalized)) ?? null
 }
 
 /** Atalho que a última resposta do chat deixou esperando resposta. */
