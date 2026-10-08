@@ -9,6 +9,7 @@ import { createClient } from "@/lib/supabase/server"
 import { getAuthenticatedUser } from "@/modules/supabase/get-authenticated-user"
 import { getEarningsSummary } from "@/modules/financial-entries/get-earnings-summary"
 import { getMonthBilling } from "@/modules/financial-entries/get-month-billing"
+import { revenueOverview } from "@/lib/financial-view"
 import { listFinancialEntries } from "@/modules/financial-entries/list-financial-entries"
 
 /**
@@ -35,12 +36,15 @@ export async function FinancialContent({ searchParams }: { searchParams: Promise
   const ymd = (date: Date) => format(date, "yyyy-MM-dd", inClinic)
   const todayIso = ymd(now)
 
-  const [summary, prevSummary, entries, billing] = await Promise.all([
+  const [summary, prevSummary, entries, billing, allTime] = await Promise.all([
     getEarningsSummary(supabase, profile.id, ymd(monthStart), ymd(monthEnd), todayIso),
     isCurrent ? null : getEarningsSummary(supabase, profile.id, ymd(prevStart), ymd(monthStart), todayIso).catch(() => null),
     listFinancialEntries(supabase, profile.id, { from: ymd(monthStart), to: ymd(monthEnd), includeVoided: true }),
     getMonthBilling(supabase, profile.id, monthStart.toISOString(), monthEnd.toISOString()),
+    // Faturamento (ano e desde o início): sempre até hoje, não segue o mês navegado.
+    getEarningsSummary(supabase, profile.id, "2000-01-01", ymd(addMonths(currentStart, 1, inClinic)), todayIso).catch(() => null),
   ])
+  const currentYm = format(currentStart, "yyyy-MM", inClinic)
 
   const monthName = format(monthStart, "MMMM", { ...inClinic, locale: ptBR })
   const label = format(monthStart, "MMMM 'de' yyyy", { ...inClinic, locale: ptBR })
@@ -67,6 +71,7 @@ export async function FinancialContent({ searchParams }: { searchParams: Promise
         prevPeriodCents={prevSummary?.period_cents ?? null}
         entries={entries.toReversed()}
         billing={billing}
+        revenue={allTime ? { ...revenueOverview(allTime.by_day, currentYm), currentYm } : null}
       />
     </div>
   )

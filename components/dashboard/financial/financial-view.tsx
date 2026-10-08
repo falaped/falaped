@@ -33,7 +33,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import { Input } from "@/components/ui/input"
 import { Tabs, TabsList } from "@/components/ui/tabs"
 import { computePediatricAge } from "@/lib/compute-pediatric-age"
-import { dailySeries, paymentSplit } from "@/lib/financial-view"
+import { dailySeries, paymentSplit, type RevenueOverview } from "@/lib/financial-view"
 import { formatPediatricAgeShort } from "@/lib/format-pediatric-age"
 import { formatCentsToBRL } from "@/lib/formatters"
 import { getFriendlyToastMessage } from "@/lib/get-friendly-toast-message"
@@ -53,6 +53,10 @@ const WEEKDAYS = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"]
 /** Do mais forte ao mais claro, na ordem da barra de "Como recebeu". */
 const SPLIT_COLORS = ["bg-primary", "bg-primary/60", "bg-primary/30", "bg-border-strong"]
 
+const MONTHS = ["janeiro", "fevereiro", "março", "abril", "maio", "junho", "julho", "agosto", "setembro", "outubro", "novembro", "dezembro"]
+/** "2025-03" → "março de 2025". */
+const monthYear = (ym: string) => `${MONTHS[Number(ym.slice(5, 7)) - 1]} de ${ym.slice(0, 4)}`
+
 const plural = (n: number, one: string, many: string) => `${n} ${n === 1 ? one : many}`
 /** `yyyy-MM-dd` → "Qua, 07/10". O dia da semana sai do calendário em UTC, sem fuso para deslocar. */
 function dayLabel(ymd: string): string {
@@ -69,6 +73,7 @@ export function FinancialView({
   prevPeriodCents,
   entries,
   billing,
+  revenue,
 }: {
   month: {
     /** yyyy-MM do mês mostrado. */
@@ -91,6 +96,8 @@ export function FinancialView({
   /** Do mês, mais recente primeiro, anulados inclusive. */
   entries: FinancialEntryListRow[]
   billing: MonthBilling
+  /** Ano e desde o início, sempre até hoje; null se a leitura falhar. */
+  revenue: (RevenueOverview & { currentYm: string }) | null
 }) {
   const router = useRouter()
   const [chart, setChart] = useState<Chart>("line")
@@ -187,6 +194,8 @@ export function FinancialView({
           />
         </div>
       </section>
+
+      {revenue?.since ? <RevenueSection revenue={revenue} /> : null}
 
       <Collapsible asChild>
         <section className="rounded-xl border border-border bg-card">
@@ -466,6 +475,73 @@ function EntryRow({
         )}
       </div>
     </div>
+  )
+}
+
+/** Faturamento do ano e desde o início, com os 12 últimos meses (não muda ao navegar o mês). */
+function RevenueSection({ revenue }: { revenue: RevenueOverview & { currentYm: string } }) {
+  const year = revenue.currentYm.slice(0, 4)
+  const money = (value: unknown) => formatCentsToBRL(Number(value))
+  return (
+    <section className="grid grid-cols-[minmax(0,1fr)_minmax(0,2.2fr)] rounded-xl border border-border bg-card">
+      <div className="flex flex-col divide-y divide-border border-r border-border">
+        <div className="px-6 pt-5 pb-1">
+          <h2 className="font-display text-section font-semibold">Faturamento</h2>
+          <p className="text-caption text-subtle-foreground">Até hoje, não muda com o mês abaixo</p>
+        </div>
+        <Money
+          icon={WalletIcon}
+          label={`Em ${year}`}
+          value={formatCentsToBRL(revenue.yearCents)}
+          note={revenue.yearMonths ? `média de ${formatCentsToBRL(Math.round(revenue.yearCents / revenue.yearMonths))} por mês` : "nada lançado este ano"}
+          big
+        />
+        <Money
+          icon={ChartLineIcon}
+          label="Desde o início"
+          value={formatCentsToBRL(revenue.allTimeCents)}
+          note={revenue.since ? `desde ${monthYear(revenue.since)}` : ""}
+        />
+      </div>
+      <div className="flex flex-col px-6 pt-5 pb-4">
+        <div className="mb-3 text-label text-muted-foreground">Últimos 12 meses</div>
+        <ResponsiveContainer width="100%" height={220}>
+          <AreaChart data={revenue.months} margin={{ top: 8, right: 8, bottom: 0, left: 0 }}>
+            <CartesianGrid strokeDasharray="3 3" vertical={false} className="stroke-border" />
+            <XAxis
+              dataKey="ym"
+              tick={{ fontSize: 11 }}
+              tickLine={false}
+              axisLine={false}
+              tickFormatter={(ym: string) => MONTHS[Number(ym.slice(5, 7)) - 1].slice(0, 3)}
+            />
+            <YAxis tick={{ fontSize: 11 }} width={96} tickFormatter={money} tickLine={false} axisLine={false} />
+            <Tooltip
+              cursor={{ stroke: "var(--border-strong)" }}
+              content={({ active, payload, label }) =>
+                active && payload?.length ? (
+                  <div className="rounded-lg border border-border bg-popover px-3 py-2 shadow-md">
+                    <div className="text-caption text-muted-foreground first-letter:uppercase">{monthYear(String(label))}</div>
+                    <div className="num font-semibold">{money(payload[0].value)}</div>
+                  </div>
+                ) : null
+              }
+            />
+            <Area
+              type="monotone"
+              dataKey="cents"
+              stroke="var(--primary)"
+              strokeWidth={2.5}
+              fill="var(--primary)"
+              fillOpacity={0.12}
+              dot={{ r: 3, fill: "var(--primary)", strokeWidth: 0 }}
+              activeDot={{ r: 5 }}
+              isAnimationActive={false}
+            />
+          </AreaChart>
+        </ResponsiveContainer>
+      </div>
+    </section>
   )
 }
 
