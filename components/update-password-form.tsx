@@ -1,37 +1,26 @@
 "use client";
 
+import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { TriangleAlert } from "lucide-react";
+
 import { createClient } from "@/lib/supabase/client";
-import {
-  updatePasswordSchema,
-  type UpdatePasswordFormData,
-} from "@/lib/schemas/auth";
+import { updatePasswordSchema, type UpdatePasswordFormData } from "@/lib/schemas/auth";
+import { authErrorMessage } from "@/lib/auth-error-message";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
 import {
   Field,
   FieldContent,
+  FieldDescription,
   FieldError,
   FieldGroup,
   FieldLabel,
 } from "@/components/ui/field";
-import { Input } from "@/components/ui/input";
-import { useRouter } from "next/navigation";
-import { useState } from "react";
-import { cn } from "@/lib/utils";
-import { authErrorMessage } from "@/lib/auth-error-message";
+import { PasswordInput } from "@/components/ui/password-input";
 
-export function UpdatePasswordForm({
-  className,
-  ...props
-}: React.ComponentPropsWithoutRef<"div">) {
+export function UpdatePasswordForm() {
   const [apiError, setApiError] = useState<string | null>(null);
   const router = useRouter();
 
@@ -39,6 +28,7 @@ export function UpdatePasswordForm({
     resolver: zodResolver(updatePasswordSchema),
     defaultValues: { password: "" },
   });
+  const { errors, isSubmitting } = form.formState;
 
   const handleSubmit = async (data: UpdatePasswordFormData) => {
     const supabase = createClient();
@@ -54,50 +44,44 @@ export function UpdatePasswordForm({
   };
 
   return (
-    <div className={cn("flex flex-col gap-6", className)} {...props}>
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-2xl font-semibold tracking-tight">
-            Nova senha
-          </CardTitle>
-          <CardDescription className="text-sm text-muted-foreground">
-            Defina uma nova senha para acessar sua conta.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={form.handleSubmit(handleSubmit)}>
-            <FieldGroup>
-              <Field data-invalid={!!form.formState.errors.password}>
-                <FieldLabel htmlFor="password">Nova senha</FieldLabel>
-                <FieldContent>
-                  <Input
-                    id="password"
-                    type="password"
-                    placeholder="Sua nova senha"
-                    aria-invalid={!!form.formState.errors.password}
-                    {...form.register("password")}
-                  />
-                  <FieldError errors={form.formState.errors.password ? [form.formState.errors.password] : undefined} />
-                </FieldContent>
-              </Field>
-              {apiError && (
-                <p className="text-sm text-destructive" role="alert">
-                  {apiError}
-                </p>
+    <section className="rounded-2xl border border-border bg-card p-8 shadow-sm">
+      <h1 className="font-display text-page font-semibold">Crie uma nova senha</h1>
+      <p className="mt-1 text-muted-foreground">Depois de salvar, você entra direto no Falaped.</p>
+
+      <form onSubmit={form.handleSubmit(handleSubmit)} noValidate className="mt-6">
+        <FieldGroup className="gap-5">
+          <Field data-invalid={!!errors.password}>
+            <FieldLabel htmlFor="password">Nova senha</FieldLabel>
+            <FieldContent>
+              <PasswordInput
+                id="password"
+                autoComplete="new-password"
+                aria-invalid={!!errors.password}
+                {...form.register("password")}
+              />
+              {errors.password ? (
+                <FieldError errors={[errors.password]} />
+              ) : (
+                <FieldDescription>Pelo menos 8 caracteres.</FieldDescription>
               )}
-              <Button
-                type="submit"
-                className="w-full"
-                disabled={form.formState.isSubmitting}
-              >
-                {form.formState.isSubmitting
-                  ? "Salvando..."
-                  : "Salvar nova senha"}
-              </Button>
-            </FieldGroup>
-          </form>
-        </CardContent>
-      </Card>
-    </div>
+            </FieldContent>
+          </Field>
+
+          {apiError && (
+            <div
+              role="alert"
+              className="flex items-start gap-2 rounded-lg border border-danger-border bg-danger-soft px-3 py-2.5 text-label text-danger-text"
+            >
+              <TriangleAlert className="mt-0.5 size-4 shrink-0" />
+              {apiError}
+            </div>
+          )}
+
+          <Button type="submit" size="lg" className="w-full" disabled={isSubmitting}>
+            {isSubmitting ? "Salvando…" : "Salvar e entrar"}
+          </Button>
+        </FieldGroup>
+      </form>
+    </section>
   );
 }

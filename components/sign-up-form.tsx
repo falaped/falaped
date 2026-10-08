@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { ArrowRight, Eye, EyeOff, TriangleAlert } from "lucide-react";
+import { ArrowRight, TriangleAlert } from "lucide-react";
 
 import { createClient } from "@/lib/supabase/client";
 import { signUpWithEmail } from "@/modules/supabase/sign-up-with-email";
@@ -22,11 +22,11 @@ import {
   FieldLabel,
 } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
+import { PasswordInput } from "@/components/ui/password-input";
 import { PhoneInput } from "@/components/ui/phone-input";
 
 export function SignUpForm() {
   const [apiError, setApiError] = useState<string | null>(null);
-  const [showPassword, setShowPassword] = useState(false);
   const router = useRouter();
 
   const form = useForm<SignUpFormData>({
@@ -154,25 +154,12 @@ export function SignUpForm() {
             <Field data-invalid={!!errors.password}>
               <FieldLabel htmlFor="password">Senha</FieldLabel>
               <FieldContent>
-                <div className="relative">
-                  <Input
-                    id="password"
-                    type={showPassword ? "text" : "password"}
-                    autoComplete="new-password"
-                    className="pr-10"
-                    aria-invalid={!!errors.password}
-                    {...form.register("password")}
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword((v) => !v)}
-                    className="absolute inset-y-0 right-0 grid w-10 place-items-center rounded-r-lg text-subtle-foreground hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
-                    aria-label={showPassword ? "Esconder senha" : "Mostrar senha"}
-                    aria-pressed={showPassword}
-                  >
-                    {showPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
-                  </button>
-                </div>
+                <PasswordInput
+                  id="password"
+                  autoComplete="new-password"
+                  aria-invalid={!!errors.password}
+                  {...form.register("password")}
+                />
                 {errors.password ? (
                   <FieldError errors={[errors.password]} />
                 ) : (

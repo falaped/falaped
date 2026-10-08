@@ -1,8 +1,8 @@
 import { z } from "zod";
 
 export const loginSchema = z.object({
-  email: z.string().email("E-mail inválido"),
-  password: z.string().min(6, "Senha deve ter pelo menos 6 caracteres"),
+  email: z.email("Confira o e-mail. Ex.: ana@consultorio.com.br"),
+  password: z.string().min(1, "Digite sua senha"),
 });
 
 /** Brazilian phone: 10 digits (DDD + 8) or 11 digits (DDD + 9 + 8). DDD = 11–99. */
@@ -36,11 +36,11 @@ export const signUpSchema = z.object({
 });
 
 export const forgotPasswordSchema = z.object({
-  email: z.string().email("E-mail inválido"),
+  email: z.email("Confira o e-mail. Ex.: ana@consultorio.com.br"),
 });
 
 export const updatePasswordSchema = z.object({
-  password: z.string().min(6, "Senha deve ter pelo menos 6 caracteres"),
+  password: z.string().min(8, "A senha precisa de pelo menos 8 caracteres"),
 });
 
 /** "12345/mg", "12345-MG" → "12345 MG". Espera um CRM já validado pelo signUpSchema. */

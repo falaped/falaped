@@ -1,4 +1,4 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { TriangleAlert } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { Suspense } from "react";
@@ -14,7 +14,7 @@ async function ErrorContent({
   const isExpired = /expired|invalid/i.test(params?.error ?? "");
 
   return (
-    <p className="text-sm text-muted-foreground">
+    <p className="mt-2 text-read text-muted-foreground">
       {isExpired
         ? "O link expirou ou já foi usado. Peça um novo e abra em seguida."
         : "Não foi possível concluir agora. Tente de novo em instantes."}
@@ -28,22 +28,17 @@ export default function Page({
   searchParams: Promise<{ error?: string }>;
 }) {
   return (
-    <div className="flex flex-col gap-6">
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-2xl font-semibold tracking-tight">
-            Algo deu errado.
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="flex flex-col gap-4">
-          <Suspense fallback={<p className="text-sm text-muted-foreground">Carregando...</p>}>
-            <ErrorContent searchParams={searchParams} />
-          </Suspense>
-          <Button asChild variant="default" className="w-full">
-            <Link href="/auth/login">Voltar ao login</Link>
-          </Button>
-        </CardContent>
-      </Card>
-    </div>
+    <section className="rounded-2xl border border-border bg-card p-8 shadow-sm">
+      <span className="grid size-12 place-items-center rounded-full bg-danger-soft text-danger-text">
+        <TriangleAlert className="size-6" />
+      </span>
+      <h1 className="mt-5 font-display text-page font-semibold">Algo deu errado</h1>
+      <Suspense fallback={<p className="mt-2 text-read text-muted-foreground">Carregando…</p>}>
+        <ErrorContent searchParams={searchParams} />
+      </Suspense>
+      <Button asChild size="lg" className="mt-6 w-full">
+        <Link href="/auth/login">Voltar para o login</Link>
+      </Button>
+    </section>
   );
 }
