@@ -1,3 +1,6 @@
+/** Disparado quando a consulta aberta muda (algo salvo, pausa): o menu busca o status. */
+export const CONSULT_CHANGED_EVENT = "falaped:consult-changed"
+
 /** Sem nada salvo na consulta por este tempo, ela conta como esquecida. */
 export const IDLE_LIMIT_MS = 150 * 60_000
 

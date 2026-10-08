@@ -1,3 +1,5 @@
+"use client"
+
 import Link from "next/link"
 import { tz } from "@date-fns/tz"
 import { format } from "date-fns"
@@ -5,6 +7,7 @@ import { ArrowRightIcon, TriangleAlertIcon } from "lucide-react"
 
 import { AttentionSymbol } from "@/components/dashboard/attention-symbol"
 import { Button } from "@/components/ui/button"
+import { useNow } from "@/hooks/use-now"
 import { CLINIC_TIME_ZONE } from "@/lib/clinic-timezone"
 import { computePediatricAge } from "@/lib/compute-pediatric-age"
 import { consultClock } from "@/lib/consult-idle"
@@ -21,7 +24,9 @@ import type { DashboardHomeActiveCase } from "@/modules/dashboard/get-dashboard-
 export function ActiveConsultBanner({ active, now }: { active: DashboardHomeActiveCase; now: Date }) {
   const href = active.origin === "dashboard" ? `/dashboard/cases/new/${active.id}` : `/dashboard/cases/${active.id}`
   const inClinic = { in: tz(CLINIC_TIME_ZONE) }
-  const { elapsedMs, idleSince, paused } = consultClock(active, active.activityAts, now.getTime())
+  // Recalcula sozinho: o tempo corre e a consulta pode passar a contar como parada.
+  const nowMs = useNow(30_000, now.getTime())
+  const { elapsedMs, idleSince, paused } = consultClock(active, active.activityAts, nowMs)
 
   return (
     <section className={cn("flex items-center gap-4 rounded-xl border bg-card px-6 py-4", idleSince ? "border-warning-border" : "border-success-border")}>

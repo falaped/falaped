@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { PauseIcon, PlayIcon } from "lucide-react"
 import { toast } from "sonner"
@@ -11,7 +11,7 @@ import { tz } from "@date-fns/tz"
 
 import { useConsultationTimer } from "@/hooks/use-consultation-timer"
 import { CLINIC_TIME_ZONE } from "@/lib/clinic-timezone"
-import { summarizeIdle } from "@/lib/consult-idle"
+import { CONSULT_CHANGED_EVENT, summarizeIdle } from "@/lib/consult-idle"
 import { getFriendlyToastMessage } from "@/lib/get-friendly-toast-message"
 import { cn } from "@/lib/utils"
 
@@ -43,6 +43,11 @@ export function ConsultTimer({
 }) {
   const router = useRouter()
   const [pending, setPending] = useState(false)
+  // Cada coisa salva (ou pausa) re-renderiza a consulta com dados novos: avisa o menu.
+  useEffect(() => {
+    window.dispatchEvent(new Event(CONSULT_CHANGED_EVENT))
+  }, [activityAts.length, pausedAt, pausedMs])
+
   const { gapsMs, idleSince: idle } = summarizeIdle(startedAt, activityAts, pausedAt ? Date.parse(pausedAt) : Date.now())
   const elapsedMs = useConsultationTimer({ startedAt, endedAt: null, pausedMs: pausedMs + gapsMs, pausedAt: idle ?? pausedAt })
   const isPaused = pausedAt != null

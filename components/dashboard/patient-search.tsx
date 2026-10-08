@@ -8,7 +8,7 @@ import { tz } from "@date-fns/tz"
 import { PlusIcon, SearchIcon, UserPlusIcon } from "lucide-react"
 import { toast } from "sonner"
 
-import { listPatientsForSearchAction, type PatientSearchItem } from "@/actions"
+import { getActiveConsultAction, listPatientsForSearchAction, type PatientSearchItem } from "@/actions"
 import { createDashboardCaseWithPatientAction } from "@/actions/cases/create-dashboard-case-with-patient"
 import { precheckNewDashboardCaseAction } from "@/actions/cases/precheck-new-dashboard-case"
 import {
@@ -32,7 +32,8 @@ import {
 } from "@/components/ui/command"
 import { CLINIC_TIME_ZONE } from "@/lib/clinic-timezone"
 import { computePediatricAge } from "@/lib/compute-pediatric-age"
-import { consultClock } from "@/lib/consult-idle"
+import { CONSULT_CHANGED_EVENT, consultClock } from "@/lib/consult-idle"
+import { useNow } from "@/hooks/use-now"
 import { cn } from "@/lib/utils"
 import { formatPediatricAgeShort } from "@/lib/format-pediatric-age"
 import { getFriendlyToastMessage } from "@/lib/get-friendly-toast-message"
@@ -77,8 +78,8 @@ function formatMinutes(minutes: number): string {
  * Tempo da consulta aberta, sem pausas nem intervalos parados. Sem nada salvo há 2h30,
  * `idleSince` diz desde quando ela está parada (ver lib/consult-idle.ts).
  */
-function consultTime(activeCase: ActiveCase): { label: string; idleSince: string | null } {
-  const { elapsedMs, idleSince } = consultClock(activeCase, activeCase.activityAts, Date.now())
+function consultTime(activeCase: ActiveCase, now: number): { label: string; idleSince: string | null } {
+  const { elapsedMs, idleSince } = consultClock(activeCase, activeCase.activityAts, now)
   return {
     label: formatMinutes(Math.floor(elapsedMs / 60_000)),
     idleSince: idleSince ? format(idleSince, "HH:mm", { in: tz(CLINIC_TIME_ZONE) }) : null,
@@ -177,6 +178,24 @@ export function PatientSearch() {
     })
   }, [pathname])
 
+  // Status em tempo real: algo salvo na consulta (o cronômetro avisa) ou volta para a aba.
+  useEffect(() => {
+    const refresh = () => {
+      if (document.visibilityState === "hidden") return
+      getActiveConsultAction().then((result) => {
+        if (result.ok) setActiveCase(result.activeCase)
+      })
+    }
+    window.addEventListener(CONSULT_CHANGED_EVENT, refresh)
+    document.addEventListener("visibilitychange", refresh)
+    return () => {
+      window.removeEventListener(CONSULT_CHANGED_EVENT, refresh)
+      document.removeEventListener("visibilitychange", refresh)
+    }
+  }, [])
+  // E o tempo: a consulta passa a contar como parada sem ninguém mexer.
+  const now = useNow(30_000)
+
   // "Atender" de fora da janela: carrega a consulta aberta (o aviso a3c mostra quem é) e segue o mesmo caminho.
   useEffect(() => {
     if (!requested) return
@@ -257,7 +276,7 @@ export function PatientSearch() {
   // Busca sem resultado: o único caminho é cadastrar (↵ também cadastra).
   const noMatch = !!patients && !!query.trim() && listed.length === 0
 
-  const activeTime = activeCase ? consultTime(activeCase) : null
+  const activeTime = activeCase ? consultTime(activeCase, now) : null
   const [firstName, ...restName] = activePatient?.name.split(" ") ?? []
   const shortName = restName.length ? `${firstName} ${restName.at(-1)![0]}.` : firstName
 
