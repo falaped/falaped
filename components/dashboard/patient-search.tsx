@@ -53,7 +53,8 @@ const theChild = (patient: Pick<PatientSearchItem, "name" | "sex">) =>
 
 function minutesSince(iso: string): string {
   const minutes = Math.max(0, differenceInMinutes(new Date(), new Date(iso)))
-  return minutes < 60 ? `${minutes} min` : `${Math.floor(minutes / 60)} h ${String(minutes % 60).padStart(2, "0")} min`
+  // Curto ("1h05") para caber ao lado do nome no menu.
+  return minutes < 60 ? `${minutes} min` : `${Math.floor(minutes / 60)}h${String(minutes % 60).padStart(2, "0")}`
 }
 
 function lastConsultLabel(iso: string | null): string {
@@ -244,11 +245,11 @@ export function PatientSearch() {
             <span className="absolute -top-0.5 -right-0.5 size-2.5 animate-pulse rounded-full bg-success ring-2 ring-card group-data-[collapsible=icon]:ring-primary-soft" aria-hidden />
           </span>
           <span className="min-w-0 flex-1 group-data-[collapsible=icon]:sr-only">
-            <span className="block truncate text-label font-semibold">{shortName}</span>
-            <span className="block text-caption text-muted-foreground">Voltar à consulta</span>
-          </span>
-          <span className="num text-caption text-muted-foreground group-data-[collapsible=icon]:hidden">
-            {minutesSince(activeCase.startedAt)}
+            <span className="flex items-baseline gap-2">
+              <span className="min-w-0 flex-1 truncate text-label font-semibold">{shortName}</span>
+              <span className="num shrink-0 text-caption text-muted-foreground">{minutesSince(activeCase.startedAt)}</span>
+            </span>
+            <span className="block truncate text-caption text-muted-foreground">Voltar à consulta</span>
           </span>
         </Link>
       ) : (
