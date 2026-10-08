@@ -15,7 +15,10 @@ export type UpdateProfileResult =
   | { ok: false; error: string }
 
 /**
- * Updates the current user's profile (first_name, surname, email, crm, rqe, etc.).
+ * Updates the current user's profile (first_name, surname, crm, rqe, etc.).
+ *
+ * O e-mail fica de fora: é o login (auth), não se edita aqui. Mandá-lo de volta a cada
+ * salvamento já sobrescreveu o e-mail de um perfil com o de outra pessoa.
  *
  * Recebe os valores CRUS do form (strings) e é a fonte da verdade da validação — o
  * cliente pode ter rodado o schema, mas o que sobe é o que o usuário digitou. Enviar o
@@ -48,7 +51,6 @@ export async function updateProfileAction(
     const payload = {
       first_name: parsed.data.first_name ?? null,
       surname: parsed.data.surname ?? null,
-      email: parsed.data.email ?? null,
       crm: parsed.data.crm ?? null,
       rqe: parsed.data.rqe ?? null,
       social_media_handle: parsed.data.social_media_handle ?? null,

@@ -1,6 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
 
 import { caseSummaryHeadline } from "@/lib/case-summary-headline"
+import { listCaseActivityTimes } from "@/modules/cases/list-case-activity-times"
 import type { CaseOrigin } from "@/modules/cases/types"
 import type { AuthenticatedUserProfile } from "@/modules/supabase/get-authenticated-user"
 
@@ -8,6 +9,10 @@ export interface DashboardHomeActiveCase {
   id: string
   startedAt: string
   origin: CaseOrigin
+  pausedMs: number
+  pausedAt: string | null
+  /** Datas do que foi salvo na consulta: dizem se ela ficou esquecida aberta. */
+  activityAts: string[]
   patient: {
     name: string | null
     birthDate: string | null
@@ -54,7 +59,7 @@ export async function getDashboardHomeData(
     supabase.from("cases").select("id", { count: "exact", head: true }).eq("profile_id", profileId),
     supabase
       .from("cases")
-      .select("id, started_at, origin, patient:patients(name, birth_date, allergies, responsible)")
+      .select("id, started_at, origin, patient_id, consultation_paused_ms, consultation_paused_at, patient:patients(name, birth_date, allergies, responsible)")
       .eq("profile_id", profileId)
       .eq("status", "active")
       .order("started_at", { ascending: false })
@@ -79,8 +84,19 @@ export async function getDashboardHomeData(
 
   type ActivePatient = { name: string; birth_date: string | null; allergies: string | null; responsible: string | null }
   const active = activeResult.data as
-    | { id: string; started_at: string; origin: CaseOrigin; patient: PatientEmbed<ActivePatient> }
+    | {
+        id: string
+        started_at: string
+        origin: CaseOrigin
+        patient_id: string | null
+        consultation_paused_ms: number | null
+        consultation_paused_at: string | null
+        patient: PatientEmbed<ActivePatient>
+      }
     | null
+  const activityAts = active
+    ? await listCaseActivityTimes(supabase, active.id, active.patient_id, active.started_at).catch(() => [])
+    : []
   const activePatient = active ? one(active.patient) : null
 
   type RecentRow = {
@@ -98,6 +114,9 @@ export async function getDashboardHomeData(
           id: active.id,
           startedAt: active.started_at,
           origin: active.origin,
+          pausedMs: Number(active.consultation_paused_ms ?? 0),
+          pausedAt: active.consultation_paused_at,
+          activityAts,
           patient: activePatient
             ? {
                 name: activePatient.name ?? null,

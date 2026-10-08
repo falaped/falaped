@@ -1,9 +1,8 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
 
-type ActiveCaseRow = {
-  id: string
-  origin: "dashboard" | "whatsapp"
-}
+import { closeCaseWithTiming, type CaseTimerRow } from "@/modules/cases/close-case-with-timing"
+
+type ActiveCaseRow = CaseTimerRow & { origin: "dashboard" | "whatsapp" }
 
 export type CreateDashboardCaseWithPatientResult =
   | { type: "created"; caseId: string }
@@ -31,7 +30,7 @@ export async function createDashboardCaseWithPatient(
 
   const { data: activeRows, error: activeError } = await supabase
     .from("cases")
-    .select("id, origin")
+    .select("id, origin, started_at, consultation_paused_ms, consultation_paused_at, patient_id")
     .eq("profile_id", profileId)
     .eq("status", "active")
 
@@ -45,23 +44,9 @@ export async function createDashboardCaseWithPatient(
     return { type: "whatsapp_active", activeCaseId: whatsappCase.id }
   }
 
-  const dashboardCaseIds = activeCases
-    .filter((row) => row.origin === "dashboard")
-    .map((row) => row.id)
-
-  if (dashboardCaseIds.length > 0) {
-    const now = new Date().toISOString()
-    const { error: closeError } = await supabase
-      .from("cases")
-      .update({ status: "closed", ended_at: now })
-      .in("id", dashboardCaseIds)
-      .eq("profile_id", profileId)
-
-    if (closeError) {
-      throw new Error(
-        `[CASES] Failed to close active dashboard cases: ${closeError.message}`,
-      )
-    }
+  // Encerra a anterior com a duração real: esquecida, termina na última atividade.
+  for (const row of activeCases.filter((row) => row.origin === "dashboard")) {
+    await closeCaseWithTiming(supabase, row)
   }
 
   const { data: inserted, error: insertError } = await supabase

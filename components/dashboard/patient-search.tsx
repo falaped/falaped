@@ -4,10 +4,11 @@ import { useEffect, useState, useTransition } from "react"
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
 import { differenceInCalendarDays, differenceInMinutes, format } from "date-fns"
+import { tz } from "@date-fns/tz"
 import { PlusIcon, SearchIcon, UserPlusIcon } from "lucide-react"
 import { toast } from "sonner"
 
-import { listPatientsForSearchAction, type PatientSearchItem } from "@/actions"
+import { getActiveConsultAction, listPatientsForSearchAction, type PatientSearchItem } from "@/actions"
 import { createDashboardCaseWithPatientAction } from "@/actions/cases/create-dashboard-case-with-patient"
 import { precheckNewDashboardCaseAction } from "@/actions/cases/precheck-new-dashboard-case"
 import {
@@ -29,14 +30,26 @@ import {
   CommandItem,
   CommandList,
 } from "@/components/ui/command"
+import { CLINIC_TIME_ZONE } from "@/lib/clinic-timezone"
 import { computePediatricAge } from "@/lib/compute-pediatric-age"
+import { CONSULT_CHANGED_EVENT, consultClock } from "@/lib/consult-idle"
+import { useNow } from "@/hooks/use-now"
+import { cn } from "@/lib/utils"
 import { formatPediatricAgeShort } from "@/lib/format-pediatric-age"
 import { getFriendlyToastMessage } from "@/lib/get-friendly-toast-message"
 import { getPatientInitials } from "@/lib/get-patient-initials"
 import { matchPatientQuery } from "@/lib/match-patient-query"
 import { PatientQuickRegister } from "@/components/dashboard/patient-quick-register"
 
-type ActiveCase = { id: string; origin: "dashboard" | "whatsapp"; startedAt: string; patientId: string | null }
+type ActiveCase = {
+  id: string
+  origin: "dashboard" | "whatsapp"
+  startedAt: string
+  patientId: string | null
+  pausedMs: number
+  pausedAt: string | null
+  activityAts: string[]
+}
 
 /** Quantas crianças aparecem em "Recentes" antes de digitar. */
 const RECENT_COUNT = 6
@@ -53,7 +66,24 @@ const theChild = (patient: Pick<PatientSearchItem, "name" | "sex">) =>
 
 function minutesSince(iso: string): string {
   const minutes = Math.max(0, differenceInMinutes(new Date(), new Date(iso)))
-  return minutes < 60 ? `${minutes} min` : `${Math.floor(minutes / 60)} h ${String(minutes % 60).padStart(2, "0")} min`
+  // Curto ("1h05") para caber ao lado do nome no menu.
+  return formatMinutes(minutes)
+}
+
+function formatMinutes(minutes: number): string {
+  return minutes < 60 ? `${minutes} min` : `${Math.floor(minutes / 60)}h${String(minutes % 60).padStart(2, "0")}`
+}
+
+/**
+ * Tempo da consulta aberta, sem pausas nem intervalos parados. Sem nada salvo há 2h30,
+ * `idleSince` diz desde quando ela está parada (ver lib/consult-idle.ts).
+ */
+function consultTime(activeCase: ActiveCase, now: number): { label: string; idleSince: string | null } {
+  const { elapsedMs, idleSince } = consultClock(activeCase, activeCase.activityAts, now)
+  return {
+    label: formatMinutes(Math.floor(elapsedMs / 60_000)),
+    idleSince: idleSince ? format(idleSince, "HH:mm", { in: tz(CLINIC_TIME_ZONE) }) : null,
+  }
 }
 
 function lastConsultLabel(iso: string | null): string {
@@ -148,6 +178,24 @@ export function PatientSearch() {
     })
   }, [pathname])
 
+  // Status em tempo real: algo salvo na consulta (o cronômetro avisa) ou volta para a aba.
+  useEffect(() => {
+    const refresh = () => {
+      if (document.visibilityState === "hidden") return
+      getActiveConsultAction().then((result) => {
+        if (result.ok) setActiveCase(result.activeCase)
+      })
+    }
+    window.addEventListener(CONSULT_CHANGED_EVENT, refresh)
+    document.addEventListener("visibilitychange", refresh)
+    return () => {
+      window.removeEventListener(CONSULT_CHANGED_EVENT, refresh)
+      document.removeEventListener("visibilitychange", refresh)
+    }
+  }, [])
+  // E o tempo: a consulta passa a contar como parada sem ninguém mexer.
+  const now = useNow(30_000)
+
   // "Atender" de fora da janela: carrega a consulta aberta (o aviso a3c mostra quem é) e segue o mesmo caminho.
   useEffect(() => {
     if (!requested) return
@@ -228,6 +276,7 @@ export function PatientSearch() {
   // Busca sem resultado: o único caminho é cadastrar (↵ também cadastra).
   const noMatch = !!patients && !!query.trim() && listed.length === 0
 
+  const activeTime = activeCase ? consultTime(activeCase, now) : null
   const [firstName, ...restName] = activePatient?.name.split(" ") ?? []
   const shortName = restName.length ? `${firstName} ${restName.at(-1)![0]}.` : firstName
 
@@ -237,18 +286,36 @@ export function PatientSearch() {
         <Link
           href={caseHref(activeCase)}
           title={`Voltar à consulta · ${shortName}`}
-          className="flex w-full items-center gap-2.5 rounded-xl border border-primary-soft-border bg-primary-soft p-3 transition-shadow hover:shadow-md group-data-[collapsible=icon]:size-10 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:rounded-lg group-data-[collapsible=icon]:p-0"
+          className={cn(
+            "flex w-full items-center gap-2.5 rounded-xl border p-3 transition-shadow hover:shadow-md group-data-[collapsible=icon]:size-10 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:rounded-lg group-data-[collapsible=icon]:p-0",
+            activeTime?.idleSince ? "border-warning-border bg-warning-soft" : "border-primary-soft-border bg-primary-soft",
+          )}
         >
           <span className="relative grid size-8 shrink-0 place-items-center rounded-full bg-card text-label font-semibold text-primary-ink-strong group-data-[collapsible=icon]:bg-transparent">
             {getPatientInitials(activePatient.name)}
-            <span className="absolute -top-0.5 -right-0.5 size-2.5 animate-pulse rounded-full bg-success ring-2 ring-card group-data-[collapsible=icon]:ring-primary-soft" aria-hidden />
+            <span
+              className={cn(
+                "absolute -top-0.5 -right-0.5 size-2.5 rounded-full ring-2 ring-card group-data-[collapsible=icon]:ring-primary-soft",
+                activeTime?.idleSince ? "bg-warning" : "animate-pulse bg-success",
+              )}
+              aria-hidden
+            />
           </span>
           <span className="min-w-0 flex-1 group-data-[collapsible=icon]:sr-only">
-            <span className="block truncate text-label font-semibold">{shortName}</span>
-            <span className="block text-caption text-muted-foreground">Voltar à consulta</span>
-          </span>
-          <span className="num text-caption text-muted-foreground group-data-[collapsible=icon]:hidden">
-            {minutesSince(activeCase.startedAt)}
+            <span className="flex items-baseline gap-2">
+              <span className="min-w-0 flex-1 truncate text-label font-semibold">{shortName}</span>
+              {/* Parada: o tempo congelado não ajuda, o horário da linha de baixo é que conta. */}
+              {activeTime?.idleSince ? null : (
+                <span className="num shrink-0 text-caption text-muted-foreground">{activeTime?.label}</span>
+              )}
+            </span>
+            {activeTime?.idleSince ? (
+              <span className="block truncate text-caption text-warning-text">
+                Parada desde <span className="num">{activeTime.idleSince}</span>
+              </span>
+            ) : (
+              <span className="block truncate text-caption text-muted-foreground">Voltar à consulta</span>
+            )}
           </span>
         </Link>
       ) : (
@@ -333,10 +400,17 @@ export function PatientSearch() {
                             </span>
                           </span>
                           {isActive && activeCase ? (
-                            <span className="flex items-center gap-1 text-caption text-success-text">
-                              <span className="size-1.5 rounded-full bg-success" aria-hidden />
-                              Consulta em andamento há {minutesSince(activeCase.startedAt)}
-                            </span>
+                            activeTime?.idleSince ? (
+                              <span className="flex items-center gap-1 text-caption text-warning-text">
+                                <span className="size-1.5 rounded-full bg-warning" aria-hidden />
+                                Consulta aberta, sem atividade desde {activeTime.idleSince}
+                              </span>
+                            ) : (
+                              <span className="flex items-center gap-1 text-caption text-success-text">
+                                <span className="size-1.5 rounded-full bg-success" aria-hidden />
+                                Consulta em andamento há {activeTime?.label}
+                              </span>
+                            )
                           ) : (
                             <span className="block text-caption text-muted-foreground">{lastConsultLabel(patient.lastConsultAt)}</span>
                           )}

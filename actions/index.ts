@@ -14,6 +14,8 @@ export {
   improveReportSectionAction,
   updateCaseReportAction,
   deleteCaseReportAction,
+  getActiveConsultAction,
+  type ActiveConsult,
 } from "./cases"
 export {
   updateDiscussionStatusAction,

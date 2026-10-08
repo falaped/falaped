@@ -25,6 +25,8 @@ import { getExamCatalogItems } from "@/modules/exam-catalog/get-exam-catalog-ite
 import { getExamPanelsByProfileId } from "@/modules/exam-panels/get-exam-panels-by-profile-id"
 import { computePediatricAge } from "@/lib/compute-pediatric-age"
 import { getCaseReports } from "@/modules/cases/get-case-report"
+import { listCaseActivityTimes } from "@/modules/cases/list-case-activity-times"
+import { resumeConsultationByActivity } from "@/modules/cases/resume-consultation-by-activity"
 import { getReportTemplateById } from "@/modules/report-templates/get-report-template-by-id"
 import { getDefaultReportTemplate } from "@/modules/report-templates/get-default-report-template"
 import { normalizeReportTemplateSections } from "@/modules/report-templates/fixed-template-sections"
@@ -67,6 +69,7 @@ export default async function NewCaseWorkspacePage({
     examPanels,
     templateRaw,
     caseReports,
+    activityAts,
   ] = await Promise.all([
     getPhoneByProfileId(supabase, profile.id).catch(() => null),
     listCaseReminders(supabase, profile.id, caseId).catch(() => []),
@@ -96,7 +99,22 @@ export default async function NewCaseWorkspacePage({
       : getDefaultReportTemplate(supabase)
     ).catch(() => null),
     getCaseReports(supabase, caseId, profile.id).catch(() => []),
+    // Diz ao cronômetro se a consulta ficou esquecida aberta (lib/consult-idle.ts).
+    listCaseActivityTimes(supabase, caseId, patientId, caseDetail.started_at).catch(() => []),
   ])
+
+  // Pausada e depois algo salvo: a médica voltou, a pausa termina ali (lib/consult-idle.ts).
+  const resumed = await resumeConsultationByActivity(
+    supabase,
+    profile.id,
+    {
+      caseId,
+      startedAt: caseDetail.started_at,
+      pausedMs: Number(caseDetail.consultation_paused_ms ?? 0),
+      pausedAt: caseDetail.consultation_paused_at,
+    },
+    activityAts,
+  ).catch(() => null)
 
   // O que a consulta anterior desta criança deixou; sem ela, só não aparece o cartão.
   const previousCarryover =
@@ -123,8 +141,8 @@ export default async function NewCaseWorkspacePage({
       patient={caseDetail.patient}
       photoUrl={photoUrl}
       startedAt={caseDetail.started_at}
-      consultationPausedMs={caseDetail.consultation_paused_ms}
-      consultationPausedAt={caseDetail.consultation_paused_at}
+      consultationPausedMs={resumed?.pausedMs ?? caseDetail.consultation_paused_ms}
+      consultationPausedAt={resumed ? null : caseDetail.consultation_paused_at}
       reminders={reminders}
       previousCarryover={previousCarryover}
       documents={{ prescriptions, certificates, examRequests, referrals }}
@@ -150,6 +168,7 @@ export default async function NewCaseWorkspacePage({
         templateRaw ? { ...templateRaw, sections: normalizeReportTemplateSections(templateRaw.sections) } : null
       }
       caseReports={caseReports}
+      activityAts={activityAts}
     />
   )
 }

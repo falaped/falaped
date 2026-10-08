@@ -38,6 +38,7 @@ import {
   type UpdatePatientFormData,
 } from "@/lib/schemas/patient"
 import { createMeasurementSchema, type CreateMeasurementFormData } from "@/lib/schemas/patient-measurement"
+import { FormCard, SectionNav, joinPtBr } from "@/components/dashboard/form-layout"
 import { cn } from "@/lib/utils"
 import { PATIENT_SEX_FORM_OPTIONS } from "@/modules/patients/patient-sex"
 import type { Patient } from "@/modules/patients/types"
@@ -107,7 +108,6 @@ export function PatientForm(props: PatientFormProps) {
   const [leaveOpen, setLeaveOpen] = useState(false)
   const [pendingPhoto, setPendingPhoto] = useState<File | null>(null)
   const sections = SECTIONS.filter((section) => isCreate || !section.createOnly)
-  const active = useActiveSection(sections.map((section) => section.id))
 
   // Dados vindos do cadastro rápido da busca ("Abrir a ficha completa").
   useEffect(() => {
@@ -230,26 +230,14 @@ export function PatientForm(props: PatientFormProps) {
       </section>
 
       <div className="mt-6 grid grid-cols-[220px_minmax(0,880px)] items-start gap-8">
-        <nav aria-label="Seções da ficha" className="sticky top-6 flex flex-col gap-0.5">
-          {sections.map((section) => (
-            <a
-              key={section.id}
-              href={`#${section.id}`}
-              aria-current={active === section.id ? "true" : undefined}
-              className={cn(
-                "flex h-9 items-center gap-2 rounded-lg px-3",
-                active === section.id
-                  ? "bg-primary-soft font-semibold text-primary-ink-strong"
-                  : "text-muted-foreground hover:bg-accent hover:text-foreground",
-              )}
-            >
-              {section.title}
-              {section.fields.some((field) => errors[field]) ? (
-                <span className="ml-auto size-2 rounded-full bg-danger-text" aria-label="Tem erro" />
-              ) : null}
-            </a>
-          ))}
-        </nav>
+        <SectionNav
+          label="Seções da ficha"
+          sections={sections.map((section) => ({
+            id: section.id,
+            title: section.title,
+            hasError: section.fields.some((field) => errors[field]),
+          }))}
+        />
 
         <div className="flex flex-col gap-6">
           <FormCard id="crianca" title="Criança" description="Quem ela é. Sai no cabeçalho dos documentos.">
@@ -487,18 +475,6 @@ export function PatientForm(props: PatientFormProps) {
   )
 }
 
-function FormCard({ id, title, description, children }: { id: string; title: React.ReactNode; description: string; children: React.ReactNode }) {
-  return (
-    <section id={id} className="scroll-mt-6 rounded-xl border border-border bg-card">
-      <div className="border-b border-border px-6 py-4">
-        <h2 className="font-display text-section font-semibold">{title}</h2>
-        <p className="text-muted-foreground">{description}</p>
-      </div>
-      <div className="flex flex-col gap-5 px-6 py-5">{children}</div>
-    </section>
-  )
-}
-
 /** Rótulo em cima, ajuda embaixo; o erro toma o lugar da ajuda e diz o que fazer. */
 function FormField({
   id,
@@ -541,30 +517,4 @@ function FormField({
       ) : null}
     </div>
   )
-}
-
-/** Seção do índice que está no topo da tela. */
-function useActiveSection(ids: string[]) {
-  const [active, setActive] = useState(ids[0])
-  const key = ids.join()
-  useEffect(() => {
-    const observer = new IntersectionObserver(
-      (entries) => {
-        const visible = entries.filter((entry) => entry.isIntersecting)
-        if (visible.length) setActive(visible[0].target.id)
-      },
-      { rootMargin: "0px 0px -70% 0px" },
-    )
-    for (const id of key.split(",")) {
-      const element = document.getElementById(id)
-      if (element) observer.observe(element)
-    }
-    return () => observer.disconnect()
-  }, [key])
-  return active
-}
-
-/** "a", "a e b", "a, b e c". */
-function joinPtBr(items: string[]): string {
-  return items.length <= 1 ? (items[0] ?? "") : `${items.slice(0, -1).join(", ")} e ${items.at(-1)}`
 }

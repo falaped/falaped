@@ -6,6 +6,7 @@ import { ptBR } from "date-fns/locale"
 import { CLINIC_TIME_ZONE } from "@/lib/clinic-timezone"
 import { createClient } from "@/lib/supabase/server"
 import { getAuthenticatedUser } from "@/modules/supabase/get-authenticated-user"
+import { listCaseActivityTimes } from "@/modules/cases/list-case-activity-times"
 import { getCaseById } from "@/modules/cases/get-case-by-id"
 import { getPatientPhotoSignedUrl } from "@/modules/patients/get-patient-photo-signed-url"
 import { getCaseReports } from "@/modules/cases/get-case-report"
@@ -99,6 +100,12 @@ export async function CaseDetailContent({ id }: { id: string }) {
   // depois das 21h de Brasília, e o lançamento cairia no bucket errado — em silêncio,
   // sem erro de tipo e sem falha de build. Mesma derivação de app/dashboard/earnings/page.tsx.
   const todayLabel = format(new Date(), "dd/MM/yyyy", { in: tz(CLINIC_TIME_ZONE) })
+
+  // Consulta aberta (WhatsApp): o Encerrar precisa saber se ela ficou esquecida.
+  const activityAts =
+    caseDetail.status === "active"
+      ? await listCaseActivityTimes(supabase, id, caseDetail.patient?.id ?? null, caseDetail.started_at).catch(() => [])
+      : []
 
   // Signed URL singular resolvida server-side para o avatar do cabeçalho do caso
   // (helper SINGULAR — não o de lote). Null cai para iniciais (Pitfall 1).
@@ -195,6 +202,7 @@ export async function CaseDetailContent({ id }: { id: string }) {
         earningsCount={earningsTotals?.count ?? null}
         earningsTotalCents={earningsTotals?.totalCents ?? null}
         todayLabel={todayLabel}
+        activityAts={activityAts}
       />
       <div className="flex w-full max-w-[1440px] flex-col gap-6">
       {/* Cobrança pendente: encerrada, sem lançamento e sem resposta. `earningsTotals == null`

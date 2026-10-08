@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server"
 import { getAuthenticatedUser } from "@/modules/supabase/get-authenticated-user"
 import { getPatientsByProfileId } from "@/modules/patients/get-patients-by-profile-id"
 import type { PatientSex } from "@/modules/patients/patient-sex"
+import { listCaseActivityTimes } from "@/modules/cases/list-case-activity-times"
 import { getConsultIndexByPatient, type ConsultIndexByPatient } from "@/modules/cases/get-consult-index-by-patient"
 
 export type PatientSearchItem = {
@@ -18,7 +19,12 @@ export type PatientSearchItem = {
 }
 
 export type ListPatientsForSearchResult =
-  | { ok: true; patients: PatientSearchItem[]; activeCase: ConsultIndexByPatient["activeCase"] }
+  | {
+      ok: true
+      patients: PatientSearchItem[]
+      /** Com as datas de atividade: o menu mostra se ela ficou esquecida aberta. */
+      activeCase: (NonNullable<ConsultIndexByPatient["activeCase"]> & { activityAts: string[] }) | null
+    }
   | { ok: false; error: string }
 
 /**
@@ -40,7 +46,15 @@ export async function listPatientsForSearchAction(): Promise<ListPatientsForSear
     ])
     return {
       ok: true,
-      activeCase: index.activeCase,
+      activeCase: index.activeCase && {
+        ...index.activeCase,
+        activityAts: await listCaseActivityTimes(
+          supabase,
+          index.activeCase.id,
+          index.activeCase.patientId,
+          index.activeCase.startedAt,
+        ).catch(() => []),
+      },
       patients: patients.map((p) => ({
         id: p.id,
         name: p.name,

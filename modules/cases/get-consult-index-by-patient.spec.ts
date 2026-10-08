@@ -27,7 +27,7 @@ test("guarda a consulta mais recente de cada criança e a aberta", async () => {
     "profile",
   )
   assert.deepEqual(index.lastConsultAt, { helena: "2026-10-07T13:00:00Z", miguel: "2026-10-07T11:00:00Z" })
-  assert.deepEqual(index.activeCase, { id: "c3", origin: "dashboard", startedAt: "2026-10-07T13:00:00Z", patientId: "helena" })
+  assert.deepEqual(index.activeCase, { id: "c3", origin: "dashboard", startedAt: "2026-10-07T13:00:00Z", patientId: "helena", pausedMs: 0, pausedAt: null })
 })
 
 test("sem consulta aberta, activeCase é null", async () => {

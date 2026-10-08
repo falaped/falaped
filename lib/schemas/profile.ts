@@ -45,10 +45,6 @@ const updateProfileFormSchema = z.object({
     .string()
     .max(32, "Use no máximo 32 caracteres")
     .transform((v) => (v.trim() === "" ? undefined : v.trim())),
-  email: z
-    .string()
-    .transform((v) => (v.trim() === "" ? undefined : v.trim()))
-    .pipe(z.string().email("E-mail inválido").optional()),
   crm: z
     .string()
     .max(20, "Use no máximo 20 caracteres")
