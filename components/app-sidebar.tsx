@@ -20,10 +20,11 @@ import {
 import { NavUser } from "@/components/nav-user"
 import { PatientSearch } from "@/components/dashboard/patient-search"
 import { ChangelogMenuItem } from "@/components/dashboard/changelog/changelog-dialog"
+import { FeedbackMenuItem } from "@/components/dashboard/feedback/feedback-menu-item"
 import { dashboardNav } from "@/lib/dashboard-nav"
 import { isAdminEmail } from "@/lib/admin"
 import { createClient } from "@/lib/supabase/client"
-import { countNewLeadsAction } from "@/actions"
+import { countNewFeedbackAction, countNewLeadsAction } from "@/actions"
 
 export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
   const pathname = usePathname()
@@ -36,11 +37,13 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
       .then(({ data }) => setIsAdmin(isAdminEmail(data.user?.email)))
   }, [])
 
-  // Aviso de lead novo: só roda para admin, e o action também barra quem não é.
-  const [newLeads, setNewLeads] = React.useState(0)
+  // Aviso de lead e de feedback novos: só roda para admin, e os actions também barram quem não é.
+  const [adminAlerts, setAdminAlerts] = React.useState(0)
   React.useEffect(() => {
     if (!isAdmin) return
-    countNewLeadsAction().then((r) => setNewLeads(r.ok ? r.count : 0))
+    Promise.all([countNewLeadsAction(), countNewFeedbackAction()]).then((rs) =>
+      setAdminAlerts(rs.reduce((sum, r) => sum + (r.ok ? r.count : 0), 0)),
+    )
   }, [isAdmin, pathname])
 
   // A seção fica ativa tanto na própria página quanto em qualquer destino dos seus cards.
@@ -105,12 +108,12 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
                   <span>Admin</span>
                 </Link>
               </SidebarMenuButton>
-              {newLeads > 0 ? (
+              {adminAlerts > 0 ? (
                 <SidebarMenuBadge
                   className="border border-warning-border bg-warning-soft text-warning-text peer-data-[active=true]/menu-button:text-warning-text"
-                  aria-label={`${newLeads} ${newLeads === 1 ? "lead novo" : "leads novos"}`}
+                  aria-label={`${adminAlerts} ${adminAlerts === 1 ? "aviso novo" : "avisos novos"}: leads e feedback`}
                 >
-                  {newLeads}
+                  {adminAlerts}
                 </SidebarMenuBadge>
               ) : null}
             </SidebarMenuItem>
@@ -133,6 +136,7 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
             </SidebarMenuButton>
           </SidebarMenuItem>
           <ChangelogMenuItem />
+          <FeedbackMenuItem />
         </SidebarMenu>
         <NavUser />
       </SidebarFooter>
