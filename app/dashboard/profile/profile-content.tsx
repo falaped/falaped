@@ -83,7 +83,7 @@ const FIELD_LABELS: Partial<Record<keyof UpdateProfileFormValues, string>> = {
 type ProfileTab = "documentos" | "consulta" | "conta"
 
 const TABS: { value: ProfileTab; label: string }[] = [
-  { value: "documentos", label: "Seus documentos" },
+  { value: "documentos", label: "Informações" },
   { value: "consulta", label: "Consulta" },
   { value: "conta", label: "Conta" },
 ]
@@ -518,79 +518,79 @@ export function ProfileContent({
           {/* Mudanças em outra aba continuam no form: as abas só escondem, não desmontam. */}
           <TabsContent value="documentos" forceMount className="mt-0 data-[state=inactive]:hidden">
             <div className="grid items-start gap-6 lg:grid-cols-2">
-              <FormCard id="dados" title="Dados profissionais" description="Saem em todo documento, como estão no seu carimbo.">
-                <div className="grid grid-cols-2 gap-4">
-                  <TextField form={form} name="first_name" label="Nome" placeholder="Ex.: Mariana" />
-                  <TextField form={form} name="surname" label="Sobrenome" placeholder="Ex.: Souza Lima" />
-                  <TextField form={form} name="crm" label="CRM" placeholder="Ex.: 12345 MG" help="Número e estado, como no carimbo." />
-                  <TextField form={form} name="rqe" label={<>RQE {OPTIONAL}</>} placeholder="Ex.: 6789" help="Registro de especialista." />
-                  <TextField form={form} name="default_location_city" label="Cidade" placeholder="Ex.: Belo Horizonte" help="Sai junto da data." />
-                  <FieldShell
-                    htmlFor="default_location_state"
-                    label="Estado"
-                    error={form.formState.errors.default_location_state?.message}
-                    help={
-                      <button
-                        type="button"
-                        onClick={handleUseGeolocation}
-                        disabled={geoLoading}
-                        className="inline-flex items-center gap-1 text-primary-ink hover:underline disabled:opacity-60"
-                      >
-                        {geoLoading ? <Loader2Icon className="size-3 animate-spin" /> : <MapPinIcon className="size-3" />}
-                        {geoLoading ? "Buscando…" : "Preencher cidade e estado pela minha localização"}
-                      </button>
-                    }
-                  >
-                    <Select
-                      value={state}
-                      onValueChange={(v) => form.setValue("default_location_state", v, { shouldDirty: true })}
-                    >
-                      <SelectTrigger id="default_location_state" className="w-full">
-                        <SelectValue placeholder="Escolha o estado" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {stateOptions.map((name) => (
-                          <SelectItem key={name} value={name}>
-                            {name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </FieldShell>
-                </div>
-              </FormCard>
-              <FormCard id="contato" title="Contato profissional" description="Fica no seu perfil do Falaped.">
-                <div className="grid grid-cols-2 gap-4">
-                  <TextField form={form} name="social_media_handle" label={<>Instagram {OPTIONAL}</>} placeholder="Ex.: @dra.mariana" />
-                  <TextField form={form} name="website" label={<>Site {OPTIONAL}</>} type="url" placeholder="https://…" />
-                </div>
-              </FormCard>
-              <div className="lg:col-span-2">
-                <FormCard id="logos" title="Logos" description="Cada logo é salva assim que você envia.">
+              <div className="flex flex-col gap-6">
+                <FormCard id="dados" title="Dados profissionais" description="Saem em todo documento, como estão no seu carimbo.">
                   <div className="grid grid-cols-2 gap-4">
-                    <LogoSlot
-                      title="Logo completa"
-                      help="Vai no cabeçalho dos documentos. Horizontal, de preferência com fundo transparente."
-                      url={fullLogo}
-                      uploading={logoUploading === "full"}
-                      removing={logoRemoving === "full"}
-                      error={logoError.full}
-                      onPick={() => fullInputRef.current?.click()}
-                      onRemove={() => handleClearLogo("full")}
-                    />
-                    <LogoSlot
-                      title={<>Logo curta {OPTIONAL}</>}
-                      help="Aparece no menu do Falaped. Quadrada: o símbolo ou as iniciais."
-                      url={shortLogo}
-                      uploading={logoUploading === "short"}
-                      removing={logoRemoving === "short"}
-                      error={logoError.short}
-                      onPick={() => shortInputRef.current?.click()}
-                      onRemove={() => handleClearLogo("short")}
-                    />
+                    <TextField form={form} name="first_name" label="Nome" placeholder="Ex.: Mariana" />
+                    <TextField form={form} name="surname" label="Sobrenome" placeholder="Ex.: Souza Lima" />
+                    <TextField form={form} name="crm" label="CRM" placeholder="Ex.: 12345 MG" help="Número e estado, como no carimbo." />
+                    <TextField form={form} name="rqe" label={<>RQE {OPTIONAL}</>} placeholder="Ex.: 6789" help="Registro de especialista." />
+                    <TextField form={form} name="default_location_city" label="Cidade" placeholder="Ex.: Belo Horizonte" help="Sai junto da data." />
+                    <FieldShell
+                      htmlFor="default_location_state"
+                      label="Estado"
+                      error={form.formState.errors.default_location_state?.message}
+                      help={
+                        <button
+                          type="button"
+                          onClick={handleUseGeolocation}
+                          disabled={geoLoading}
+                          className="inline-flex items-center gap-1 text-primary-ink hover:underline disabled:opacity-60"
+                        >
+                          {geoLoading ? <Loader2Icon className="size-3 animate-spin" /> : <MapPinIcon className="size-3" />}
+                          {geoLoading ? "Buscando…" : "Preencher cidade e estado pela minha localização"}
+                        </button>
+                      }
+                    >
+                      <Select
+                        value={state}
+                        onValueChange={(v) => form.setValue("default_location_state", v, { shouldDirty: true })}
+                      >
+                        <SelectTrigger id="default_location_state" className="w-full">
+                          <SelectValue placeholder="Escolha o estado" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {stateOptions.map((name) => (
+                            <SelectItem key={name} value={name}>
+                              {name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </FieldShell>
+                  </div>
+                </FormCard>
+                <FormCard id="contato" title="Contato profissional" description="Fica no seu perfil do Falaped.">
+                  <div className="grid grid-cols-2 gap-4">
+                    <TextField form={form} name="social_media_handle" label={<>Instagram {OPTIONAL}</>} placeholder="Ex.: @dra.mariana" />
+                    <TextField form={form} name="website" label={<>Site {OPTIONAL}</>} type="url" placeholder="https://…" />
                   </div>
                 </FormCard>
               </div>
+              <FormCard id="logos" title="Marcas" description="Cada logo é salva assim que você envia.">
+                <div className="flex flex-col gap-4">
+                  <LogoSlot
+                    title="Logo completa"
+                    help="Vai no cabeçalho dos documentos. Horizontal, de preferência com fundo transparente."
+                    url={fullLogo}
+                    uploading={logoUploading === "full"}
+                    removing={logoRemoving === "full"}
+                    error={logoError.full}
+                    onPick={() => fullInputRef.current?.click()}
+                    onRemove={() => handleClearLogo("full")}
+                  />
+                  <LogoSlot
+                    title={<>Logo curta {OPTIONAL}</>}
+                    help="Aparece no menu do Falaped. Quadrada: o símbolo ou as iniciais."
+                    url={shortLogo}
+                    uploading={logoUploading === "short"}
+                    removing={logoRemoving === "short"}
+                    error={logoError.short}
+                    onPick={() => shortInputRef.current?.click()}
+                    onRemove={() => handleClearLogo("short")}
+                  />
+                </div>
+              </FormCard>
             </div>
           </TabsContent>
 
