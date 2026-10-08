@@ -285,11 +285,14 @@ export function PatientSearch() {
           <span className="min-w-0 flex-1 group-data-[collapsible=icon]:sr-only">
             <span className="flex items-baseline gap-2">
               <span className="min-w-0 flex-1 truncate text-label font-semibold">{shortName}</span>
-              <span className="num shrink-0 text-caption text-muted-foreground">{activeTime?.label}</span>
+              {/* Parada: o tempo congelado não ajuda, o horário da linha de baixo é que conta. */}
+              {activeTime?.idleSince ? null : (
+                <span className="num shrink-0 text-caption text-muted-foreground">{activeTime?.label}</span>
+              )}
             </span>
             {activeTime?.idleSince ? (
               <span className="block truncate text-caption text-warning-text">
-                Sem atividade desde <span className="num">{activeTime.idleSince}</span>
+                Parada desde <span className="num">{activeTime.idleSince}</span>
               </span>
             ) : (
               <span className="block truncate text-caption text-muted-foreground">Voltar à consulta</span>
