@@ -3,8 +3,8 @@ import { tz } from "@date-fns/tz"
 import { differenceInMinutes, format } from "date-fns"
 import { ArrowRightIcon, TriangleAlertIcon } from "lucide-react"
 
+import { AttentionSymbol } from "@/components/dashboard/attention-symbol"
 import { Button } from "@/components/ui/button"
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import { CLINIC_TIME_ZONE } from "@/lib/clinic-timezone"
 import { computePediatricAge } from "@/lib/compute-pediatric-age"
 import { formatPediatricAgeShort } from "@/lib/format-pediatric-age"
@@ -37,7 +37,9 @@ export function ActiveConsultBanner({ active, now }: { active: DashboardHomeActi
               · {formatPediatricAgeShort(computePediatricAge(active.patient.birthDate))}
             </span>
           ) : null}
-          {active.patient?.allergies ? <AllergySymbol detail={active.patient.allergies} /> : null}
+          {active.patient?.allergies ? (
+            <AttentionSymbol icon={TriangleAlertIcon} kind="danger" title="Alergia" detail={active.patient.allergies} />
+          ) : null}
         </div>
         <div className="mt-0.5 text-muted-foreground">
           Começou às {format(new Date(active.startedAt), "HH:mm", { in: tz(CLINIC_TIME_ZONE) })}
@@ -58,25 +60,4 @@ export function ActiveConsultBanner({ active, now }: { active: DashboardHomeActi
 function elapsed(startedAt: string, now: Date): string {
   const minutes = Math.max(0, differenceInMinutes(now, new Date(startedAt)))
   return minutes < 60 ? `${minutes} min` : `${Math.floor(minutes / 60)} h ${String(minutes % 60).padStart(2, "0")} min`
-}
-
-/** Símbolo de alergia do guia ("Selos e símbolos"): hover ou foco mostra qual é. */
-function AllergySymbol({ detail }: { detail: string }) {
-  return (
-    <Tooltip>
-      <TooltipTrigger asChild>
-        <span
-          tabIndex={0}
-          aria-label={`Alergia: ${detail}`}
-          className="grid size-7 shrink-0 place-items-center rounded-full border border-transparent bg-destructive text-destructive-foreground shadow-xs"
-        >
-          <TriangleAlertIcon className="size-3.5" aria-hidden />
-        </span>
-      </TooltipTrigger>
-      <TooltipContent className="max-w-64">
-        <span className="font-semibold">Alergia</span>
-        <span className="block">{detail}</span>
-      </TooltipContent>
-    </Tooltip>
-  )
 }

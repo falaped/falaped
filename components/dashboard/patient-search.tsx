@@ -65,9 +65,12 @@ function lastConsultLabel(iso: string | null): string {
 
 const START_CONSULT_EVENT = "falaped:start-consult"
 
-/** Abre a janela "Iniciar consulta" do menu a partir de qualquer tela. */
-export function openStartConsult() {
-  window.dispatchEvent(new Event(START_CONSULT_EVENT))
+/**
+ * Abre a janela "Iniciar consulta" do menu a partir de qualquer tela. Com `patient`, pula a
+ * janela e atende direto essa criança (com o aviso de consulta aberta, se houver).
+ */
+export function openStartConsult(patient?: PatientSearchItem) {
+  window.dispatchEvent(new CustomEvent(START_CONSULT_EVENT, { detail: patient ?? null }))
 }
 
 /**
@@ -93,6 +96,8 @@ export function PatientSearch() {
   /** Nome digitado ao abrir o cadastro rápido (a4); null = busca. */
   const [registering, setRegistering] = useState<string | null>(null)
   const [isPending, startTransition] = useTransition()
+  /** Criança pedida por openStartConsult(patient), à espera da consulta aberta carregar. */
+  const [requested, setRequested] = useState<PatientSearchItem | null>(null)
 
   useEffect(() => {
     if (/Mac|iPhone|iPad/.test(navigator.platform)) setShortcut("⌘K")
@@ -103,7 +108,9 @@ export function PatientSearch() {
         setOpen((value) => !value)
       }
     }
-    const onStart = () => {
+    const onStart = (event: Event) => {
+      const patient = (event as CustomEvent<PatientSearchItem | null>).detail
+      if (patient) return setRequested(patient)
       setMode("start")
       setOpen(true)
     }
@@ -128,6 +135,20 @@ export function PatientSearch() {
       } else setError(result.error)
     })
   }, [open])
+
+  // "Atender" de fora da janela: carrega a consulta aberta (o aviso a3c mostra quem é) e segue o mesmo caminho.
+  useEffect(() => {
+    if (!requested) return
+    listPatientsForSearchAction().then((result) => {
+      setRequested(null)
+      if (!result.ok) return void toast.error(result.error)
+      setPatients(result.patients)
+      setActiveCase(result.activeCase)
+      if (result.activeCase?.patientId === requested.id) return go(caseHref(result.activeCase))
+      start(requested)
+    })
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- roda uma vez por pedido
+  }, [requested])
 
   function go(href: string) {
     setOpen(false)

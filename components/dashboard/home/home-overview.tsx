@@ -19,9 +19,10 @@ import {
 
 import { ActiveConsultBanner } from "@/components/dashboard/cases/active-consult-banner"
 import { StandaloneEntryDialog } from "@/components/dashboard/earnings/standalone-entry-dialog"
+import { SectionTab } from "@/components/dashboard/section-tab"
 import { Button } from "@/components/ui/button"
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Tabs, TabsContent, TabsList } from "@/components/ui/tabs"
 import { CLINIC_TIME_ZONE } from "@/lib/clinic-timezone"
 import { computePediatricAge } from "@/lib/compute-pediatric-age"
 import { formatPediatricAgeShort } from "@/lib/format-pediatric-age"
@@ -173,11 +174,11 @@ export function HomeOverview({ greeting, dateLabel, monthLabel, todayLabel, now,
             <div className="flex items-end gap-6 px-5 pt-4">
               <h2 className="mr-2 pb-2.5 font-display text-section font-semibold">Para não esquecer</h2>
               <TabsList className="h-auto w-auto gap-5 rounded-none bg-transparent p-0 lg:w-auto">
-                <TodoTab value="reminders">
+                <SectionTab value="reminders">
                   Lembretes
                   <span className="num text-caption text-subtle-foreground">{day.reminders.length}</span>
-                </TodoTab>
-                <TodoTab value="pending">
+                </SectionTab>
+                <SectionTab value="pending">
                   Pendências
                   {pendingCount ? (
                     <span
@@ -188,7 +189,7 @@ export function HomeOverview({ greeting, dateLabel, monthLabel, todayLabel, now,
                       {pendingCount}
                     </span>
                   ) : null}
-                </TodoTab>
+                </SectionTab>
               </TabsList>
             </div>
             <TabsContent value="reminders" className="mt-0 divide-y divide-border border-t border-border">
@@ -368,17 +369,6 @@ function TodayRow({ icon: Icon, label, note, value }: { icon: LucideIcon; label:
       </div>
       <div className="num font-display text-page font-semibold">{value}</div>
     </div>
-  )
-}
-
-function TodoTab({ value, children }: { value: string; children: React.ReactNode }) {
-  return (
-    <TabsTrigger
-      value={value}
-      className="-mb-px flex-none gap-1.5 rounded-none border-b-2 border-transparent px-1 pt-0 pb-2.5 text-body font-normal text-muted-foreground shadow-none hover:text-foreground sm:px-1 sm:text-body data-[state=active]:border-foreground data-[state=active]:bg-transparent data-[state=active]:font-semibold data-[state=active]:text-foreground data-[state=active]:shadow-none"
-    >
-      {children}
-    </TabsTrigger>
   )
 }
 
