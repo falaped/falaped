@@ -52,12 +52,15 @@ import {
   ASSISTANT_POST_RESPONSE_DELAY_MS,
   ASSISTANT_TYPING_MIN_DISPLAY_MS,
 } from "@/lib/constants"
+import { tz } from "@date-fns/tz"
+import { format } from "date-fns"
+import { CLINIC_TIME_ZONE } from "@/lib/clinic-timezone"
 import { CLINICAL_NOTATION_SUMMARY_MESSAGE } from "@/lib/format-clinical-assistant-sections"
 import { CloseConsultSheet } from "@/components/dashboard/cases/close-consult-sheet"
 import type { CaseReport as CaseReportType } from "@/modules/cases/get-case-report"
 import type { ReportTemplateWithSections } from "@/modules/report-templates/get-report-template-by-id"
 import { toCaseDocuments } from "@/components/dashboard/cases/case-detail-documents"
-import { ConsultRail, type ConsultDocuments } from "@/components/dashboard/cases/consult-rail"
+import { ConsultRail, countConsultRecords, type ConsultDocuments, type ConsultRecords } from "@/components/dashboard/cases/consult-rail"
 import { ConsultTimer } from "@/components/dashboard/cases/consult-timer"
 import { closeTiming } from "@/lib/consult-idle"
 import type { ConsultDoctor } from "@/components/dashboard/cases/consult-prescription-panel"
@@ -928,15 +931,22 @@ export function NewCaseWorkspace({
     ? formatPediatricAgeShort(computePediatricAge(patient.birth_date))
     : null
   const fullAge = formatPediatricAgeFull(patient?.birth_date ?? null, new Date())
-  const todayMeasurement =
-    measurements.findLast((m) => m.measured_on === todayIso) ?? null
   const lastWeight = measurements.findLast((m) => m.weight_grams !== null)
   const weightLabel = lastWeight
     ? `${(lastWeight.weight_grams! / 1000).toFixed(2).replace(".", ",")} kg · ${
         lastWeight.measured_on === todayIso ? "hoje" : formatDate(lastWeight.measured_on)
       }`
     : null
-  const docCount = Object.values(documents).reduce((total, list) => total + list.length, 0)
+  // Dia da consulta no fuso da clínica: a medida é ligada à data, não ao caso.
+  const consultDay = format(startedAt, "yyyy-MM-dd", { in: tz(CLINIC_TIME_ZONE) })
+  const consultRecords: ConsultRecords = {
+    documents,
+    measurements: measurements.filter((m) => m.measured_on === consultDay),
+    scaleResults: scaleResults.filter((r) => r.case_id === caseId),
+    examReadings,
+    attachments: attachments.filter((a) => a.case_id === caseId),
+  }
+  const docCount = countConsultRecords(consultRecords)
   const panelSubtitle = [patient?.name ?? "Paciente não associado", age].filter(Boolean).join(" · ")
 
   return (
@@ -1192,8 +1202,7 @@ export function NewCaseWorkspace({
           <div className="flex-1 overflow-auto px-6 py-5">
             <ConsultRail
               caseId={caseId}
-              documents={documents}
-              todayMeasurement={todayMeasurement}
+              records={consultRecords}
               reminders={reminders}
               allergies={allergies}
               patientId={patient?.id ?? null}
