@@ -24,43 +24,37 @@ export function dailySeries(byDay: { received_on: string; cents: number }[], las
   return Array.from({ length: lastDay }, (_, index) => ({ day: index + 1, cents: cents.get(index + 1) ?? 0 }))
 }
 
-export type RevenueOverview = {
-  /** Tudo o que já foi lançado (sem anulados). */
-  allTimeCents: number
-  /** yyyy-MM do primeiro recebimento; null sem nenhum. */
-  since: string | null
-  /** Do ano de `currentYm` até hoje. */
-  yearCents: number
-  /** Meses do ano contados na média: de janeiro (ou do primeiro recebimento) até o atual. */
-  yearMonths: number
-  /** Os 12 meses até `currentYm`, do mais antigo ao atual. */
-  months: { ym: string; cents: number }[]
-}
-
-/**
- * Faturamento do ano e desde o início a partir da série diária de `get_earnings_summary`
- * (já somada e sem anulados no SQL). Aqui só se agrupa por mês, pela string da data.
- */
-export function revenueOverview(byDay: { received_on: string; cents: number }[], currentYm: string): RevenueOverview {
-  const byMonth = new Map<string, number>()
+/** Soma a série diária de `get_earnings_summary` (já sem anulados) por mês, pela string da data. */
+export function sumByMonth(byDay: { received_on: string; cents: number }[]): Record<string, number> {
+  const byMonth: Record<string, number> = {}
   for (const point of byDay) {
     const ym = point.received_on.slice(0, 7)
-    byMonth.set(ym, (byMonth.get(ym) ?? 0) + point.cents)
+    byMonth[ym] = (byMonth[ym] ?? 0) + point.cents
   }
-  const since = byDay.length ? byDay.reduce((first, point) => (point.received_on < first ? point.received_on : first), byDay[0].received_on).slice(0, 7) : null
-  const year = currentYm.slice(0, 4)
-  const [y, m] = currentYm.split("-").map(Number)
-  const months = Array.from({ length: 12 }, (_, index) => {
-    const date = new Date(Date.UTC(y, m - 12 + index, 1))
-    const ym = `${date.getUTCFullYear()}-${String(date.getUTCMonth() + 1).padStart(2, "0")}`
-    return { ym, cents: byMonth.get(ym) ?? 0 }
-  })
-  const firstMonthOfYear = since && since.slice(0, 4) === year ? Number(since.slice(5, 7)) : 1
-  return {
-    allTimeCents: [...byMonth.values()].reduce((sum, cents) => sum + cents, 0),
-    since,
-    yearCents: [...byMonth].filter(([ym]) => ym.startsWith(year) && ym <= currentYm).reduce((sum, [, cents]) => sum + cents, 0),
-    yearMonths: since ? Math.max(1, m - firstMonthOfYear + 1) : 0,
-    months,
+  return byMonth
+}
+
+/** Meses de `from` a `to` (yyyy-MM), inclusive. */
+export function monthRange(from: string, to: string): string[] {
+  const months: string[] = []
+  let [y, m] = from.split("-").map(Number)
+  for (let guard = 0; guard < 1200; guard++) {
+    const ym = `${y}-${String(m).padStart(2, "0")}`
+    if (ym > to) break
+    months.push(ym)
+    if (++m > 12) [y, m] = [y + 1, 1]
   }
+  return months
+}
+
+export type PeriodRow = { key: string; cents: number; consults: number }
+
+/**
+ * Linhas de um período (meses de um ano ou anos desde o início): recebido e consultas
+ * encerradas por chave. `key` é yyyy-MM ou yyyy; um ano soma os meses com o prefixo.
+ */
+export function periodRows(keys: string[], centsByMonth: Record<string, number>, consultsByMonth: Record<string, number>): PeriodRow[] {
+  const sum = (byMonth: Record<string, number>, key: string) =>
+    Object.entries(byMonth).reduce((total, [ym, value]) => (ym.startsWith(key) ? total + value : total), 0)
+  return keys.map((key) => ({ key, cents: sum(centsByMonth, key), consults: sum(consultsByMonth, key) }))
 }

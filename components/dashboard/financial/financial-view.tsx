@@ -33,7 +33,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import { Input } from "@/components/ui/input"
 import { Tabs, TabsList } from "@/components/ui/tabs"
 import { computePediatricAge } from "@/lib/compute-pediatric-age"
-import { dailySeries, paymentSplit, type RevenueOverview } from "@/lib/financial-view"
+import { dailySeries, paymentSplit, type PeriodRow } from "@/lib/financial-view"
 import { formatPediatricAgeShort } from "@/lib/format-pediatric-age"
 import { formatCentsToBRL } from "@/lib/formatters"
 import { getFriendlyToastMessage } from "@/lib/get-friendly-toast-message"
@@ -43,6 +43,7 @@ import { PAYMENT_METHOD_LABEL } from "@/lib/schemas/financial-entry"
 import { cn } from "@/lib/utils"
 import type { EarningsSummary } from "@/modules/financial-entries/types"
 import type { FinancialEntryListRow } from "@/modules/financial-entries/list-financial-entries"
+import type { FinancialPeriod, FinancialTab } from "@/components/dashboard/financial/financial-content"
 import type { MonthBilling } from "@/modules/financial-entries/get-month-billing"
 
 type Chart = "line" | "bar"
@@ -73,7 +74,8 @@ export function FinancialView({
   prevPeriodCents,
   entries,
   billing,
-  revenue,
+  tab,
+  period,
 }: {
   month: {
     /** yyyy-MM do mês mostrado. */
@@ -96,12 +98,13 @@ export function FinancialView({
   /** Do mês, mais recente primeiro, anulados inclusive. */
   entries: FinancialEntryListRow[]
   billing: MonthBilling
-  /** Ano e desde o início, sempre até hoje; null se a leitura falhar. */
-  revenue: (RevenueOverview & { currentYm: string }) | null
+  tab: FinancialTab
+  /** Agregado da aba Ano ou Desde o início; null na aba Mês. */
+  period: FinancialPeriod | null
 }) {
   const router = useRouter()
   const [chart, setChart] = useState<Chart>("line")
-  const [tab, setTab] = useState<"active" | "voided">("active")
+  const [listTab, setListTab] = useState<"active" | "voided">("active")
   const [query, setQuery] = useState("")
   const [fresh, setFresh] = useState<Set<string>>(new Set())
   const [isRestoring, startRestoring] = useTransition()
@@ -126,7 +129,7 @@ export function FinancialView({
     if (!added.length) return
     before.current = null
     setFresh(new Set(added))
-    setTab("active")
+    setListTab("active")
     setQuery("")
     const timer = setTimeout(() => setFresh(new Set()), FRESH_MS)
     return () => clearTimeout(timer)
@@ -138,13 +141,13 @@ export function FinancialView({
 
   const active = entries.filter((entry) => !entry.voided_at)
   const voided = entries.filter((entry) => entry.voided_at)
-  const listed = (tab === "active" ? active : voided).filter(
+  const listed = (listTab === "active" ? active : voided).filter(
     (entry) =>
       !query.trim() ||
       matchPatientQuery({ name: `${entry.description} ${entry.case_label ?? ""}`, responsible: null, contactPhone: null }, query),
   )
   const groups: Array<[string | null, FinancialEntryListRow[]]> =
-    month.isCurrent && tab === "active"
+    month.isCurrent && listTab === "active"
       ? (
           [
             ["Hoje", listed.filter((entry) => entry.received_on >= todayIso)],
@@ -195,11 +198,44 @@ export function FinancialView({
         </div>
       </section>
 
-      {revenue?.since ? <RevenueSection revenue={revenue} /> : null}
-
       <Collapsible asChild>
         <section className="rounded-xl border border-border bg-card">
-          <div className="flex flex-wrap items-center gap-2 border-b border-border px-6 py-3">
+          <div className="flex items-end gap-6 border-b border-border px-6 pt-4">
+            <nav aria-label="Período" className="flex gap-5">
+              {(
+                [
+                  ["month", "Mês", "/dashboard/financial"],
+                  ["year", "Ano", "/dashboard/financial?aba=ano"],
+                  ["all", "Desde o início", "/dashboard/financial?aba=inicio"],
+                ] as const
+              ).map(([value, label, href]) => (
+                <Link
+                  key={value}
+                  href={href}
+                  scroll={false}
+                  aria-current={tab === value ? "page" : undefined}
+                  className={cn(
+                    "-mb-px border-b-2 px-1 pb-2.5",
+                    tab === value ? "border-foreground font-semibold" : "border-transparent text-muted-foreground hover:text-foreground",
+                  )}
+                >
+                  {label}
+                </Link>
+              ))}
+            </nav>
+            {billing.unbilled.length ? (
+              <CollapsibleTrigger className="group mb-2.5 ml-auto inline-flex h-6 cursor-pointer items-center gap-1 rounded-md border border-warning-border bg-warning-soft px-2 text-caption font-medium text-warning-text hover:border-warning-text/40 focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none">
+                <WalletIcon className="size-3.5" aria-hidden />
+                {plural(billing.unbilled.length, "consulta sem valor", "consultas sem valor")}
+                {tab === "month" ? null : ` em ${month.name}`}
+                <ChevronDownIcon className="size-3.5 transition-transform group-data-[state=open]:rotate-180" aria-hidden />
+              </CollapsibleTrigger>
+            ) : null}
+          </div>
+          {period ? (
+            <PeriodNav period={period} />
+          ) : (
+          <div className="flex flex-wrap items-center gap-2 px-6 pt-3">
             <Button asChild variant="ghost" size="icon-sm" aria-label="Mês anterior">
               <Link href={`/dashboard/financial?mes=${month.prev}`} scroll={false}>
                 <ChevronLeftIcon />
@@ -224,14 +260,8 @@ export function FinancialView({
                 </Link>
               </Button>
             )}
-            {billing.unbilled.length ? (
-              <CollapsibleTrigger className="group ml-auto inline-flex h-6 cursor-pointer items-center gap-1 rounded-md border border-warning-border bg-warning-soft px-2 text-caption font-medium text-warning-text hover:border-warning-text/40 focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none">
-                <WalletIcon className="size-3.5" aria-hidden />
-                {plural(billing.unbilled.length, "consulta sem valor", "consultas sem valor")}
-                <ChevronDownIcon className="size-3.5 transition-transform group-data-[state=open]:rotate-180" aria-hidden />
-              </CollapsibleTrigger>
-            ) : null}
           </div>
+          )}
           <CollapsibleContent className="mx-6 mt-4 rounded-lg border border-warning-border bg-card">
             <div className="px-4 py-2 text-caption font-medium text-warning-text">Consultas de {month.name} sem valor lançado</div>
             {billing.unbilled.map((c) => (
@@ -255,6 +285,10 @@ export function FinancialView({
             ))}
           </CollapsibleContent>
 
+          {period ? (
+            <PeriodSummary period={period} />
+          ) : (
+            <>
           <div className="grid grid-cols-[1.25fr_1fr_1fr_1.3fr] divide-x divide-border">
             <Money icon={WalletIcon} label={`Recebido em ${month.name}`} value={formatCentsToBRL(summary.period_cents)} note={totalNote} big />
             <Money
@@ -273,32 +307,7 @@ export function FinancialView({
               value={summary.attendances ? formatCentsToBRL(summary.average_cents) : "—"}
               note={summary.attendances ? plural(summary.attendances, "atendimento lançado", "atendimentos lançados") : "nada lançado ainda"}
             />
-            <div className="flex flex-col gap-2 px-6 py-5">
-              <div className="flex items-center gap-2 text-label text-muted-foreground">
-                <CreditCardIcon className="size-3.5" aria-hidden />
-                Como recebeu
-              </div>
-              {split.length ? (
-                <>
-                  <div className="flex h-2.5 overflow-hidden rounded-full bg-muted">
-                    {split.map((part, index) => (
-                      <span key={part.method} className={SPLIT_COLORS[index]} style={{ width: `${part.percent}%` }} />
-                    ))}
-                  </div>
-                  <div className="grid grid-cols-2 gap-x-3 gap-y-0.5 text-caption">
-                    {split.map((part, index) => (
-                      <span key={part.method} className="flex items-center gap-1.5" title={formatCentsToBRL(part.cents)}>
-                        <span className={cn("size-2 rounded-full", SPLIT_COLORS[index])} aria-hidden />
-                        {PAYMENT_METHOD_LABEL[part.method]}
-                        <span className="num ml-auto text-subtle-foreground">{part.percent}%</span>
-                      </span>
-                    ))}
-                  </div>
-                </>
-              ) : (
-                <span className="text-caption text-subtle-foreground">Nenhum lançamento no mês.</span>
-              )}
-            </div>
+            <SplitCell split={split} />
           </div>
 
           <div className="border-t border-border px-6 pt-4 pb-5">
@@ -334,11 +343,16 @@ export function FinancialView({
             </div>
             <DailyChart series={series} kind={chart} ym={month.ym} />
           </div>
+            </>
+          )}
         </section>
       </Collapsible>
 
+      {period ? (
+        <PeriodTable period={period} />
+      ) : (
       <section className="rounded-xl border border-border bg-card">
-        <Tabs value={tab} onValueChange={(value) => setTab(value as "active" | "voided")} className="gap-0">
+        <Tabs value={listTab} onValueChange={(value) => setListTab(value as "active" | "voided")} className="gap-0">
           <div className="flex items-end gap-6 border-b border-border px-5 pt-4">
             <TabsList className="h-auto w-auto gap-5 rounded-none bg-transparent p-0 lg:w-auto">
               <SectionTab value="active">
@@ -377,7 +391,7 @@ export function FinancialView({
           <p className="px-5 py-6 text-muted-foreground">
             {query.trim()
               ? `Nenhum lançamento com "${query.trim()}".`
-              : tab === "voided"
+              : listTab === "voided"
                 ? `Nenhum lançamento anulado em ${month.name}.`
                 : `Nada lançado em ${month.name}. Os valores entram aqui quando você encerra uma consulta ou registra um lançamento.`}
           </p>
@@ -403,12 +417,13 @@ export function FinancialView({
             </div>
           ))
         )}
-        {tab === "voided" && voided.length ? (
+        {listTab === "voided" && voided.length ? (
           <p className="border-t border-border px-5 py-3 text-caption text-subtle-foreground">
             Anulado não entra nos totais. Restaurar devolve o lançamento como era.
           </p>
         ) : null}
       </section>
+      )}
     </>
   )
 }
@@ -475,73 +490,6 @@ function EntryRow({
         )}
       </div>
     </div>
-  )
-}
-
-/** Faturamento do ano e desde o início, com os 12 últimos meses (não muda ao navegar o mês). */
-function RevenueSection({ revenue }: { revenue: RevenueOverview & { currentYm: string } }) {
-  const year = revenue.currentYm.slice(0, 4)
-  const money = (value: unknown) => formatCentsToBRL(Number(value))
-  return (
-    <section className="grid grid-cols-[minmax(0,1fr)_minmax(0,2.2fr)] rounded-xl border border-border bg-card">
-      <div className="flex flex-col divide-y divide-border border-r border-border">
-        <div className="px-6 pt-5 pb-1">
-          <h2 className="font-display text-section font-semibold">Faturamento</h2>
-          <p className="text-caption text-subtle-foreground">Até hoje, não muda com o mês abaixo</p>
-        </div>
-        <Money
-          icon={WalletIcon}
-          label={`Em ${year}`}
-          value={formatCentsToBRL(revenue.yearCents)}
-          note={revenue.yearMonths ? `média de ${formatCentsToBRL(Math.round(revenue.yearCents / revenue.yearMonths))} por mês` : "nada lançado este ano"}
-          big
-        />
-        <Money
-          icon={ChartLineIcon}
-          label="Desde o início"
-          value={formatCentsToBRL(revenue.allTimeCents)}
-          note={revenue.since ? `desde ${monthYear(revenue.since)}` : ""}
-        />
-      </div>
-      <div className="flex flex-col px-6 pt-5 pb-4">
-        <div className="mb-3 text-label text-muted-foreground">Últimos 12 meses</div>
-        <ResponsiveContainer width="100%" height={220}>
-          <AreaChart data={revenue.months} margin={{ top: 8, right: 8, bottom: 0, left: 0 }}>
-            <CartesianGrid strokeDasharray="3 3" vertical={false} className="stroke-border" />
-            <XAxis
-              dataKey="ym"
-              tick={{ fontSize: 11 }}
-              tickLine={false}
-              axisLine={false}
-              tickFormatter={(ym: string) => MONTHS[Number(ym.slice(5, 7)) - 1].slice(0, 3)}
-            />
-            <YAxis tick={{ fontSize: 11 }} width={96} tickFormatter={money} tickLine={false} axisLine={false} />
-            <Tooltip
-              cursor={{ stroke: "var(--border-strong)" }}
-              content={({ active, payload, label }) =>
-                active && payload?.length ? (
-                  <div className="rounded-lg border border-border bg-popover px-3 py-2 shadow-md">
-                    <div className="text-caption text-muted-foreground first-letter:uppercase">{monthYear(String(label))}</div>
-                    <div className="num font-semibold">{money(payload[0].value)}</div>
-                  </div>
-                ) : null
-              }
-            />
-            <Area
-              type="monotone"
-              dataKey="cents"
-              stroke="var(--primary)"
-              strokeWidth={2.5}
-              fill="var(--primary)"
-              fillOpacity={0.12}
-              dot={{ r: 3, fill: "var(--primary)", strokeWidth: 0 }}
-              activeDot={{ r: 5 }}
-              isAnimationActive={false}
-            />
-          </AreaChart>
-        </ResponsiveContainer>
-      </div>
-    </section>
   )
 }
 
@@ -616,5 +564,190 @@ function Initials({ name, small }: { name: string | null; small?: boolean }) {
     >
       {getPatientInitials(name ?? "?")}
     </span>
+  )
+}
+
+function SplitCell({ split }: { split: ReturnType<typeof paymentSplit> }) {
+  return (
+  <div className="flex flex-col gap-2 px-6 py-5">
+    <div className="flex items-center gap-2 text-label text-muted-foreground">
+      <CreditCardIcon className="size-3.5" aria-hidden />
+      Como recebeu
+    </div>
+    {split.length ? (
+      <>
+        <div className="flex h-2.5 overflow-hidden rounded-full bg-muted">
+          {split.map((part, index) => (
+            <span key={part.method} className={SPLIT_COLORS[index]} style={{ width: `${part.percent}%` }} />
+          ))}
+        </div>
+        <div className="grid grid-cols-2 gap-x-3 gap-y-0.5 text-caption">
+          {split.map((part, index) => (
+            <span key={part.method} className="flex items-center gap-1.5" title={formatCentsToBRL(part.cents)}>
+              <span className={cn("size-2 rounded-full", SPLIT_COLORS[index])} aria-hidden />
+              {PAYMENT_METHOD_LABEL[part.method]}
+              <span className="num ml-auto text-subtle-foreground">{part.percent}%</span>
+            </span>
+          ))}
+        </div>
+      </>
+    ) : (
+      <span className="text-caption text-subtle-foreground">Nenhum lançamento no período.</span>
+    )}
+  </div>
+  )
+}
+
+const monthShort = (ym: string) => MONTHS[Number(ym.slice(5, 7)) - 1].slice(0, 3)
+
+function PeriodNav({ period }: { period: FinancialPeriod }) {
+  if (period.kind === "all") {
+    return <p className="px-6 pt-3 font-display text-section font-semibold first-letter:uppercase">Desde {period.label}</p>
+  }
+  const yearHref = (year: string) => `/dashboard/financial?aba=ano&ano=${year}`
+  return (
+    <div className="flex flex-wrap items-center gap-2 px-6 pt-3">
+      {period.prev ? (
+        <Button asChild variant="ghost" size="icon-sm" aria-label="Ano anterior">
+          <Link href={yearHref(period.prev)} scroll={false}>
+            <ChevronLeftIcon />
+          </Link>
+        </Button>
+      ) : (
+        <Button variant="ghost" size="icon-sm" aria-label="Ano anterior" disabled>
+          <ChevronLeftIcon />
+        </Button>
+      )}
+      <h2 className="num w-24 text-center font-display text-section font-semibold">{period.label}</h2>
+      {period.next ? (
+        <>
+          <Button asChild variant="ghost" size="icon-sm" aria-label="Próximo ano">
+            <Link href={yearHref(period.next)} scroll={false}>
+              <ChevronRightIcon />
+            </Link>
+          </Button>
+          <Button asChild variant="link" size="sm">
+            <Link href="/dashboard/financial?aba=ano" scroll={false}>
+              Voltar para este ano
+            </Link>
+          </Button>
+        </>
+      ) : (
+        <Button variant="ghost" size="icon-sm" aria-label="Próximo ano" disabled>
+          <ChevronRightIcon />
+        </Button>
+      )}
+    </div>
+  )
+}
+
+/** Números e gráfico mês a mês da aba Ano ou Desde o início. */
+function PeriodSummary({ period }: { period: FinancialPeriod }) {
+  const money = (value: unknown) => formatCentsToBRL(Number(value))
+  const months = Math.max(1, period.months)
+  return (
+    <>
+      <div className="mt-3 grid grid-cols-[1.25fr_1fr_1fr_1.3fr] divide-x divide-border border-t border-border">
+        <Money
+          icon={WalletIcon}
+          label={period.kind === "year" ? `Recebido em ${period.label}` : "Recebido desde o início"}
+          value={formatCentsToBRL(period.totalCents)}
+          note={`média de ${formatCentsToBRL(Math.round(period.totalCents / months))} por mês`}
+          big
+        />
+        <Money
+          icon={StethoscopeIcon}
+          label="Consultas"
+          value={String(period.consults)}
+          note={`${(period.consults / months).toLocaleString("pt-BR", { maximumFractionDigits: 1 })} por mês em média`}
+        />
+        <Money
+          icon={ReceiptIcon}
+          label="Melhor mês"
+          value={period.best ? formatCentsToBRL(period.best.cents) : "—"}
+          note={period.best ? monthYear(period.best.key) : "nada lançado ainda"}
+        />
+        <SplitCell split={period.split} />
+      </div>
+      <div className="border-t border-border px-6 pt-4 pb-5">
+        <div className="mb-3 text-label text-muted-foreground">Recebido por mês</div>
+        <ResponsiveContainer width="100%" height={200}>
+          <AreaChart data={period.chart} margin={{ top: 8, right: 8, bottom: 0, left: 0 }}>
+            <CartesianGrid strokeDasharray="3 3" vertical={false} className="stroke-border" />
+            <XAxis
+              dataKey="key"
+              tick={{ fontSize: 11 }}
+              tickLine={false}
+              axisLine={false}
+              interval="preserveStartEnd"
+              tickFormatter={(ym: string) => (period.kind === "all" && ym.endsWith("-01") ? ym.slice(0, 4) : monthShort(ym))}
+            />
+            <YAxis tick={{ fontSize: 11 }} width={96} tickFormatter={money} tickLine={false} axisLine={false} />
+            <Tooltip
+              cursor={{ stroke: "var(--border-strong)" }}
+              content={({ active, payload, label }) =>
+                active && payload?.length ? (
+                  <div className="rounded-lg border border-border bg-popover px-3 py-2 shadow-md">
+                    <div className="text-caption text-muted-foreground first-letter:uppercase">{monthYear(String(label))}</div>
+                    <div className="num font-semibold">{money(payload[0].value)}</div>
+                  </div>
+                ) : null
+              }
+            />
+            <Area
+              type="monotone"
+              dataKey="cents"
+              stroke="var(--primary)"
+              strokeWidth={2.5}
+              fill="var(--primary)"
+              fillOpacity={0.12}
+              dot={{ r: 3, fill: "var(--primary)", strokeWidth: 0 }}
+              activeDot={{ r: 5 }}
+              isAnimationActive={false}
+            />
+          </AreaChart>
+        </ResponsiveContainer>
+      </div>
+    </>
+  )
+}
+
+/** Mês a mês (aba Ano) ou ano a ano (Desde o início); cada linha abre o detalhe. */
+function PeriodTable({ period }: { period: FinancialPeriod }) {
+  const max = Math.max(1, ...period.rows.map((row) => row.cents))
+  const isYear = period.kind === "year"
+  const hrefOf = (row: PeriodRow) => (isYear ? `/dashboard/financial?mes=${row.key}` : `/dashboard/financial?aba=ano&ano=${row.key}`)
+  return (
+    <section className="rounded-xl border border-border bg-card">
+      <div className="flex items-baseline gap-2 px-5 pt-4 pb-3">
+        <h2 className="font-display text-section font-semibold">{isYear ? "Mês a mês" : "Ano a ano"}</h2>
+        <span className="text-caption text-subtle-foreground">{isYear ? "Clique num mês para ver os lançamentos" : "Clique num ano para ver os meses"}</span>
+      </div>
+      <div className="grid grid-cols-[160px_120px_160px_minmax(0,1fr)_24px] gap-4 border-y border-border bg-muted px-5 py-2.5 text-label font-medium text-muted-foreground">
+        <span>{isYear ? "Mês" : "Ano"}</span>
+        <span className="text-right">Consultas</span>
+        <span className="text-right">Recebido</span>
+        <span />
+        <span />
+      </div>
+      <div className="divide-y divide-border">
+        {period.rows.map((row) => (
+          <Link
+            key={row.key}
+            href={hrefOf(row)}
+            scroll={false}
+            className="grid min-h-12 grid-cols-[160px_120px_160px_minmax(0,1fr)_24px] items-center gap-4 px-5 py-2 hover:bg-accent"
+          >
+            <span className="font-medium first-letter:uppercase">{isYear ? MONTHS[Number(row.key.slice(5, 7)) - 1] : row.key}</span>
+            <span className="num text-right text-muted-foreground">{row.consults}</span>
+            <span className="num text-right font-semibold">{formatCentsToBRL(row.cents)}</span>
+            <span className="h-2 overflow-hidden rounded-full bg-muted">
+              <span className="block h-full rounded-full bg-primary/60" style={{ width: `${(row.cents / max) * 100}%` }} />
+            </span>
+            <ChevronRightIcon className="size-4 text-subtle-foreground" aria-hidden />
+          </Link>
+        ))}
+      </div>
+    </section>
   )
 }

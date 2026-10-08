@@ -5,7 +5,7 @@ import { PatientsLoading } from "@/components/dashboard/patients/patients-loadin
 
 export const metadata = { title: "Financeiro" }
 
-export default function FinancialPage({ searchParams }: { searchParams: Promise<{ mes?: string }> }) {
+export default function FinancialPage({ searchParams }: { searchParams: Promise<{ mes?: string; ano?: string; aba?: string }> }) {
   return (
     <Suspense fallback={<PatientsLoading label="Carregando financeiro" />}>
       <FinancialContent searchParams={searchParams} />
