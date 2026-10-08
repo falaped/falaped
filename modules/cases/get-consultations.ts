@@ -1,6 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js"
 
 import { caseSummaryHeadline } from "@/lib/case-summary-headline"
+import { listCaseActivityTimes } from "@/modules/cases/list-case-activity-times"
 import type { CaseOrigin, CaseStatus } from "@/modules/cases/types"
 import type { DashboardHomeActiveCase } from "@/modules/dashboard/get-dashboard-home-data"
 
@@ -55,6 +56,7 @@ type CaseRow = {
   started_at: string
   ended_at: string | null
   consultation_paused_ms: number | null
+  consultation_paused_at: string | null
   summary: string | null
   patient: PatientEmbed | PatientEmbed[] | null
 }
@@ -74,7 +76,7 @@ export async function getConsultations(supabase: SupabaseClient, profileId: stri
   let casesQuery = supabase
     .from("cases")
     .select(
-      "id, status, origin, started_at, ended_at, consultation_paused_ms, summary, patient:patients(id, name, birth_date, responsible, contact_phone, allergies)",
+      "id, status, origin, started_at, ended_at, consultation_paused_ms, consultation_paused_at, summary, patient:patients(id, name, birth_date, responsible, contact_phone, allergies)",
     )
     .eq("profile_id", profileId)
     .order("started_at", { ascending: false })
@@ -109,6 +111,9 @@ export async function getConsultations(supabase: SupabaseClient, profileId: stri
   const cases = (casesResult.data ?? []) as CaseRow[]
   const activeRow = cases.find((row) => row.status === "active") ?? null
   const activePatient = activeRow ? one(activeRow.patient) : null
+  const activityAts = activeRow
+    ? await listCaseActivityTimes(supabase, activeRow.id, activePatient?.id ?? null, activeRow.started_at).catch(() => [])
+    : []
 
   return {
     active: activeRow
@@ -116,6 +121,9 @@ export async function getConsultations(supabase: SupabaseClient, profileId: stri
           id: activeRow.id,
           startedAt: activeRow.started_at,
           origin: activeRow.origin,
+          pausedMs: Number(activeRow.consultation_paused_ms ?? 0),
+          pausedAt: activeRow.consultation_paused_at,
+          activityAts,
           patient: activePatient
             ? {
                 name: activePatient.name,

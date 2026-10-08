@@ -1,7 +1,7 @@
 import test from "node:test"
 import assert from "node:assert/strict"
 
-import { closeTiming, summarizeIdle } from "@/lib/consult-idle"
+import { closeTiming, consultClock, summarizeIdle } from "@/lib/consult-idle"
 
 const at = (hhmm: string) => `2026-10-08T${hhmm}:00.000Z`
 const t = (hhmm: string) => Date.parse(at(hhmm))
@@ -46,4 +46,10 @@ test("horário informado pela médica manda", () => {
 test("pausa manual aberta: termina onde pausou", () => {
   const r = closeTiming({ startedAt: at("09:10"), pausedMs: 0, pausedAt: at("09:40") }, [at("09:30")], t("10:00"))
   assert.deepEqual(r, { endedAt: at("09:40"), pausedMs: 0 })
+})
+
+test("relógio da tela: parada congela na última atividade", () => {
+  const timer = { startedAt: at("09:10"), pausedMs: 0, pausedAt: null }
+  assert.deepEqual(consultClock(timer, [at("09:42")], t("19:00")), { elapsedMs: 32 * MIN, idleSince: at("09:42") })
+  assert.deepEqual(consultClock(timer, [at("09:42")], t("10:00")), { elapsedMs: 50 * MIN, idleSince: null })
 })

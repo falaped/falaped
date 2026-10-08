@@ -32,7 +32,7 @@ import {
 } from "@/components/ui/command"
 import { CLINIC_TIME_ZONE } from "@/lib/clinic-timezone"
 import { computePediatricAge } from "@/lib/compute-pediatric-age"
-import { summarizeIdle } from "@/lib/consult-idle"
+import { consultClock } from "@/lib/consult-idle"
 import { cn } from "@/lib/utils"
 import { formatPediatricAgeShort } from "@/lib/format-pediatric-age"
 import { getFriendlyToastMessage } from "@/lib/get-friendly-toast-message"
@@ -78,14 +78,10 @@ function formatMinutes(minutes: number): string {
  * `idleSince` diz desde quando ela está parada (ver lib/consult-idle.ts).
  */
 function consultTime(activeCase: ActiveCase): { label: string; idleSince: string | null } {
-  const now = Date.now()
-  const { gapsMs, idleSince } = summarizeIdle(activeCase.startedAt, activeCase.activityAts, now)
-  const idle = activeCase.pausedAt == null ? idleSince : null
-  const end = activeCase.pausedAt ? Date.parse(activeCase.pausedAt) : idle ? Date.parse(idle) : now
-  const ms = Math.max(0, end - Date.parse(activeCase.startedAt) - activeCase.pausedMs - gapsMs)
+  const { elapsedMs, idleSince } = consultClock(activeCase, activeCase.activityAts, Date.now())
   return {
-    label: formatMinutes(Math.floor(ms / 60_000)),
-    idleSince: idle ? format(idle, "HH:mm", { in: tz(CLINIC_TIME_ZONE) }) : null,
+    label: formatMinutes(Math.floor(elapsedMs / 60_000)),
+    idleSince: idleSince ? format(idleSince, "HH:mm", { in: tz(CLINIC_TIME_ZONE) }) : null,
   }
 }
 

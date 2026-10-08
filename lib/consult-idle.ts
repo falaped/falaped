@@ -48,3 +48,18 @@ export function closeTiming(
   const pausedMs = Math.min(timer.pausedMs + gapsMs, Math.max(0, finalEnd - start))
   return { endedAt: new Date(finalEnd).toISOString(), pausedMs }
 }
+
+/**
+ * Tempo da consulta aberta para mostrar na tela: desconta pausas e intervalos parados,
+ * e congela na última atividade quando ela está parada agora (`idleSince`).
+ */
+export function consultClock(
+  timer: { startedAt: string; pausedMs: number; pausedAt: string | null },
+  activityAts: string[],
+  now: number,
+): { elapsedMs: number; idleSince: string | null } {
+  const { gapsMs, idleSince } = summarizeIdle(timer.startedAt, activityAts, now)
+  const idle = timer.pausedAt == null ? idleSince : null
+  const end = timer.pausedAt ? Date.parse(timer.pausedAt) : idle ? Date.parse(idle) : now
+  return { elapsedMs: Math.max(0, end - Date.parse(timer.startedAt) - timer.pausedMs - gapsMs), idleSince: idle }
+}
