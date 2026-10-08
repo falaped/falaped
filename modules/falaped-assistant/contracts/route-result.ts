@@ -22,4 +22,6 @@ export type RouteResult = {
   blockedAssistantMessageId?: string | null
   patientProfileUpdatePayload?: PatientProfileUpdatePayload
   showPatientProfileUpdateActions?: boolean
+  /** Peso/estatura confirmados no chat: a action grava como medida do dia da consulta. */
+  anthropometricUpdate?: { weightKg: number | null; heightM: number | null }
 }

@@ -46,9 +46,14 @@ export async function planAssistantTurnActions(
     context.userMessage,
     context.patientMetrics,
   )
+  const normalizedInput = normalizeText(context.userMessage)
+  const answersAnthropometricReview =
+    normalizedInput.includes("confirmar novos dados antropometricos") ||
+    normalizedInput.includes("usar novos dados antropometricos") ||
+    normalizedInput.includes("manter valores anteriores") ||
+    normalizedInput.includes("manter dados anteriores")
   if (
-    anthropometrics.hasInput &&
-    anthropometrics.diverges &&
+    (answersAnthropometricReview || (anthropometrics.hasInput && anthropometrics.diverges)) &&
     !llmActions.includes("REVIEW_ANTHROPOMETRIC_REFERENCE")
   ) {
     actions.unshift(
@@ -80,6 +85,16 @@ export async function planAssistantTurnActions(
     !llmActions.includes("REVIEW_PATIENT_PROFILE_UPDATE")
   ) {
     actions.push(createAction("REVIEW_PATIENT_PROFILE_UPDATE", context.userMessage, "rule"))
+  }
+
+  // Clique num botão de revisão é só a resposta à revisão: nada de pergunta ou anotação junto.
+  const answeredReview: TurnActionKind | null = answersProfileReview
+    ? "REVIEW_PATIENT_PROFILE_UPDATE"
+    : answersAnthropometricReview
+      ? "REVIEW_ANTHROPOMETRIC_REFERENCE"
+      : null
+  if (answeredReview) {
+    return { actions: [createAction(answeredReview, context.userMessage, "rule")], source: "rule" }
   }
 
   const ordered = orderActions(actions)

@@ -24,7 +24,8 @@ import { polishAssistantReplyForDisplay } from "@/modules/groq/assistant-polish-
 import { updatePatient, type UpdatePatientPayload } from "@/modules/patients/update-patient"
 import { assistantMessageToModelText } from "@/modules/falaped-assistant/assistant-model-message"
 import { getConsultRecords } from "@/modules/cases/get-consult-records"
-import { formatConsultRecordsForAi, latestAnthropometry } from "@/lib/consult-records"
+import { clinicDay, formatConsultRecordsForAi, latestAnthropometry } from "@/lib/consult-records"
+import { createMeasurement } from "@/modules/patient-growth/create-measurement"
 import { processAssistantTurn } from "@/modules/falaped-assistant/orchestrator/process-turn"
 import { updateCaseAssistantTurnQueue } from "@/modules/cases/update-case-assistant-turn-queue"
 import { withBlockedAssistantMessageId } from "@/modules/falaped-assistant/pipeline/assistant-turn-queue"
@@ -163,31 +164,33 @@ function parseMetricToNumber(value: string | null | undefined): number | null {
   return Number(match[1])
 }
 
-function buildAnthropometricPatientUpdateFromStoredData(
-  items: Array<{ section: string; label: string; value: string; status: string }>,
-): UpdatePatientPayload {
-  const out: UpdatePatientPayload = {}
-  for (const item of items) {
-    if (item.section !== "DADOS_ANTROPOMETRICOS" || item.status !== "confirmado") {
-      continue
-    }
-    const label = item.label
-      .normalize("NFD")
-      .replace(/[\u0300-\u036f]/g, "")
-      .toLowerCase()
-    const match = item.value.replace(",", ".").match(/(\d+(?:\.\d+)?)/)
-    if (!match) continue
-    const num = Number(match[1])
-    if (!Number.isFinite(num)) continue
-    if (label === "peso") {
-      out.weight = num.toFixed(3).replace(/\.?0+$/, "")
-    }
-    if (label.includes("comprimento") && label.includes("altura")) {
-      const cm = num <= 3.5 ? num * 100 : num
-      out.height = cm.toFixed(1).replace(/\.0$/, "")
-    }
+/** Grava o peso/estatura confirmados como medida do dia da consulta e devolve a resposta do chat. */
+async function saveChatMeasurement(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  profileId: string,
+  consult: { started_at: string; patient_id: string | null },
+  update: { weightKg: number | null; heightM: number | null } | undefined,
+): Promise<string> {
+  const weightKg = update?.weightKg != null && update.weightKg >= 0.3 && update.weightKg <= 180 ? update.weightKg : null
+  const heightCm = update?.heightM != null && update.heightM * 100 >= 20 && update.heightM * 100 <= 220 ? update.heightM * 100 : null
+  if (!consult.patient_id || (weightKg == null && heightCm == null)) {
+    return "Não consegui registrar: confira o valor e use o botão Medidas."
   }
-  return out
+  await createMeasurement(supabase, profileId, consult.patient_id, {
+    measured_on: clinicDay(consult.started_at),
+    weight_grams: weightKg != null ? Math.round(weightKg * 1000) : null,
+    length_height_mm: heightCm != null ? Math.round(heightCm * 10) : null,
+    head_circumference_mm: null,
+    systolic_bp: null,
+    diastolic_bp: null,
+  })
+  revalidatePath(`/dashboard/patients/${consult.patient_id}`)
+  const decimal = new Intl.NumberFormat("pt-BR", { maximumFractionDigits: 2 })
+  const parts = [
+    weightKg != null ? `peso ${decimal.format(weightKg)} kg` : null,
+    heightCm != null ? `estatura ${decimal.format(heightCm)} cm` : null,
+  ].filter(Boolean)
+  return `Medida registrada na consulta: ${parts.join(", ")}. Já aparece na ficha e na curva de crescimento.`
 }
 
 function truncateConversationWindow(messages: Array<{ role: "user" | "assistant"; content: string }>): {
@@ -470,6 +473,7 @@ export async function sendCaseAssistantMessageAction(
     let reportGeneratedAtSegmentIndex: number | null = null
     const reportHasMinimumData = hasMinimumConversationForReport(normalizedMessages)
 
+    const measurementReplies = new Map<number, string>()
     for (let segmentIndex = 0; segmentIndex < pipelineResults.length; segmentIndex++) {
       const routed = pipelineResults[segmentIndex]
       if (routed.action === "confirm_close_case") {
@@ -510,13 +514,13 @@ export async function sendCaseAssistantMessageAction(
         }
       }
 
+      // Peso/estatura confirmados no chat viram medida do dia da consulta: é o que a
+      // ficha, a curva e o painel "Nesta consulta" leem (o campo do cadastro não).
       if (routed.action === "confirm_anthropometric_reference" && caseDetail?.patient?.id) {
-        const anthropometricPayload = buildAnthropometricPatientUpdateFromStoredData(
-          routed.storedData,
+        measurementReplies.set(
+          segmentIndex,
+          await saveChatMeasurement(supabase, profile.id, caseDetail, routed.anthropometricUpdate),
         )
-        if (anthropometricPayload.weight !== undefined || anthropometricPayload.height !== undefined) {
-          await updatePatient(supabase, caseDetail.patient.id, profile.id, anthropometricPayload)
-        }
       }
 
       if (routed.action === "none" && routed.intent === "CLOSE_CASE") {
@@ -566,7 +570,7 @@ export async function sendCaseAssistantMessageAction(
           caseDetail?.patient?.id &&
           routed.patientProfileUpdatePayload
           ? formatPatientProfileUpdateSuccessReply(routed.patientProfileUpdatePayload)
-          : undefined
+          : measurementReplies.get(segmentIndex)
 
       const isReportInsufficientGate =
         routed.intent === "GENERATE_REPORT" &&
