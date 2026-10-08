@@ -39,6 +39,15 @@ export function ActiveConsultBanner({ active, now }: { active: DashboardHomeActi
       </span>
       <div className="min-w-0">
         <div className="flex flex-wrap items-center gap-2">
+          <span className="text-title font-semibold">{active.patient?.name ?? "Consulta sem paciente"}</span>
+          {active.patient?.birthDate ? (
+            <span className="text-muted-foreground">
+              · {formatPediatricAgeShort(computePediatricAge(active.patient.birthDate))}
+            </span>
+          ) : null}
+          {active.patient?.allergies ? (
+            <AttentionSymbol icon={TriangleAlertIcon} kind="danger" title="Alergia" detail={active.patient.allergies} />
+          ) : null}
           {idleSince ? (
             <span className="inline-flex h-6 items-center rounded-md border border-warning-border bg-warning-soft px-2 text-caption font-medium text-warning-text">
               Sem atividade desde {format(idleSince, "HH:mm", inClinic)}
@@ -52,15 +61,6 @@ export function ActiveConsultBanner({ active, now }: { active: DashboardHomeActi
               Em consulta agora · {elapsed(elapsedMs)}
             </span>
           )}
-          <span className="text-title font-semibold">{active.patient?.name ?? "Consulta sem paciente"}</span>
-          {active.patient?.birthDate ? (
-            <span className="text-muted-foreground">
-              · {formatPediatricAgeShort(computePediatricAge(active.patient.birthDate))}
-            </span>
-          ) : null}
-          {active.patient?.allergies ? (
-            <AttentionSymbol icon={TriangleAlertIcon} kind="danger" title="Alergia" detail={active.patient.allergies} />
-          ) : null}
         </div>
         <div className="mt-0.5 text-muted-foreground">
           Começou às {format(new Date(active.startedAt), "HH:mm", inClinic)}
