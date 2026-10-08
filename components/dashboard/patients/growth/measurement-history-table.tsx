@@ -123,7 +123,8 @@ export function MeasurementHistoryTable({
           </TableRow>
         </TableHeader>
         <TableBody>
-          {measurements.map((m) => (
+          {/* Chegam em ordem cronológica (a curva precisa); a tabela mostra a mais recente primeiro. */}
+          {measurements.toReversed().map((m) => (
             <Fragment key={m.id}>
               <TableRow className="even:bg-muted/50">
                 <TableCell className="px-4 py-3 tabular-nums">
