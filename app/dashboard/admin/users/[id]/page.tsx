@@ -4,21 +4,14 @@ import {
   ArrowLeftIcon,
   BadgeCheckIcon,
   BabyIcon,
-  ChartColumnIcon,
   CheckIcon,
-  CreditCardIcon,
   FileCheckIcon,
-  HistoryIcon,
-  InfoIcon,
-  KeyRoundIcon,
   LifeBuoyIcon,
   LogInIcon,
   MailIcon,
   MailOpenIcon,
   MessageCircleIcon,
-  MessagesSquareIcon,
   PhoneIcon,
-  RouteIcon,
   StethoscopeIcon,
   UserPlusIcon,
   ZapIcon,
@@ -46,7 +39,7 @@ import { EARLY_PRICE, recipientValues, type MessageMoment } from "@/lib/message-
 import { listMessageTemplates } from "@/modules/admin/list-message-templates"
 import { EmailComposerButton, WhatsappMenu } from "@/components/dashboard/admin/whatsapp-menu"
 import { AccountAccessForm } from "@/components/dashboard/admin/account-access-form"
-import { GradientCard, Initials, PanelCard, WHATSAPP_BUTTON } from "@/components/dashboard/admin/admin-ui"
+import { Initials, PanelCard } from "@/components/dashboard/admin/admin-ui"
 import { ActivityPill, PaymentPill } from "@/components/dashboard/admin/health-badges"
 import { PaymentDialog } from "@/components/dashboard/admin/payment-dialog"
 import { Button } from "@/components/ui/button"
@@ -55,19 +48,16 @@ export const metadata = { title: "Admin · Cliente" }
 
 const DAY_MS = 24 * 60 * 60 * 1000
 
-/** Tudo que a conta pode usar, na ordem do menu. Zero vira etiqueta de "ainda não usou". */
+/** O que a conta pode usar no app 2.0, na ordem do menu. Zero vira etiqueta de "ainda não usou". */
 const METRICS: { key: keyof ProfileUsageRow; label: string }[] = [
   { key: "patients", label: "Pacientes" },
-  { key: "cases", label: "Casos" },
-  { key: "discussions", label: "Discussões" },
-  { key: "appointments", label: "Agendamentos" },
+  { key: "cases", label: "Consultas" },
   { key: "prescriptions", label: "Receitas" },
   { key: "certificates", label: "Atestados" },
   { key: "referrals", label: "Encaminhamentos" },
-  { key: "reports", label: "Relatórios" },
-  { key: "case_reports", label: "Relatórios de caso" },
+  { key: "case_reports", label: "Relatórios da consulta" },
+  { key: "reports", label: "Relatórios médicos" },
   { key: "exam_requests", label: "Pedidos de exame" },
-  { key: "guidance", label: "Orientações" },
   { key: "vaccine_doses", label: "Vacinas" },
   { key: "measurements", label: "Medições" },
   { key: "scales", label: "Escalas" },
@@ -142,7 +132,7 @@ export default async function AdminClientPage({ params }: { params: Promise<{ id
       `Trate por "${row.first_name ?? name}".`,
       `${name}, cliente do Falaped desde ${formatDate(row.created_at)}.`,
       `Assinatura: ${PAYMENT_LABEL[payment.state]}${payment.daysLeft != null ? ` (${payment.daysLeft} dias)` : ""}. Atividade: ${ACTIVITY_LABEL[activity]}.`,
-      `${row.patients} pacientes, ${row.cases} atendimentos, ${docs} documentos.`,
+      `${row.patients} pacientes, ${row.cases} consultas, ${docs} documentos.`,
       task ? `Pendência: ${task.why.map((p) => (typeof p === "string" ? p : p.b)).join("")}` : "",
     ].join("\n"),
     defaultMoment: task ? TASK_MOMENT[task.kind] : ("ajuda" as MessageMoment),
@@ -151,7 +141,7 @@ export default async function AdminClientPage({ params }: { params: Promise<{ id
   const steps = [
     { label: "Criou a conta", icon: UserPlusIcon, done: true, detail: formatDate(row.created_at).slice(0, 5) },
     { label: "Cadastrar paciente", icon: BabyIcon, done: row.patients > 0, detail: `${row.patients} pacientes` },
-    { label: "Abrir um caso", icon: MessagesSquareIcon, done: row.cases > 0, detail: `${row.cases} casos` },
+    { label: "Iniciar uma consulta", icon: StethoscopeIcon, done: row.cases > 0, detail: `${row.cases} consultas` },
     { label: "Emitir documento", icon: FileCheckIcon, done: docs > 0, detail: `${docs} documentos` },
   ]
   const nextStep = steps.findIndex((s) => !s.done)
@@ -196,76 +186,71 @@ export default async function AdminClientPage({ params }: { params: Promise<{ id
   ]
 
   return (
-    <div className="flex flex-col gap-5">
-      <Link
-        href="/dashboard/admin/users"
-        className="inline-flex w-fit items-center gap-1.5 text-[13px] text-muted-foreground hover:text-foreground"
-      >
-        <ArrowLeftIcon className="size-3.5" aria-hidden />
-        Clientes
-      </Link>
+    <div className="flex flex-col gap-6">
+      <Button asChild variant="ghost" size="sm" className="-mb-3 -ml-2.5 self-start text-muted-foreground">
+        <Link href="/dashboard/admin/users">
+          <ArrowLeftIcon data-icon="inline-start" />
+          Voltar para clientes
+        </Link>
+      </Button>
 
-      <GradientCard className="flex flex-wrap items-end justify-between gap-5 px-7 py-6">
-        <div className="flex items-end gap-4">
-          <Initials name={name} className="size-21 rounded-[20px] border-4 border-card bg-card text-[26px] shadow-sm" />
-          <div>
-            <h1 className="text-2xl font-semibold tracking-tight">{name}</h1>
-            <p className="mt-0.5 flex flex-wrap gap-x-4 gap-y-1 text-[13px] text-muted-foreground">
-              {row.email ? (
-                <span className="inline-flex items-center gap-1.5">
-                  <MailIcon className="size-3.5" aria-hidden />
-                  {row.email}
-                </span>
-              ) : null}
-              {row.phone ? (
-                <span className="inline-flex items-center gap-1.5">
-                  <PhoneIcon className="size-3.5" aria-hidden />
-                  {formatLinkedPhone(row.phone)}
-                </span>
-              ) : null}
-              {row.crm ? (
-                <span className="inline-flex items-center gap-1.5">
-                  <StethoscopeIcon className="size-3.5" aria-hidden />
-                  CRM {row.crm}
-                </span>
-              ) : null}
-            </p>
-            <div className="mt-2.5 flex gap-1.5">
-              <PaymentPill payment={payment} />
-              <ActivityPill state={activity} />
-            </div>
+      <section className="flex flex-wrap items-center gap-5 rounded-xl border border-primary-soft-border bg-highlight px-8 py-6 shadow-sm">
+        <Initials name={name} className="size-16 text-section" />
+        <div className="min-w-0">
+          <h1 className="font-display text-page font-semibold">{name}</h1>
+          <p className="mt-1 flex flex-wrap gap-x-4 gap-y-1 text-muted-foreground">
+            {row.email ? (
+              <span className="inline-flex items-center gap-1.5">
+                <MailIcon className="size-4" aria-hidden />
+                {row.email}
+              </span>
+            ) : null}
+            {row.phone ? (
+              <span className="num inline-flex items-center gap-1.5">
+                <PhoneIcon className="size-4" aria-hidden />
+                {formatLinkedPhone(row.phone)}
+              </span>
+            ) : null}
+            {row.crm ? (
+              <span className="inline-flex items-center gap-1.5">
+                <StethoscopeIcon className="size-4" aria-hidden />
+                CRM {row.crm}
+              </span>
+            ) : null}
+          </p>
+          <div className="mt-2 flex gap-1.5">
+            <PaymentPill payment={payment} />
+            <ActivityPill state={activity} />
           </div>
         </div>
-        <div className="flex gap-2">
+        <div className="ml-auto flex gap-2">
           <WhatsappMenu {...send} />
-          <EmailComposerButton {...send} className="bg-card" />
+          <EmailComposerButton {...send} />
         </div>
-      </GradientCard>
+      </section>
 
       {task ? (
-        <GradientCard tone="amber" className="grid grid-cols-[40px_1fr_auto] items-center gap-3.5 px-5 py-4">
-          <span className="flex size-10 items-center justify-center rounded-[11px] bg-card text-amber-700 ring-1 ring-amber-300/70 dark:text-amber-400">
-            <LifeBuoyIcon className="size-5" aria-hidden />
-          </span>
-          <div>
+        <div className="flex items-center gap-4 rounded-xl border border-warning-border bg-warning-soft px-5 py-4">
+          <LifeBuoyIcon className="size-5 shrink-0 text-warning-text" aria-hidden />
+          <div className="min-w-0 flex-1">
             <p className="font-semibold">{task.why.map((p) => (typeof p === "string" ? p : p.b)).join("")}</p>
-            <p className="mt-0.5 text-[13px] text-amber-900/80 dark:text-amber-200/80">{SUGGESTION[task.kind]}</p>
+            <p className="text-caption text-muted-foreground">{SUGGESTION[task.kind]}</p>
           </div>
           {task.action ? (
-            <Button asChild className={task.action.kind === "whatsapp" ? WHATSAPP_BUTTON : undefined}>
+            <Button asChild>
               <a href={task.action.href} target="_blank" rel="noreferrer">
                 {task.action.kind === "whatsapp" ? <MessageCircleIcon aria-hidden /> : <MailIcon aria-hidden />}
                 {task.action.label}
               </a>
             </Button>
           ) : null}
-        </GradientCard>
+        </div>
       ) : null}
 
-      <div className="grid items-start gap-5 lg:grid-cols-[minmax(0,1fr)_360px]">
-        <div className="flex flex-col gap-5">
-          <PanelCard icon={RouteIcon} title="Primeiros passos" description="Onde a conta está na adoção do Falaped">
-            <ol className="grid grid-cols-4">
+      <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_380px]">
+        <div className="flex flex-col gap-6">
+          <PanelCard title="Primeiros passos" description="Onde a conta está na adoção do Falaped">
+            <ol className="grid grid-cols-4 py-2">
               {steps.map((step, i) => {
                 const Icon = step.done ? CheckIcon : step.icon
                 const isNext = i === nextStep
@@ -280,45 +265,43 @@ export default async function AdminClientPage({ params }: { params: Promise<{ id
                     <span
                       className={cn(
                         "relative flex size-8 items-center justify-center rounded-full bg-card ring-2",
-                        step.done && "bg-primary text-white ring-4 ring-primary/20",
-                        isNext && "text-amber-700 ring-amber-500 dark:text-amber-400",
-                        !step.done && !isNext && "text-muted-foreground/60 ring-border",
+                        step.done && "bg-primary text-primary-foreground ring-primary",
+                        isNext && "text-warning-text ring-warning",
+                        !step.done && !isNext && "text-subtle-foreground ring-border",
                       )}
                     >
                       <Icon className="size-4" aria-hidden />
                     </span>
-                    <span className="text-[13px] font-medium">{step.label}</span>
-                    <span className="text-xs text-muted-foreground">{step.done ? step.detail : isNext ? "parou aqui" : "—"}</span>
+                    <span className="text-label font-medium">{step.label}</span>
+                    <span className={cn("text-caption", isNext ? "font-medium text-warning-text" : "text-subtle-foreground")}>{step.done ? step.detail : isNext ? "parou aqui" : "—"}</span>
                   </li>
                 )
               })}
             </ol>
           </PanelCard>
 
-          <PanelCard
-            icon={ChartColumnIcon}
-            title="Uso"
+          <PanelCard title="Uso"
             description={used.length ? "O que a conta já registrou no Falaped" : "Nenhum registro ainda"}
           >
             {used.length ? (
-              <dl className="grid grid-cols-2 gap-2.5 sm:grid-cols-4">
+              <dl className="grid grid-cols-2 gap-3 sm:grid-cols-4">
                 {used.map((m) => (
-                  <div key={m.key} className="rounded-[10px] bg-muted/40 px-3.5 py-3 ring-1 ring-border">
-                    <dd className="text-[22px] font-semibold tabular-nums">{row[m.key] as number}</dd>
-                    <dt className="text-xs text-muted-foreground">{m.label}</dt>
+                  <div key={m.key} className="rounded-lg bg-muted px-4 py-3">
+                    <dd className="num font-display text-page font-semibold">{row[m.key] as number}</dd>
+                    <dt className="text-caption text-muted-foreground">{m.label}</dt>
                   </div>
                 ))}
               </dl>
             ) : null}
             {used.length === 0 ? (
-              <p className="text-[13px] text-muted-foreground">
-                Ainda não cadastrou paciente, abriu caso nem emitiu documento.
+              <p className="text-muted-foreground">
+                Ainda não cadastrou paciente, iniciou consulta nem emitiu documento.
               </p>
             ) : unused.length ? (
-              <div className="mt-4 flex flex-wrap items-center gap-1.5 text-[13px] text-muted-foreground">
+              <div className="mt-4 flex flex-wrap items-center gap-1.5 text-label text-muted-foreground">
                 Ainda não usou:
                 {unused.map((m) => (
-                  <span key={m.key} className="rounded-md bg-muted px-2 py-0.5 text-xs">
+                  <span key={m.key} className="rounded-md bg-muted px-2 py-0.5 text-caption">
                     {m.label}
                   </span>
                 ))}
@@ -326,7 +309,7 @@ export default async function AdminClientPage({ params }: { params: Promise<{ id
             ) : null}
           </PanelCard>
 
-          <PanelCard icon={HistoryIcon} title="Histórico" description="O que já aconteceu com esta conta">
+          <PanelCard title="Histórico" description="O que já aconteceu com esta conta">
             <ol>
               {events.map((e, i) => {
                 const Icon = e.icon
@@ -337,16 +320,16 @@ export default async function AdminClientPage({ params }: { params: Promise<{ id
                     ) : null}
                     <span
                       className={cn(
-                        "flex size-7 items-center justify-center rounded-lg",
-                        e.tone === "blue" && "bg-primary/12 text-primary-ink",
-                        e.tone === "green" && "bg-emerald-500/12 text-emerald-700 dark:text-emerald-400",
+                        "grid size-7 place-items-center rounded-full",
+                        e.tone === "blue" && "bg-primary-soft text-primary-ink-strong",
+                        e.tone === "green" && "bg-success-soft text-success-text",
                         e.tone === "gray" && "bg-muted text-muted-foreground",
                       )}
                     >
                       <Icon className="size-3.5" aria-hidden />
                     </span>
-                    <span className="self-center text-[13px]">{e.text}</span>
-                    <span className="self-center text-xs whitespace-nowrap text-muted-foreground tabular-nums">
+                    <span className="self-center">{e.text}</span>
+                    <span className="num self-center text-caption whitespace-nowrap text-subtle-foreground">
                       {formatDateTime(e.at)}
                     </span>
                   </li>
@@ -356,32 +339,30 @@ export default async function AdminClientPage({ params }: { params: Promise<{ id
           </PanelCard>
         </div>
 
-        <div className="flex flex-col gap-5">
-          <PanelCard
-            icon={CreditCardIcon}
-            title="Assinatura"
+        <div className="flex flex-col gap-6">
+          <PanelCard title="Assinatura"
             description={lastPayment?.note ?? (payment.state === "trial" ? "Teste grátis" : "Pagamento manual")}
             action={<PaymentDialog profileId={row.profile_id} name={name} defaultAmount={EARLY_PRICE.toFixed(2).replace(".", ",")} />}
           >
             {payment.daysLeft !== null && payment.daysLeft >= 0 ? (
               <>
                 <p className="flex items-baseline gap-2">
-                  <span className="text-[26px] font-semibold tracking-tight tabular-nums">
+                  <span className="num font-display text-page font-semibold">
                     {payment.daysLeft} {payment.daysLeft === 1 ? "dia" : "dias"}
                   </span>
-                  <span className="text-[13px] text-muted-foreground">
+                  <span className="text-muted-foreground">
                     {payment.state === "trial" ? "de teste restantes" : `até vencer em ${formatDate(row.paid_until).slice(0, 5)}`}
                   </span>
                 </p>
                 <div className="mt-2.5 mb-1.5 h-2 overflow-hidden rounded-full bg-muted">
                   <div
-                    className="h-full rounded-full bg-gradient-to-r from-primary to-primary/60"
+                    className="h-full rounded-full bg-primary"
                     style={{ width: `${Math.min(100, (payment.daysLeft / (payment.state === "trial" ? 15 : periodDays)) * 100)}%` }}
                   />
                 </div>
               </>
             ) : (
-              <p className="text-[15px] font-medium">
+              <p className="font-medium">
                 {payment.state === "em-dia"
                   ? "Paga, sem vencimento lançado"
                   : payment.state === "vencido"
@@ -391,24 +372,24 @@ export default async function AdminClientPage({ params }: { params: Promise<{ id
                       : "Sem assinatura"}
               </p>
             )}
-            <p className="text-[13px] text-muted-foreground">
+            <p className="mt-2 text-caption text-muted-foreground">
               {lastPayment
                 ? `${formatCentsToBRL(lastPayment.amount_cents)}, pago em ${formatDate(lastPayment.paid_at)}`
                 : "Nenhum pagamento lançado ainda."}
             </p>
           </PanelCard>
 
-          <PanelCard icon={KeyRoundIcon} title="Acesso" description="Status que libera o app">
+          <PanelCard title="Acesso" description="Status que libera o app">
             {/* key: o form reinicia com os valores da conta (e após o refresh). */}
             <AccountAccessForm key={`${row.status}:${row.trial_ends_at}`} row={row} />
           </PanelCard>
 
-          <PanelCard icon={InfoIcon} title="Dados">
-            <dl className="flex flex-col divide-y text-[13px]">
+          <PanelCard title="Dados">
+            <dl className="flex flex-col divide-y divide-border">
               {facts.map((f) => (
-                <div key={f.label} className="flex justify-between gap-4 py-2.5 first:pt-0">
+                <div key={f.label} className="flex justify-between gap-4 py-2.5 first:pt-0 last:pb-0">
                   <dt className="text-muted-foreground">{f.label}</dt>
-                  <dd className="text-right font-medium tabular-nums">{f.value}</dd>
+                  <dd className="num text-right font-medium">{f.value}</dd>
                 </div>
               ))}
             </dl>

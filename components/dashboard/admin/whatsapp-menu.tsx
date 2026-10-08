@@ -6,7 +6,7 @@ import { ChevronDownIcon, MailIcon, MessageCircleIcon, SparklesIcon } from "luci
 import { MESSAGE_MOMENTS, MOMENT_LABEL, momentsFor, renderTemplate, type MessageMoment, type TemplateValues } from "@/lib/message-template"
 import { cn } from "@/lib/utils"
 import type { MessageTemplate } from "@/modules/admin/list-message-templates"
-import { WHATSAPP_BUTTON } from "@/components/dashboard/admin/admin-ui"
+import { WhatsappIcon } from "@/components/dashboard/admin/admin-ui"
 import { MessageComposer } from "@/components/dashboard/admin/message-composer"
 import { useWhatsappSend, type Recipient } from "@/components/dashboard/admin/use-whatsapp-send"
 import { Button } from "@/components/ui/button"
@@ -45,8 +45,8 @@ export function WhatsappMenu(props: Props) {
     <>
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <Button className={WHATSAPP_BUTTON} disabled={!canSend} title={canSend ? undefined : "Sem celular válido"}>
-            <MessageCircleIcon aria-hidden />
+          <Button variant="outline" disabled={!canSend} title={canSend ? undefined : "Sem celular válido"}>
+            <WhatsappIcon />
             WhatsApp
             <ChevronDownIcon aria-hidden />
           </Button>
@@ -130,7 +130,7 @@ export function WhatsappQuickSend({ label, templateName, ...props }: Props & { l
   const t = ofMoment.find((x) => x.name === templateName) ?? ofMoment[0]
   if (!t || !canSend) return null
   return (
-    <Button className={WHATSAPP_BUTTON} onClick={() => send({ templateId: t.id, moment: t.moment, body: renderTemplate(t.body, props.values, "whatsapp"), label: t.name })}>
+    <Button onClick={() => send({ templateId: t.id, moment: t.moment, body: renderTemplate(t.body, props.values, "whatsapp"), label: t.name })}>
       <MessageCircleIcon aria-hidden />
       {label}
     </Button>

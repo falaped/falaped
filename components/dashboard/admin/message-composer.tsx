@@ -17,7 +17,6 @@ import {
 } from "@/lib/message-template"
 import { cn } from "@/lib/utils"
 import type { MessageTemplate } from "@/modules/admin/list-message-templates"
-import { WHATSAPP_BUTTON } from "@/components/dashboard/admin/admin-ui"
 import { useWhatsappSend, type Recipient } from "@/components/dashboard/admin/use-whatsapp-send"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
@@ -150,7 +149,7 @@ export function MessageComposer({
                   onClick={() => setMoment(m)}
                   className={cn(
                     "rounded-md px-2.5 py-1 text-[13px] transition-colors",
-                    m === moment ? "bg-card font-medium shadow-xs ring-1 ring-foreground/10" : "text-muted-foreground hover:text-foreground",
+                    m === moment ? "bg-card font-medium shadow-xs" : "text-muted-foreground hover:text-foreground",
                   )}
                 >
                   {MOMENT_LABEL[m]}
@@ -165,13 +164,13 @@ export function MessageComposer({
                   type="button"
                   onClick={() => pick(t)}
                   className={cn(
-                    "rounded-xl px-3.5 py-2.5 text-left ring-1 ring-border transition-shadow hover:ring-primary/60",
-                    t.id === templateId && "bg-primary/5 ring-2 ring-primary",
+                    "rounded-xl border border-border px-3.5 py-2.5 text-left transition-colors hover:bg-accent",
+                    t.id === templateId && "border-primary-soft-border bg-primary-soft",
                   )}
                 >
                   <span className="flex items-center justify-between gap-2 text-sm font-medium">
                     {t.name}
-                    <span className="text-xs font-medium text-emerald-700 dark:text-emerald-400">
+                    <span className="text-xs font-medium text-success-text">
                       {channel === "email"
                         ? t.stats.sent
                           ? `${pct(t.stats.opened, t.stats.sent)} abrem`
@@ -184,7 +183,7 @@ export function MessageComposer({
               ))}
             </div>
 
-            <div className="rounded-xl bg-[radial-gradient(130%_150%_at_0%_0%,color-mix(in_oklab,var(--primary)_18%,transparent),var(--card)_70%)] p-3.5 ring-1 ring-primary/40">
+            <div className="rounded-xl border border-primary-soft-border bg-primary-soft p-3.5">
               <p className="mb-2 flex items-center gap-1.5 text-[13px] font-semibold text-primary-ink">
                 <SparklesIcon className="size-4" aria-hidden />
                 Reescrever com IA
@@ -235,7 +234,7 @@ export function MessageComposer({
                 {busy === "send" ? "Enviando…" : "Enviar e-mail"}
               </Button>
             ) : (
-              <Button className={WHATSAPP_BUTTON} onClick={send} disabled={busy !== null || !body.trim() || !phone}>
+              <Button onClick={send} disabled={busy !== null || !body.trim() || !phone}>
                 <MessageCircleIcon aria-hidden />
                 Abrir no WhatsApp
               </Button>

@@ -35,7 +35,8 @@ import {
 } from "@/lib/funnel"
 import { cn } from "@/lib/utils"
 import { listProspects, type EmailStatus, type ProspectRow } from "@/modules/admin/list-prospects"
-import { GradientCard, IconChip, Initials, PageHero } from "@/components/dashboard/admin/admin-ui"
+import { FilterChip, Initials, LinkTab, PageHero } from "@/components/dashboard/admin/admin-ui"
+import { Badge } from "@/components/ui/badge"
 import { STAGE_DOT, StagePill, TemperaturePill } from "@/components/dashboard/admin/funnel-badges"
 import { FunnelToolbar } from "@/components/dashboard/admin/funnel-toolbar"
 import { ImportProspectsDialog } from "@/components/dashboard/admin/import-prospects-dialog"
@@ -66,9 +67,9 @@ const INVITE: Record<EmailStatus, { label: string; icon: LucideIcon; className: 
   enviado: { label: "Enviado", icon: SendIcon, className: "text-muted-foreground" },
   entregue: { label: "Entregue", icon: MailCheckIcon, className: "text-muted-foreground" },
   aberto: { label: "Abriu", icon: MailOpenIcon, className: "text-primary-ink" },
-  clicou: { label: "Clicou", icon: MousePointerClickIcon, className: "text-emerald-600" },
-  bounce: { label: "Voltou", icon: MailXIcon, className: "text-orange-600" },
-  reclamou: { label: "Spam", icon: MailXIcon, className: "text-orange-600" },
+  clicou: { label: "Clicou", icon: MousePointerClickIcon, className: "text-success-text" },
+  bounce: { label: "Voltou", icon: MailXIcon, className: "text-danger-text" },
+  reclamou: { label: "Spam", icon: MailXIcon, className: "text-danger-text" },
 }
 
 const CHANNEL: Record<string, string> = { email: "E-mail", whatsapp: "WhatsApp", telefone: "Ligação" }
@@ -124,141 +125,76 @@ export default async function AdminFunnelPage({
   }))
   const referralFresh = referrals.filter((p) => funnelStage(p) === "novo").length
 
-  const hot = chipCount("quentes")
-  const due = chipCount("vencido")
-  const fresh = stageCount("novo")
 
   return (
-    <div className="flex flex-col gap-5">
-      <div className="relative">
-        <PageHero context={`${all.length} pessoas no funil`} title="Funil">
-          {hot > 0 ? `${hot} ${hot === 1 ? "está quente" : "estão quentes"} para chamar hoje` : "Ninguém quente agora"}
-          {due > 0 ? `, ${due} ${due === 1 ? "tem" : "têm"} follow-up vencido` : ""} e {fresh}{" "}
-          {fresh === 1 ? "ainda não foi contatada" : "ainda não foram contatadas"}.
-        </PageHero>
-        <div className="absolute right-7 bottom-6">
-          <ImportProspectsDialog />
-        </div>
-      </div>
+    <div className="flex flex-col gap-6">
+      <PageHero title="Funil" subtitle="Quem pode virar cliente, da captação à conta paga" action={<ImportProspectsDialog />} />
 
       {referrals.length > 0 ? (
-        <GradientCard className="flex flex-col gap-4 px-6 py-5">
-          <div className="flex flex-wrap items-center gap-4">
-            <IconChip icon={HandshakeIcon} />
-            <div className="min-w-0 flex-1">
-              <h2 className="text-[17px] font-semibold tracking-tight">Indicações diretas</h2>
-              <p className="text-[13px] text-muted-foreground">
-                {referrals.length} {referrals.length === 1 ? "pediatra indicado" : "pediatras indicados"} por {referrers.join(", ")}
-                {referralFresh > 0 ? `, ${referralFresh} ainda sem contato` : ", todos já contatados"}. Toda mensagem diz quem indicou.
-              </p>
-            </div>
-            <Link
-              href={href({ ver: chip === "indicacoes" ? null : "indicacoes", q: null, todos: null })}
-              className="flex h-9 items-center rounded-lg bg-foreground px-4 text-sm font-medium text-background transition-opacity hover:opacity-90"
-            >
-              {chip === "indicacoes" ? "Ver todo o funil" : "Ver indicações"}
-            </Link>
+        <section className="flex flex-wrap items-center gap-4 rounded-xl border border-border bg-card px-5 py-4">
+          <HandshakeIcon className="size-5 shrink-0 text-primary-ink" aria-hidden />
+          <div className="min-w-0 flex-1">
+            <h2 className="font-semibold">Indicações diretas</h2>
+            <p className="text-caption text-muted-foreground">
+              {referrals.length} {referrals.length === 1 ? "pediatra indicado" : "pediatras indicados"} por {referrers.join(", ")}
+              {referralFresh > 0 ? `, ${referralFresh} ainda sem contato` : ", todos já contatados"}. Toda mensagem diz quem indicou.
+            </p>
           </div>
-          {referralGroups.length > 0 ? (
-            <div className="flex flex-wrap gap-2">
-              {referralGroups.map((g) => {
-                const on = chip === "indicacoes" && q === g.name
-                return (
-                  <Link
-                    key={g.name}
-                    href={href({ ver: "indicacoes", q: on ? null : g.name, todos: null })}
-                    aria-current={on ? "page" : undefined}
-                    className={cn(
-                      "flex h-8 items-center gap-1.5 rounded-full px-3.5 text-[13px] ring-1 transition-colors",
-                      on ? "bg-foreground text-background ring-foreground" : "bg-card ring-border hover:ring-primary/60",
-                    )}
-                  >
-                    {g.name}
-                    <span className="opacity-60 tabular-nums">{g.fresh > 0 ? `${g.fresh}/${g.total}` : g.total}</span>
-                  </Link>
-                )
-              })}
-            </div>
-          ) : null}
-        </GradientCard>
+          <div className="flex flex-wrap gap-1.5">
+            {referralGroups.map((g) => (
+              <FilterChip key={g.name} href={href({ ver: "indicacoes", q: chip === "indicacoes" && q === g.name ? null : g.name, todos: null })} active={chip === "indicacoes" && q === g.name}>
+                {g.name}
+                <span className="num opacity-60">{g.fresh > 0 ? `${g.fresh}/${g.total}` : g.total}</span>
+              </FilterChip>
+            ))}
+            <FilterChip href={href({ ver: chip === "indicacoes" ? null : "indicacoes", q: null, todos: null })} active={chip === "indicacoes" && !q}>
+              {chip === "indicacoes" ? "Ver todo o funil" : "Ver indicações"}
+            </FilterChip>
+          </div>
+        </section>
       ) : null}
 
-      <div className="grid grid-cols-3 gap-3 xl:grid-cols-6">
-        {FUNNEL_STAGES.map((s) => {
-          const n = stageCount(s)
-          const on = stage === s
-          return (
-            <Link
-              key={s}
-              href={href({ etapa: on ? null : s, todos: null })}
-              aria-current={on ? "page" : undefined}
-              className={cn(
-                "rounded-2xl bg-card px-4 py-3.5 shadow-xs ring-1 ring-foreground/10 transition-shadow hover:ring-primary/60 hover:shadow-md",
-                on &&
-                  "bg-[radial-gradient(130%_150%_at_0%_0%,color-mix(in_oklab,var(--primary)_26%,transparent),color-mix(in_oklab,var(--primary)_8%,transparent)_45%,var(--card)_75%)] ring-2 ring-primary",
-              )}
-            >
-              <span className="flex items-center gap-1.5 text-[13px] text-muted-foreground">
-                <span className={cn("size-2 rounded-full", STAGE_DOT[s])} aria-hidden />
-                {STAGE_LABEL[s]}
-              </span>
-              <span className="mt-1.5 block text-[28px] leading-none font-semibold tracking-tight tabular-nums">{n}</span>
-              <span className="mt-2.5 block h-1 overflow-hidden rounded-full bg-muted">
-                <span
-                  className="block h-full min-w-px rounded-full bg-primary"
-                  style={{ width: `${all.length ? (n / all.length) * 100 : 0}%` }}
-                />
-              </span>
-            </Link>
-          )
-        })}
-      </div>
-
-      <div className="flex flex-wrap items-center gap-2">
-        <Link
-          href={href({ ver: null })}
-          className={cn(
-            "flex h-8 items-center gap-1.5 rounded-full px-3.5 text-[13px] ring-1 ring-border transition-colors",
-            !chip ? "bg-foreground text-background ring-foreground" : "bg-card hover:ring-primary/60",
-          )}
-        >
-          Todos <span className="opacity-60 tabular-nums">{all.length}</span>
-        </Link>
-        {Object.entries(CHIPS).map(([key, c]) => {
-          const on = chip === key
-          const Icon = c.icon
-          return (
-            <Link
-              key={key}
-              href={href({ ver: on ? null : key })}
-              className={cn(
-                "flex h-8 items-center gap-1.5 rounded-full px-3.5 text-[13px] ring-1 ring-border transition-colors",
-                on ? "bg-foreground text-background ring-foreground" : "bg-card hover:ring-primary/60",
-              )}
-            >
-              <Icon className={cn("size-3.5", key === "quentes" && !on && "text-orange-600")} aria-hidden />
-              {c.label} <span className="opacity-60 tabular-nums">{chipCount(key)}</span>
-            </Link>
-          )
-        })}
-      </div>
-
-      <section className="overflow-hidden rounded-2xl bg-card shadow-xs ring-1 ring-foreground/10">
-        <div className="flex flex-wrap items-center gap-3 border-b px-4 py-3">
+      <section className="rounded-xl border border-border bg-card">
+        <div className="flex flex-wrap items-end gap-x-5 gap-y-3 border-b border-border px-5 pt-4">
+          <LinkTab href={href({ etapa: null, todos: null })} active={!stage} count={all.length}>
+            Todos
+          </LinkTab>
+          {FUNNEL_STAGES.map((st) => (
+            <LinkTab key={st} href={href({ etapa: stage === st ? null : st, todos: null })} active={stage === st} count={stageCount(st)}>
+              <span className={cn("size-2 rounded-full", STAGE_DOT[st])} aria-hidden />
+              {STAGE_LABEL[st]}
+            </LinkTab>
+          ))}
+        </div>
+        <div className="flex flex-wrap items-center gap-2 border-b border-border px-5 py-3">
+          {Object.entries(CHIPS)
+            .filter(([key]) => key !== "indicacoes")
+            .map(([key, c]) => {
+              const Icon = c.icon
+              return (
+                <FilterChip key={key} href={href({ ver: chip === key ? null : key, todos: null })} active={chip === key}>
+                  <Icon className={cn("size-3.5", key === "quentes" && chip !== key && "text-danger-text")} aria-hidden />
+                  {c.label}
+                  <span className="num opacity-60">{chipCount(key).toLocaleString("pt-BR")}</span>
+                </FilterChip>
+              )
+            })}
+        </div>
+        <div className="flex flex-wrap items-center gap-3 border-b border-border px-5 py-3">
           <Suspense>
             <FunnelToolbar cities={cities} />
           </Suspense>
-          <span className="ml-auto text-[13px] text-muted-foreground">Quentes primeiro, depois follow-up vencido</span>
+          <span className="ml-auto text-caption text-subtle-foreground">Quentes primeiro, depois follow-up vencido</span>
         </div>
 
         {shown.length === 0 ? (
-          <p className="px-5 py-12 text-center text-sm text-muted-foreground">
+          <p className="px-5 py-12 text-center text-muted-foreground">
             {query ? `Ninguém encontrado para "${q}".` : "Ninguém neste filtro."}
           </p>
         ) : (
-          <table className="w-full text-sm [&_td]:whitespace-nowrap">
+          <table className="w-full [&_td]:whitespace-nowrap">
             <thead>
-              <tr className="border-b bg-muted/30 text-left text-xs text-muted-foreground">
+              <tr className="border-b border-border bg-muted text-left text-label text-muted-foreground">
                 <th className="py-2.5 pr-3 pl-5 font-medium">Pessoa</th>
                 <th className="px-3 font-medium">Etapa</th>
                 <th className="px-3 font-medium">Temperatura</th>
@@ -278,31 +214,31 @@ export default async function AdminFunnelPage({
                 const isDue = isFollowUpDue(p, now)
                 const sub = [p.referral_group ?? p.clinic, p.city].filter(Boolean).join(" · ")
                 return (
-                  <tr key={p.id} className="relative border-b transition-colors last:border-0 hover:bg-primary/5">
+                  <tr key={p.id} className="relative border-b border-border last:border-0 hover:bg-accent">
                     <td className="py-3 pr-3 pl-5 whitespace-normal!">
                       <div className="flex items-center gap-3">
                         <Initials name={p.full_name} dim={!p.profile_id} />
                         <div className="min-w-0 max-w-80">
                           <Link
                             href={`/dashboard/admin/funil/${p.id}`}
-                            className="font-medium after:absolute after:inset-0 focus-visible:outline-none after:focus-visible:ring-2 after:focus-visible:ring-primary"
+                            className="font-semibold after:absolute after:inset-0 focus-visible:outline-none after:focus-visible:ring-2 after:focus-visible:ring-ring"
                           >
                             {p.full_name}
                           </Link>
-                          <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                          <p className="flex items-center gap-1.5 text-caption text-subtle-foreground">
                             <span className="truncate">{sub || p.email || "sem dados"}</span>
                             {p.referred_by ? (
-                              <span className="flex shrink-0 items-center gap-0.5 rounded bg-orange-500/12 px-1.5 text-[11px] font-medium text-orange-700 dark:text-orange-400">
-                                <HandshakeIcon className="size-3" aria-hidden />
+                              <Badge variant="warning" className="h-5">
+                                <HandshakeIcon aria-hidden />
                                 Indicação
-                              </span>
+                              </Badge>
                             ) : null}
-                            {p.lead_at ? <span className="shrink-0 rounded bg-muted px-1.5 text-[11px] font-medium">Landing</span> : null}
+                            {p.lead_at ? <Badge variant="secondary" className="h-5">Landing</Badge> : null}
                             {p.profile_id ? (
-                              <span className="flex shrink-0 items-center gap-0.5 rounded bg-primary/12 px-1.5 text-[11px] font-medium text-primary-ink">
-                                <BadgeCheckIcon className="size-3" aria-hidden />
+                              <Badge className="h-5">
+                                <BadgeCheckIcon aria-hidden />
                                 Já tem conta
-                              </span>
+                              </Badge>
                             ) : null}
                           </p>
                         </div>
@@ -310,22 +246,22 @@ export default async function AdminFunnelPage({
                     </td>
                     <td className="px-3">
                       <StagePill stage={s} />
-                      {s === "perdido" && p.lost_reason ? <p className="mt-1 max-w-36 truncate text-xs text-muted-foreground">{p.lost_reason}</p> : null}
+                      {s === "perdido" && p.lost_reason ? <p className="mt-1 max-w-36 truncate text-caption text-subtle-foreground">{p.lost_reason}</p> : null}
                     </td>
                     <td className="px-3">
-                      {t ? <TemperaturePill temp={t.temp} /> : <span className="text-muted-foreground/50">—</span>}
-                      {t?.reason ? <p className="mt-1 text-xs text-muted-foreground">{t.reason}</p> : null}
+                      {t ? <TemperaturePill temp={t.temp} /> : <span className="text-subtle-foreground">—</span>}
+                      {t?.reason ? <p className="mt-1 text-caption text-subtle-foreground">{t.reason}</p> : null}
                     </td>
                     <td className="px-3">
-                      <span className={cn("flex items-center gap-1.5 text-[13px]", invite?.className ?? "text-muted-foreground")}>
+                      <span className={cn("flex items-center gap-1.5 text-label", invite?.className ?? "text-muted-foreground")}>
                         <InviteIcon className="size-3.5" aria-hidden />
                         {invite?.label ?? "Não enviado"}
                       </span>
                     </td>
-                    <td className="px-3 text-xs text-muted-foreground">
+                    <td className="px-3 text-caption text-muted-foreground">
                       {p.last_contact_at ? `${CHANNEL[p.last_channel ?? "email"]} ${formatRelativeTime(p.last_contact_at)}` : "—"}
                     </td>
-                    <td className={cn("px-3 text-xs", isDue ? "font-semibold text-orange-700 dark:text-orange-400" : "text-muted-foreground")}>
+                    <td className={cn("px-3 text-caption", isDue ? "font-semibold text-danger-text" : "text-muted-foreground")}>
                       {p.next_contact_at && s !== "perdido" && s !== "cliente"
                         ? isDue
                           ? `venceu ${formatRelativeTime(p.next_contact_at)}`
@@ -334,14 +270,14 @@ export default async function AdminFunnelPage({
                     </td>
                     <td className="px-3">
                       <span className="flex gap-1.5">
-                        <MailIcon className={cn("size-4", p.email ? "text-emerald-600" : "text-muted-foreground/30")} aria-label={p.email ? "Tem e-mail" : "Sem e-mail"} />
+                        <MailIcon className={cn("size-4", p.email ? "text-success-text" : "text-border-strong")} aria-label={p.email ? "Tem e-mail" : "Sem e-mail"} />
                         <MessageCircleIcon
-                          className={cn("size-4", whatsappDigits(p.phone) ? "text-emerald-600" : "text-muted-foreground/30")}
+                          className={cn("size-4", whatsappDigits(p.phone) ? "text-success-text" : "text-border-strong")}
                           aria-label={whatsappDigits(p.phone) ? "Tem celular" : "Sem celular"}
                         />
                       </span>
                     </td>
-                    <td className="pr-4 text-muted-foreground/60">
+                    <td className="pr-4 text-subtle-foreground">
                       <ChevronRightIcon className="size-4" aria-hidden />
                     </td>
                   </tr>
@@ -351,8 +287,8 @@ export default async function AdminFunnelPage({
           </table>
         )}
         {!todos && visible.length > PAGE_SIZE ? (
-          <div className="flex justify-center border-t py-3">
-            <Link href={href({ todos: "1" })} className="text-sm font-medium text-muted-foreground hover:text-foreground">
+          <div className="flex justify-center border-t border-border py-3">
+            <Link href={href({ todos: "1" })} className="font-medium text-muted-foreground hover:text-foreground">
               Mostrar mais {visible.length - PAGE_SIZE}
             </Link>
           </div>

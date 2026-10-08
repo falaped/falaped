@@ -102,7 +102,7 @@ export function TemplateEditor({ draft, onClose }: { draft: TemplateDraft | null
                     key={c}
                     type="button"
                     onClick={() => set({ channel: c })}
-                    className={cn("flex-1 rounded-md py-1 text-[13px]", t.channel === c ? "bg-card font-medium shadow-xs ring-1 ring-foreground/10" : "text-muted-foreground")}
+                    className={cn("flex-1 rounded-md py-1 text-[13px]", t.channel === c ? "bg-card font-medium shadow-xs" : "text-muted-foreground")}
                   >
                     {c === "email" ? "E-mail" : "WhatsApp"}
                   </button>
@@ -127,7 +127,7 @@ export function TemplateEditor({ draft, onClose }: { draft: TemplateDraft | null
                     key={v}
                     type="button"
                     onClick={() => insertVar(v)}
-                    className="rounded-md bg-primary/10 px-1.5 py-0.5 font-mono text-[11px] text-primary-ink hover:bg-primary/20"
+                    className="rounded-md bg-primary-soft px-1.5 py-0.5 font-mono text-caption text-primary-ink-strong hover:bg-primary-soft-border"
                     title={`Ex.: ${TEMPLATE_VARS[v]}`}
                   >
                     {`{${v}}`}
@@ -139,7 +139,7 @@ export function TemplateEditor({ draft, onClose }: { draft: TemplateDraft | null
                 <p className="text-xs text-muted-foreground">Linha com “• ” vira destaque; “P.S.” no fim sai em cinza depois da assinatura.</p>
               ) : null}
             </div>
-            <div className="rounded-xl bg-[radial-gradient(130%_150%_at_0%_0%,color-mix(in_oklab,var(--primary)_18%,transparent),var(--card)_70%)] p-3.5 ring-1 ring-primary/40">
+            <div className="rounded-xl border border-primary-soft-border bg-primary-soft p-3.5">
               <p className="mb-2 flex items-center gap-1.5 text-[13px] font-semibold text-primary-ink">
                 <SparklesIcon className="size-4" aria-hidden />
                 {t.body.trim() ? "Melhorar com IA" : "Escrever com IA"}
@@ -155,7 +155,7 @@ export function TemplateEditor({ draft, onClose }: { draft: TemplateDraft | null
           </div>
           <div className="flex flex-col gap-2 bg-muted/30 p-5">
             <p className="text-[13px] font-medium text-muted-foreground">Prévia com dados de exemplo</p>
-            <div className="rounded-xl bg-card text-sm ring-1 ring-foreground/10">
+            <div className="rounded-xl border border-border bg-card">
               {t.channel === "email" ? (
                 <p className="border-b px-4 py-2.5 text-[13px]">
                   <b>Assunto:</b> {renderTemplate(t.subject ?? "", TEMPLATE_VARS)}

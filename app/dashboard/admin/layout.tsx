@@ -11,7 +11,7 @@ async function AdminNavWithLeads() {
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex w-full max-w-[1440px] flex-col gap-6">
       <Suspense fallback={<AdminNav />}>
         <AdminNavWithLeads />
       </Suspense>
