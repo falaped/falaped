@@ -1,193 +1,171 @@
 import Link from "next/link"
-import { Download, FileCheck, FileTextIcon, FolderOpen, Pill } from "lucide-react"
+import {
+  DownloadIcon,
+  FileCheckIcon,
+  FlaskConicalIcon,
+  PillIcon,
+  PlusIcon,
+  SendIcon,
+  type LucideIcon,
+} from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import {
-  Card,
-  CardAction,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card"
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 import { formatDate } from "@/lib/formatters"
+import type { ExamRequestListItem } from "@/modules/exam-requests/types"
 import type {
   MedicalCertificateListItem,
   MedicalCertificateType,
 } from "@/modules/medical-certificates/get-medical-certificates-by-profile-id"
 import type { PrescriptionListItem } from "@/modules/prescriptions/types"
+import type { ReferralListItem } from "@/modules/referrals/types"
 
 const CERTIFICATE_TYPE_LABELS: Record<MedicalCertificateType, string> = {
-  comparecimento: "Comparecimento",
-  aptidao_fisica: "Aptidão física",
-  medico: "Médico (afastamento)",
-  acompanhante: "Acompanhante",
+  comparecimento: "Atestado de comparecimento",
+  aptidao_fisica: "Atestado de aptidão física",
+  medico: "Atestado médico",
+  acompanhante: "Atestado de acompanhante",
 }
 
-type CaseDetailDocumentsProps = {
-  caseId: string
-  /** Sem paciente não há como emitir documento: os botões de criar somem. */
-  patientId: string | null
-  certificates: MedicalCertificateListItem[]
+export type CaseDocument = {
+  key: string
+  kind: "prescription" | "certificate" | "exam-request" | "referral"
+  label: string
+  issuedAt: string
+  href: string
+}
+
+const KIND_ICON: Record<CaseDocument["kind"], LucideIcon> = {
+  prescription: PillIcon,
+  certificate: FileCheckIcon,
+  "exam-request": FlaskConicalIcon,
+  referral: SendIcon,
+}
+
+/** Todos os documentos emitidos na consulta, do mais recente ao mais antigo. */
+export function toCaseDocuments(docs: {
   prescriptions: PrescriptionListItem[]
+  certificates: MedicalCertificateListItem[]
+  examRequests: ExamRequestListItem[]
+  referrals: ReferralListItem[]
+}): CaseDocument[] {
+  return [
+    ...docs.prescriptions.map((row) => ({
+      key: `p-${row.id}`,
+      kind: "prescription" as const,
+      label: "Receita",
+      issuedAt: row.issued_at,
+      href: `/api/prescriptions/${row.id}/download`,
+    })),
+    ...docs.certificates.map((row) => ({
+      key: `c-${row.id}`,
+      kind: "certificate" as const,
+      label: CERTIFICATE_TYPE_LABELS[row.type],
+      issuedAt: row.issued_at,
+      href: `/api/medical-certificates/${row.id}/download`,
+    })),
+    ...docs.examRequests.map((row) => {
+      const exams = Array.isArray(row.payload.exams) ? row.payload.exams.length : 0
+      return {
+        key: `e-${row.id}`,
+        kind: "exam-request" as const,
+        label: exams ? `Pedido de exame · ${exams} ${exams === 1 ? "exame" : "exames"}` : "Pedido de exame",
+        issuedAt: row.issued_at,
+        href: `/api/exam-requests/${row.id}/download`,
+      }
+    }),
+    ...docs.referrals.map((row) => {
+      const specialty = typeof row.payload.specialty === "string" ? row.payload.specialty : ""
+      return {
+        key: `r-${row.id}`,
+        kind: "referral" as const,
+        label: specialty ? `Encaminhamento · ${specialty}` : "Encaminhamento",
+        issuedAt: row.issued_at,
+        href: `/api/referrals/${row.id}/download`,
+      }
+    }),
+  ].sort((a, b) => b.issuedAt.localeCompare(a.issuedAt))
 }
 
-function CreateDocumentButtons({
-  caseId,
-  patientId,
-}: {
-  caseId: string
-  patientId: string | null
-}) {
-  if (!patientId) return null
-  const query = new URLSearchParams({ caseId, patientId }).toString()
-  return (
-    <CardAction className="flex flex-wrap gap-2">
-      <Button variant="outline" size="sm" className="gap-1.5" asChild>
-        <Link href={`/dashboard/medical-certificates/new?${query}`}>
-          <FileTextIcon className="size-4" aria-hidden />
-          Novo atestado
-        </Link>
-      </Button>
-      <Button variant="outline" size="sm" className="gap-1.5" asChild>
-        <Link href={`/dashboard/prescriptions/new?${query}`}>
-          <Pill className="size-4" aria-hidden />
-          Nova receita
-        </Link>
-      </Button>
-    </CardAction>
-  )
-}
+const NEW_DOCUMENTS = [
+  { label: "Receita", path: "/dashboard/prescriptions/new", icon: PillIcon },
+  { label: "Atestado", path: "/dashboard/medical-certificates/new", icon: FileCheckIcon },
+  { label: "Pedido de exame", path: "/dashboard/exam-requests/new", icon: FlaskConicalIcon },
+  { label: "Encaminhamento", path: "/dashboard/referrals/new", icon: SendIcon },
+]
 
+/** Card Documentos da consulta encerrada (protótipo b2): baixar de novo ou emitir mais um. */
 export function CaseDetailDocuments({
   caseId,
   patientId,
-  certificates,
-  prescriptions,
-}: CaseDetailDocumentsProps) {
-  const hasAny = certificates.length > 0 || prescriptions.length > 0
-  const createButtons = <CreateDocumentButtons caseId={caseId} patientId={patientId} />
-
-  if (!hasAny) {
-    return (
-      <Card className="border-border/80">
-        <CardHeader className="pb-3">
-          <CardTitle className="text-base font-semibold">
-            Documentos do caso
-          </CardTitle>
-          <CardDescription>
-            Receitas e atestados gerados a partir deste atendimento aparecem aqui.
-          </CardDescription>
-          {createButtons}
-        </CardHeader>
-        <CardContent>
-          <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-border px-6 py-12 text-center">
-            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-muted">
-              <FolderOpen
-                className="h-6 w-6 text-muted-foreground"
-                aria-hidden
-              />
-            </div>
-            <p className="mt-4 font-medium text-muted-foreground">
-              Nenhum documento vinculado a este caso
-            </p>
-            <p className="mt-1 max-w-sm text-sm text-muted-foreground/80">
-              {patientId
-                ? "Use os botões acima para criar uma nova receita ou atestado; eles serão associados a este atendimento."
-                : "Associe um paciente ao caso para emitir receita ou atestado."}
-            </p>
-          </div>
-        </CardContent>
-      </Card>
-    )
-  }
+  documents,
+}: {
+  caseId: string
+  /** Sem paciente não há como emitir documento: o botão de criar some. */
+  patientId: string | null
+  documents: CaseDocument[]
+}) {
+  const query = patientId ? new URLSearchParams({ caseId, patientId }).toString() : ""
 
   return (
-    <Card className="border-border/80">
-      <CardHeader className="pb-3">
-        <CardTitle className="text-base font-semibold">
-          Documentos do caso
-        </CardTitle>
-        <CardDescription>
-          Receitas e atestados vinculados a este atendimento.
-        </CardDescription>
-        {createButtons}
-      </CardHeader>
-      <CardContent className="space-y-6">
-        {prescriptions.length > 0 ? (
-          <div className="space-y-2">
-            <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-              Receitas
-            </p>
-            <ul className="divide-y divide-border rounded-lg border border-border">
-              {prescriptions.map((row) => (
-                <li
-                  key={row.id}
-                  className="flex flex-col gap-2 p-3 sm:flex-row sm:items-center sm:justify-between"
-                >
-                  <div className="flex min-w-0 items-start gap-2">
-                    <Pill
-                      className="mt-0.5 size-4 shrink-0 text-muted-foreground"
-                      aria-hidden
-                    />
-                    <div className="min-w-0">
-                      <p className="text-sm font-medium leading-tight">
-                        {row.patient_name?.trim() || "Receita"}
-                      </p>
-                      <p className="text-xs text-muted-foreground">
-                        Emitida em {formatDate(row.issued_at)}
-                      </p>
-                    </div>
-                  </div>
-                  <Button variant="outline" size="sm" className="shrink-0 gap-1.5" asChild>
-                    <Link href={`/api/prescriptions/${row.id}/download`}>
-                      <Download className="size-4" aria-hidden />
-                      Baixar PDF
-                    </Link>
-                  </Button>
-                </li>
+    <section className="rounded-xl border border-border bg-card p-5">
+      <div className="flex items-center">
+        <h2 className="font-display text-title font-semibold">Documentos</h2>
+        {patientId ? (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="sm" className="ml-auto">
+                <PlusIcon data-icon="inline-start" />
+                Novo documento
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-48">
+              {NEW_DOCUMENTS.map(({ label, path, icon: Icon }) => (
+                <DropdownMenuItem key={path} asChild>
+                  <Link href={`${path}?${query}`}>
+                    <Icon aria-hidden />
+                    {label}
+                  </Link>
+                </DropdownMenuItem>
               ))}
-            </ul>
-          </div>
+            </DropdownMenuContent>
+          </DropdownMenu>
         ) : null}
-
-        {certificates.length > 0 ? (
-          <div className="space-y-2">
-            <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-              Atestados
-            </p>
-            <ul className="divide-y divide-border rounded-lg border border-border">
-              {certificates.map((row) => (
-                <li
-                  key={row.id}
-                  className="flex flex-col gap-2 p-3 sm:flex-row sm:items-center sm:justify-between"
-                >
-                  <div className="flex min-w-0 items-start gap-2">
-                    <FileCheck
-                      className="mt-0.5 size-4 shrink-0 text-muted-foreground"
-                      aria-hidden
-                    />
-                    <div className="min-w-0">
-                      <p className="text-sm font-medium leading-tight">
-                        {CERTIFICATE_TYPE_LABELS[row.type]}
-                      </p>
-                      <p className="text-xs text-muted-foreground">
-                        Emitido em {formatDate(row.issued_at)}
-                      </p>
-                    </div>
-                  </div>
-                  <Button variant="outline" size="sm" className="shrink-0 gap-1.5" asChild>
-                    <Link href={`/api/medical-certificates/${row.id}/download`}>
-                      <Download className="size-4" aria-hidden />
-                      Baixar PDF
-                    </Link>
-                  </Button>
-                </li>
-              ))}
-            </ul>
-          </div>
-        ) : null}
-      </CardContent>
-    </Card>
+      </div>
+      {documents.length ? (
+        <ul className="mt-3 flex flex-col gap-2">
+          {documents.map((doc) => {
+            const Icon = KIND_ICON[doc.kind]
+            return (
+              <li key={doc.key} className="flex items-center gap-3 rounded-lg border border-border px-3 py-2.5">
+                <span className="grid size-8 shrink-0 place-items-center rounded-md bg-primary-soft text-primary-ink-strong">
+                  <Icon className="size-4" aria-hidden />
+                </span>
+                <div className="min-w-0 flex-1">
+                  <div className="truncate font-medium">{doc.label}</div>
+                  <div className="text-caption text-subtle-foreground num">Emitido em {formatDate(doc.issuedAt)}</div>
+                </div>
+                <Button variant="ghost" size="icon-sm" asChild>
+                  <a href={doc.href} download aria-label={`Baixar ${doc.label}`}>
+                    <DownloadIcon />
+                  </a>
+                </Button>
+              </li>
+            )
+          })}
+        </ul>
+      ) : (
+        <p className="mt-2 text-muted-foreground">
+          {patientId
+            ? "Nenhum documento emitido nesta consulta."
+            : "Associe um paciente à consulta para emitir documentos."}
+        </p>
+      )}
+    </section>
   )
 }
