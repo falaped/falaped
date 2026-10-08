@@ -516,8 +516,9 @@ export function ProfileContent({
 
         <div className="flex w-full max-w-[1440px] flex-col pt-8 pb-24">
           {/* Mudanças em outra aba continuam no form: as abas só escondem, não desmontam. */}
-          <TabsContent value="documentos" forceMount className="mt-0 max-w-[880px] data-[state=inactive]:hidden">
-            <div className="flex flex-col gap-6">
+          <TabsContent value="documentos" forceMount className="mt-0 data-[state=inactive]:hidden">
+            <div className="grid items-start gap-6 lg:grid-cols-2">
+              <div className="flex flex-col gap-6">
                 <FormCard id="logos" title="Logos" description="Cada logo é salva assim que você envia.">
                   <div className="grid grid-cols-2 gap-4">
                     <LogoSlot
@@ -542,7 +543,14 @@ export function ProfileContent({
                     />
                   </div>
                 </FormCard>
-
+                <FormCard id="contato" title="Contato profissional" description="Fica no seu perfil do Falaped.">
+                  <div className="grid grid-cols-2 gap-4">
+                    <TextField form={form} name="social_media_handle" label={<>Instagram {OPTIONAL}</>} placeholder="Ex.: @dra.mariana" />
+                    <TextField form={form} name="website" label={<>Site {OPTIONAL}</>} type="url" placeholder="https://…" />
+                  </div>
+                </FormCard>
+              </div>
+              <div className="flex flex-col gap-6">
                 <FormCard id="dados" title="Dados profissionais" description="Saem em todo documento, como estão no seu carimbo.">
                   <div className="grid grid-cols-2 gap-4">
                     <TextField form={form} name="first_name" label="Nome" placeholder="Ex.: Mariana" />
@@ -584,107 +592,105 @@ export function ProfileContent({
                     </FieldShell>
                   </div>
                 </FormCard>
+              </div>
+            </div>
+          </TabsContent>
 
-
-                <FormCard id="contato" title="Contato profissional" description="Fica no seu perfil do Falaped.">
-                  <div className="grid grid-cols-2 gap-4">
-                    <TextField form={form} name="social_media_handle" label={<>Instagram {OPTIONAL}</>} placeholder="Ex.: @dra.mariana" />
-                    <TextField form={form} name="website" label={<>Site {OPTIONAL}</>} type="url" placeholder="https://…" />
+          <TabsContent value="consulta" forceMount className="mt-0 data-[state=inactive]:hidden">
+            <div className="grid items-start gap-6 lg:grid-cols-2">
+              <div className="flex flex-col gap-6">
+                <FormCard id="relatorio" title="Relatório da consulta" description="As seções e a ordem que o assistente segue quando você pede o relatório.">
+                  <div className="grid grid-cols-2 items-start gap-4">
+                    <FieldShell htmlFor="report_template_id" label="Modelo usado" error={form.formState.errors.report_template_id?.message}>
+                      <Select
+                        value={(form.watch("report_template_id") as string) || REPORT_TEMPLATE_NONE_VALUE}
+                        onValueChange={(v) =>
+                          form.setValue("report_template_id", v === REPORT_TEMPLATE_NONE_VALUE ? "" : v, { shouldDirty: true })
+                        }
+                      >
+                        <SelectTrigger id="report_template_id" className="w-full">
+                          <SelectValue placeholder="Modelo padrão do Falaped" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value={REPORT_TEMPLATE_NONE_VALUE}>Modelo padrão do Falaped</SelectItem>
+                          {reportTemplateOptions.map((t) => (
+                            <SelectItem key={t.id} value={t.id}>
+                              {t.name}
+                              {t.is_default ? " (padrão)" : ""}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </FieldShell>
+                    <Button type="button" variant="link" size="sm" className="mt-7 justify-self-start" asChild>
+                      <Link href="/dashboard/report-templates">
+                        <LayoutTemplateIcon data-icon="inline-start" />
+                        Ver meus modelos
+                      </Link>
+                    </Button>
                   </div>
                 </FormCard>
-            </div>
-          </TabsContent>
-
-          <TabsContent value="consulta" forceMount className="mt-0 max-w-[880px] data-[state=inactive]:hidden">
-            <div className="flex flex-col gap-6">
-              <FormCard id="relatorio" title="Relatório da consulta" description="As seções e a ordem que o assistente segue quando você pede o relatório.">
-                <div className="grid grid-cols-2 items-start gap-4">
-                  <FieldShell htmlFor="report_template_id" label="Modelo usado" error={form.formState.errors.report_template_id?.message}>
-                    <Select
-                      value={(form.watch("report_template_id") as string) || REPORT_TEMPLATE_NONE_VALUE}
-                      onValueChange={(v) =>
-                        form.setValue("report_template_id", v === REPORT_TEMPLATE_NONE_VALUE ? "" : v, { shouldDirty: true })
-                      }
-                    >
-                      <SelectTrigger id="report_template_id" className="w-full">
-                        <SelectValue placeholder="Modelo padrão do Falaped" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value={REPORT_TEMPLATE_NONE_VALUE}>Modelo padrão do Falaped</SelectItem>
-                        {reportTemplateOptions.map((t) => (
-                          <SelectItem key={t.id} value={t.id}>
-                            {t.name}
-                            {t.is_default ? " (padrão)" : ""}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </FieldShell>
-                  <Button type="button" variant="link" size="sm" className="mt-7 justify-self-start" asChild>
-                    <Link href="/dashboard/report-templates">
-                      <LayoutTemplateIcon data-icon="inline-start" />
-                      Ver meus modelos
-                    </Link>
-                  </Button>
-                </div>
-              </FormCard>
-
-              <FormCard id="valores" title="Valores" description="Já vêm preenchidos na cobrança ao encerrar a consulta.">
-                <div className="grid grid-cols-2 gap-4">
-                  <TextField
-                    form={form}
-                    name="consultation_price_cents"
-                    label="Valor da consulta"
-                    placeholder="Ex.: 250,00"
-                    inputMode="decimal"
-                    help="Em branco se cada consulta tem um valor diferente."
-                  />
-                </div>
-              </FormCard>
-
-              <FormCard id="procedimentos" title="Procedimentos" description="O que você cobra além da consulta. Cada mudança aqui é salva na hora.">
-                <ProcedureCatalogCard items={procedureCatalogItems} />
-              </FormCard>
-            </div>
-          </TabsContent>
-
-          <TabsContent value="conta" forceMount className="mt-0 max-w-[880px] data-[state=inactive]:hidden">
-            <div className="flex flex-col gap-6">
-              <FormCard id="acesso" title="Acesso e plano" description="Seu login e a situação da sua assinatura.">
-                <div className="grid grid-cols-2 gap-4">
-                  <FieldShell htmlFor="email" label="E-mail de acesso" help="É o seu login. Para trocar, escreva para contato@falaped.com.br.">
-                    <Input id="email" type="email" disabled {...form.register("email")} />
-                  </FieldShell>
-                  <div className="flex flex-col gap-1.5">
-                    <span className="text-label font-medium">Plano</span>
-                    <div className="flex h-9 items-center">
-                      <Badge variant={PLAN_BADGE[plan.tone]}>
-                        {plan.tone === "default" ? <BadgeCheckIcon aria-hidden /> : null}
-                        {plan.badge}
-                      </Badge>
-                    </div>
-                    <span className="text-caption text-subtle-foreground">{plan.text}</span>
+                <FormCard id="valores" title="Valores" description="Já vêm preenchidos na cobrança ao encerrar a consulta.">
+                  <div className="grid grid-cols-2 gap-4">
+                    <TextField
+                      form={form}
+                      name="consultation_price_cents"
+                      label="Valor da consulta"
+                      placeholder="Ex.: 250,00"
+                      inputMode="decimal"
+                      help="Em branco se cada consulta tem um valor diferente."
+                    />
                   </div>
-                </div>
-                <div>
-                  <Button type="button" variant="outline" size="sm" asChild>
-                    <a href="mailto:contato@falaped.com.br?subject=Plano%20do%20Falaped">
-                      <MailIcon data-icon="inline-start" />
-                      Falar com a gente
-                    </a>
-                  </Button>
-                </div>
-              </FormCard>
+                </FormCard>
+              </div>
+              <div className="flex flex-col gap-6">
+                <FormCard id="procedimentos" title="Procedimentos" description="O que você cobra além da consulta. Cada mudança aqui é salva na hora.">
+                  <ProcedureCatalogCard items={procedureCatalogItems} />
+                </FormCard>
+              </div>
+            </div>
+          </TabsContent>
 
-              <FormCard id="aparencia" title="Aparência" description="Muda só o app neste aparelho, na hora. Os documentos não mudam.">
-                <div role="radiogroup" aria-label="Tema" className="flex max-w-md gap-1.5">
-                  {THEME_OPTIONS.map((opt) => (
-                    <SegmentedToggle key={opt.value} active={mounted && theme === opt.value} onClick={() => setTheme(opt.value)}>
-                      {opt.label}
-                    </SegmentedToggle>
-                  ))}
-                </div>
-              </FormCard>
+          <TabsContent value="conta" forceMount className="mt-0 data-[state=inactive]:hidden">
+            <div className="flex flex-col gap-6">
+              <div className="grid items-start gap-6 lg:grid-cols-2">
+                <FormCard id="acesso" title="Acesso e plano" description="Seu login e a situação da sua assinatura.">
+                  <div className="grid grid-cols-2 gap-4">
+                    <FieldShell htmlFor="email" label="E-mail de acesso" help="É o seu login. Para trocar, escreva para contato@falaped.com.br.">
+                      <Input id="email" type="email" disabled {...form.register("email")} />
+                    </FieldShell>
+                    <div className="flex flex-col gap-1.5">
+                      <span className="text-label font-medium">Plano</span>
+                      <div className="flex h-9 items-center">
+                        <Badge variant={PLAN_BADGE[plan.tone]}>
+                          {plan.tone === "default" ? <BadgeCheckIcon aria-hidden /> : null}
+                          {plan.badge}
+                        </Badge>
+                      </div>
+                      <span className="text-caption text-subtle-foreground">{plan.text}</span>
+                    </div>
+                  </div>
+                  <div>
+                    <Button type="button" variant="outline" size="sm" asChild>
+                      <a href="mailto:contato@falaped.com.br?subject=Plano%20do%20Falaped">
+                        <MailIcon data-icon="inline-start" />
+                        Falar com a gente
+                      </a>
+                    </Button>
+                  </div>
+                </FormCard>
+                <FormCard id="aparencia" title="Aparência" description="Muda só o app neste aparelho, na hora. Os documentos não mudam.">
+                  <div role="radiogroup" aria-label="Tema" className="flex max-w-md gap-1.5">
+                    {THEME_OPTIONS.map((opt) => (
+                      <SegmentedToggle key={opt.value} active={mounted && theme === opt.value} onClick={() => setTheme(opt.value)}>
+                        {opt.label}
+                      </SegmentedToggle>
+                    ))}
+                  </div>
+                </FormCard>
+              </div>
+
+
 
               {/* Ação rara e sem volta: à vista, mas sem peso. */}
               <div className="flex items-center gap-3 px-1">
@@ -726,7 +732,7 @@ export function ProfileContent({
 
           {/* Barra de salvar do guia: só com mudança, vale para todas as abas. */}
           {isDirty || isSubmitting || profileError ? (
-            <div className="sticky bottom-6 z-20 mt-6 flex max-w-[880px] items-center gap-3 rounded-2xl border border-border bg-popover px-4 py-3 shadow-lg">
+            <div className="sticky bottom-6 z-20 mt-6 flex items-center gap-3 rounded-2xl border border-border bg-popover px-4 py-3 shadow-lg">
               <span className={cn("size-2 rounded-full", profileError || errorKeys.length ? "bg-danger-text" : "bg-warning")} aria-hidden />
               <span className="flex-1" aria-live="polite">
                 {profileError ??
