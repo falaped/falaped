@@ -68,3 +68,11 @@ function joinClausesPtBr(clauses: Array<string | null>): string {
   if (parts.length === 1) return parts[0]
   return `${parts.slice(0, -1).join(", ")} e ${parts[parts.length - 1]}`
 }
+
+/**
+ * Even shorter rendering for lists (Início, busca): like `formatPediatricAgeAbbrev`
+ * but drops the days once there are months or years ("2a 3m", "8m", "6 sem", "5 d").
+ */
+export function formatPediatricAgeShort(age: PediatricAge): string {
+  return formatPediatricAgeAbbrev(age).replace(/^(\d+[am](?: \d+m)?) \d+d$/, "$1")
+}

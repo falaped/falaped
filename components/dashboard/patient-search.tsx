@@ -15,7 +15,7 @@ import {
   CommandList,
 } from "@/components/ui/command"
 import { computePediatricAge } from "@/lib/compute-pediatric-age"
-import { formatPediatricAgeAbbrev } from "@/lib/format-pediatric-age"
+import { formatPediatricAgeShort } from "@/lib/format-pediatric-age"
 import { getPatientInitials } from "@/lib/get-patient-initials"
 
 const START_CONSULTATION = "/dashboard/cases/select-patient"
@@ -81,7 +81,7 @@ export function PatientSearch() {
                 <CommandEmpty>Nenhuma criança com esse nome. Cadastre abaixo.</CommandEmpty>
                 <CommandGroup heading="Pacientes">
                   {patients.map((patient) => {
-                    const age = formatPediatricAgeAbbrev(computePediatricAge(patient.birthDate))
+                    const age = formatPediatricAgeShort(computePediatricAge(patient.birthDate))
                     return (
                       <CommandItem
                         key={patient.id}
