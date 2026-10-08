@@ -1,4 +1,4 @@
-import { HouseIcon, LayoutTemplateIcon, SearchIcon, StethoscopeIcon, SyringeIcon, WalletIcon, type LucideIcon } from "lucide-react"
+import { HouseIcon, LayoutTemplateIcon, MessageSquareIcon, SearchIcon, SparklesIcon, StethoscopeIcon, SyringeIcon, WalletIcon, type LucideIcon } from "lucide-react"
 
 /**
  * Novidades do app, como dado. Versão nova = uma entrada nova aqui em cima; a
@@ -45,6 +45,12 @@ export const CHANGELOG: readonly ChangelogRelease[] = [
           "Receita, atestado, pedido de exame e encaminhamento abrem ao lado, sem sair da consulta. Encerrar mostra o que foi feito e a cobrança, em duas etapas.",
       },
       {
+        icon: SparklesIcon,
+        title: "O assistente registra por você",
+        description:
+          "Na consulta, peça pelo chat para adicionar uma alergia, alterar peso, altura ou PC (o IMC é recalculado) ou deixar um lembrete. Ele confirma antes de gravar, e tudo aparece em \"Nesta consulta\" com o que já foi feito.",
+      },
+      {
         icon: HouseIcon,
         title: "Seu dia no Início",
         description: "A consulta em andamento, quem atender, o que não esquecer e como está o mês, numa tela só.",
@@ -63,6 +69,11 @@ export const CHANGELOG: readonly ChangelogRelease[] = [
         icon: SyringeIcon,
         title: "Calendário vacinal",
         description: "SUS e particular lado a lado, com a faixa de idade da criança em destaque.",
+      },
+      {
+        icon: MessageSquareIcon,
+        title: "Fale com a gente",
+        description: "Achou um problema ou tem uma ideia? Use \"Enviar feedback\" no menu: a mensagem chega direto para a equipe.",
       },
     ],
   },
