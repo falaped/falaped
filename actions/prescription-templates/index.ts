@@ -6,3 +6,7 @@ export {
   deletePrescriptionTemplateAction,
   type DeletePrescriptionTemplateResult,
 } from "./delete-prescription-template"
+export {
+  renamePrescriptionTemplateAction,
+  type RenamePrescriptionTemplateResult,
+} from "./rename-prescription-template"

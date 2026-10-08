@@ -45,7 +45,7 @@ export async function createExamPanelAction(params: {
       name: parsed.data.name,
       panelItems: parsed.data.panelItems,
     })
-    revalidatePath("/dashboard/exam-requests")
+    revalidatePath("/dashboard/templates")
     return { ok: true, id }
   } catch (e) {
     console.error("[EXAM_PANELS] create failed", e)

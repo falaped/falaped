@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { format } from "date-fns"
 import { BookmarkIcon, PlusIcon, DownloadIcon, ScaleIcon, Trash2Icon, TriangleAlertIcon } from "lucide-react"
 import { toast } from "sonner"
@@ -67,6 +67,7 @@ export function ConsultPrescriptionPanel({
   allergies,
   weightLabel,
   templates,
+  initialTemplateId,
   doctor,
   onDone,
 }: {
@@ -77,6 +78,8 @@ export function ConsultPrescriptionPanel({
   /** "12,4 kg · hoje"; null sem medida de peso. */
   weightLabel: string | null
   templates: PrescriptionTemplateOption[]
+  /** Abre com este modelo aplicado ("Usar na receita" em Modelos). */
+  initialTemplateId?: string
   doctor: ConsultDoctor
   onDone: () => void
 }) {
@@ -112,6 +115,11 @@ export function ConsultPrescriptionPanel({
     setWarningSigns(s.warningSigns || null)
     setAdditionalNotes(s.additionalNotes || null)
   }
+
+  useEffect(() => {
+    if (initialTemplateId) applyTemplate(initialTemplateId)
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- só ao abrir
+  }, [])
 
   const meds = filled.map((m) => ({
     name: m.name.trim(),

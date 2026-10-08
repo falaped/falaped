@@ -619,7 +619,7 @@ export function ProfileContent({
                       </Select>
                     </FieldShell>
                     <Button type="button" variant="link" size="sm" className="mt-7 justify-self-start" asChild>
-                      <Link href="/dashboard/report-templates">
+                      <Link href="/dashboard/templates?aba=relatorio">
                         <LayoutTemplateIcon data-icon="inline-start" />
                         Ver meus modelos
                       </Link>

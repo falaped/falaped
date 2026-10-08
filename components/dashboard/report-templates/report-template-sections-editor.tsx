@@ -17,132 +17,92 @@ import {
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable"
 import { CSS } from "@dnd-kit/utilities"
-import { GripVertical, Trash2 } from "lucide-react"
+import { GripVerticalIcon, PlusIcon, Trash2Icon } from "lucide-react"
+
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { cn } from "@/lib/utils"
-import type { ReportTemplateSection } from "@/modules/report-templates/get-report-template-by-id"
 
 export type ReportTemplateSectionInput = {
   name: string
   description: string
 }
 
-export function ReportTemplateFixedSectionCard({
-  section,
-}: {
-  section: ReportTemplateSection
-}) {
-  return (
-    <div className="rounded-lg border border-border bg-muted/30 p-4 space-y-2">
-      <p className="text-sm font-medium">{section.name}</p>
-      {section.description ? (
-        <p className="text-xs text-muted-foreground leading-relaxed">
-          {section.description}
-        </p>
-      ) : null}
-      <p className="text-xs text-muted-foreground">
-        Preenchida automaticamente ao gerar o relatório. Não pode ser movida nem
-        removida.
-      </p>
-    </div>
-  )
-}
-
 function SectionRow({
   id,
   index,
   section,
-  onNameChange,
-  onDescriptionChange,
+  onChange,
   onRemove,
 }: {
   id: string
   index: number
   section: ReportTemplateSectionInput
-  onNameChange: (index: number, name: string) => void
-  onDescriptionChange: (index: number, description: string) => void
+  onChange: (index: number, section: ReportTemplateSectionInput) => void
   onRemove: (index: number) => void
 }) {
-  const {
-    attributes,
-    listeners,
-    setNodeRef,
-    transform,
-    transition,
-    isDragging,
-  } = useSortable({ id })
-
-  const style = transform
-    ? {
-        transform: CSS.Transform.toString(transform),
-        transition,
-      }
-    : undefined
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id })
 
   return (
     <div
       ref={setNodeRef}
-      style={style}
+      style={transform ? { transform: CSS.Transform.toString(transform), transition } : undefined}
       className={cn(
-        "flex gap-2 rounded-lg border border-border bg-card p-3 transition-shadow",
-        isDragging && "opacity-50 shadow-md",
+        "flex gap-3 rounded-xl border border-border bg-card p-4 transition-shadow",
+        isDragging && "relative z-10 shadow-md ring-2 ring-ring/30",
       )}
     >
       <button
         type="button"
-        className="flex shrink-0 cursor-grab touch-none items-center rounded p-1 text-muted-foreground hover:bg-muted active:cursor-grabbing"
-        aria-label="Reordenar seção"
+        className="mt-7 flex h-8 shrink-0 cursor-grab touch-none items-center rounded px-0.5 text-subtle-foreground hover:bg-accent active:cursor-grabbing"
+        aria-label={`Reordenar ${section.name || "seção"}`}
         {...attributes}
         {...listeners}
       >
-        <GripVertical className="h-4 w-4" />
+        <GripVerticalIcon className="size-4" />
       </button>
-      <div className="min-w-0 flex-1 space-y-2">
-        <div className="space-y-1.5">
-          <Label htmlFor={`section-name-${id}`} className="text-sm">
-            Nome da seção
-          </Label>
+      <div className="grid min-w-0 flex-1 gap-3">
+        <div className="flex flex-col gap-1.5">
+          <Label htmlFor={`section-name-${id}`}>Nome da seção</Label>
           <Input
             id={`section-name-${id}`}
             value={section.name}
-            onChange={(e) => onNameChange(index, e.target.value)}
+            maxLength={200}
+            onChange={(e) => onChange(index, { ...section, name: e.target.value })}
             placeholder="Ex.: Queixa principal"
-            className="w-full"
+            className="font-semibold"
           />
         </div>
-        <div className="space-y-1.5">
-          <Label htmlFor={`section-desc-${id}`} className="text-sm">
-            Descrição
+        <div className="flex flex-col gap-1.5">
+          <Label htmlFor={`section-desc-${id}`}>
+            O que o assistente escreve aqui <span className="text-caption font-normal text-subtle-foreground">opcional</span>
           </Label>
           <Textarea
             id={`section-desc-${id}`}
             value={section.description}
-            onChange={(e) => onDescriptionChange(index, e.target.value)}
-            placeholder="Ex.: Motivo da consulta e duração dos sintomas"
-            className="min-h-20 resize-y"
+            onChange={(e) => onChange(index, { ...section, description: e.target.value })}
+            placeholder="Ex.: motivo da consulta e há quanto tempo"
+            className="min-h-16 resize-y"
           />
         </div>
       </div>
       <Button
         type="button"
         variant="ghost"
-        size="icon"
-        className="shrink-0 text-muted-foreground hover:text-destructive"
+        size="icon-sm"
+        className="mt-7 shrink-0 text-muted-foreground hover:text-destructive"
         onClick={() => onRemove(index)}
-        aria-label="Remover seção"
+        aria-label={`Remover ${section.name || "seção"}`}
       >
-        <Trash2 className="h-4 w-4" />
+        <Trash2Icon />
       </Button>
     </div>
   )
 }
 
-/**
- * Editable, reorderable sections between the fixed patient blocks and the fixed pediatrician block.
- */
+/** Seções que o médico escolhe, depois de Paciente e Dados clínicos; arrastar reordena. */
 export function ReportTemplateMiddleSectionsEditor({
   sections,
   onChange,
@@ -156,83 +116,53 @@ export function ReportTemplateMiddleSectionsEditor({
     useSensor(KeyboardSensor),
   )
 
-  const handleNameChange = useCallback(
-    (index: number, name: string) => {
-      const next = [...sections]
-      next[index] = { ...next[index], name }
-      onChange(next)
-    },
+  const handleChange = useCallback(
+    (index: number, section: ReportTemplateSectionInput) => onChange(sections.map((s, i) => (i === index ? section : s))),
     [sections, onChange],
   )
-
-  const handleDescriptionChange = useCallback(
-    (index: number, description: string) => {
-      const next = [...sections]
-      next[index] = { ...next[index], description }
-      onChange(next)
-    },
-    [sections, onChange],
-  )
-
-  const handleRemove = useCallback(
-    (index: number) => {
-      onChange(sections.filter((_, i) => i !== index))
-    },
-    [sections, onChange],
-  )
-
+  const handleRemove = useCallback((index: number) => onChange(sections.filter((_, i) => i !== index)), [sections, onChange])
   const handleDragEnd = useCallback(
-    (event: DragEndEvent) => {
-      const { active, over } = event
+    ({ active, over }: DragEndEvent) => {
       if (!over || active.id === over.id) return
-      const oldIndex = sections.findIndex((_, i) => String(i) === active.id)
-      const newIndex = sections.findIndex((_, i) => String(i) === over.id)
-      if (oldIndex === -1 || newIndex === -1) return
-      const reordered = arrayMove(sections, oldIndex, newIndex)
-      onChange(reordered)
+      onChange(arrayMove(sections, Number(active.id), Number(over.id)))
     },
     [sections, onChange],
   )
-
-  const handleAddSection = useCallback(() => {
-    onChange([...sections, { name: "", description: "" }])
-  }, [sections, onChange])
 
   const itemIds = sections.map((_, i) => String(i))
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between gap-4">
-        <p className="text-sm font-medium text-muted-foreground">
-          Demais seções (após Paciente e Dados clínicos). Arraste para ordenar.
+    <>
+      {sections.length ? (
+        <DndContext sensors={sensors} onDragEnd={handleDragEnd}>
+          <SortableContext items={itemIds} strategy={verticalListSortingStrategy}>
+            <div className="flex flex-col gap-3">
+              {sections.map((section, index) => (
+                <SectionRow
+                  key={itemIds[index]}
+                  id={itemIds[index]}
+                  index={index}
+                  section={section}
+                  onChange={handleChange}
+                  onRemove={handleRemove}
+                />
+              ))}
+            </div>
+          </SortableContext>
+        </DndContext>
+      ) : (
+        <p className="rounded-xl border border-dashed border-border-strong px-4 py-6 text-center text-muted-foreground">
+          Nenhuma seção ainda. Comece por &ldquo;Queixa&rdquo;, &ldquo;Exame físico&rdquo; ou &ldquo;Conduta&rdquo;.
         </p>
-        <Button type="button" variant="outline" size="sm" onClick={handleAddSection}>
-          Adicionar seção
-        </Button>
-      </div>
-      <DndContext sensors={sensors} onDragEnd={handleDragEnd}>
-        <SortableContext
-          items={itemIds}
-          strategy={verticalListSortingStrategy}
-        >
-          <div className="space-y-3">
-            {sections.map((section, index) => (
-              <SectionRow
-                key={itemIds[index]}
-                id={itemIds[index]}
-                index={index}
-                section={section}
-                onNameChange={handleNameChange}
-                onDescriptionChange={handleDescriptionChange}
-                onRemove={handleRemove}
-              />
-            ))}
-          </div>
-        </SortableContext>
-      </DndContext>
-    </div>
+      )}
+      <button
+        type="button"
+        onClick={() => onChange([...sections, { name: "", description: "" }])}
+        className="flex h-11 w-full items-center justify-center gap-2 rounded-xl border border-dashed border-border-strong text-muted-foreground hover:bg-accent"
+      >
+        <PlusIcon className="size-4" aria-hidden />
+        Adicionar seção
+      </button>
+    </>
   )
 }
-
-/** @deprecated Use ReportTemplateMiddleSectionsEditor */
-export const ReportTemplateSectionsEditor = ReportTemplateMiddleSectionsEditor

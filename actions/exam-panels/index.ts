@@ -6,3 +6,7 @@ export {
   deleteExamPanelAction,
   type DeleteExamPanelResult,
 } from "./delete-exam-panel"
+export {
+  renameExamPanelAction,
+  type RenameExamPanelResult,
+} from "./rename-exam-panel"
