@@ -114,7 +114,7 @@ export function DocumentsList({
   /** Documentos que já estavam na lista quando o painel emitiu: o que vier além disso é novo. */
   const before = useRef<Set<string> | null>(null)
 
-  // "Novo documento" vindo de fora (consulta encerrada, Modelos, Início): ?novo=prescription&paciente=…&consulta=…
+  // "Novo documento" vindo de fora (consulta encerrada, Modelos, Início): ?novo=prescription&paciente=…&consulta=…&modelo=…
   useEffect(() => {
     const kind = params.get("novo")
     if (kind === "em-branco") {
@@ -128,6 +128,7 @@ export function DocumentsList({
       patientId: params.get("paciente") ?? undefined,
       caseId: params.get("consulta") ?? undefined,
       caseLabel: params.get("data") ?? undefined,
+      templateId: params.get("modelo") ?? undefined,
     })
     router.replace(pathname, { scroll: false })
     // eslint-disable-next-line react-hooks/exhaustive-deps -- roda uma vez por link

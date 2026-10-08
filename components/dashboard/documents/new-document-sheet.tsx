@@ -49,6 +49,8 @@ export type NewDocumentRequest = {
   caseId?: string
   /** "dd/MM" da consulta, para o subtítulo. */
   caseLabel?: string
+  /** Modelo de receita ou painel de exames já aplicado ("Usar" em Modelos). */
+  templateId?: string
 }
 
 export type DocumentPanelData = {
@@ -187,6 +189,7 @@ function SheetBody({
           allergies={allergies}
           weightLabel={weightLabel}
           templates={data.prescriptionTemplates}
+          initialTemplateId={request.templateId}
           doctor={data.doctor}
           onDone={onEmitted}
         />
@@ -200,6 +203,7 @@ function SheetBody({
           patient={patient}
           catalog={data.examCatalog}
           panels={data.examPanels}
+          initialPanelId={request.templateId}
           doctor={data.doctor}
           onDone={onEmitted}
         />

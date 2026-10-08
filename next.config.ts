@@ -21,6 +21,12 @@ const nextConfig: NextConfig = {
         destination: "/dashboard/services",
         permanent: false,
       },
+      // Modelos virou uma tela só (receitas, exames e relatório).
+      { source: "/dashboard/prescription-templates", destination: "/dashboard/templates", permanent: false },
+      { source: "/dashboard/report-templates", destination: "/dashboard/templates?aba=relatorio", permanent: false },
+      { source: "/dashboard/report-templates/new", destination: "/dashboard/templates/reports/new", permanent: false },
+      { source: "/dashboard/report-templates/gerar-com-ia", destination: "/dashboard/templates/reports/generate", permanent: false },
+      { source: "/dashboard/report-templates/:id", destination: "/dashboard/templates/reports/:id", permanent: false },
     ];
   },
   experimental: {

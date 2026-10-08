@@ -17,6 +17,7 @@ export async function createReportTemplateAction(
   const supabase = await createClient()
   const { profile } = await getAuthenticatedUser(supabase)
   if (!profile) return { ok: false, error: "Sessão não encontrada." }
+  if (profile.status !== "paid") return { ok: false, error: "Perfil não ativo. Conclua a configuração da conta em Perfil." }
 
   const parsed = createReportTemplateSchema.safeParse(data)
   if (!parsed.success) {
@@ -30,7 +31,7 @@ export async function createReportTemplateAction(
       name: parsed.data.name,
       sections: parsed.data.sections,
     })
-    revalidatePath("/dashboard/report-templates")
+    revalidatePath("/dashboard/templates")
     revalidatePath("/dashboard/profile")
     return { ok: true, id }
   } catch (e) {

@@ -36,6 +36,7 @@ export function ConsultExamRequestPanel({
   patient,
   catalog,
   panels,
+  initialPanelId,
   doctor,
   onDone,
 }: {
@@ -44,10 +45,12 @@ export function ConsultExamRequestPanel({
   patient: { id: string; name: string; birth_date: string | null }
   catalog: ExamCatalogItem[]
   panels: ExamPanel[]
+  /** Abre com os exames deste painel ("Usar no pedido" em Modelos). */
+  initialPanelId?: string
   doctor: ConsultDoctor
   onDone: () => void
 }) {
-  const [exams, setExams] = useState<string[]>([])
+  const [exams, setExams] = useState<string[]>(() => panels.find((panel) => panel.id === initialPanelId)?.panel_items ?? [])
   const [hypothesis, setHypothesis] = useState("")
   const [observations, setObservations] = useState<string | null>(null)
   const [panelName, setPanelName] = useState<string | null>(null)
@@ -220,7 +223,7 @@ const MAX_SUGGESTIONS = 8
  * Campo único para pôr exame no pedido: digita, aparecem as sugestões do catálogo e, por
  * último, "Adicionar" o que foi digitado. Enter adiciona a opção destacada.
  */
-function ExamSearch({ catalog, selected, onAdd }: { catalog: ExamCatalogItem[]; selected: string[]; onAdd: (name: string) => void }) {
+export function ExamSearch({ catalog, selected, onAdd }: { catalog: ExamCatalogItem[]; selected: string[]; onAdd: (name: string) => void }) {
   const inputRef = useRef<HTMLInputElement>(null)
   const [query, setQuery] = useState("")
   const [active, setActive] = useState(0)

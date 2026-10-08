@@ -108,8 +108,8 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
       <SidebarFooter className="border-t border-sidebar-border group-data-[collapsible=icon]:items-center">
         <SidebarMenu className="gap-0.5">
           <SidebarMenuItem>
-            <SidebarMenuButton asChild tooltip="Modelos" isActive={pathname.startsWith("/dashboard/prescription-templates")}>
-              <Link href="/dashboard/prescription-templates">
+            <SidebarMenuButton asChild tooltip="Modelos" isActive={pathname.startsWith("/dashboard/templates")}>
+              <Link href="/dashboard/templates">
                 <LayoutTemplateIcon />
                 <span>Modelos</span>
               </Link>

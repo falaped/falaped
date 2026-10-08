@@ -1,6 +1,6 @@
 "use client"
 
-import { ChevronsUpDown, LayoutTemplateIcon, LogOut, User } from "lucide-react"
+import { ChevronsUpDown, LogOut, User } from "lucide-react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { useEffect, useState } from "react"
@@ -134,12 +134,6 @@ export function NavUser() {
               <Link href="/dashboard/profile">
                 <User />
                 Perfil
-              </Link>
-            </DropdownMenuItem>
-            <DropdownMenuItem asChild>
-              <Link href="/dashboard/report-templates">
-                <LayoutTemplateIcon />
-                Modelos de relatório
               </Link>
             </DropdownMenuItem>
             <DropdownMenuSeparator />

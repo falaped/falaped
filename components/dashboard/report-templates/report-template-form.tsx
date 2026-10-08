@@ -2,51 +2,40 @@
 
 import { useMemo, useState } from "react"
 import { useRouter } from "next/navigation"
-import { useForm } from "react-hook-form"
-import { zodResolver } from "@hookform/resolvers/zod"
-import { z } from "zod"
+import { LockIcon } from "lucide-react"
 import { toast } from "sonner"
-import { getFriendlyToastMessage } from "@/lib/get-friendly-toast-message"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import {
-  Field,
-  FieldContent,
-  FieldError,
-  FieldLabel,
-} from "@/components/ui/field"
-import {
-  ReportTemplateFixedSectionCard,
-  ReportTemplateMiddleSectionsEditor,
-  type ReportTemplateSectionInput,
-} from "./report-template-sections-editor"
-import {
-  createReportTemplateSchema,
-  type CreateReportTemplateFormData,
-} from "@/lib/schemas/report-template"
+
 import { createReportTemplateAction, updateReportTemplateAction } from "@/actions"
+import { FormCard } from "@/components/dashboard/form-layout"
+import { TemplateFormShell } from "@/components/dashboard/templates/template-form-shell"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { getFriendlyToastMessage } from "@/lib/get-friendly-toast-message"
+import { createReportTemplateSchema } from "@/lib/schemas/report-template"
 import type { ReportTemplateSection } from "@/modules/report-templates/get-report-template-by-id"
 import {
   buildFixedTemplateSections,
   mergeEditorTemplateSections,
   splitNormalizedTemplateSectionsForEditor,
 } from "@/modules/report-templates/fixed-template-sections"
+import { ReportTemplateMiddleSectionsEditor, type ReportTemplateSectionInput } from "./report-template-sections-editor"
 
-const reportTemplateNameSchema = z.object({
-  name: z
-    .string()
-    .min(1, "Nome do template é obrigatório")
-    .max(200, "Use no máximo 200 caracteres"),
-})
+const LIST_HREF = "/dashboard/templates?aba=relatorio"
 
-type ReportTemplateNameForm = z.infer<typeof reportTemplateNameSchema>
+const FIXED_HINT: Record<string, string> = {
+  Paciente: "Nome, idade, peso e responsável.",
+  "Dados clínicos": "Medidas, escalas e exames lidos na consulta.",
+}
 
 type ReportTemplateFormProps =
   | {
       mode: "create"
       initialName?: string
-      /** Full sections from DB or from “Gerar com IA” (includes fixed slots). */
+      /** Seções vindas do banco (Duplicar) ou do Gerar com IA, com as fixas. */
       initialTemplateSections?: ReportTemplateSection[]
+      /** O que foi pedido ao assistente; mostra o aviso e "Gerar de novo". */
+      aiPrompt?: string
+      onRegenerate?: () => void
     }
   | {
       mode: "edit"
@@ -55,128 +44,109 @@ type ReportTemplateFormProps =
       initialTemplateSections: ReportTemplateSection[]
     }
 
-function toSectionInput(s: ReportTemplateSection): ReportTemplateSectionInput {
-  return {
-    name: s.name ?? "",
-    description: s.description ?? "",
-  }
-}
+const toInput = (s: ReportTemplateSection): ReportTemplateSectionInput => ({ name: s.name ?? "", description: s.description ?? "" })
 
+/**
+ * Criar ou editar o modelo de relatório (protótipo g4/g4e/g4a): cartões à esquerda, prévia à
+ * direita e a barra de salvar única (criar diz o que falta; editar só aparece com mudança).
+ */
 export function ReportTemplateForm(props: ReportTemplateFormProps) {
   const router = useRouter()
-
-  const fixedCanonical = useMemo(() => buildFixedTemplateSections(), [])
-
-  const initialName =
-    props.mode === "edit" ? props.initialName : (props.initialName ?? "")
-
-  const initialTemplateSections: ReportTemplateSection[] | undefined =
-    props.mode === "create"
-      ? props.initialTemplateSections
-      : props.initialTemplateSections
-
-  const { middle: initialMiddle } = splitNormalizedTemplateSectionsForEditor(
-    initialTemplateSections ?? [],
+  const isCreate = props.mode === "create"
+  const fixed = useMemo(() => buildFixedTemplateSections(), [])
+  const initial = useMemo(
+    () => ({
+      name: props.initialName ?? "",
+      sections: splitNormalizedTemplateSectionsForEditor(props.initialTemplateSections ?? []).middle.map(toInput),
+    }),
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- valores iniciais, só na montagem
+    [],
   )
+  const [name, setName] = useState(initial.name)
+  const [sections, setSections] = useState(initial.sections)
+  const [saving, setSaving] = useState(false)
 
-  const [middleSections, setMiddleSections] = useState<
-    ReportTemplateSectionInput[]
-  >(() =>
-    initialMiddle.length > 0
-      ? initialMiddle.map(toSectionInput)
-      : [],
-  )
+  const named = sections.filter((s) => s.name.trim())
+  const nameChanged = name.trim() !== initial.name.trim()
+  const sectionsChanged = JSON.stringify(sections) !== JSON.stringify(initial.sections)
+  const isDirty = nameChanged || sectionsChanged
+  const missing = [!name.trim() && "o nome", !named.length && "pelo menos uma seção"].filter(Boolean) as string[]
 
-  const form = useForm<ReportTemplateNameForm>({
-    resolver: zodResolver(reportTemplateNameSchema),
-    defaultValues: {
-      name: initialName,
-    },
-  })
-
-  async function onSubmit(data: ReportTemplateNameForm) {
-    const middlePayload = middleSections
-      .map((s) => ({
-        name: s.name.trim(),
-        description: s.description.trim() || undefined,
-      }))
-      .filter((s) => s.name.length > 0)
-
-    const merged = mergeEditorTemplateSections(middlePayload)
-
-    const payload: CreateReportTemplateFormData = {
-      name: data.name,
-      sections: merged,
-    }
-
-    const parsed = createReportTemplateSchema.safeParse(payload)
-    if (!parsed.success) {
-      const { fieldErrors } = z.flattenError(parsed.error)
-      const msg = Object.values(fieldErrors).flat().find(Boolean)
-      toast.error(msg ?? "Verifique os dados do template.")
-      return
-    }
-
-    if (props.mode === "create") {
-      const result = await createReportTemplateAction(parsed.data)
-      if (result.ok) {
-        toast.success("Template criado.")
-        router.push("/dashboard/report-templates")
-        router.refresh()
-        return
-      }
-      toast.error(getFriendlyToastMessage(result.error))
-      return
-    }
-
-    const result = await updateReportTemplateAction(props.templateId, parsed.data)
-    if (result.ok) {
-      toast.success("Template atualizado.")
-      router.push("/dashboard/report-templates")
-      router.refresh()
-      return
-    }
-    toast.error(getFriendlyToastMessage(result.error))
+  async function save() {
+    const parsed = createReportTemplateSchema.safeParse({
+      name: name.trim(),
+      sections: mergeEditorTemplateSections(named.map((s) => ({ name: s.name.trim(), description: s.description.trim() || undefined }))),
+    })
+    if (!parsed.success) return void toast.error(parsed.error.issues[0]?.message ?? "Confira o nome e as seções.")
+    setSaving(true)
+    const result =
+      props.mode === "create"
+        ? await createReportTemplateAction(parsed.data)
+        : await updateReportTemplateAction(props.templateId, parsed.data)
+    setSaving(false)
+    if (!result.ok) return void toast.error(getFriendlyToastMessage(result.error))
+    toast.success(isCreate ? "Modelo criado." : "Modelo atualizado.")
+    router.push(LIST_HREF)
+    router.refresh()
   }
 
+  const changedLabel = [nameChanged && "o nome", sectionsChanged && "as seções"].filter(Boolean).join(" e ")
+  const previewSections = [...fixed.map((s) => s.name), ...named.map((s) => s.name.trim())]
+
   return (
-    <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-      <Field data-invalid={!!form.formState.errors.name}>
-        <FieldLabel htmlFor="name">Nome do template</FieldLabel>
-        <FieldContent>
+    <TemplateFormShell
+      backHref={LIST_HREF}
+      title={props.mode === "edit" ? `Editar ${props.initialName}` : "Novo modelo de relatório"}
+      subtitle="As seções que o assistente preenche no relatório ao encerrar a consulta"
+      suggestion={props.mode === "create" && props.aiPrompt && props.onRegenerate ? { prompt: props.aiPrompt, onRegenerate: props.onRegenerate } : undefined}
+      isCreate={isCreate}
+      isDirty={isDirty}
+      missing={missing}
+      changedLabel={changedLabel}
+      saving={saving}
+      onSave={save}
+      onDiscard={() => {
+        setName(initial.name)
+        setSections(initial.sections)
+      }}
+      preview={
+        <div className="flex aspect-[1/1.414] w-full flex-col gap-3 overflow-hidden rounded-md bg-white p-7 text-[11px] leading-relaxed text-neutral-700 shadow-md">
+          <div className="text-center font-semibold tracking-[0.2em] text-neutral-900">RELATÓRIO DA CONSULTA</div>
+          {previewSections.map((section, index) => (
+            <div key={`${section}-${index}`}>
+              <div className="font-semibold text-neutral-900">{section}</div>
+              <div className="mt-1 h-2 w-full rounded bg-neutral-200" />
+              <div className="mt-1 h-2 w-2/3 rounded bg-neutral-200" />
+            </div>
+          ))}
+        </div>
+      }
+    >
+      <FormCard id="nome" title="Nome" description="Aparece na lista de modelos.">
+        <div className="flex flex-col gap-1.5">
+          <Label htmlFor="template-name">Nome do modelo</Label>
           <Input
-            id="name"
-            placeholder="Ex.: Relatório pediátrico padrão"
-            aria-invalid={!!form.formState.errors.name}
-            {...form.register("name")}
+            id="template-name"
+            value={name}
+            maxLength={200}
+            onChange={(e) => setName(e.target.value)}
+            placeholder="Ex.: Puericultura, Retorno de doença aguda"
           />
-          <FieldError errors={form.formState.errors.name ? [form.formState.errors.name] : undefined} />
-        </FieldContent>
-      </Field>
+        </div>
+      </FormCard>
 
-      <div className="space-y-3">
-        <p className="text-sm font-medium">Seções fixas</p>
-        <ReportTemplateFixedSectionCard section={fixedCanonical[0]} />
-        <ReportTemplateFixedSectionCard section={fixedCanonical[1]} />
-      </div>
-
-      <ReportTemplateMiddleSectionsEditor
-        sections={middleSections}
-        onChange={setMiddleSections}
-      />
-
-      <div className="flex gap-3">
-        <Button type="submit" disabled={form.formState.isSubmitting}>
-          {form.formState.isSubmitting ? "Salvando…" : props.mode === "create" ? "Criar template" : "Salvar alterações"}
-        </Button>
-        <Button
-          type="button"
-          variant="outline"
-          onClick={() => router.push("/dashboard/report-templates")}
-        >
-          Cancelar
-        </Button>
-      </div>
-    </form>
+      <FormCard id="secoes" title="Seções" description="Na ordem em que saem no relatório. Arraste para reordenar.">
+        {fixed.map((section) => (
+          <div key={section.name} className="flex items-center gap-3 rounded-xl border border-border bg-muted px-4 py-3">
+            <LockIcon className="size-4 text-subtle-foreground" aria-hidden />
+            <div>
+              <div className="font-semibold">{section.name}</div>
+              <div className="text-caption text-muted-foreground">{FIXED_HINT[section.name]} Preenchida sozinha, sempre no começo.</div>
+            </div>
+          </div>
+        ))}
+        <ReportTemplateMiddleSectionsEditor sections={sections} onChange={setSections} />
+      </FormCard>
+    </TemplateFormShell>
   )
 }
