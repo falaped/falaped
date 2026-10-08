@@ -21,7 +21,7 @@ import type { DashboardHomeActiveCase } from "@/modules/dashboard/get-dashboard-
 export function ActiveConsultBanner({ active, now }: { active: DashboardHomeActiveCase; now: Date }) {
   const href = active.origin === "dashboard" ? `/dashboard/cases/new/${active.id}` : `/dashboard/cases/${active.id}`
   const inClinic = { in: tz(CLINIC_TIME_ZONE) }
-  const { elapsedMs, idleSince } = consultClock(active, active.activityAts, now.getTime())
+  const { elapsedMs, idleSince, paused } = consultClock(active, active.activityAts, now.getTime())
 
   return (
     <section className={cn("flex items-center gap-4 rounded-xl border bg-card px-6 py-4", idleSince ? "border-warning-border" : "border-success-border")}>
@@ -42,6 +42,10 @@ export function ActiveConsultBanner({ active, now }: { active: DashboardHomeActi
           {idleSince ? (
             <span className="inline-flex h-6 items-center rounded-md border border-warning-border bg-warning-soft px-2 text-caption font-medium text-warning-text">
               Sem atividade desde {format(idleSince, "HH:mm", inClinic)}
+            </span>
+          ) : paused ? (
+            <span className="inline-flex h-6 items-center rounded-md border border-border bg-muted px-2 text-caption font-medium text-muted-foreground">
+              Consulta pausada · {elapsed(elapsedMs)}
             </span>
           ) : (
             <span className="inline-flex h-6 items-center rounded-md border border-success-border bg-success-soft px-2 text-caption font-medium text-success-text">

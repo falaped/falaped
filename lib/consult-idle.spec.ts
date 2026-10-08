@@ -50,6 +50,16 @@ test("pausa manual aberta: termina onde pausou", () => {
 
 test("relógio da tela: parada congela na última atividade", () => {
   const timer = { startedAt: at("09:10"), pausedMs: 0, pausedAt: null }
-  assert.deepEqual(consultClock(timer, [at("09:42")], t("19:00")), { elapsedMs: 32 * MIN, idleSince: at("09:42") })
-  assert.deepEqual(consultClock(timer, [at("09:42")], t("10:00")), { elapsedMs: 50 * MIN, idleSince: null })
+  assert.deepEqual(consultClock(timer, [at("09:42")], t("19:00")), { elapsedMs: 32 * MIN, idleSince: at("09:42"), paused: false })
+  assert.deepEqual(consultClock(timer, [at("09:42")], t("10:00")), { elapsedMs: 50 * MIN, idleSince: null, paused: false })
+})
+
+test("pausada à mão depois de esquecida: continua esquecida", () => {
+  const timer = { startedAt: at("09:10"), pausedMs: 0, pausedAt: at("19:00") }
+  assert.deepEqual(consultClock(timer, [at("09:42")], t("20:00")), { elapsedMs: 32 * MIN, idleSince: at("09:42"), paused: false })
+})
+
+test("pausada à mão no meio da consulta: congela na pausa", () => {
+  const timer = { startedAt: at("09:10"), pausedMs: 0, pausedAt: at("09:50") }
+  assert.deepEqual(consultClock(timer, [at("09:42")], t("20:00")), { elapsedMs: 40 * MIN, idleSince: null, paused: true })
 })

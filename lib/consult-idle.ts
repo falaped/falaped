@@ -51,15 +51,20 @@ export function closeTiming(
 
 /**
  * Tempo da consulta aberta para mostrar na tela: desconta pausas e intervalos parados,
- * e congela na última atividade quando ela está parada agora (`idleSince`).
+ * e congela na última atividade quando ela está parada (`idleSince`). Pausada à mão
+ * depois de 2h30 sem nada salvo também conta como esquecida: a pausa veio tarde.
  */
 export function consultClock(
   timer: { startedAt: string; pausedMs: number; pausedAt: string | null },
   activityAts: string[],
   now: number,
-): { elapsedMs: number; idleSince: string | null } {
-  const { gapsMs, idleSince } = summarizeIdle(timer.startedAt, activityAts, now)
-  const idle = timer.pausedAt == null ? idleSince : null
-  const end = timer.pausedAt ? Date.parse(timer.pausedAt) : idle ? Date.parse(idle) : now
-  return { elapsedMs: Math.max(0, end - Date.parse(timer.startedAt) - timer.pausedMs - gapsMs), idleSince: idle }
+): { elapsedMs: number; idleSince: string | null; paused: boolean } {
+  const end = timer.pausedAt ? Date.parse(timer.pausedAt) : now
+  const { gapsMs, idleSince } = summarizeIdle(timer.startedAt, activityAts, end)
+  const stop = idleSince ? Date.parse(idleSince) : end
+  return {
+    elapsedMs: Math.max(0, stop - Date.parse(timer.startedAt) - timer.pausedMs - gapsMs),
+    idleSince,
+    paused: timer.pausedAt != null && !idleSince,
+  }
 }

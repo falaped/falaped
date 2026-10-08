@@ -43,9 +43,8 @@ export function ConsultTimer({
 }) {
   const router = useRouter()
   const [pending, setPending] = useState(false)
-  const { gapsMs, idleSince } = summarizeIdle(startedAt, activityAts, Date.now())
-  const idle = pausedAt == null ? idleSince : null
-  const elapsedMs = useConsultationTimer({ startedAt, endedAt: null, pausedMs: pausedMs + gapsMs, pausedAt: pausedAt ?? idle })
+  const { gapsMs, idleSince: idle } = summarizeIdle(startedAt, activityAts, pausedAt ? Date.parse(pausedAt) : Date.now())
+  const elapsedMs = useConsultationTimer({ startedAt, endedAt: null, pausedMs: pausedMs + gapsMs, pausedAt: idle ?? pausedAt })
   const isPaused = pausedAt != null
 
   async function toggle() {
