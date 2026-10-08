@@ -7,6 +7,10 @@ export {
   type DeleteExamPanelResult,
 } from "./delete-exam-panel"
 export {
-  renameExamPanelAction,
-  type RenameExamPanelResult,
-} from "./rename-exam-panel"
+  updateExamPanelAction,
+  type UpdateExamPanelResult,
+} from "./update-exam-panel"
+export {
+  generateExamPanelAction,
+  type GenerateExamPanelResult,
+} from "./generate-exam-panel"

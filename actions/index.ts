@@ -117,10 +117,12 @@ export {
 export {
   createPrescriptionTemplateAction,
   deletePrescriptionTemplateAction,
-  renamePrescriptionTemplateAction,
+  updatePrescriptionTemplateAction,
+  generatePrescriptionTemplateAction,
   type CreatePrescriptionTemplateResult,
   type DeletePrescriptionTemplateResult,
-  type RenamePrescriptionTemplateResult,
+  type UpdatePrescriptionTemplateResult,
+  type GeneratePrescriptionTemplateResult,
 } from "./prescription-templates"
 export {
   generateReferralAction,
@@ -161,10 +163,12 @@ export {
 export {
   createExamPanelAction,
   deleteExamPanelAction,
-  renameExamPanelAction,
+  updateExamPanelAction,
+  generateExamPanelAction,
   type CreateExamPanelResult,
   type DeleteExamPanelResult,
-  type RenameExamPanelResult,
+  type UpdateExamPanelResult,
+  type GenerateExamPanelResult,
 } from "./exam-panels"
 export {
   createExamRequestTemplateAction,

@@ -40,6 +40,8 @@ export const AI_FEATURE_LABEL: Record<AiFeature, string> = {
   "exam-report": "Relatório de exames",
   "exam-pages": "Leitura de exames",
   "report-sections": "Seções de relatório",
+  "prescription-template": "Modelo de receita",
+  "exam-panel-template": "Modelo de exames",
   "improve-section": "Melhorar seção",
   transcription: "Transcrição",
   "assistant-actions": "Ações do assistente",

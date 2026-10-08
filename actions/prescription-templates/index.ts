@@ -7,6 +7,10 @@ export {
   type DeletePrescriptionTemplateResult,
 } from "./delete-prescription-template"
 export {
-  renamePrescriptionTemplateAction,
-  type RenamePrescriptionTemplateResult,
-} from "./rename-prescription-template"
+  updatePrescriptionTemplateAction,
+  type UpdatePrescriptionTemplateResult,
+} from "./update-prescription-template"
+export {
+  generatePrescriptionTemplateAction,
+  type GeneratePrescriptionTemplateResult,
+} from "./generate-prescription-template"

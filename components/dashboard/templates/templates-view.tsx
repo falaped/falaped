@@ -5,15 +5,13 @@ import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { format } from "date-fns"
 import { tz } from "@date-fns/tz"
-import { CheckIcon, CopyIcon, EllipsisIcon, PencilIcon, PlusIcon, SparklesIcon, Trash2Icon } from "lucide-react"
+import { CheckIcon, CopyIcon, EllipsisIcon, PlusIcon, SparklesIcon, Trash2Icon } from "lucide-react"
 import { toast } from "sonner"
 
 import {
   deleteExamPanelAction,
   deletePrescriptionTemplateAction,
   deleteReportTemplateAction,
-  renameExamPanelAction,
-  renamePrescriptionTemplateAction,
   setActiveReportTemplateAction,
 } from "@/actions"
 import { SectionTab } from "@/components/dashboard/section-tab"
@@ -35,7 +33,6 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { Input } from "@/components/ui/input"
 import { Tabs, TabsContent, TabsList } from "@/components/ui/tabs"
 import { CLINIC_TIME_ZONE } from "@/lib/clinic-timezone"
 import { getFriendlyToastMessage } from "@/lib/get-friendly-toast-message"
@@ -47,6 +44,11 @@ import type { ReportTemplateOption } from "@/modules/report-templates/get-report
 export type TemplatesTab = "prescriptions" | "exams" | "reports"
 
 const TAB_PARAM: Record<TemplatesTab, string> = { prescriptions: "receitas", exams: "exames", reports: "relatorio" }
+const BASE: Record<TemplatesTab, string> = {
+  prescriptions: "/dashboard/templates/prescriptions",
+  exams: "/dashboard/templates/exams",
+  reports: "/dashboard/templates/reports",
+}
 
 type Row = { id: string; name: string; detail: string; createdAt: string }
 type Deleting = { kind: TemplatesTab; id: string; name: string }
@@ -54,8 +56,8 @@ type Deleting = { kind: TemplatesTab; id: string; name: string }
 const savedOn = (iso: string) => format(new Date(iso), "dd/MM/yy", { in: tz(CLINIC_TIME_ZONE) })
 
 /**
- * Modelos (protótipo g1–g3). Receita e painel de exames nascem no painel ("Salvar como modelo");
- * aqui se usa, renomeia e exclui. O relatório tem o modelo em uso, criar, editar e gerar com IA.
+ * Modelos (protótipo g1–g8). Em todas as abas: criar, gerar com IA, editar e excluir. Receita e
+ * exames também nascem no painel ("Salvar como modelo"); o relatório tem o modelo em uso.
  */
 export function TemplatesView({
   initialTab,
@@ -135,26 +137,18 @@ export function TemplatesView({
               </SectionTab>
             </TabsList>
             <div className="ml-auto flex items-center gap-2 pb-2">
-              {tab === "reports" ? (
-                <>
-                  <Button asChild variant="ghost" size="sm">
-                    <Link href="/dashboard/templates/reports/generate">
-                      <SparklesIcon data-icon="inline-start" />
-                      Gerar com IA
-                    </Link>
-                  </Button>
-                  <Button asChild variant="outline" size="sm">
-                    <Link href="/dashboard/templates/reports/new">
-                      <PlusIcon data-icon="inline-start" />
-                      Novo modelo
-                    </Link>
-                  </Button>
-                </>
-              ) : (
-                <span className="text-caption text-subtle-foreground">
-                  Para criar, use &ldquo;Salvar como modelo&rdquo; {tab === "exams" ? "no pedido de exame" : "na receita"}
-                </span>
-              )}
+              <Button asChild variant="ghost" size="sm">
+                <Link href={`${BASE[tab]}/generate`}>
+                  <SparklesIcon data-icon="inline-start" />
+                  Gerar com IA
+                </Link>
+              </Button>
+              <Button asChild variant="outline" size="sm">
+                <Link href={`${BASE[tab]}/new`}>
+                  <PlusIcon data-icon="inline-start" />
+                  Novo modelo
+                </Link>
+              </Button>
             </div>
           </div>
 
@@ -163,9 +157,9 @@ export function TemplatesView({
               rows={prescriptionRows}
               useLabel="Usar na receita"
               hrefOf={(id) => `/dashboard/services?novo=prescription&modelo=${id}`}
-              empty="Nenhum modelo de receita ainda. Ao emitir uma receita, use “Salvar como modelo” e ele vira atalho na próxima."
+              editHref={(id) => `${BASE.prescriptions}/${id}`}
+              empty="Nenhum modelo de receita ainda. Crie um aqui ou, ao emitir uma receita, use “Salvar como modelo”."
               disabled={isPending}
-              onRename={(id, name) => run(() => renamePrescriptionTemplateAction(id, name), "Modelo renomeado.")}
               onDelete={(row) => setDeleting({ kind: "prescriptions", id: row.id, name: row.name })}
             />
           </TabsContent>
@@ -174,9 +168,9 @@ export function TemplatesView({
               rows={examRows}
               useLabel="Usar no pedido"
               hrefOf={(id) => `/dashboard/services?novo=exam-request&modelo=${id}`}
-              empty="Nenhum painel de exames ainda. No pedido de exame, use “Salvar como modelo” e ele vira atalho no próximo."
+              editHref={(id) => `${BASE.exams}/${id}`}
+              empty="Nenhum modelo de exames ainda. Crie um aqui ou, no pedido de exame, use “Salvar como modelo”."
               disabled={isPending}
-              onRename={(id, name) => run(() => renameExamPanelAction(id, name), "Painel renomeado.")}
               onDelete={(row) => setDeleting({ kind: "exams", id: row.id, name: row.name })}
             />
           </TabsContent>
@@ -286,71 +280,41 @@ export function TemplatesView({
   )
 }
 
-/** Receitas e painéis de exame: usar, renomear na linha e excluir. */
+/** Receitas e painéis de exame: usar, editar e excluir. */
 function ShortcutList({
   rows,
   useLabel,
   hrefOf,
+  editHref,
   empty,
   disabled,
-  onRename,
   onDelete,
 }: {
   rows: Row[]
   useLabel: string
   hrefOf: (id: string) => string
+  editHref: (id: string) => string
   empty: string
   disabled: boolean
-  onRename: (id: string, name: string) => void
   onDelete: (row: Row) => void
 }) {
-  const [renaming, setRenaming] = useState<{ id: string; name: string } | null>(null)
-
   if (!rows.length) return <p className="px-5 py-10 text-center text-muted-foreground">{empty}</p>
-
-  function save() {
-    if (!renaming) return
-    const name = renaming.name.trim()
-    if (!name) return void toast.error("Dê um nome ao modelo.")
-    if (name !== rows.find((row) => row.id === renaming.id)?.name) onRename(renaming.id, name)
-    setRenaming(null)
-  }
 
   return (
     <div className="divide-y divide-border">
       {rows.map((row) => (
         <div key={row.id} className="grid min-h-14 grid-cols-[minmax(0,1fr)_120px_auto] items-center gap-4 px-5 py-3 hover:bg-accent/40">
           <div className="min-w-0">
-            {renaming?.id === row.id ? (
-              <div className="flex items-center gap-2">
-                <Input
-                  autoFocus
-                  aria-label="Novo nome"
-                  value={renaming.name}
-                  maxLength={120}
-                  onChange={(event) => setRenaming({ id: row.id, name: event.target.value })}
-                  onKeyDown={(event) => {
-                    if (event.key === "Enter") save()
-                    if (event.key === "Escape") setRenaming(null)
-                  }}
-                  className="h-8 w-72 font-semibold"
-                />
-                <Button size="xs" onClick={save}>
-                  Salvar
-                </Button>
-                <Button variant="ghost" size="xs" onClick={() => setRenaming(null)}>
-                  Cancelar
-                </Button>
-              </div>
-            ) : (
-              <div className="font-semibold">{row.name}</div>
-            )}
+            <div className="font-semibold">{row.name}</div>
             <div className="truncate text-caption text-muted-foreground">{row.detail}</div>
           </div>
           <span className="num text-caption text-subtle-foreground">salvo em {savedOn(row.createdAt)}</span>
           <div className="flex items-center gap-1">
             <Button asChild variant="outline" size="xs">
               <Link href={hrefOf(row.id)}>{useLabel}</Link>
+            </Button>
+            <Button asChild variant="ghost" size="xs">
+              <Link href={editHref(row.id)}>Editar</Link>
             </Button>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
@@ -359,11 +323,6 @@ function ShortcutList({
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
-                <DropdownMenuItem onSelect={() => setRenaming({ id: row.id, name: row.name })}>
-                  <PencilIcon />
-                  Renomear
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
                 <DropdownMenuItem variant="destructive" onSelect={() => onDelete(row)}>
                   <Trash2Icon />
                   Excluir
