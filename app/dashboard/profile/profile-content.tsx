@@ -9,7 +9,6 @@ import { toast } from "sonner"
 import { getFriendlyToastMessage } from "@/lib/get-friendly-toast-message"
 import {
   BadgeCheckIcon,
-  ImageIcon,
   ImagePlusIcon,
   LayoutTemplateIcon,
   Loader2Icon,
@@ -314,14 +313,7 @@ export function ProfileContent({
   })
   const { isDirty, isSubmitting } = form.formState
 
-  const firstName = form.watch("first_name") ?? ""
-  const surname = form.watch("surname") ?? ""
-  const crm = form.watch("crm") ?? ""
-  const rqe = form.watch("rqe") ?? ""
-  const city = form.watch("default_location_city") ?? ""
   const state = form.watch("default_location_state") ?? ""
-  const fullName = `${firstName} ${surname}`.trim()
-  const place = city && state ? `${city} - ${state}` : city || state
   const plan = planInfo(profile.status, profile.trial_ends_at)
   const shortLogo = logoUrl("short")
   const fullLogo = logoUrl("full")
@@ -484,7 +476,6 @@ export function ProfileContent({
   const errorKeys = (Object.keys(form.formState.errors) as (keyof UpdateProfileFormValues)[]).filter((key) => FIELD_LABELS[key])
   const tabHasError = (value: ProfileTab) => errorKeys.some((key) => TAB_OF_FIELD[key] === value)
   const stateOptions = state && !BRAZIL_STATES.includes(state) ? [state, ...BRAZIL_STATES] : BRAZIL_STATES
-  const todayLong = new Intl.DateTimeFormat("pt-BR", { day: "numeric", month: "long", year: "numeric" }).format(new Date())
 
   return (
     <Tabs value={tab} onValueChange={(value) => setTab(value as ProfileTab)} className="gap-0">
@@ -525,9 +516,33 @@ export function ProfileContent({
 
         <div className="flex w-full max-w-[1440px] flex-col pt-8 pb-24">
           {/* Mudanças em outra aba continuam no form: as abas só escondem, não desmontam. */}
-          <TabsContent value="documentos" forceMount className="mt-0 data-[state=inactive]:hidden">
-            <div className="grid items-start gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(360px,440px)]">
-              <div className="flex flex-col gap-6">
+          <TabsContent value="documentos" forceMount className="mt-0 max-w-[880px] data-[state=inactive]:hidden">
+            <div className="flex flex-col gap-6">
+                <FormCard id="logos" title="Logos" description="Cada logo é salva assim que você envia.">
+                  <div className="grid grid-cols-2 gap-4">
+                    <LogoSlot
+                      title="Logo completa"
+                      help="Vai no cabeçalho dos documentos. Horizontal, de preferência com fundo transparente."
+                      url={fullLogo}
+                      uploading={logoUploading === "full"}
+                      removing={logoRemoving === "full"}
+                      error={logoError.full}
+                      onPick={() => fullInputRef.current?.click()}
+                      onRemove={() => handleClearLogo("full")}
+                    />
+                    <LogoSlot
+                      title={<>Logo curta {OPTIONAL}</>}
+                      help="Aparece no menu do Falaped. Quadrada: o símbolo ou as iniciais."
+                      url={shortLogo}
+                      uploading={logoUploading === "short"}
+                      removing={logoRemoving === "short"}
+                      error={logoError.short}
+                      onPick={() => shortInputRef.current?.click()}
+                      onRemove={() => handleClearLogo("short")}
+                    />
+                  </div>
+                </FormCard>
+
                 <FormCard id="dados" title="Dados profissionais" description="Saem em todo documento, como estão no seu carimbo.">
                   <div className="grid grid-cols-2 gap-4">
                     <TextField form={form} name="first_name" label="Nome" placeholder="Ex.: Mariana" />
@@ -570,30 +585,6 @@ export function ProfileContent({
                   </div>
                 </FormCard>
 
-                <FormCard id="logos" title="Logos" description="Cada logo é salva assim que você envia.">
-                  <div className="grid grid-cols-2 gap-4">
-                    <LogoSlot
-                      title="Logo completa"
-                      help="Vai no cabeçalho dos documentos. Horizontal, de preferência com fundo transparente."
-                      url={fullLogo}
-                      uploading={logoUploading === "full"}
-                      removing={logoRemoving === "full"}
-                      error={logoError.full}
-                      onPick={() => fullInputRef.current?.click()}
-                      onRemove={() => handleClearLogo("full")}
-                    />
-                    <LogoSlot
-                      title={<>Logo curta {OPTIONAL}</>}
-                      help="Aparece no menu do Falaped. Quadrada: o símbolo ou as iniciais."
-                      url={shortLogo}
-                      uploading={logoUploading === "short"}
-                      removing={logoRemoving === "short"}
-                      error={logoError.short}
-                      onPick={() => shortInputRef.current?.click()}
-                      onRemove={() => handleClearLogo("short")}
-                    />
-                  </div>
-                </FormCard>
 
                 <FormCard id="contato" title="Contato profissional" description="Fica no seu perfil do Falaped.">
                   <div className="grid grid-cols-2 gap-4">
@@ -601,47 +592,6 @@ export function ProfileContent({
                     <TextField form={form} name="website" label={<>Site {OPTIONAL}</>} type="url" placeholder="https://…" />
                   </div>
                 </FormCard>
-              </div>
-
-              {/* A folha acompanha o que é digitado: só o que sai de verdade no PDF. */}
-              <aside className="sticky top-6 flex flex-col gap-2" aria-label="Prévia do documento">
-                <div className="flex items-center gap-2 text-label font-medium">
-                  Como sai no documento
-                  <Badge variant="secondary">ao vivo</Badge>
-                </div>
-                <div className="aspect-[1/1.3] rounded-xl border border-border bg-white p-7 text-neutral-800 shadow-sm">
-                  <div className="flex items-center gap-4 border-b border-neutral-200 pb-4">
-                    {fullLogo ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img src={fullLogo} alt="" className="max-h-12 max-w-[45%] object-contain" />
-                    ) : (
-                      <span className="flex items-center gap-1.5 text-caption text-neutral-400">
-                        <ImageIcon className="size-4" aria-hidden />
-                        Sem logo
-                      </span>
-                    )}
-                    <div className="ml-auto min-w-0 text-right text-[12px] leading-5">
-                      <div className="truncate font-semibold">{fullName || "Seu nome"}</div>
-                      <div className="truncate text-neutral-500">
-                        {[crm ? `CRM ${crm}` : "CRM", rqe ? `RQE ${rqe}` : null].filter(Boolean).join(" · ")}
-                      </div>
-                    </div>
-                  </div>
-                  <div className="mt-5 flex flex-col gap-2" aria-hidden>
-                    <div className="h-2 w-1/3 rounded bg-neutral-200" />
-                    <div className="mt-2 h-2 w-5/6 rounded bg-neutral-100" />
-                    <div className="h-2 w-2/3 rounded bg-neutral-100" />
-                    <div className="h-2 w-3/4 rounded bg-neutral-100" />
-                    <div className="h-2 w-1/2 rounded bg-neutral-100" />
-                  </div>
-                  <div className="mt-8 text-right text-[12px] text-neutral-500">
-                    {place || "Cidade - Estado"}, <span className="num">{todayLong}</span>
-                  </div>
-                </div>
-                <p className="text-caption text-subtle-foreground">
-                  Uma aproximação: a posição de cada item muda um pouco entre receita, atestado, exame e relatório.
-                </p>
-              </aside>
             </div>
           </TabsContent>
 
