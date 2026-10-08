@@ -44,8 +44,8 @@ export function CaseRemindersDialog({
         </DialogHeader>
         <CaseRemindersForm caseId={caseId} initialReminders={initialReminders} />
         <DialogFooter>
-          <Button type="button" onClick={() => setOpen(false)}>
-            Concluir
+          <Button type="button" variant="outline" onClick={() => setOpen(false)}>
+            Fechar
           </Button>
         </DialogFooter>
       </DialogContent>
