@@ -2,6 +2,7 @@ import { tz } from "@date-fns/tz"
 import { format } from "date-fns"
 
 import { CLINIC_TIME_ZONE } from "@/lib/clinic-timezone"
+import { computePediatricBmi } from "@/lib/parse-anthropometrics-for-bmi"
 import { getScaleByKey } from "@/lib/scales"
 import type { ExamReading } from "@/modules/exam-readings/types"
 import type { ExamRequestListItem } from "@/modules/exam-requests/types"
@@ -75,12 +76,20 @@ function measurementRow(m: Measurement): ConsultRecordRow {
     m.head_circumference_mm != null ? `PC ${decimal.format(m.head_circumference_mm / 10)} cm` : null,
   ].filter(Boolean)
   const bp = m.systolic_bp != null && m.diastolic_bp != null ? `PA ${m.systolic_bp}/${m.diastolic_bp}` : undefined
+  // IMC da própria medida (peso e estatura da mesma linha), como na ficha.
+  const bmi =
+    m.weight_grams != null && m.length_height_mm != null
+      ? computePediatricBmi(m.weight_grams / 1000, m.length_height_mm / 1000)
+      : null
+  const bmiText = bmi?.ok ? `IMC ${decimal.format(bmi.bmi)}` : bmi ? "IMC fora da faixa esperada" : null
+  const sub = [bmiText, main.length ? bp : null].filter(Boolean).join(" · ") || undefined
   return {
     key: m.id,
     kind: "measurement",
     label: main.length ? main.join(" · ") : (bp ?? "Medida"),
-    sub: main.length ? bp : undefined,
-    at: m.created_at,
+    sub,
+    // A medida alterada pelo chat conta a partir da alteração.
+    at: m.updated_at ?? m.created_at,
   }
 }
 

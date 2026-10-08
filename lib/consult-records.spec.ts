@@ -39,7 +39,7 @@ test("a IA recebe cada documento com a hora da clínica, mesmo sem o conteúdo",
       "• 10:10 Atestado de comparecimento",
       "• 10:12 Pedido de exame",
       "Medidas:",
-      "• 10:00 12,3 kg · 85 cm (PA 90/60)",
+      "• 10:00 12,3 kg · 85 cm (IMC 17 · PA 90/60)",
     ].join("\n"),
   )
 })
