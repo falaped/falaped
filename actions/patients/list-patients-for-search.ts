@@ -3,6 +3,8 @@
 import { createClient } from "@/lib/supabase/server"
 import { getAuthenticatedUser } from "@/modules/supabase/get-authenticated-user"
 import { getPatientsByProfileId } from "@/modules/patients/get-patients-by-profile-id"
+import type { PatientSex } from "@/modules/patients/patient-sex"
+import { getConsultIndexByPatient, type ConsultIndexByPatient } from "@/modules/cases/get-consult-index-by-patient"
 
 export type PatientSearchItem = {
   id: string
@@ -10,15 +12,18 @@ export type PatientSearchItem = {
   birthDate: string | null
   responsible: string | null
   contactPhone: string | null
+  sex: PatientSex | null
+  /** Início da consulta mais recente (ISO), ou null se nunca foi atendida. */
+  lastConsultAt: string | null
 }
 
 export type ListPatientsForSearchResult =
-  | { ok: true; patients: PatientSearchItem[] }
+  | { ok: true; patients: PatientSearchItem[]; activeCase: ConsultIndexByPatient["activeCase"] }
   | { ok: false; error: string }
 
 /**
- * Pacientes do médico para a busca do menu (⌘K). Só os campos que a busca mostra;
- * o filtro roda no navegador.
+ * Pacientes do médico para a busca do menu (⌘K), com a última consulta de cada um e a
+ * consulta aberta. Só os campos que a busca mostra; o filtro roda no navegador.
  */
 export async function listPatientsForSearchAction(): Promise<ListPatientsForSearchResult> {
   const supabase = await createClient()
@@ -29,15 +34,21 @@ export async function listPatientsForSearchAction(): Promise<ListPatientsForSear
 
   try {
     // ponytail: lista inteira por médico; trocar por busca no banco se passar de alguns milhares.
-    const patients = await getPatientsByProfileId(supabase, profile.id)
+    const [patients, index] = await Promise.all([
+      getPatientsByProfileId(supabase, profile.id),
+      getConsultIndexByPatient(supabase, profile.id),
+    ])
     return {
       ok: true,
+      activeCase: index.activeCase,
       patients: patients.map((p) => ({
         id: p.id,
         name: p.name,
         birthDate: p.birth_date,
         responsible: p.responsible,
         contactPhone: p.contact_phone,
+        sex: p.sex ?? null,
+        lastConsultAt: index.lastConsultAt[p.id] ?? null,
       })),
     }
   } catch {
