@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { SparklesIcon } from "lucide-react"
+import { MegaphoneIcon, SparklesIcon } from "lucide-react"
 
 import {
   Dialog,
@@ -76,31 +76,14 @@ export function ChangelogMenuItem() {
         <SidebarMenuButton
           tooltip={`${LATEST_RELEASE.entries.length} novidades no app`}
           onClick={() => setOpen(true)}
-          className="relative overflow-hidden bg-primary/15 text-primary ring-1 ring-primary/50 shadow-sm hover:bg-primary/20 hover:text-primary"
         >
-          {/* Brilho varrendo a linha, sem condição de "reduzir movimento": o
-              dono do produto pediu o item sempre animado. Se algum dia isso
-              incomodar, é devolver o prefixo motion-safe: nesta classe. */}
+          <MegaphoneIcon />
+          <span>Novidades</span>
+          {/* Guia 2.0: o destaque é só o ponto azul, sem brilho nem pulso. */}
           <span
             aria-hidden
-            className="pointer-events-none absolute inset-0 bg-gradient-to-r from-transparent via-primary/30 to-transparent bg-[length:380px_100%] bg-no-repeat animate-shimmer"
+            className="ml-auto size-2 shrink-0 rounded-full bg-primary group-data-[collapsible=icon]:absolute group-data-[collapsible=icon]:top-1.5 group-data-[collapsible=icon]:right-1.5"
           />
-
-          <SparklesIcon className="relative animate-pulse" />
-          <span className="relative font-semibold">Novidades</span>
-
-          <span className="relative ml-auto flex shrink-0 items-center gap-1.5">
-            <span className="relative flex h-2 w-2">
-              <span className="absolute inline-flex h-full w-full rounded-full bg-primary opacity-75 animate-ping" />
-              <span className="relative inline-flex h-2 w-2 rounded-full bg-primary" />
-            </span>
-            {/* Pulso, não salto: a linha precisa de overflow-hidden para o
-                brilho não vazar, e qualquer animação que desloque o selo o
-                faria ser cortado na borda. Piscar chama atenção sem sair. */}
-            <span className="rounded-full bg-primary px-1.5 py-0.5 text-[10px] font-bold uppercase leading-none tracking-wide text-primary-foreground animate-pulse">
-              Novo
-            </span>
-          </span>
         </SidebarMenuButton>
       </SidebarMenuItem>
 

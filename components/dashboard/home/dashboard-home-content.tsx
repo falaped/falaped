@@ -21,6 +21,7 @@ import { getDashboardHomeData } from "@/modules/dashboard/get-dashboard-home-dat
 import { computePediatricAge } from "@/lib/compute-pediatric-age"
 import { formatPediatricAge } from "@/lib/format-pediatric-age"
 import { getAuthenticatedUser } from "@/modules/supabase/get-authenticated-user"
+import { FirstAccessHome } from "@/components/dashboard/home/first-access-home"
 import { applySignupMetadata } from "@/modules/profiles/apply-signup-metadata"
 
 import type { CaseOrigin } from "@/modules/cases/types"
@@ -49,6 +50,15 @@ export async function DashboardHomeContent() {
   }
 
   const home = await getDashboardHomeData(supabase, profile)
+
+  if (home.totalCasesCount === 0) {
+    return (
+      <FirstAccessHome
+        firstName={profile.first_name}
+        trialEndsAt={profile.trial_ends_at}
+      />
+    )
+  }
   const activeContextSummaryDisplay =
     formatDashboardChatContextSummaryForDisplay(
       home.activeCase?.contextSummary ?? null,

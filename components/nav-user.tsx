@@ -41,6 +41,7 @@ function getInitials(name: string): string {
 type UserData = {
   name: string
   email: string
+  crm: string
   avatar: string
 }
 
@@ -59,6 +60,7 @@ export function NavUser() {
       setUser({
         name,
         email: profile.email ?? "",
+        crm: profile.crm ?? "",
         avatar: profile.logo_url_short ?? "",
       })
     })
@@ -99,11 +101,11 @@ export function NavUser() {
             >
               <Avatar className="h-8 w-8 rounded-lg flex items-center justify-center">
                 <AvatarImage className="object-contain h-6 w-6" src={user.avatar} alt={user.name} />
-                <AvatarFallback className="rounded-lg bg-white">{initials}</AvatarFallback>
+                <AvatarFallback className="rounded-full bg-primary-soft text-caption font-semibold text-primary-ink-strong">{initials}</AvatarFallback>
               </Avatar>
-              <div className="grid flex-1 text-left text-sm leading-tight">
-                <span className="truncate font-medium">{user.name}</span>
-                <span className="truncate text-xs text-muted-foreground">{user.email}</span>
+              <div className="grid flex-1 text-left leading-tight">
+                <span className="truncate text-label font-medium text-foreground">{user.name}</span>
+                <span className="truncate text-caption text-subtle-foreground">{user.crm ? `CRM ${user.crm}` : user.email}</span>
               </div>
               <ChevronsUpDown className="ml-auto size-4 shrink-0 opacity-50" />
             </SidebarMenuButton>
@@ -136,13 +138,7 @@ export function NavUser() {
             <DropdownMenuItem asChild>
               <Link href="/dashboard/report-templates">
                 <LayoutTemplateIcon />
-                Templates de relatório
-              </Link>
-            </DropdownMenuItem>
-            <DropdownMenuItem asChild>
-              <Link href="/dashboard/prescription-templates">
-                <LayoutTemplateIcon />
-                Templates de receita
+                Modelos de relatório
               </Link>
             </DropdownMenuItem>
             <DropdownMenuSeparator />

@@ -1,7 +1,6 @@
-import { SectionHub } from "@/components/dashboard/section-hub"
+import { redirect } from "next/navigation"
 
-export const metadata = { title: "Atendimentos" }
-
+/** Antiga seção "Atendimentos": o menu agora tem Consultas e Pacientes direto. */
 export default function AppointmentsPage() {
-  return <SectionHub url="/dashboard/appointments" />
+  redirect("/dashboard/cases")
 }

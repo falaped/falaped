@@ -17,9 +17,9 @@ export default function DashboardLayout({
       <SidebarProvider className="max-lg:hidden">
         <AppSidebar />
         <SidebarInset>
-
-          <div className="flex flex-1 flex-col gap-4 p-8 relative border-t-8 border-t-primary">
-            {children}</div>
+          <div className="relative flex flex-1 flex-col gap-4 p-8">
+            {children}
+          </div>
         </SidebarInset>
       </SidebarProvider>
     </Suspense>
