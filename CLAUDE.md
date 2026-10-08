@@ -1,4 +1,8 @@
 
+## Idioma
+
+- Responda sempre em português brasileiro: mensagens no chat, descrições de PR, comentários de PR e mensagens de commit. Código, nomes de arquivos e identificadores seguem em inglês, como no resto do repositório.
+
 ## Project
 
 **Falaped**
@@ -12,6 +16,8 @@ Falaped é um app web para o dia a dia do pediatra: cadastro de pacientes (crian
 - **Tech stack**: Next.js 16 (App Router, Server Actions), React 19, TypeScript, Tailwind 4, shadcn/ui — manter o padrão de três camadas `app/ → actions/ → modules/`.
 - **Backend**: Supabase (Postgres + Auth + Storage) — toda query escopada por `profile_id`; manter gate de assinatura nos novos actions.
 - **Supabase via MCP**: toda operação no projeto Supabase (aplicar migration, consultar tabelas/schema, SQL, logs, advisors, storage, edge functions, tipos) passa pelo MCP `supabase` — não pela CLI, dashboard ou scripts ad hoc.
+- **NUNCA mexer em tabela do Supabase sem permissão**: nada de migration, `ALTER`, `CREATE`/`DROP`, enum, coluna, índice, RLS, função ou trigger sem o ok explícito do gestor no chat. Com o ok, antes de aplicar: avaliar se a mudança pode afetar os outros clientes (dados existentes, telas e fluxos em produção, WhatsApp, RLS) e avisar no chat o que foi avaliado e o risco; só então aplicar.
+- **NUNCA mexer nos dados de outros clientes**: escrever, alterar ou apagar linhas só nas contas permitidas, `oi.fprado@gmail.com` e `contato@falaped.com.br` (seeds, testes, correções). Dados de qualquer outra conta são só leitura, e só quando a tarefa pedir.
 - **PDF**: geração via `@falaped/falaped-kit/pdf` (pdfkit como `serverExternalPackage`) — a correção de impressão atua aqui.
 - **Privacidade**: fotos de crianças são dado sensível — armazenar com cuidado (acesso escopado ao médico dono).
 - **Sem prazo**: melhoria contínua, sem data limite — priorizar por dor real de uso.
@@ -131,6 +137,27 @@ Falaped é um app web para o dia a dia do pediatra: cadastro de pacientes (crian
 - shadcn/ui primitives in `components/ui/`; feature components in `components/dashboard/<domain>/`
 - Class composition via `cn()` (`clsx` + `tailwind-merge`) from `lib/utils.ts`
 - Tailwind CSS v4 utility classes; variants via `class-variance-authority`
+
+## Design (fonte única de verdade)
+
+- **Antes de criar ou alterar qualquer tela, leia `docs/ux/ficha-design.html` (Guia de design do Falaped).** Ele é a fonte única de verdade:
+  - princípios de uso;
+  - layout e grid;
+  - modelos de página;
+  - tokens, componentes e quando usar cada sobreposição;
+  - guia de escrita;
+  - checklist de feature nova.
+- **Valores vêm do código.** Os tokens ficam em `app/globals.css` e os componentes em `components/ui/`. Nunca usar cor, raio, sombra ou tamanho solto fora deles.
+- **Exemplos vêm de `docs/ux/prototipo.html`.** Se o protótipo e o guia divergirem, vale o guia.
+- **Toda tela parte de um dos 6 modelos de página do guia.** O checklist de feature nova vai preenchido na descrição do PR.
+- **Toda tela ocupa a largura ao lado do menu** (alinhada à esquerda, até 1440 px). Nada de coluna estreita centralizada com espaço vazio dos lados.
+- **PRs da 2.0 têm como base o branch `falaped-2.0`** (cópia da `main`), nunca a `main`. A virada `falaped-2.0` → `main` é uma só, no fim, quando o gestor pedir.
+- **Para mudar uma regra:**
+  1. Peça o OK do gestor.
+  2. Atualize o guia.
+  3. Registre a decisão em `docs/ux/refactoring-ui.md`.
+  4. Só então mude o código.
+- **Mudança de texto ou de design nunca mexe no Supabase:** tabelas, colunas, enums, status e rotas ficam como estão. Rótulos novos saem de um mapa no front-end.
 
 ## Security Conventions
 

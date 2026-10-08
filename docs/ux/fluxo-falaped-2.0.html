@@ -1,0 +1,1177 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Falaped 2.0 Wireframes</title>
+<style>
+:root{--ink:#111;--w5:#555;--w4:#8a8a8a;--w3:#c4c4c4;--w2:#e3e3e3;--w1:#f3f3f3;--w0:#fff}
+*{box-sizing:border-box}
+html,body{margin:0;background:#e9e9e9;color:var(--ink);font:14px/1.45 ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif}
+a{color:inherit}
+
+/* barra superior */
+.top{position:sticky;top:0;z-index:50;background:#fff;border-bottom:1px solid var(--w3);display:flex;align-items:center;gap:10px;padding:8px 5vw;flex-wrap:wrap}
+.top b{font-size:15px;letter-spacing:-.01em}
+.top select{font:inherit;padding:5px 8px;border:1px solid var(--w4);border-radius:6px;background:#fff;max-width:420px}
+.top button{font:inherit;padding:5px 12px;border:1px solid var(--ink);border-radius:6px;background:#fff;cursor:pointer}
+.top button.p{background:var(--ink);color:#fff}
+.top .sp{flex:1}
+.top label{display:flex;gap:6px;align-items:center;font-size:13px;color:var(--w5)}
+.head{width:90vw;margin:14px auto 8px;display:flex;align-items:baseline;gap:12px;flex-wrap:wrap}
+.head .code{font-weight:700;border:1.5px solid var(--ink);border-radius:5px;padding:0 6px;font-size:13px}
+.head h1{margin:0;font-size:20px;letter-spacing:-.01em}
+.head .grp{color:var(--w5);font-size:13px}
+.trail{width:90vw;margin:0 auto 10px;display:flex;gap:4px;flex-wrap:wrap;font-size:12px}
+.trail span{padding:2px 8px;border:1px solid var(--w3);border-radius:999px;background:#fff;cursor:pointer;color:var(--w5)}
+.trail span.on{background:var(--ink);color:#fff;border-color:var(--ink)}
+
+/* moldura do wireframe: 90% da tela */
+.wf{width:90vw;height:80vh;min-height:620px;margin:0 auto;background:#fff;border:2px solid var(--ink);border-radius:10px;overflow:hidden;position:relative}
+.app{display:grid;grid-template-columns:230px 1fr;height:100%}
+.app.mini{grid-template-columns:62px 1fr}
+.app.nosb{grid-template-columns:1fr}
+.main{overflow:auto;padding:22px 26px;position:relative;display:flex;flex-direction:column;gap:14px;min-width:0}
+.main.flush{padding:0;gap:0}
+
+/* sidebar */
+.sb{border-right:2px solid var(--ink);padding:14px 12px;display:flex;flex-direction:column;gap:4px;background:var(--w1);overflow:auto}
+.sb .logo{font-weight:800;letter-spacing:.06em;padding:2px 6px 12px;border-bottom:1px solid var(--w3);margin-bottom:8px}
+.nv{display:flex;align-items:center;gap:8px;padding:6px 8px;border-radius:6px;font-size:13px;cursor:pointer;position:relative}
+.nv:hover{background:var(--w2)}
+.nv .ic{width:14px;height:14px;border:1.5px solid var(--w5);border-radius:3px;flex:0 0 auto}
+.nv.on{background:#fff;outline:1.5px solid var(--ink);font-weight:700}
+.nv.on .ic{background:var(--ink);border-color:var(--ink)}
+.sub{margin:0 0 4px 22px;border-left:1px solid var(--w3);padding-left:6px}
+.sub .nv{font-size:12px;padding:4px 8px;color:var(--w5)}
+.sb .grow{flex:1}
+.sb .foot{border-top:1px solid var(--w3);padding-top:6px}
+.sb.mini{padding:12px 8px;align-items:center}
+.sb.mini .logo{font-size:0;padding:0 0 10px;width:100%;text-align:center}
+.sb.mini .logo::before{content:"F";font-size:15px}
+.sb.mini .nv{width:40px;justify-content:center;padding:9px}
+.sb.mini .nv span:not(.ic),.sb.mini .sub,.sb.mini .hint{display:none}
+.consult{border:2px solid var(--ink);border-radius:8px;padding:8px 10px;background:#fff;cursor:pointer;position:relative}
+.dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--ink)}
+
+/* primitivos */
+.el{position:relative}
+.m{position:absolute;top:-10px;left:-10px;width:21px;height:21px;border-radius:50%;background:var(--ink);color:#fff;font:700 11px/21px ui-sans-serif,system-ui;text-align:center;z-index:6;box-shadow:0 0 0 2px #fff}
+.nomk .m{display:none}
+.fld>.m{left:auto;right:-8px}
+.tl>.m{left:4px;top:4px}
+.bub.me .ln{background:var(--w3)}
+.sb{flex:1}
+.h1{font-size:20px;font-weight:700;letter-spacing:-.01em}
+.sub-t{font-size:13px;color:var(--w5)}
+.btn{display:inline-flex;align-items:center;gap:6px;border:1.5px solid var(--ink);border-radius:6px;padding:6px 12px;font-size:13px;background:#fff;white-space:nowrap;cursor:default}
+.btn.p{background:var(--ink);color:#fff;font-weight:600}
+.btn.g{border-color:transparent;text-decoration:underline;padding:6px 4px}
+.btn.sm{padding:3px 8px;font-size:12px}
+.btn.lg{padding:10px 18px;font-size:15px}
+.btn.full{width:100%;justify-content:center}
+.btn.dz{border-style:dashed}
+.box{border:1.5px solid var(--w5);border-radius:8px;padding:12px;background:#fff}
+.box.soft{border-color:var(--w3)}
+.box.strong{border:2px solid var(--ink)}
+.box.dash{border-style:dashed}
+.ln{display:block;height:8px;background:var(--w2);border-radius:4px;margin:6px 0}
+.ph{background:repeating-linear-gradient(45deg,var(--w1) 0 10px,#fff 10px 20px);border:1.5px dashed var(--w4);border-radius:8px;display:grid;place-items:center;color:var(--w5);font-size:12px;text-align:center;padding:6px}
+.fld{display:flex;flex-direction:column;gap:4px;min-width:0}
+.lbl{font-size:12px;font-weight:600}
+.lbl small{font-weight:400;color:var(--w4)}
+.in{border:1.5px solid var(--w4);border-radius:6px;min-height:32px;padding:6px 10px;color:var(--w4);font-size:13px;background:#fff;display:flex;align-items:center;gap:6px}
+.in.ta{min-height:64px;align-items:flex-start}
+.chip{display:inline-flex;align-items:center;gap:4px;border:1px solid var(--w4);border-radius:999px;padding:1px 8px;font-size:11px;white-space:nowrap;background:#fff}
+.chip.d{background:var(--ink);color:#fff;border-color:var(--ink);font-weight:600}
+.chip.o{border:1.5px dashed var(--ink)}
+.av{border-radius:50%;background:var(--w2);border:1.5px solid var(--w4);display:inline-grid;place-items:center;font-size:11px;font-weight:700;flex:0 0 auto}
+.row{display:flex;align-items:center;gap:10px;min-width:0}
+.col{display:flex;flex-direction:column;gap:10px;min-width:0}
+.sp1{flex:1}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.g3{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+.g4{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+.muted{color:var(--w5);font-size:12px}
+.tabs{display:flex;gap:2px;border-bottom:1.5px solid var(--w3)}
+.tabs span{padding:7px 12px;font-size:13px;color:var(--w5);cursor:pointer;border-bottom:2.5px solid transparent;margin-bottom:-1.5px;white-space:nowrap}
+.tabs span.on{color:var(--ink);font-weight:700;border-bottom-color:var(--ink)}
+.seg{display:inline-flex;border:1.5px solid var(--w5);border-radius:7px;overflow:hidden}
+.seg span{padding:5px 11px;font-size:12px;border-right:1px solid var(--w3);white-space:nowrap}
+.seg span:last-child{border-right:0}
+.seg span.on{background:var(--ink);color:#fff;font-weight:600}
+.tbl{border:1.5px solid var(--w5);border-radius:8px;background:#fff}
+.tr{display:grid;gap:10px;align-items:center;padding:9px 12px;border-bottom:1px solid var(--w2);font-size:13px}
+.tr:last-child{border-bottom:0}
+.tr.h{background:var(--w1);font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;color:var(--w5)}
+.tr.gp{background:var(--w1);font-size:11px;font-weight:700;color:var(--w5);grid-template-columns:1fr}
+.tr[data-go]:hover,.box[data-go]:hover,.consult:hover{background:var(--w1)}
+.chk{width:14px;height:14px;border:1.5px solid var(--w5);border-radius:3px;display:inline-block;flex:0 0 auto}
+.chk.on{background:var(--ink);border-color:var(--ink)}
+.rad{width:14px;height:14px;border:1.5px solid var(--w5);border-radius:50%;display:inline-block;flex:0 0 auto}
+.bub{max-width:72%;border:1.5px solid var(--w3);border-radius:10px;padding:8px 12px;background:#fff}
+.bub.me{align-self:flex-end;background:var(--w1);border-color:var(--w1)}
+.kbd{font-size:10px;border:1px solid var(--w4);border-bottom-width:2px;border-radius:3px;padding:0 4px;color:var(--w5);background:#fff}
+.dim{position:absolute;inset:0;opacity:.35;pointer-events:none}
+.dim .m{display:none}
+.scrim{position:absolute;inset:0;background:rgba(0,0,0,.18);z-index:10}
+.panel{position:absolute;top:0;right:0;bottom:0;background:#fff;border-left:2px solid var(--ink);z-index:11;display:flex;flex-direction:column}
+.panel .ph-h{display:flex;align-items:center;gap:10px;padding:14px 18px;border-bottom:1.5px solid var(--w3)}
+.panel .ph-b{flex:1;overflow:auto;padding:16px 18px;display:flex;flex-direction:column;gap:14px}
+.panel .ph-f{display:flex;align-items:center;gap:8px;padding:12px 18px;border-top:1.5px solid var(--w3)}
+.modal{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);background:#fff;border:2px solid var(--ink);border-radius:10px;z-index:11;display:flex;flex-direction:column;max-height:92%}
+.a4{background:#fff;border:1.5px solid var(--w4);border-radius:4px;padding:14px;aspect-ratio:1/1.41}
+.cap{position:absolute;bottom:8px;right:12px;font-size:11px;color:var(--w4)}
+.show-hot [data-go]{outline:2px dashed var(--ink);outline-offset:2px;cursor:pointer}
+[data-go]{cursor:pointer}
+
+/* notas */
+.notes{width:90vw;margin:16px auto 60px;display:grid;grid-template-columns:minmax(260px,1fr) 2.4fr;gap:16px;align-items:start}
+.card{background:#fff;border:1px solid var(--w3);border-radius:10px;padding:16px}
+.card h3{margin:0 0 6px;font-size:13px;text-transform:uppercase;letter-spacing:.05em;color:var(--w5)}
+.card p{margin:0 0 12px}
+.why{width:100%;border-collapse:collapse;font-size:13px}
+.why th{text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--w5);border-bottom:1.5px solid var(--ink);padding:6px 8px}
+.why td{border-bottom:1px solid var(--w2);padding:8px;vertical-align:top}
+.why td:first-child{width:34px}
+.why td:first-child b{display:inline-block;width:21px;height:21px;border-radius:50%;background:var(--ink);color:#fff;text-align:center;font:700 11px/21px ui-sans-serif,system-ui}
+.why td:nth-child(2){font-weight:600;width:24%}
+.why td:last-child{width:20%;color:var(--w5);font-size:12px}
+.nav-links span{display:inline-block;margin:2px 4px 2px 0;padding:1px 8px;border:1px solid var(--w3);border-radius:999px;font-size:12px;cursor:pointer}
+@media (max-width:1000px){.notes{grid-template-columns:1fr}}
+
+/* mapa */
+.map{padding:22px 26px;overflow:auto;height:100%;display:flex;flex-direction:column;gap:18px}
+.lane{display:flex;flex-direction:column;gap:6px}
+.lane h4{margin:0;font-size:12px;text-transform:uppercase;letter-spacing:.05em;color:var(--w5)}
+.lane .flow{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.node{border:1.5px solid var(--ink);border-radius:7px;padding:6px 10px;font-size:12px;background:#fff;cursor:pointer;display:flex;gap:6px;align-items:center}
+.node:hover{background:var(--ink);color:#fff}
+.node i{font-style:normal;font-weight:700;font-size:11px;border:1px solid currentColor;border-radius:4px;padding:0 4px}
+.arr{color:var(--w4)}
+
+/* abas do arquivo */
+.ptabs{display:inline-flex;border:1.5px solid var(--ink);border-radius:7px;overflow:hidden}
+.ptabs button{border:0!important;border-radius:0!important;padding:5px 14px!important}
+.ptabs button.on{background:var(--ink)!important;color:#fff}
+body.tab-off .wf-only{display:none!important}
+/* auditoria */
+.audit{width:min(90vw,1200px);margin:18px auto 80px;background:#fff;border:1px solid var(--w3);border-radius:12px;padding:28px 36px}
+.audit .ahead{display:flex;align-items:flex-end;gap:20px;border-bottom:2px solid var(--ink);padding-bottom:16px;margin-bottom:8px}
+.audit .ahead h1{margin:4px 0 0;font-size:26px;letter-spacing:-.02em}
+.audit .score{margin-left:auto;text-align:right;line-height:1}
+.audit .score b{font-size:46px;letter-spacing:-.03em}.audit .score span{font-size:20px;color:var(--w5)}
+.audit .score small{display:block;font-size:12px;color:var(--w5);margin-top:6px}
+.audit h2{font-size:18px;margin:30px 0 10px;letter-spacing:-.01em}
+.audit h3{font-size:14px;margin:22px 0 8px;text-transform:none}
+.audit p,.audit li{max-width:80ch}
+.audit li{margin:4px 0}
+.audit code{font:12px ui-monospace,SFMono-Regular,Menlo,monospace;background:var(--w1);border:1px solid var(--w2);border-radius:4px;padding:0 4px}
+.audit .note{border-left:3px solid var(--ink);background:var(--w1);padding:10px 14px;border-radius:0 8px 8px 0;margin:12px 0}
+.audit .legend{font-size:12px;color:var(--w5);margin:10px 0 0;display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+table.aud{width:100%;border-collapse:collapse;font-size:13px;margin:6px 0 4px}
+table.aud th{text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--w5);border-bottom:1.5px solid var(--ink);padding:6px 8px}
+table.aud td{border-bottom:1px solid var(--w2);padding:9px 8px;vertical-align:top}
+table.aud td:first-child{white-space:nowrap}table.find td:first-child{width:40px}table.find td:nth-child(3){width:30%;color:var(--w5);font-size:12px}table.find td:last-child{width:70px}
+.sev{display:inline-grid;place-items:center;width:22px;height:22px;border-radius:5px;font:700 12px/1 ui-sans-serif,system-ui;border:1.5px solid var(--ink)}
+.sev.s0,.sev.s1{border-color:var(--w3);color:var(--w5)}.sev.s2{border-color:var(--w5)}.sev.s3{background:var(--ink);color:#fff}.sev.s4{background:var(--ink);color:#fff;outline:2px solid var(--ink);outline-offset:1px}
+.demo{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:14px;border:1px dashed var(--w4);border-radius:10px;padding:16px}
+.demo>div{display:flex;flex-direction:column;gap:8px;align-items:flex-start}
+.demo small{font-size:12px;color:var(--w5)}
+.dbtn{display:inline-block;padding:9px 16px;border-radius:8px;font-weight:600;font-size:14px}
+</style>
+</head>
+<body>
+<div class="top">
+  <b>Falaped 2.0</b>
+  <span class="ptabs"><button data-tab="wf" class="on">Wireframes</button><button data-tab="audit">Auditoria visual</button><button data-tab="comp">Componentes atuais</button><button data-tab="ficha">Ficha de design</button><button data-tab="proto">Protótipo</button></span>
+  <select class="wf-only" id="sel" aria-label="Escolher tela"></select>
+  <button class="wf-only" id="prev">← Anterior</button>
+  <span id="pos" class="muted wf-only"></span>
+  <button id="next" class="p wf-only">Próxima →</button>
+  <span class="sp"></span>
+  <label class="wf-only"><input type="checkbox" id="hot"> Mostrar áreas clicáveis</label>
+  <label class="wf-only"><input type="checkbox" id="mk" checked> Números</label>
+</div>
+<div class="head wf-only"><span class="code" id="code"></span><h1 id="title"></h1><span class="grp" id="grp"></span></div>
+<div class="trail wf-only" id="trail"></div>
+<div class="wf wf-only" id="wf"></div>
+<div class="notes wf-only" id="notes"></div>
+<div id="pane-audit" class="audit" hidden>
+  <div class="ahead">
+    <div><div class="muted">Etapa 1 · 06/10/2026 · skill <code>redesign-existing-projects</code></div><h1>Auditoria visual do app atual</h1></div>
+    <div class="score"><b>6</b><span>/10</span><small>3 problemas de gravidade 3</small></div>
+  </div>
+  <div class="legend">Gravidade: <span class="sev s0">0</span> não é problema <span class="sev s1">1</span> cosmético <span class="sev s2">2</span> menor <span class="sev s3">3</span> grave <span class="sev s4">4</span> impede a tarefa</div>
+<p>Leitura do código de <code>app/</code> e <code>components/</code> (291 arquivos <code>.tsx</code>, sem Books e sem Admin quando indicado) e dos tokens em <code>app/globals.css</code>. A auditoria não muda nada no app: ela alimenta a <b>ficha de design (Etapa 2)</b>. A gravidade segue a escala da <code>ux-heuristics</code>, de 0 (não é problema) a 4 (impede a tarefa).</p>
+<div class="note">Retrato visual de todos os componentes com os tokens atuais: aba <b>Componentes atuais</b> do <code>fluxo-falaped-2.0.html</code> (arquivo <code>componentes-atuais.html</code>).</div>
+<div class="note">Limite: a auditoria foi feita pelo código, não pelas telas logadas. Os pontos marcados com 👁 precisam ser confirmados no <code>yarn dev</code>.</div>
+<h2>Resumo</h2>
+<p>A base é boa e deve ser mantida: tokens em oklch, um azul de marca só, cinzas neutros, <code>tabular-nums</code> em 32 arquivos, skeletons e <code>loading.tsx</code> em 13 rotas, nenhum <code>alert()</code>. Os problemas não vêm de excesso de estilo, e sim da <b>falta de sistema</b>:</p>
+<ol start="1"><li><b>Contraste do azul:</b> o azul da marca é claro demais para levar texto branco ou ser usado como cor de texto.</li><li><b>Botão principal sem estado:</b> sem hover e sem resposta ao clique.</li><li><b>Status sem tokens:</b> verde, âmbar e laranja escritos à mão, só no admin.</li><li><b>Estados vazios:</b> são uma frase solta (o "bloco de notas" que o gestor rejeitou).</li><li><b>Tipografia e cards sem escala:</b> cada tela decide tamanhos, cards e raios.</li><li><b>Marca desalinhada com a landing:</b> logo antiga no menu e fonte diferente (Geist no app, Inter na landing).</li></ol>
+<h2>Demonstração dos problemas de cor (C1 e C2)</h2>
+<p class="muted">Única parte em cor desta aba: os tokens reais do app, para ver o contraste. O retrato completo está na aba Componentes atuais.</p>
+<div class="demo">
+  <div><span class="dbtn" style="background:oklch(0.7603 0.0916 255.41);color:oklch(0.98 0.01 255)">Iniciar consulta</span><small>Hoje (claro): texto branco no azul da marca · 2,0:1 ✕</small></div>
+  <div><span class="dbtn" style="background:oklch(0.7603 0.0916 255.41);color:oklch(0.22 0.04 255)">Iniciar consulta</span><small>Opção A: texto escuro no mesmo azul (como o modo escuro) · 8,1:1 ✓</small></div>
+  <div><span class="dbtn" style="background:oklch(0.52 0.11 255);color:#fff">Iniciar consulta</span><small>Opção B: botão no azul escuro (primary-ink) · 5,5:1 ✓</small></div>
+  <div><span style="color:oklch(0.7603 0.0916 255.41);font-weight:600">Ver ficha →</span><small>Hoje: <code>text-primary</code> como texto · 2,1:1 ✕</small></div>
+  <div><span style="color:oklch(0.52 0.11 255);font-weight:600">Ver ficha →</span><small><code>text-primary-ink</code> · 5,5:1 ✓</small></div>
+</div>
+<h2>Achados</h2>
+<h3>Cor e contraste</h3>
+<table class="aud find"><tr><th>#</th><th>Achado</th><th>Evidência</th><th>Grav.</th></tr><tr><td><b>C1</b></td><td><b>Botão principal com texto branco sobre o azul claro</b>: contraste de 2,0:1 (o mínimo AA é 4,5:1). Afeta o CTA mais importante de cada tela, como Iniciar consulta e Salvar. No escuro, o botão já usa texto escuro sobre o azul e passa com 8,7:1: a correção do claro pode seguir o escuro.</td><td><code>--primary</code> L 0,76 com <code>--primary-foreground</code> L 0,98 (<code>globals.css</code>). <code>bg-primary</code> aparece 44 vezes.</td><td><span class="sev s3">3</span></td></tr><tr><td><b>C2</b></td><td><b>Azul claro usado como cor de texto</b>, com contraste de 2,1:1. A borda do checkbox também usa esse azul e fica abaixo do mínimo de 3:1. O token <code>--primary-ink</code> existe para isso, mas é pouco usado.</td><td><code>text-primary</code>: 62 usos. <code>text-primary-ink</code>: 17.</td><td><span class="sev s3">3</span></td></tr><tr><td><b>C3</b></td><td><b>Não há tokens de status</b> (sucesso, atenção, erro suave, informação). Verde, âmbar e laranja são escritos à mão, quase todos no admin. Os selos da 2.0 (Atenção, Vacina atrasada, Sem valor) vão precisar deles.</td><td>Usos de cor fixa: <code>emerald</code> 54, <code>amber</code> 45, <code>orange</code> 26 (admin, menu lateral, vacinas).</td><td><span class="sev s2">2</span></td></tr><tr><td><b>C4</b></td><td><b>Tokens duplicados e conflitantes</b>: há dois blocos <code>:root</code> e dois <code>.dark</code>, e o segundo sobrescreve o primeiro. O fundo do app é branco (L 1), apesar do comentário "mesmo tom do menu" (L 0,985).</td><td><code>globals.css</code> blocos 1 e 2 (separados por <code>---break---</code>)</td><td><span class="sev s2">2</span></td></tr><tr><td><b>C5</b></td><td><b>Cinzas de duas famílias</b>: <code>secondary</code> tem matiz 286 (frio, puxado para o roxo) e todo o resto é cinza neutro.</td><td><code>--secondary</code>, <code>--secondary-foreground</code></td><td><span class="sev s1">1</span></td></tr><tr><td><b>C6</b></td><td><b>Cores quebradas por <code>hsl()</code> em token oklch</b>: o placeholder do Tiptap e o contorno da variante <code>outline</code> do item de menu não recebem cor. 👁</td><td><code>globals.css</code>, regra <code>.ProseMirror</code>; <code>sidebar.tsx</code>, variante <code>outline</code></td><td><span class="sev s1">1</span></td></tr><tr><td><b>C7</b></td><td><b>Tokens mortos da Agenda</b> (cerca de 60 linhas de <code>--agenda-*</code>), já que a tela saiu do produto.</td><td><code>globals.css</code>, bloco "Agenda"</td><td><span class="sev s1">1</span></td></tr></table>
+<h3>Marca</h3>
+<table class="aud find"><tr><th>#</th><th>Achado</th><th>Evidência</th><th>Grav.</th></tr><tr><td><b>M1</b></td><td><b>O app ainda usa a logo antiga</b> no menu lateral, enquanto a landing e os criativos já usam a nova (blocos FALA/PED, desde 17/09/2026). O médico chega pela landing e encontra outra marca no app.</td><td><code>components/app-sidebar.tsx:66</code> usa <code>/full-logo.svg</code>. A horizontal nova (<code>public/falaped-logo-horizontal.svg</code>) é idêntica à da landing.</td><td><span class="sev s2">2</span></td></tr><tr><td><b>M2</b></td><td><b>A versão compacta da logo (ícone F/P) não está no app.</b> O menu recolhido durante a consulta (wireframe A5 e D1) precisa dela.</td><td>Existe em <code>falaped.com.br/logo/falaped-icon.svg</code>, mas não em <code>public/</code></td><td><span class="sev s1">1</span></td></tr><tr><td><b>M3</b></td><td><b>Fonte do app diferente da landing</b>: o app usa Geist, a landing usa Inter. A logo usa Lexend Mega, mas convertida em desenho, então não conta como fonte de texto. Duas tipografias para o mesmo produto. A skill desaconselha a Inter por ser genérica, mas a coerência de marca pesa mais: <b>decisão do gestor na Etapa 2</b>.</td><td><code>app/layout.tsx</code> (Geist) e o HTML da landing (Inter)</td><td><span class="sev s2">2</span></td></tr></table>
+<h3>Tipografia</h3>
+<table class="aud find"><tr><th>#</th><th>Achado</th><th>Evidência</th><th>Grav.</th></tr><tr><td><b>T1</b></td><td><b>Duas fontes carregadas e só uma usada</b>: a Noto Sans vira <code>--font-sans</code>, mas o <code>body</code> usa a Geist. Custo de download sem efeito.</td><td><code>app/layout.tsx:9</code>, <code>:36</code></td><td><span class="sev s1">1</span></td></tr><tr><td><b>T2</b></td><td><b>Sem escala tipográfica definida</b>: o título da página tem 5 variações (<code>text-2xl</code>, <code>text-[26px]</code>, <code>text-[28px]</code>, <code>text-xl</code>) e o <code>CardTitle</code> também tem 5. Na prática, a hierarquia depende do <code>text-sm</code> (469 usos) e do <code>text-xs</code> (249).</td><td><code>&lt;h1&gt;</code>: 32 iguais e 5 variantes. <code>CardTitle</code>: base, base semibold, lg, 2xl e xs uppercase.</td><td><span class="sev s2">2</span></td></tr><tr><td><b>T3</b></td><td><b>Rótulos em CAIXA ALTA espalhados</b> (61 usos em 12 arquivos): ficha, crescimento, encerramento, início.</td><td><code>patient-clinical-overview.tsx</code>, <code>close-case-with-earnings-dialog.tsx</code>…</td><td><span class="sev s1">1</span></td></tr><tr><td><b>T4</b></td><td><b><code>lang="en"</code></b> em um app todo em PT-BR: hifenização, leitor de tela e corretor saem errados.</td><td><code>app/layout.tsx:35</code></td><td><span class="sev s2">2</span></td></tr><tr><td><b>T5</b></td><td><b>Títulos de aba</b>: só 10 das 42 páginas definem <code>metadata</code>. As outras mostram "@falaped - IA para pediatras" em todas as abas.</td><td><code>grep metadata app/dashboard</code></td><td><span class="sev s1">1</span></td></tr></table>
+<h3>Componentes e estados</h3>
+<table class="aud find"><tr><th>#</th><th>Achado</th><th>Evidência</th><th>Grav.</th></tr><tr><td><b>S1</b></td><td><b>Botão principal sem hover</b>: o hover só vale quando o botão é um link (<code>[a]:hover</code>). Um <code>&lt;button&gt;</code> comum não reage ao mouse. Também não há resposta ao clique (<code>active:</code>).</td><td><code>components/ui/button.tsx</code>, variante <code>default</code></td><td><span class="sev s3">3</span></td></tr><tr><td><b>S2</b></td><td><b>Botão padrão baixo</b> (32 px, <code>h-8</code>), inclusive nos CTAs principais. No consultório, com pressa, um alvo pequeno gera clique errado.</td><td><code>button.tsx</code>, tamanho <code>default</code></td><td><span class="sev s2">2</span></td></tr><tr><td><b>S3</b></td><td><b>Estados vazios são uma frase solta</b>: "Nenhum caso ativo.", "Nenhum atestado gerado". Não há componente de vazio com ação ("Iniciar consulta", "Emitir atestado").</td><td>12+ textos "Nenhum…" e nenhum componente <code>Empty</code>.</td><td><span class="sev s2">2</span></td></tr><tr><td><b>S4</b></td><td><b>Cards sem sistema</b>: o card base usa anel de 10%, sem sombra e com <code>rounded-xl</code>, e cada tela soma sombra e raio por conta própria. Sombras de 6 tipos, raios de 7 tipos. Fica tudo no mesmo plano, sem diferenciar destaque, item comum e área de apoio.</td><td><code>shadow-xs</code> 22 · <code>sm</code> 26 · <code>md</code> 11 · <code>lg</code> 7. <code>rounded-lg</code> 131 · <code>md</code> 96 · <code>full</code> 98 · <code>xl</code> 55 · <code>2xl</code> 15.</td><td><span class="sev s2">2</span></td></tr><tr><td><b>S5</b></td><td><b>Selos sem papel definido</b>: <code>secondary</code> (19) e <code>outline</code> (17) são usados ao acaso para status. O médico não aprende o que cada selo significa.</td><td>Variantes de <code>&lt;Badge&gt;</code></td><td><span class="sev s2">2</span></td></tr><tr><td><b>S6</b></td><td><b>Altura calculada à mão</b> na área de atendimento e em listas (<code>h-[calc(100dvh-2rem)]</code>, <code>h-[calc(100svh-16rem)]</code>). Uma pequena mudança de layout corta o compositor (já apontado no diagnóstico do fluxo).</td><td><code>new-case-workspace.tsx</code>, listas</td><td><span class="sev s2">2</span></td></tr><tr><td><b>S7</b></td><td><b>Gradiente da marca só como faixa</b> no topo do Perfil, e não no card inteiro, como foi aprovado no admin.</td><td><code>profile-content.tsx:495</code></td><td><span class="sev s1">1</span></td></tr><tr><td><b>S8</b></td><td><b>Páginas-hub com 3 cards iguais</b> (o layout mais genérico, segundo a skill). Já saem na 2.0 com o novo menu.</td><td><code>section-hub.tsx</code></td><td><span class="sev s0">0</span> (já resolvido no fluxo)</td></tr></table>
+<h3>Iconografia e outros</h3>
+<table class="aud find"><tr><th>#</th><th>Achado</th><th>Evidência</th><th>Grav.</th></tr><tr><td><b>I1</b></td><td>Lucide em 148 arquivos, consistente. A skill sugere trocar, mas <b>manter</b>: a troca não traz ganho de uso e o shadcn depende do Lucide.</td><td></td><td><span class="sev s0">0</span></td></tr><tr><td><b>I2</b></td><td><b>Ícone em "chip" azul sem regra</b>: <code>bg-primary/10</code> em um lugar, <code>/15</code> em outro, e às vezes <code>text-primary</code> (contraste baixo).</td><td><code>profile-content.tsx:125</code>, <code>funil/[id]/page.tsx:236</code></td><td><span class="sev s1">1</span></td></tr><tr><td><b>I3</b></td><td>Restos do starter do Supabase (<code>hero.tsx</code>, <code>deploy-button.tsx</code>, <code>next-logo.tsx</code>, <code>supabase-logo.tsx</code>, <code>env-var-warning.tsx</code>), sem nenhum import: podem ser apagados.</td><td><code>components/</code></td><td><span class="sev s0">0</span></td></tr></table>
+<h2>Encaixe no nicho (06/10/2026)</h2>
+<p><b>Skills:</b> <code>ui-ux-pro-max</code> (busca no banco de tipos de produto, estilos, paletas e fontes) e <code>better-colors</code> (papel de cada cor, rampas e contraste). Contexto informado: SaaS clínico em que <b>o usuário é o pediatra</b>, uso diário no computador, telas com muita informação.</p>
+<h3>O que o banco recomenda para saúde e o que vale para nós</h3>
+<table class="aud"><tr><th>Tema</th><th>O banco diz (Healthcare / Medical Clinic)</th><th>Vale para o Falaped?</th></tr><tr><td><b>Estilo</b></td><td>Clínica: <b>Accessible &amp; Ethical + Minimalism &amp; Swiss Style</b> (indicado para "SaaS, ferramentas profissionais, dashboards"). App de paciente: Neumorphism e Claymorphism.</td><td><b>Sim para o primeiro</b>, que é exatamente a base do shadcn: manter. <b>Não</b> para Neumorphism e Claymorphism, que são para apps de paciente e de criança e têm risco alto de acessibilidade. O nosso usuário é o médico.</td></tr><tr><td><b>Cor</b></td><td>"Azul médico calmo + branco de confiança + verde calmo". <b>Todas</b> as paletas de saúde usam <b>texto escuro sobre a cor principal</b> (<code>On Primary #000</code>).</td><td><b>Sim.</b> O <code>#8AB4EB</code> é um azul médico calmo. O verde já existe para "vacina aplicada". O texto escuro sobre o azul confirma a <b>opção A</b> do botão (e o modo escuro já faz isso).</td></tr><tr><td><b>Fonte</b></td><td>Healthcare: <b>Lexend</b> (títulos) + Source Sans 3 (corpo), "desenhada para legibilidade". Alternativa de acessibilidade: Atkinson Hyperlegible. Nem Geist nem Inter aparecem para saúde.</td><td>A <b>Lexend</b> é da mesma família da Lexend Mega da logo: liga o app à marca. Ver as opções abaixo.</td></tr><tr><td><b>Neo-brutalismo</b></td><td>Indicado para "Gen Z, startups, apps estilo Notion"; não aparece para saúde.</td><td><b>Fica na logo e no marketing.</b> No app, no máximo um toque (sombra dura) na ação principal ou no card da consulta aberta.</td></tr><tr><td><b>Densidade</b></td><td>Dashboards densos: linha de tabela de 36 px e texto de 12 a 14 px. Acessível: alvo de 44 px e texto de 16 px ou mais.</td><td><b>Meio-termo:</b> listas densas (linha de 36 a 40 px, texto de 14 px) e ações principais com 40 px. É desktop com mouse, então os 44 px de toque não são obrigatórios.</td></tr></table>
+<h3>Opções de fonte para a Etapa 2</h3>
+<table class="aud"><tr><th>Opção</th><th>Títulos</th><th>Texto</th><th>A favor</th><th>Contra</th></tr><tr><td><b>1</b></td><td>Inter</td><td>Inter</td><td>Igual à landing, ótima em 13–14 px, números alinhados</td><td>A mais comum de todas (a skill de gosto desaconselha)</td></tr><tr><td><b>2</b></td><td><b>Lexend</b></td><td><b>Inter</b></td><td>Os títulos ecoam a logo (família Lexend) e o texto é igual à landing. Recomendada pelo banco para saúde.</td><td>Duas fontes para carregar</td></tr><tr><td><b>3</b></td><td>Geist</td><td>Geist</td><td>Já está no app, sem migração</td><td>Diferente da landing e sem ligação com a logo</td></tr></table>
+<p><b>Recomendação: opção 2.</b> Os títulos em Lexend dão a personalidade da marca e o texto em Inter mantém a coerência com a landing e a leitura densa.</p>
+<h3>Cor: avaliação da <code>better-colors</code></h3>
+<p>O azul da marca (L 0,76, C 0,09, matiz 255) fica no <b>meio-claro da rampa</b> (equivalente a um 300–400). O papel dele é <b>fundo de destaque, preenchimento e ícone</b>, nunca texto nem botão com texto branco. Hoje a rampa azul tem só dois degraus (0,76 e o <code>primary-ink</code>, 0,52) mais transparências (<code>/10</code>, <code>/15</code>). Faltam os degraus de fundo suave, contorno e hover.</p>
+<p><b>Rampas de status que o produto realmente mostra:</b></p>
+<ul start="1"><li><b>Sucesso:</b> vacina aplicada, pagamento.</li><li><b>Atenção:</b> vacina atrasada e as pendências da 2.0.</li><li><b>Perigo:</b> alergia, erro e excluir.</li></ul>
+<p><b>Informação</b> não precisa de rampa própria: o azul da marca cumpre esse papel.</p>
+<table class="aud"><tr><th>Gravidade</th><th>Local</th><th>Antes</th><th>Depois</th><th>Por quê</th></tr><tr><td><b>HIGH</b></td><td><code>app/globals.css</code> (<code>--primary-foreground</code>), 44 botões</td><td>Texto 0,98 sobre o azul 0,76: <b>2,02:1</b></td><td>Texto escuro (≈ 0,22) sobre o mesmo azul: 8,09:1</td><td>Texto de controle abaixo de 4,5:1</td></tr><tr><td><b>HIGH</b></td><td>62 usos de <code>text-primary</code></td><td>Azul 0,76 como texto: <b>2,14:1</b></td><td><code>text-primary-ink</code>: 5,52:1</td><td>Token usado fora do papel (cor de preenchimento como texto)</td></tr><tr><td><b>MEDIUM</b></td><td><code>components/ui/checkbox.tsx</code></td><td>Borda azul 0,76: <b>2,14:1</b></td><td>Degrau de contorno com 3:1 ou mais</td><td>Contorno de controle abaixo de 3:1</td></tr><tr><td><b>MEDIUM</b></td><td><code>globals.css</code></td><td>Azul com 2 degraus + transparências</td><td>Rampa com papéis (fundo suave, contorno, preenchimento, hover, texto)</td><td>Cada papel sem token faz cada tela inventar o seu</td></tr><tr><td><b>MEDIUM</b></td><td><code>patient-vaccine-calendar-section.tsx</code>, admin, <code>app-sidebar.tsx:93</code></td><td><code>emerald</code> (54), <code>amber</code> (45), <code>orange</code> (26) direto nos componentes</td><td>Tokens <code>success</code>, <code>warning</code> e <code>danger</code>, nos modos claro e escuro</td><td>Cor crua em componente, sem tema escuro</td></tr><tr><td><b>LOW</b></td><td><code>patient-clinical-overview.tsx:53</code> e botões Excluir</td><td>O mesmo vermelho para <b>alergia</b> e para <b>excluir</b></td><td>Excluir discreto (só texto), para a alergia ser o vermelho mais forte da tela</td><td>Uma cor, um sentido: o alerta clínico não pode competir com um botão</td></tr><tr><td><b>LOW</b></td><td><code>app-sidebar.tsx:93</code></td><td>Selo laranja a 20,6° do vermelho de erro</td><td>Usar o token de atenção</td><td>Duas cores quentes vizinhas confundem</td></tr></table>
+<p><b>Não verificado:</b> os pares desenhados sobre fundos transparentes (como <code>bg-primary/10</code> com texto) e as telas logadas. A medição foi feita a partir dos valores dos tokens, sem navegador logado.</p>
+<p><b>Veredito da <code>better-colors</code>: Block.</b> Os dois HIGH (botão e texto azul) precisam ser resolvidos na ficha de design antes de aplicar o visual novo.</p>
+<h2>O que manter (não mexer)</h2>
+<ul start="1"><li>Uma fonte só no app (qual delas é decisão da Etapa 2).</li><li>A logo nova, que já existe em <code>public/</code>.</li><li>Um azul de marca só, com tokens em oklch.</li><li>Cinzas neutros.</li><li><code>tabular-nums</code> nos números.</li><li>Skeletons e <code>loading.tsx</code>.</li><li>Telas de 404 e erro ilustradas (PR #74).</li><li><code>focus-visible</code> no <code>Button</code> (81 usos).</li><li>Toasts com desfazer.</li><li>Shadcn com <code>cva</code>.</li><li>Lucide.</li></ul>
+<h2>O que a Etapa 2 (ficha de design) precisa definir</h2>
+<p>Em ordem de impacto, seguindo a ordem de correção sugerida pela skill:</p>
+<ol start="0"><li><b>Marca</b> (M1–M3): fonte do app (recomendação: Lexend nos títulos e Inter no texto, ver "Encaixe no nicho"), logo nova no menu e a compacta no menu recolhido.</li><li><b>Cor do botão principal e do texto azul</b> (C1, C2):<ul><li>Texto escuro sobre o azul da marca (como o modo escuro já faz, e como todas as paletas de saúde do banco fazem; recomendada), <b>ou</b> um azul mais escuro para o botão, mantendo o <code>#8AB4EB</code> nos fundos, chips e gradiente.</li><li><code>text-primary</code> vira <code>text-primary-ink</code> em todo lugar.</li></ul></li><li><b>Tokens de status</b> (C3, S5): sucesso, atenção, perigo e informação, cada um com fundo, contorno e texto, em claro e escuro. Selos com papéis fixos: status, alerta clínico (alergia), pendência e canal.</li><li><b>Estados do botão</b> (S1, S2): hover, clique e desabilitado, e altura mínima de 36 a 40 px para as ações principais.</li><li><b>Escala tipográfica</b> (T2, T3): 5 ou 6 degraus nomeados (título da página, título de seção, título de card, corpo, rótulo, legenda), com sentence case no lugar da caixa alta.</li><li><b>Superfícies</b> (S4, S7): 3 níveis de card (destaque com gradiente no card inteiro, item comum, área de apoio), com uma escala de sombra e uma de raio.</li><li><b>Estado vazio padrão</b> (S3): ilustração ou ícone, uma frase e a ação.</li><li><b>Limpeza sem risco</b>, que pode entrar já na implementação:<ul><li>Unificar os blocos de token (C4).</li><li>Cinzas de uma família só (C5).</li><li>Corrigir o placeholder do editor (C6).</li><li>Apagar os tokens da Agenda (C7).</li><li>Tirar a Noto Sans (T1).</li><li><code>lang="pt-BR"</code> (T4).</li><li>Título nas abas (T5).</li></ul></li></ol>
+<h2>Pontuação</h2>
+<p>Pela escala da <code>ux-heuristics</code> aplicada ao visual: <b>6/10</b>. Há três problemas de gravidade 3: o contraste do botão principal, o texto azul claro e o botão sem hover. Os três afetam a ação principal de todas as telas. Para chegar a 10, corrigir os itens 1 a 3 da lista acima (9/10) e depois a escala de tipografia e superfícies.</p>
+</div>
+<!-- /pane-audit -->
+<div id="pane-proto" hidden><iframe src="prototipo.html" title="Protótipo" style="display:block;width:100%;height:calc(100vh - 52px);border:0;background:#fff"></iframe></div>
+<div id="pane-ficha" hidden><iframe src="ficha-design.html" title="Ficha de design" style="display:block;width:100%;height:calc(100vh - 52px);border:0;background:#fff"></iframe></div>
+<div id="pane-comp" hidden><iframe src="componentes-atuais.html" title="Componentes atuais" style="display:block;width:100%;height:calc(100vh - 52px);border:0;background:#fff"></iframe></div>
+<script>
+/* ---------- primitivos ---------- */
+const M = n => n ? `<b class="m">${n}</b>` : "";
+const G = go => go ? `data-go="${go}"` : "";
+const B = (t, o = {}) => `<span class="btn el ${o.p ? "p" : ""} ${o.g ? "g" : ""} ${o.sm ? "sm" : ""} ${o.lg ? "lg" : ""} ${o.full ? "full" : ""} ${o.dz ? "dz" : ""}" ${G(o.go)}>${M(o.m)}${t}</span>`;
+const L = (w = 60) => `<i class="ln" style="width:${w}%"></i>`;
+const IN = (ph = "", o = {}) => `<div class="fld el" style="${o.st || ""}">${M(o.m)}${o.l ? `<div class="lbl">${o.l}</div>` : ""}<div class="in ${o.ta ? "ta" : ""}">${ph}</div></div>`;
+const CH = (t, o = {}) => `<span class="chip ${o.d ? "d" : ""} ${o.o ? "o" : ""} ${o.m ? "el" : ""}" ${G(o.go)}>${M(o.m)}${t}</span>`;
+const AV = (t = "", s = 32) => `<span class="av" style="width:${s}px;height:${s}px">${t}</span>`;
+const BOX = (inner, o = {}) => `<div class="box el ${o.c || ""}" style="${o.st || ""}" ${G(o.go)}>${M(o.m)}${inner}</div>`;
+const PH = (t, h = 120, o = {}) => `<div class="ph el" style="height:${h}px;${o.st || ""}">${M(o.m)}${t}</div>`;
+const H = (t, s) => `<div><div class="h1">${t}</div>${s ? `<div class="sub-t">${s}</div>` : ""}</div>`;
+const TR = (cols, cells, o = {}) => `<div class="tr ${o.h ? "h" : ""} el" style="grid-template-columns:${cols}" ${G(o.go)}>${M(o.m)}${cells.map(c => `<div>${c}</div>`).join("")}</div>`;
+const W = (inner, o = {}) => `<div class="el ${o.c || ""}" style="${o.st || ""}" ${G(o.go)}>${M(o.m)}${inner}</div>`;
+const SEG = (items, on = 0, m) => `<span class="seg el">${M(m)}${items.map((x, i) => `<span class="${i === on ? "on" : ""}">${x}</span>`).join("")}</span>`;
+const TABS = (items, on = 0, gos = [], m) => `<div class="tabs el">${M(m)}${items.map((x, i) => `<span class="${i === on ? "on" : ""}" ${G(gos[i])}>${x}</span>`).join("")}</div>`;
+const PAT = { n: "Helena Duarte", a: "2a 3m", r: "Carla Duarte (mãe)", t: "(31) 98888-1111" };
+
+/* ---------- menu lateral ---------- */
+const NAV = [
+  ["inicio", "Início", "a12"], ["consultas", "Consultas", "b1"], ["pacientes", "Pacientes", "b4"],
+  ["documentos", "Documentos", "c1"], ["assistente", "Pergunte ao assistente", "c5"], ["financeiro", "Financeiro", "c6"],
+];
+const DOCS = ["Receitas", "Atestados", "Pedidos de exame", "Encaminhamentos", "Relatórios médicos", "Orientações"];
+function sb(o = {}) {
+  const k = o.mk || {};
+  const top = o.state === "active"
+    ? `<div class="consult el" data-go="a5">${M(k.cta)}<div class="row" style="gap:6px"><span class="dot"></span><b style="font-size:12px" class="hint">Helena D.</b><span class="sp1 hint"></span><span class="muted hint">12:47</span></div><div class="muted hint" style="font-weight:600;color:#111">Voltar à consulta →</div></div>`
+    : `<span class="btn p full el" data-go="a3">${M(k.cta)}<span class="hint">Iniciar consulta</span>${o.mini ? "+" : ""}</span>`;
+  const nav = NAV.map(([key, label, go]) => {
+    const on = o.on === key ? "on" : "";
+    const item = `<div class="nv ${on}" ${G(go)}><span class="ic"></span><span>${label}</span>${key === "documentos" && !o.mini ? `<span class="sp1"></span><span class="muted">${o.docs ? "▾" : "▸"}</span>` : ""}</div>`;
+    return key === "documentos" && o.docs ? item + `<div class="sub el">${M(k.docs)}${DOCS.map(d => `<div class="nv" data-go="c1"><span>${d}</span></div>`).join("")}</div>` : item;
+  }).join("");
+  return `<aside class="sb ${o.mini ? "mini" : ""}">
+    <div class="logo">FALAPED</div>
+    ${top}
+    <div class="nv el" data-go="d2" style="border:1.5px solid var(--w4);background:#fff;margin:4px 0 6px">${M(k.search)}<span class="ic" style="border-radius:50%"></span><span>Buscar paciente</span><span class="sp1"></span><span class="kbd hint">⌘K</span></div>
+    <div class="el">${M(k.nav)}${nav}</div>
+    <div class="grow"></div>
+    <div class="foot el">${M(k.foot)}
+      <div class="nv" data-go="c7"><span class="ic"></span><span>Modelos</span></div>
+      <div class="nv" data-go="c9"><span class="ic"></span><span>Novidades</span></div>
+      <div class="nv" data-go="d3"><span class="av" style="width:22px;height:22px;font-size:9px">AS</span><span>Dra. Ana Souza</span></div>
+    </div>
+  </aside>`;
+}
+const APP = (o, main, extra = "") => `<div class="app ${o.mini ? "mini" : ""} ${o.nosb ? "nosb" : ""}">${o.nosb ? "" : sb(o)}<div class="main ${o.flush ? "flush" : ""}">${main}</div></div>${extra}`;
+const DIM = html => `<div class="dim">${html}</div>`;
+
+/* ---------- blocos reutilizados ---------- */
+function consultHeader(k = {}) {
+  return `<div class="row" style="padding:12px 20px;border-bottom:1.5px solid var(--w3)">
+    ${W(`<div class="row">${AV("HD", 38)}<div><div class="row" style="gap:6px"><b style="font-size:16px">${PAT.n}</b>${CH(PAT.a)}${CH("⚠ Alergia: amoxicilina", { d: 1 })}</div><div class="muted">${PAT.r} · ${PAT.t} · <u data-go="b5">Ver ficha</u></div></div></div>`, { m: k.id })}
+    <span class="sp1"></span>
+    ${W(`<span class="btn"><span class="dot"></span> 12:47 &nbsp;‖</span>`, { m: k.timer })}
+    ${B("✓ Encerrar consulta", { p: 1, m: k.end, go: "a10" })}
+  </div>`;
+}
+function consultTools(k) {
+  const t = [["Receita", "a6"], ["Atestado", "a7"], ["Pedido de exame", "c2"], ["Encaminhamento", "c2"], ["Escala", "a8"], ["Ler exame", "a9"], ["Medidas", "a8"], ["Anexo", "a9"]];
+  return W(`<div class="row" style="gap:6px;padding:8px 20px;border-bottom:1.5px solid var(--w3);flex-wrap:wrap">${t.map(([x, go]) => B(x, { sm: 1, go })).join("")}</div>`, { m: k, c: "tl" });
+}
+function consultBody(k = {}) {
+  return `<div style="display:grid;grid-template-columns:1fr 240px;flex:1;min-height:0">
+    <div class="col" style="padding:16px 20px;gap:10px;overflow:auto">
+      ${BOX(`<b style="font-size:12px">Da última consulta (29/09)</b>${L(80)}<div class="muted">Lembrete: reavaliar peso · vacina de 2 anos pendente</div>`, { c: "soft", m: k.prev })}
+      <div class="bub me">${L(90)}${L(70)}</div>
+      <div class="bub el">${M(k.ai)}${L(95)}${L(80)}${L(50)}<div class="row" style="margin-top:6px">${B("Abrir receita com isso", { sm: 1, go: "a6" })}${B("Ver fontes", { sm: 1, g: 1 })}</div></div>
+      <div class="sp1"></div>
+      ${W(`<div class="row in" style="min-height:52px"><span class="sp1">Descreva a consulta ou grave o áudio…</span>${B("Anexar", { sm: 1 })}${B("Gravar", { sm: 1 })}${B("Enviar", { sm: 1, p: 1 })}</div>`, { m: k.comp })}
+    </div>
+    ${W(`<div class="col" style="height:100%;border-left:1.5px solid var(--w3);padding:14px;gap:8px"><div class="lbl">NESTA CONSULTA</div>
+      ${k.doc ? BOX(`<div class="row"><b style="font-size:12px">Receita · 2 itens</b><span class="sp1"></span>${CH("emitida")}</div>`, { c: "soft" }) : `<div class="muted">Nenhum documento ainda</div>`}
+      <div class="lbl" style="margin-top:6px">MEDIDAS</div><div class="muted">Peso 12,4 kg · hoje</div>
+      <div class="lbl" style="margin-top:6px">LEMBRETES</div><div class="muted">Vacina de 2 anos pendente</div>
+      <div class="lbl" style="margin-top:6px">RELATÓRIO</div><div class="muted">Gerado ao encerrar</div></div>`, { m: k.rail, st: "height:100%" })}
+  </div>`;
+}
+const CONSULTA = (k = {}) => APP({ mini: 1, state: "active", on: "consultas", flush: 1, mk: { cta: k.sb } },
+  `<div style="display:flex;flex-direction:column;height:100%">${consultHeader(k)}${consultTools(k.tools)}${consultBody(k)}</div>`);
+const PANEL = (w, title, body, foot) => `<div class="scrim"></div><div class="panel" style="width:${w}"><div class="ph-h"><b style="font-size:15px">${title}</b><span class="sp1"></span>${B("✕", { sm: 1, go: "a5" })}</div><div class="ph-b">${body}</div><div class="ph-f">${foot}</div></div>`;
+
+function fichaHead(tab, k = {}) {
+  const gos = ["b5", "b6", "b7", "b8", "b9", "b10"];
+  return `<div style="padding:16px 24px 0;border-bottom:1.5px solid var(--w3);background:#fff">
+    <div class="muted" style="margin-bottom:8px"><u data-go="b4">Pacientes</u> › ${PAT.n}</div>
+    <div class="row" style="align-items:flex-start">
+      ${W(`<div class="row">${AV("HD", 54)}<div><div class="row" style="gap:6px;flex-wrap:wrap"><b style="font-size:19px">${PAT.n}</b>${CH(PAT.a + " · nasc. 10/06/2024")}${CH("⚠ Alergia: amoxicilina", { d: 1 })}</div><div class="muted">${PAT.r} · ${PAT.t} · IG 38 sem</div></div></div>`, { m: k.id })}
+      <span class="sp1"></span>
+      ${B("Editar", { m: k.edit, go: "b11" })}${B("⋯", {})}${B("Iniciar consulta", { p: 1, m: k.start, go: "a5" })}
+    </div>
+    <div style="margin-top:12px">${TABS(["Resumo", "Consultas (5)", "Crescimento", "Vacinas · 1 atrasada", "Documentos", "Anexos e escalas"], tab, gos, k.tabs)}</div>
+  </div>`;
+}
+const FICHA = (tab, k, body) => APP({ on: "pacientes", flush: 1, mk: { cta: k.sb } },
+  `<div style="display:flex;flex-direction:column;height:100%">${fichaHead(tab, k)}<div class="col" style="padding:18px 24px;overflow:auto;flex:1;gap:14px">${body}</div></div>`);
+
+const consultRow = (o) => TR("38px 1.6fr 150px 110px 80px 30px", [
+  AV(o.i), `<div><b>${o.n}</b> <span class="muted">· ${o.a}</span><div class="muted">${o.why}</div></div>`,
+  `<div class="row" style="gap:4px;flex-wrap:wrap">${o.docs.map(d => CH(d)).join("")}</div>`, `<span class="muted">${o.t}</span>`, o.v, `<span>⋯</span>`], { go: o.go || "b2", m: o.m });
+
+/* ---------- telas ---------- */
+const S = [];
+const add = s => S.push(s);
+
+/* MAPA */
+add({ id: "mapa", g: "Visão geral", t: "Mapa do fluxo", html: () => `<div class="map" id="mapgrid"></div>`,
+  obj: "Todas as telas da 2.0 em ordem. O grupo A é o caminho da conta nova até a rotina; os outros grupos são as telas que o médico acessa pelo menu. Clique em qualquer tela.",
+  de: "—", para: "Qualquer tela",
+  n: [], extra: "Fora deste arquivo: Admin (redesign próprio, iniciado em 01/10), Falaped Books (produto separado, sem link no app) e Agenda (removida)." });
+
+/* A · FLUXO PRINCIPAL */
+add({ id: "a1", g: "A · Fluxo principal", t: "Criar conta",
+  html: () => APP({ nosb: 1 }, `<div style="display:grid;place-items:center;height:100%"><div class="box strong col" style="width:440px;padding:24px">
+    <b style="letter-spacing:.06em">FALAPED</b>${H("Crie sua conta")}
+    ${W(`<div class="muted" style="font-size:13px">15 dias grátis. Sem cartão.</div>`, { m: 1 })}
+    ${W(`<div class="g2">${IN("Ana Clara", { l: "Nome" })}${IN("Souza", { l: "Sobrenome" })}</div>`, { m: 2 })}
+    ${W(`<div class="g2">${IN("12345", { l: "CRM" })}${IN("MG ▾", { l: "UF" })}</div>${IN("(31) 9…", { l: "WhatsApp" })}`, { m: 3 })}
+    ${IN("ana@clinica.com", { l: "E-mail" })}
+    ${W(`${IN("••••••••", { l: "Senha" })}<div class="muted">Mínimo 8 caracteres</div>`, { m: 4 })}
+    ${B("Criar conta e começar", { p: 1, full: 1, lg: 1, m: 5, go: "a2" })}
+    <div class="muted" style="text-align:center">Já tem conta? ${B("Entrar", { g: 1, sm: 1, m: 6, go: "e1" })}</div>
+  </div></div>`),
+  obj: "Transformar o visitante em médico com conta em uma tela, já com o que os documentos precisam.",
+  de: "Landing, anúncio, e-mail de convite", para: "A2 Início (primeiro acesso)",
+  n: [
+    ["Promessa curta", "Diz o essencial (grátis, sem cartão) para reduzir a hesitação. Nada de texto de boas-vindas.", "Krug · metade das palavras"],
+    ["Nome e sobrenome separados", "Hoje os dois viram um nome só, que o banco corta no primeiro espaço: \"Ana Clara\" vira first_name \"Ana\" e o resto vai para o sobrenome, e esse nome errado sai na receita.", "Nielsen 5 · prevenção de erro"],
+    ["CRM, UF e WhatsApp", "O CRM sai em toda receita e atestado; hoje 4 de 8 perfis não têm. O WhatsApp é o canal do assistente.", "Nielsen 5 · prevenção de erro"],
+    ["Regra da senha visível antes do erro", "Evita o ciclo de enviar, errar e corrigir.", "Nielsen 9 · erros"],
+    ["CTA único que já entra no app", "A confirmação de e-mail está desligada; a tela \"verifique seu e-mail\" não aparece, e o evento de cadastro precisa disparar aqui.", "Nielsen 1 · status visível"],
+    ["Saída para quem já tem conta", "Quem caiu aqui por engano volta ao login em um clique.", "Nielsen 3 · controle e saída"],
+  ] });
+
+add({ id: "a2", g: "A · Fluxo principal", t: "Início: primeiro acesso",
+  html: () => APP({ on: "inicio", mk: { cta: 5 } }, `
+    ${H("Olá, Dra. Ana")}
+    ${BOX(`<div class="row"><div class="col" style="gap:2px"><b style="font-size:17px">Vamos para a primeira consulta?</b><div class="muted">Leva uns 2 minutos. Você pode cadastrar o paciente na hora.</div></div><span class="sp1"></span>${B("Iniciar consulta", { p: 1, lg: 1, m: 1, go: "a3" })}</div>`, { c: "strong", st: "padding:20px" })}
+    ${W(`<div class="col" style="gap:8px">
+      ${BOX(`<div class="row"><span class="chk on"></span><s>Conta criada</s></div>`, { c: "soft" })}
+      ${BOX(`<div class="row"><span class="chk"></span><b>Atender o primeiro paciente</b><span class="muted">busque ou cadastre na hora</span></div>`, { c: "soft" })}
+      ${BOX(`<div class="row"><span class="chk"></span><b>Emitir uma receita ou atestado</b><span class="muted">direto da consulta</span></div>`, { c: "soft" })}
+      ${BOX(`<div class="row"><span class="chk"></span><b>Colocar sua logo nos documentos</b><span class="sp1"></span>${B("Ir ao Perfil", { sm: 1, go: "d4" })}</div>`, { c: "soft", m: 3 })}
+    </div>`, { m: 2 })}
+    ${W(`<div class="g3" style="opacity:.6">${["Pacientes 0", "Consultas este mês 0", "Documentos 0"].map(x => BOX(`<div class="muted">${x}</div>`, { c: "soft" })).join("")}</div>`, { m: 4 })}
+  `),
+  obj: "Levar o médico novo à primeira consulta, sem tutorial, mostrando o caminho.",
+  de: "A1 Criar conta", para: "A3 Iniciar consulta · D4 Perfil",
+  n: [
+    ["Um CTA principal: Iniciar consulta", "No primeiro acesso só uma coisa importa: começar a atender. Hoje são contadores zerados e um \"Criar novo caso\" pequeno.", "Nielsen 8 · um CTA por tela"],
+    ["Primeiros passos", "Mostra o caminho e o progresso sem um tour. Some quando tudo estiver feito.", "Nielsen 10 · ajuda no contexto"],
+    ["Logo nos documentos aponta ao Perfil", "O médico descobre a personalização sem procurar no menu do usuário.", "Nielsen 6 · reconhecer, não lembrar"],
+    ["Números em segundo plano", "Zerados não informam nada; ganham destaque só na rotina (A12).", "Nielsen 8 · minimalismo"],
+    ["Iniciar consulta também no menu", "A mesma ação no mesmo lugar em todas as telas.", "Nielsen 4 · consistência"],
+  ] });
+
+add({ id: "a3", g: "A · Fluxo principal", t: "Iniciar consulta: buscar paciente",
+  html: () => DIM(S.find(s => s.id === "a2").html()) + `<div class="scrim"></div><div class="modal" style="width:600px">
+    <div style="padding:16px 18px;border-bottom:1.5px solid var(--w3)" class="col"><div class="row"><b style="font-size:16px">Iniciar consulta</b><span class="sp1"></span><span class="kbd">Esc</span></div>
+      ${W(`<div class="in" style="border:2px solid var(--ink);color:#111">⌕ Nome, responsável ou telefone|</div>`, { m: 1 })}</div>
+    <div class="col" style="padding:10px 12px;gap:4px">
+      ${W(`<div class="lbl" style="padding:0 6px">RECENTES</div>
+      ${TR("34px 1fr auto", [AV("MS"), `<div><b>Miguel Santos</b> <span class="muted">· 4a 1m · Rafael Santos</span><div class="muted">última consulta hoje</div></div>`, `<span class="kbd">↵ Iniciar</span>`], { go: "a5", m: 3 })}
+      ${TR("34px 1fr auto", [AV("LP"), `<div><b>Lara Pereira</b> <span class="muted">· 8m · Juliana Pereira</span><div class="muted">retorno marcado para hoje</div></div>`, ""], { go: "a5" })}
+      ${TR("34px 1fr auto", [AV("HD"), `<div><b>Helena Duarte</b> <span class="muted">· 2a 3m</span><div class="muted">consulta em andamento há 12 min</div></div>`, B("Voltar à consulta", { sm: 1 })], { go: "a5", m: 5 })}`, { m: 2 })}
+    </div>
+    <div style="padding:12px 18px;border-top:1.5px solid var(--w3)">${B("+ Cadastrar novo paciente", { full: 1, dz: 1, m: 4, go: "a4" })}</div>
+  </div>`,
+  obj: "Encontrar a criança (ou decidir cadastrá-la) sem sair de onde o médico está.",
+  de: "Botão Iniciar consulta (menu, Início, ficha, A11)", para: "A5 Consulta · A4 Cadastro rápido",
+  n: [
+    ["Busca com foco, por nome, responsável ou telefone", "O médico começa a digitar assim que abre. A mãe liga e o telefone identifica. Hoje a busca não aceita telefone.", "Nielsen 7 · eficiência"],
+    ["Recentes antes de digitar", "Retornos e pacientes do dia são os mais prováveis; reconhecer é mais rápido que lembrar o nome.", "Nielsen 6 · reconhecer, não lembrar"],
+    ["Enter inicia a consulta da linha marcada", "Um gesto para o caso mais comum.", "Nielsen 7 · atalhos"],
+    ["Cadastrar novo no mesmo painel", "Hoje cadastrar leva para a ficha e o médico se perde. Aqui o cadastro continua dentro do fluxo.", "Krug · cliques sem dúvida"],
+    ["Consulta já aberta aparece marcada", "Em vez do diálogo \"encerrar o caso ativo?\", o médico vê a consulta aberta e volta para ela.", "Nielsen 5 · prevenção de erro"],
+  ] });
+
+add({ id: "a4", g: "A · Fluxo principal", t: "Iniciar consulta: cadastro rápido",
+  html: () => DIM(S.find(s => s.id === "a2").html()) + `<div class="scrim"></div><div class="modal" style="width:600px">
+    <div style="padding:16px 18px;border-bottom:1.5px solid var(--w3)" class="col"><b style="font-size:16px">Iniciar consulta</b><div class="in" style="color:#111">⌕ Helena</div><div class="muted">Nenhum paciente com "Helena"</div></div>
+    <div class="col" style="padding:16px 18px">
+      <b>Cadastrar "Helena" e iniciar</b>
+      <div class="g2">${IN("Helena Duarte", { l: "Nome da criança", m: 1 })}${IN("10/06/2024 ▦", { l: "Data de nascimento", m: 2 })}</div>
+      ${W(`<div class="g2">${IN("Carla Duarte", { l: "Responsável" })}${IN("(31) 98888-1111", { l: "Telefone" })}</div>`, { m: 3 })}
+      ${B("▸ Mais dados (sexo, idade gestacional, alergias)", { g: 1, m: 4 })}
+    </div>
+    <div class="row" style="padding:12px 18px;border-top:1.5px solid var(--w3)">${B("← Voltar à busca", { go: "a3" })}<span class="sp1"></span>${B("Cadastrar e iniciar consulta", { p: 1, m: 5, go: "a5" })}</div>
+  </div>`,
+  obj: "Cadastrar só o essencial e já abrir a consulta. O resto da ficha é completado depois.",
+  de: "A3 sem resultado", para: "A5 Consulta",
+  n: [
+    ["Nome preenchido com o que foi digitado", "O médico não redigita o que acabou de escrever na busca.", "Nielsen 6 · reconhecer, não lembrar"],
+    ["Data de nascimento com seletor", "Idade, doses, escalas e curvas dependem dela; um formato errado contamina tudo.", "Nielsen 5 · prevenção de erro"],
+    ["Responsável e telefone", "São os únicos obrigatórios além do nome (o mesmo que o cadastro exige hoje).", "Krug · metade das palavras"],
+    ["Mais dados recolhido", "Sexo, IG e alergia são úteis, mas não podem travar o atendimento. A ficha avisa o que falta (B5).", "Nielsen 8 · divulgação progressiva"],
+    ["Um botão que cadastra e abre a consulta", "Junta duas ações que hoje estão separadas por 4 telas.", "Nielsen 7 · eficiência"],
+  ] });
+
+add({ id: "a5", g: "A · Fluxo principal", t: "Consulta",
+  html: () => CONSULTA({ id: 1, timer: 2, end: 3, tools: 4, prev: 5, ai: 6, comp: 7, rail: 8, sb: 9 }),
+  obj: "Conduzir a conversa com o assistente e fazer tudo o que a consulta pede (documentos, escalas, exames, medidas) sem sair desta tela.",
+  de: "A3/A4, ficha (Iniciar consulta), cartão do menu, Início", para: "Painéis A6–A9 · A10 Encerrar",
+  n: [
+    ["Identificação fixa com idade e alergia", "Toda dose depende da idade e do peso; a alergia nunca pode sair da vista.", "Nielsen 5 · prevenção de erro"],
+    ["Cronômetro dentro do cabeçalho", "Hoje ele flutua no canto inferior direito, em cima de Enviar e Gravar.", "Nielsen 1 · status sem atrapalhar"],
+    ["Encerrar consulta fixo, como ação principal", "Hoje só dá para encerrar pelo chat ou saindo para um card cinza em outra tela.", "Nielsen 3 · saída clara"],
+    ["Barra de ferramentas da consulta", "Documentos e ferramentas abrem num painel lateral e o chat continua visível. Hoje a receita está 4 níveis abaixo, em outra página.", "Nielsen 7 · eficiência"],
+    ["Resumo da última consulta como cartão", "Hoje é um modal que bloqueia a tela ao abrir. Como cartão, o médico lê quando quiser.", "Nielsen 3 · controle do usuário"],
+    ["Sugestão da IA vira ação", "Da conduta ao documento sem redigitar medicamento e dose.", "Nielsen 7 · eficiência"],
+    ["Compositor livre no rodapé", "É o elemento mais usado da tela; nada pode flutuar sobre ele.", "Nielsen 8 · o que importa agora"],
+    ["Coluna \"Nesta consulta\"", "Mostra o que já foi emitido e registrado. Evita emitir em dobro e alimenta o encerramento.", "Nielsen 1 · status visível"],
+    ["Menu recolhido com a consulta marcada", "Mais largura para o chat sem perder a navegação nem a noção de que há uma consulta aberta.", "Krug · teste do porta-malas"],
+  ] });
+
+add({ id: "a6", g: "A · Fluxo principal", t: "Consulta + Receita (painel)",
+  html: () => DIM(CONSULTA()) + PANEL("46%", "Nova receita · Helena", `
+    ${W(`<div class="row" style="gap:6px;flex-wrap:wrap">${CH("Peso 12,4 kg (da consulta)")}${CH("Alergia checada: amoxicilina", { d: 1 })}</div>`, { m: 1 })}
+    ${IN("Usar modelo ▾ (IVAS, febre, otite…)", { m: 2 })}
+    ${W(`<div class="col" style="gap:8px">${BOX(`<b>Azitromicina 200 mg/5 mL</b><div class="muted">3,1 mL · via oral · 1x ao dia · 3 dias</div>`, { c: "soft" })}${BOX(`<b>Dipirona 500 mg/mL</b><div class="muted">6 gotas · se febre · até 6/6 h</div>`, { c: "soft" })}${B("+ Adicionar medicamento", { dz: 1 })}</div>`, { m: 3 })}
+    ${B("▸ Orientações e sinais de alerta", { g: 1, m: 4 })}`,
+    `${B("Ver prévia", { g: 1 })}${B("Salvar como modelo", { g: 1, m: 5 })}<span class="sp1"></span>${B("Emitir e imprimir", { p: 1, m: 6, go: "a5" })}`),
+  obj: "Emitir a receita durante a consulta, aproveitando o que a consulta já sabe. O mesmo painel serve ao receituário em branco e aos outros documentos.",
+  de: "A5 (botão Receita ou sugestão da IA)", para: "A5 com a receita em \"Nesta consulta\"",
+  n: [
+    ["Peso e alergia vindos da consulta", "Posologia por peso sem redigitar, e a alergia checada antes de emitir.", "Nielsen 5 · prevenção de erro"],
+    ["Modelo no topo", "Receitas que se repetem começam prontas.", "Nielsen 7 · eficiência"],
+    ["Um medicamento por cartão", "Facilita revisar, editar e remover item a item.", "Nielsen 6 · reconhecer"],
+    ["Orientações recolhidas", "São secundárias; abrem quando precisa.", "Nielsen 8 · minimalismo"],
+    ["Salvar como modelo, secundário", "Recurso de quem já usa muito; não disputa com a emissão.", "Nielsen 7 · novato e experiente"],
+    ["Emitir e imprimir fecha o painel", "O documento aparece em \"Nesta consulta\". Hoje são 3 passos em outra página e uma volta pelo detalhe do caso.", "Nielsen 1 · status visível"],
+  ] });
+
+add({ id: "a7", g: "A · Fluxo principal", t: "Consulta + Atestado (painel)",
+  html: () => DIM(CONSULTA()) + PANEL("46%", "Novo atestado · Helena", `
+    ${SEG(["Comparecimento", "Afastamento", "Acompanhante", "Aptidão física"], 0, 1)}
+    ${W(`<div class="g2">${IN("Hoje, 06/10", { l: "Data" })}${IN("14:10 – 14:40 (desta consulta)", { l: "Horário" })}</div>`, { m: 2 })}
+    ${IN("", { l: "Observações <small>(opcional)</small>", ta: 1 })}
+    ${W(`<div class="a4" style="width:46%;margin:0 auto">${L(40)}${L(90)}${L(85)}${L(60)}</div>`, { m: 3 })}`,
+    `<span class="sp1"></span>${B("Emitir e imprimir", { p: 1, m: 4, go: "a5" })}`),
+  obj: "Atestado em poucos segundos, com os dados da consulta já preenchidos.",
+  de: "A5 (botão Atestado)", para: "A5",
+  n: [
+    ["Tipo como escolha visível", "Quatro opções lado a lado, e cada uma define os campos. Nada escondido em lista.", "Nielsen 6 · reconhecer"],
+    ["Data e horário da consulta preenchidos", "O atestado de comparecimento sai em um clique.", "Nielsen 7 · padrões sensatos"],
+    ["Prévia ao lado", "O médico vê o que vai imprimir sem uma etapa a mais.", "Nielsen 1 · status visível"],
+    ["Mesmo botão e comportamento da receita", "Todo documento da consulta termina igual.", "Nielsen 4 · consistência"],
+  ] });
+
+add({ id: "a8", g: "A · Fluxo principal", t: "Consulta + Escala (painel)",
+  html: () => DIM(CONSULTA()) + PANEL("46%", "Aplicar escala · Helena", `
+    ${W(`${IN("M-CHAT-R/F ▾", { l: "Escala" })}<div class="muted">Mostrando só as escalas para 2a 3m</div>`, { m: 1 })}
+    ${W(`<div class="col" style="gap:8px">${[1, 2, 3].map(i => BOX(`<b style="font-size:13px">Item ${i}</b>${L(80)}<div class="row" style="margin-top:4px"><span class="rad"></span> Sim <span class="rad"></span> Não</div>`, { c: "soft" })).join("")}</div>`, { m: 2 })}
+    ${BOX(`<div class="row"><b>Escore 2</b>${CH("Baixo risco")}</div>`, { c: "strong", m: 3 })}`,
+    `<span class="muted">Medidas (peso, altura, PC, PA) usam este mesmo painel</span><span class="sp1"></span>${B("Registrar na consulta", { p: 1, m: 4, go: "a5" })}`),
+  obj: "Aplicar uma escala (ou registrar medidas) durante a conversa com a família.",
+  de: "A5 (botão Escala ou Medidas)", para: "A5",
+  n: [
+    ["Lista filtrada pela idade", "Só aparecem as escalas válidas para a criança; menos escolha e nenhum erro de faixa.", "Nielsen 5 · prevenção de erro"],
+    ["Itens com opções visíveis", "Responder clicando, sem abrir menus, enquanto conversa com a mãe.", "Nielsen 7 · eficiência"],
+    ["Escore e interpretação ao vivo", "O resultado aparece conforme as respostas.", "Nielsen 1 · status visível"],
+    ["Registrar na consulta", "Vai para \"Nesta consulta\", para o relatório e para a ficha.", "Nielsen 1 · status visível"],
+  ] });
+
+add({ id: "a9", g: "A · Fluxo principal", t: "Consulta + Leitura de exame (painel)",
+  html: () => DIM(CONSULTA()) + PANEL("52%", "Ler exame · Helena", `
+    ${PH("Arraste fotos ou o PDF do exame<br>ou toque para escolher", 90, { m: 1 })}
+    ${IN("Hemograma · 02/10 (sugerido pela leitura)", { l: "Nome do exame", m: 2 })}
+    ${W(`<div class="tbl">${TR("1.4fr 80px 1fr 70px", ["Exame", "Valor", "Referência", "Status"], { h: 1 })}${TR("1.4fr 80px 1fr 70px", ["Hemoglobina", "11,8", "11,5 – 13,5", "normal"])}${TR("1.4fr 80px 1fr 70px", ["<b>Leucócitos</b>", "<b>16.200</b>", "5.500 – 15.500", "<b>↑ alto</b>"])}${TR("1.4fr 80px 1fr 70px", ["Plaquetas", "310 mil", "150 – 450 mil", "normal"])}</div>`, { m: 3 })}`,
+    `${B("Inserir no chat", { m: 4, go: "a5" })}<span class="sp1"></span>${B("Salvar nos anexos", { p: 1, m: 5, go: "a5" })}`),
+  obj: "A IA lê o exame e o médico confere antes de usar. Anexos simples usam o mesmo painel.",
+  de: "A5 (Ler exame ou Anexo)", para: "A5",
+  n: [
+    ["Envio direto de foto ou PDF", "O exame chega pelo celular da mãe; arrastar ou escolher, sem formulário antes.", "Nielsen 7 · eficiência"],
+    ["Nome sugerido pela leitura", "Hoje o nome é digitado antes de ler. Aqui vem pronto e o médico só corrige.", "Nielsen 6 · reconhecer"],
+    ["Tabela revisável com fora da faixa em destaque", "O médico confere a leitura da IA antes de usar; um erro da IA não passa sem ser visto.", "Nielsen 5 · prevenção de erro"],
+    ["Inserir no chat", "Os valores entram no raciocínio da consulta e no relatório.", "Nielsen 7 · eficiência"],
+    ["Salvar nos anexos", "Fica guardado na ficha da criança.", "Nielsen 1 · status visível"],
+  ] });
+
+add({ id: "a10", g: "A · Fluxo principal", t: "Encerrar consulta",
+  html: () => DIM(CONSULTA({ doc: 1 })) + PANEL("56%", "Encerrar consulta de Helena", `
+    ${BOX(`<div class="row"><b>Relatório do atendimento</b><span class="sp1"></span>${B("Melhorar com IA", { sm: 1 })}${B("Editar", { sm: 1 })}</div>${L(95)}${L(88)}${L(92)}${L(60)}`, { m: 1 })}
+    ${BOX(`<b>Documentos emitidos</b><div class="row" style="margin-top:6px"><span class="chk on"></span> Receita · 2 itens<span class="sp1"></span><span class="muted">Precisa de atestado?</span>${B("Emitir", { sm: 1, go: "a7" })}</div>`, { m: 2 })}
+    ${BOX(`<b>Cobrança</b><div class="g2" style="margin-top:6px">${IN("R$ 350,00 (do seu Perfil)", { l: "Valor da consulta" })}${IN("Hoje", { l: "Recebido em" })}</div><div class="row" style="margin-top:8px;gap:8px"><span class="chk"></span> Nebulização · R$ 60 <span class="chk"></span> Teste do pezinho · R$ 90</div><div class="row" style="margin-top:8px">${SEG(["Pix", "Dinheiro", "Cartão", "Convênio"])}<span class="sp1"></span><span class="chk"></span> Sem cobrança (retorno/cortesia)</div>`, { m: 3 })}
+    ${IN("Reavaliar ouvido em 10 dias", { l: "Lembrete para a próxima consulta", m: 4 })}`,
+    `${B("Voltar à consulta", { m: 5, go: "a5" })}<span class="sp1"></span>${B("Encerrar e salvar", { p: 1, m: 6, go: "a11" })}`),
+  obj: "Fechar a consulta conferindo tudo de uma vez: relatório, documentos, cobrança e o lembrete para a próxima.",
+  de: "A5 (Encerrar consulta)", para: "A11 Encerrada · A5 (voltar)",
+  n: [
+    ["Relatório revisável aqui", "Fechar sem revisar gera retrabalho. Hoje o relatório fica num card, dentro de um painel, em outra tela.", "Nielsen 5 · prevenção de erro"],
+    ["Conferência dos documentos", "Evita a família sair sem o atestado.", "Nielsen 5 · prevenção de erro"],
+    ["Cobrança no mesmo lugar", "O valor vem do Perfil e \"Sem cobrança\" é explícito. Hoje é um segundo diálogo, depois de encerrar e sem botão de cancelar.", "Nielsen 3 · controle e saída"],
+    ["Lembrete para a próxima", "Alimenta o cartão \"Da última consulta\" que abre a próxima (A5, item 5).", "Nielsen 6 · reconhecer"],
+    ["\"Voltar à consulta\" em vez de \"Cancelar\"", "Diz exatamente o que acontece. Hoje o cancelar se chama \"Salvar e continuar\".", "Krug · não me faça pensar"],
+    ["Um botão que encerra e salva tudo", "Uma confirmação só, no fim, com tudo à vista.", "Nielsen 8 · um CTA"],
+  ] });
+
+add({ id: "a11", g: "A · Fluxo principal", t: "Consulta encerrada",
+  html: () => APP({ on: "consultas" }, `<div style="display:grid;place-items:center;height:100%"><div class="box strong col" style="width:560px;padding:24px">
+    ${W(`<b style="font-size:18px">✓ Consulta de Helena encerrada</b><div class="muted">27 min · R$ 350 lançado · relatório pronto · lembrete em 10 dias</div>`, { m: 1 })}
+    ${W(`<div class="col" style="gap:6px">${BOX(`<div class="row">Receita · azitromicina, dipirona<span class="sp1"></span>${B("Baixar", { sm: 1 })}</div>`, { c: "soft" })}${BOX(`<div class="row">Relatório do atendimento<span class="sp1"></span>${B("Baixar", { sm: 1 })}</div>`, { c: "soft" })}</div>`, { m: 2 })}
+    <div class="row" style="flex-wrap:wrap">${B("Atender próximo paciente", { p: 1, lg: 1, m: 3, go: "a3" })}${B("Enviar documentos ao responsável", { m: 4 })}</div>
+    <div class="row muted">${B("Reabrir consulta", { g: 1, sm: 1, m: 5, go: "a5" })} · ${B("Ir ao início", { g: 1, sm: 1, go: "a12" })}</div>
+  </div></div>`),
+  obj: "Confirmar o que foi salvo e emendar no próximo atendimento.",
+  de: "A10", para: "A3 (próximo paciente) · A12 · A5 (reabrir)",
+  n: [
+    ["Resumo do que foi salvo", "Confirmação clara de duração, valor, relatório e lembrete. Hoje a tela só recarrega.", "Nielsen 1 · status visível"],
+    ["Documentos com download", "Reimprimir na hora, se a impressora falhar.", "Nielsen 7 · eficiência"],
+    ["Atender próximo paciente", "A rotina do consultório é em série: a próxima consulta começa daqui.", "Krug · cada clique dá confiança"],
+    ["Enviar documentos ao responsável", "Funcionalidade nova (WhatsApp ou e-mail), para tirar o papel da mão.", "Nielsen 7 · eficiência"],
+    ["Reabrir em vez de \"tem certeza?\"", "Desfazer é melhor do que pedir confirmação antes.", "Nielsen 3 · desfazer"],
+  ] });
+
+add({ id: "a12", g: "A · Fluxo principal", t: "Início: dia a dia",
+  html: () => APP({ on: "inicio", state: "active" }, `
+    ${H("Bom dia, Dra. Ana", "Segunda-feira, 06/10")}
+    ${W(`<div class="consult row" data-go="a5" style="padding:12px 14px"><span class="dot"></span>${AV("HD")}<div><b>Helena Duarte</b> <span class="muted">· em andamento há 12 min</span></div><span class="sp1"></span>${B("Voltar à consulta", { p: 1, sm: 1 })}</div>`, { m: 1 })}
+    <div style="display:grid;grid-template-columns:1.2fr 1fr;gap:14px">
+      ${BOX(`<b>Atendidos hoje</b>${["Miguel Santos · puericultura · 09:10", "Lara Pereira · bronquiolite · 08:20"].map(x => `<div class="row" style="padding:6px 0;border-bottom:1px solid var(--w2)">${x}<span class="sp1"></span>${B("Abrir", { sm: 1, go: "b2" })}</div>`).join("")}`, { m: 2 })}
+      ${BOX(`<b>Precisam de atenção</b>${[["Lara Pereira · retorno em 2 dias", "Ver"], ["Gabriel Alves · vacina atrasada", "Abrir ficha"], ["3 consultas sem valor lançado", "Lançar"], ["Pedido do WhatsApp sem paciente", "Associar"]].map(([a, b]) => `<div class="row" style="padding:6px 0;border-bottom:1px solid var(--w2)">${a}<span class="sp1"></span>${B(b, { sm: 1, go: b === "Associar" ? "b3" : b === "Lançar" ? "c6" : "b5" })}</div>`).join("")}`, { m: 3 })}
+    </div>
+    ${W(`<div class="g3">${["Consultas hoje · 3", "Esta semana · 14", "Recebido no mês · R$ 9.800"].map(x => BOX(`<div class="muted">${x}</div>`, { c: "soft", go: "c6" })).join("")}</div>`, { m: 4 })}`),
+  obj: "Mostrar o dia: o que está em andamento, o que já foi feito e o que pede atenção.",
+  de: "Menu Início, A11", para: "A5, B2, B3, B5, C6",
+  n: [
+    ["Consulta em andamento no topo", "Retomar é a ação mais provável. Hoje é \"Abrir caso\" → detalhe → \"Retomar\".", "Nielsen 6 · reconhecer"],
+    ["Atendidos hoje", "O médico revisa o dia e reimprime sem procurar.", "Nielsen 6 · reconhecer"],
+    ["Pendências com ação pronta", "Mesmo padrão aprovado no admin: lista por urgência, com o motivo e o botão da ação.", "Nielsen 1 · status visível"],
+    ["Números do dia e do mês", "Secundários, com atalho para o Financeiro.", "Nielsen 8 · minimalismo"],
+  ] });
+
+/* B · ROTINA */
+add({ id: "b1", g: "B · Rotina", t: "Consultas",
+  html: () => APP({ on: "consultas", state: "active" }, `
+    <div class="row">${H("Consultas", "32 este mês · 4 com pendência")}<span class="sp1"></span>${B("Iniciar consulta", { p: 1, go: "a3" })}</div>
+    ${W(`<div class="consult row" data-go="a5" style="padding:10px 14px"><span class="dot"></span>${AV("HD")}<div><b>Helena Duarte</b> <span class="muted">· 2a 3m · em andamento há 12 min · febre e otalgia</span></div><span class="sp1"></span>${B("Voltar à consulta", { sm: 1, p: 1 })}</div>`, { m: 1 })}
+    <div class="row">${TABS(["Todas", "Hoje (3)", "Esta semana", "Com pendência (4)"], 0, [], 2)}<span class="sp1"></span>${IN("⌕ Paciente, responsável ou diagnóstico", { m: 3, st: "width:300px" })}</div>
+    <div class="tbl el">${M(4)}
+      <div class="tr gp">HOJE</div>
+      ${consultRow({ i: "MS", n: "Miguel Santos", a: "4a 1m", why: "Puericultura · sem alterações", docs: ["Atestado"], t: "09:10 · 22 min", v: "R$ 350", m: 5 })}
+      ${consultRow({ i: "LP", n: "Lara Pereira", a: "8m", why: "Bronquiolite leve · retorno em 48 h", docs: ["Receita"], t: "08:20 · 31 min", v: CH("Sem valor", { o: 1, m: 6 }) })}
+      <div class="tr gp">ONTEM</div>
+      ${consultRow({ i: "?", n: "Pedido pelo WhatsApp", a: "sem paciente", why: "Mãe pergunta a dose de paracetamol", docs: ["WhatsApp"], t: "14:02", v: CH("Associar", { o: 1, m: 8 }), go: "b3" })}
+      ${consultRow({ i: "TC", n: "Theo Costa", a: "1a 6m", why: "Diarreia aguda · hidratação oral", docs: ["Receita", "Orientação"], t: "17:45 · 18 min", v: "Cortesia" })}
+    </div>
+    <div class="row muted">${W(`<span class="btn sm">⋯ Ver relatório · Baixar documentos · Abrir ficha · Reabrir</span>`, { m: 7 })}<span>o menu ⋯ de cada linha</span></div>`),
+  obj: "Encontrar uma consulta pelo que aconteceu nela, e ver o que ficou pendente.",
+  de: "Menu Consultas", para: "B2 Registro · B3 WhatsApp · A5",
+  n: [
+    ["Consulta em andamento fixada", "Leva direto ao chat. Hoje \"Abrir caso\" leva ao detalhe.", "Nielsen 6 · reconhecer"],
+    ["Filtros Hoje, Semana, Com pendência", "Hoje não existe filtro, e a lista é uma tabela só.", "Nielsen 7 · eficiência"],
+    ["Busca também por diagnóstico", "O médico lembra do \"caso da otite\", não da data.", "Nielsen 6 · reconhecer"],
+    ["Agrupado por dia", "É como o médico lembra da agenda.", "Nielsen 2 · mundo real"],
+    ["Linha com motivo, documentos, duração e valor", "Hoje as colunas não dizem do que foi a consulta.", "Nielsen 6 · reconhecer"],
+    ["Pendência visível na linha", "Consulta sem valor ou sem paciente salta aos olhos.", "Nielsen 1 · status visível"],
+    ["Reabrir no menu ⋯", "Hoje \"Reabrir caso\" é o único botão das encerradas e ainda encerra a consulta ativa.", "Nielsen 5 · prevenção de erro"],
+    ["WhatsApp com selo e ação \"Associar\"", "Só o canal diferente ganha marca. \"Painel\" e \"Outro canal\" saem.", "Nielsen 2 · linguagem do médico"],
+  ] });
+
+add({ id: "b2", g: "B · Rotina", t: "Registro de consulta encerrada",
+  html: () => APP({ on: "consultas" }, `
+    ${W(`<div class="muted"><u data-go="b1">Consultas</u> › Miguel Santos · 06/10</div>`, { m: 1 })}
+    <div class="row">${AV("MS", 44)}<div><div class="row"><b style="font-size:18px">Miguel Santos</b>${CH("4a 1m")}${CH("Encerrada")}</div><div class="muted">06/10 · 09:10 · 22 min · <u data-go="b5">ver ficha</u></div></div><span class="sp1"></span>${B("Baixar tudo")}${B("⋯ Reabrir · Excluir", { m: 2 })}</div>
+    <div style="display:grid;grid-template-columns:1.5fr 1fr;gap:14px;flex:1;min-height:0">
+      ${BOX(`<div class="row"><b>Relatório do atendimento</b><span class="sp1"></span>${B("Editar", { sm: 1 })}${B("Baixar PDF", { sm: 1 })}</div>${["Queixa", "Exame físico", "Conduta"].map(x => `<div class="lbl" style="margin-top:10px">${x}</div>${L(95)}${L(80)}`).join("")}`, { m: 3 })}
+      <div class="col">
+        ${BOX(`<div class="row"><b>Documentos</b><span class="sp1"></span>${B("+ Novo", { sm: 1, go: "c2" })}</div><div class="row" style="margin-top:6px">Atestado · comparecimento<span class="sp1"></span>${B("Baixar", { sm: 1 })}</div>`, { m: 4 })}
+        ${BOX(`<b>Cobrança</b><div class="row" style="margin-top:6px">R$ 350 · Pix · 06/10<span class="sp1"></span>${B("Ajustar", { sm: 1 })}</div>`, { m: 5 })}
+        ${BOX(`<b>Escalas, exames e anexos</b><div class="muted" style="margin-top:6px">Nenhum registro nesta consulta</div>`, { c: "soft", m: 6 })}
+        ${BOX(`<b>Lembretes para a próxima</b><div class="muted" style="margin-top:6px">Rever curva de peso em 3 meses</div>`, { c: "soft", m: 7 })}
+      </div>
+    </div>`),
+  obj: "O registro de uma consulta que já terminou. Uma consulta em andamento abre direto no chat (A5), nunca aqui.",
+  de: "B1, A12, ficha (aba Consultas)", para: "B1, B5, C2",
+  n: [
+    ["Caminho de volta (Consultas › paciente)", "O médico sabe onde está e volta sem usar o navegador.", "Krug · teste do porta-malas"],
+    ["Reabrir e excluir no ⋯", "Ações raras e perigosas longe das ações do dia a dia.", "Nielsen 5 · prevenção de erro"],
+    ["Relatório como conteúdo principal, aberto", "É o registro clínico. Hoje fica escondido num de 7 cards que abrem painéis.", "Nielsen 8 · o que importa"],
+    ["Documentos com reimpressão e \"+ Novo\"", "Atestado pedido depois da consulta é comum.", "Nielsen 7 · eficiência"],
+    ["Cobrança com estado claro", "\"Lançar valor\" quando falta. Substitui o card de ganhos pendentes.", "Nielsen 1 · status visível"],
+    ["Escalas, exames e anexos compactos", "Aparecem só quando existem.", "Nielsen 8 · minimalismo"],
+    ["Lembretes editáveis", "Ajustar o que vai aparecer na próxima consulta.", "Nielsen 3 · controle"],
+  ] });
+
+add({ id: "b3", g: "B · Rotina", t: "Pedido vindo do WhatsApp",
+  html: () => APP({ on: "consultas" }, `
+    <div class="row">${H("Pedido pelo WhatsApp", "Ontem, 14:02 · (31) 97777-5555")}<span class="sp1"></span>${CH("Aguardando paciente", { o: 1 })}</div>
+    ${BOX(`<b>Para quem é este pedido?</b><div class="row" style="margin-top:8px">${AV("BS")}<div><b>Bia Souza</b> <span class="muted">· 3a · mesmo telefone do responsável</span></div><span class="sp1"></span>${B("Associar", { p: 1 })}</div><div class="row" style="margin-top:8px">${IN("⌕ Buscar outro paciente", { st: "flex:1" })}${B("+ Cadastrar")}</div>`, { c: "strong", m: 1 })}
+    <div style="display:grid;grid-template-columns:1.4fr 1fr;gap:14px;flex:1;min-height:0">
+      ${W(`<div class="col" style="border:1.5px solid var(--w3);border-radius:8px;padding:12px;height:100%"><b>Conversa</b><div class="bub">${L(80)}${L(50)}</div><div class="bub me">${L(70)}</div><div class="bub">${L(60)}</div><span class="sp1"></span>${B("Responder pelo WhatsApp", { m: 3 })}</div>`, { m: 2 })}
+      ${BOX(`<b>Relatório e documentos</b><div class="muted" style="margin-top:6px">Disponíveis depois de associar o paciente</div>`, { c: "soft dash", m: 4 })}
+    </div>`),
+  obj: "Resolver os pedidos que chegaram pelo WhatsApp: saber de quem é, ler a conversa e responder.",
+  de: "B1 (selo WhatsApp), A12 (pendência)", para: "B2 depois de associado",
+  n: [
+    ["Associar paciente primeiro, com sugestão pelo telefone", "Hoje não há tela para isso: os componentes existem, mas nenhuma página os usa.", "Nielsen 1 · status visível"],
+    ["Conversa visível", "O médico precisa ler o que a família pediu antes de agir.", "Nielsen 6 · reconhecer"],
+    ["Responder pelo WhatsApp", "A resposta continua no canal em que a família escreveu.", "Nielsen 7 · eficiência"],
+    ["Relatório e documentos depois de associar", "Evita documento emitido para a criança errada.", "Nielsen 5 · prevenção de erro"],
+  ] });
+
+add({ id: "b4", g: "B · Rotina", t: "Pacientes",
+  html: () => APP({ on: "pacientes" }, `
+    <div class="row">${H("Pacientes", "148 crianças · 6 precisam de atenção")}<span class="sp1"></span>${B("+ Cadastrar paciente", { m: 1, go: "a4" })}</div>
+    <div class="row">${TABS(["Atendidos recentemente", "A–Z", "Precisam de atenção (6)"], 0, [], 2)}<span class="sp1"></span>${IN("⌕ Nome, responsável ou telefone", { m: 3, st: "width:300px" })}</div>
+    <div class="tbl">
+      ${TR("1.4fr 1.2fr 1fr 1.2fr 100px", ["Paciente", "Responsável", "Última consulta", "Atenção", ""], { h: 1 })}
+      ${TR("1.4fr 1.2fr 1fr 1.2fr 100px", [W(`<div class="row">${AV("HD")}<div><b>Helena Duarte</b><div class="muted">2a 3m</div></div></div>`, { m: 4 }), `Carla Duarte<div class="muted">(31) 98888-1111</div>`, W(`hoje<div class="muted">Otite média aguda</div>`, { m: 5 }), W(`<div class="row" style="gap:4px;flex-wrap:wrap">${CH("⚠ Alergia", { d: 1 })}${CH("Vacina atrasada", { o: 1 })}</div>`, { m: 6 }), B("Atender", { sm: 1, m: 7, go: "a5" })], { go: "b5" })}
+      ${TR("1.4fr 1.2fr 1fr 1.2fr 100px", [`<div class="row">${AV("MS")}<div><b>Miguel Santos</b><div class="muted">4a 1m</div></div></div>`, `Rafael Santos<div class="muted">(31) 97777-2222</div>`, `hoje<div class="muted">Puericultura</div>`, "", B("Atender", { sm: 1, go: "a5" })], { go: "b5" })}
+      ${TR("1.4fr 1.2fr 1fr 1.2fr 100px", [`<div class="row">${AV("LP")}<div><b>Lara Pereira</b><div class="muted">8m</div></div></div>`, `Juliana Pereira<div class="muted">(31) 96666-3333</div>`, `hoje<div class="muted">Bronquiolite</div>`, CH("Retorno em 2 dias"), B("Atender", { sm: 1, go: "a5" })], { go: "b5" })}
+      ${TR("1.4fr 1.2fr 1fr 1.2fr 100px", [`<div class="row">${AV("GA")}<div><b>Gabriel Alves</b><div class="muted">6a 2m</div></div></div>`, `<span class="muted">Não informado</span>`, `há 3 meses<div class="muted">Asma · controle</div>`, `<div class="row" style="gap:4px">${CH("Ficha incompleta", { o: 1 })}${CH("Retorno vencido", { o: 1 })}</div>`, B("Atender", { sm: 1, go: "a5" })], { go: "b5" })}
+    </div>`),
+  obj: "Achar a criança rápido e ver quem precisa de atenção.",
+  de: "Menu Pacientes", para: "B5 Ficha · A5 (Atender)",
+  n: [
+    ["Cadastrar como ação secundária", "O cadastro normal acontece ao iniciar a consulta (A4); aqui é para quem quer cadastrar antes.", "Nielsen 8 · um CTA"],
+    ["Recentes como padrão; A–Z e Atenção como abas", "Quem foi atendido ontem não fica perdido no meio da ordem alfabética.", "Nielsen 6 · reconhecer"],
+    ["Busca também por telefone", "É assim que a família se identifica quando liga.", "Nielsen 7 · eficiência"],
+    ["Idade ao lado do nome", "O pediatra pensa em idade, não em data de nascimento.", "Nielsen 2 · linguagem do médico"],
+    ["Última consulta com o motivo", "Contexto antes de abrir a ficha.", "Nielsen 6 · reconhecer"],
+    ["Coluna Atenção", "Alergia, vacina atrasada, retorno vencido e ficha incompleta. Hoje nada disso aparece na lista.", "Nielsen 1 · status visível"],
+    ["Atender em cada linha", "Começa a consulta direto, sem abrir a ficha e procurar o ⋮.", "Nielsen 7 · eficiência"],
+  ] });
+
+add({ id: "b5", g: "B · Rotina", t: "Ficha: Resumo",
+  html: () => FICHA(0, { id: 1, start: 2, edit: 3, tabs: 4 }, `
+    <div style="display:grid;grid-template-columns:1.4fr 1fr;gap:14px">
+      <div class="col">
+        ${BOX(`<div class="row"><b>Última consulta · 29/09</b><span class="sp1"></span>${B("Ver registro", { sm: 1, g: 1, go: "b2" })}</div>${L(90)}${L(70)}<div class="box soft" style="margin-top:8px">🔔 Reavaliar peso no próximo retorno</div>`, { c: "strong", m: 5 })}
+        ${BOX(`<b>Histórico</b>${["29/09 · IVAS · receita", "12/08 · Puericultura · vacinas", "03/06 · Otite · receita, atestado"].map(x => `<div style="padding:6px 0;border-bottom:1px dashed var(--w3)">${x}</div>`).join("")}`, { c: "soft" })}
+      </div>
+      <div class="col">
+        ${BOX(`<b>Pendências</b><div style="margin-top:6px">• Tríplice viral (2ª dose) atrasada</div><div>• Sem medida há 37 dias</div><div class="row" style="margin-top:6px">${CH("Falta o sexo: a curva de crescimento depende dele", { o: 1 })}</div>`, { c: "strong", m: 6 })}
+        ${BOX(`<b>Crescimento</b><div class="g2" style="margin-top:6px"><div>Peso 12,3 kg · p50</div><div>Altura 87 cm · p50</div></div>${PH("mini curva", 50)}`, { m: 7, go: "b7" })}
+        ${BOX(`<b>Dados clínicos</b><div class="muted">Alergias · comorbidades · medicação contínua · tipo sanguíneo</div>`, { c: "soft" })}
+      </div>
+    </div>`),
+  obj: "Entender a criança em 10 segundos antes de atender, e começar a consulta daqui.",
+  de: "B4, busca ⌘K, links em qualquer tela", para: "A5 · B11 · abas B6–B10",
+  n: [
+    ["Cabeçalho fixo com idade, responsável, telefone e alergia", "Quem é a criança, sempre à vista, em todas as abas. Hoje a alergia está no meio da página.", "Krug · teste do porta-malas"],
+    ["Iniciar consulta como ação principal", "Hoje \"Novo atendimento\" está escondido no ⋮, ao lado de \"Excluir paciente\".", "Nielsen 8 · ação primária visível"],
+    ["Editar abre um painel; Excluir vai para o ⋯", "Editar não troca a página inteira, e excluir fica longe do uso diário.", "Nielsen 5 · prevenção de erro"],
+    ["Abas", "Hoje é uma página longa (vacinas, crescimento, escalas, anexos) com o histórico no fim.", "Nielsen 8 · o que importa agora"],
+    ["Última consulta com lembretes", "É o ponto de partida do próximo atendimento.", "Nielsen 6 · reconhecer"],
+    ["Pendências, incluindo a ficha incompleta", "Diz o que fazer e por quê (a curva precisa do sexo).", "Nielsen 1 · status visível"],
+    ["Crescimento resumido, levando à aba", "Percentil de relance; detalhe a um clique.", "Nielsen 8 · divulgação progressiva"],
+  ] });
+
+add({ id: "b6", g: "B · Rotina", t: "Ficha: Consultas",
+  html: () => FICHA(1, {}, `
+    ${W(`<div class="tbl">${consultRow({ i: "HD", n: "29/09", a: "IVAS", why: "Sintomáticos · peso 12,3 kg", docs: ["Receita"], t: "25 min", v: "R$ 350" })}${consultRow({ i: "HD", n: "12/08", a: "Puericultura", why: "Vacinas de 15 meses", docs: [], t: "30 min", v: "R$ 350" })}${consultRow({ i: "HD", n: "03/06", a: "Otite média", why: "Amoxicilina · antes da alergia", docs: ["Receita", "Atestado"], t: "20 min", v: "R$ 350" })}</div>`, { m: 1 })}`),
+  obj: "O histórico de consultas desta criança.",
+  de: "Aba Consultas", para: "B2",
+  n: [
+    ["Mesma linha da tela Consultas, filtrada", "O médico já sabe ler esta lista; nada novo para aprender.", "Nielsen 4 · consistência"],
+  ] });
+
+add({ id: "b7", g: "B · Rotina", t: "Ficha: Crescimento",
+  html: () => FICHA(2, {}, `
+    <div class="row">${TABS(["Peso/idade", "Estatura/idade", "IMC/idade", "PC/idade"], 0, [], 1)}<span class="sp1"></span>${SEG(["Percentil", "Escore-z"], 0, 3)}${SEG(["Cronológica", "Corrigida"])}${B("+ Registrar medição", { p: 1, m: 4 })}</div>
+    ${PH("Curva OMS (ou Intergrowth-21st para prematuros) com os pontos medidos", 260, { m: 2 })}
+    ${W(`<div class="tbl">${TR("1fr 1fr 1fr 1fr 1fr 1fr 30px", ["Data", "Peso", "Estatura", "PC", "IMC", "PA", ""], { h: 1 })}${TR("1fr 1fr 1fr 1fr 1fr 1fr 30px", ["29/09", "12,3", "87", "48", "16,2", "—", "⋯"])}</div>`, { m: 5 })}`),
+  obj: "Acompanhar a curva e registrar medidas fora da consulta.",
+  de: "Aba Crescimento, resumo B5", para: "—",
+  n: [
+    ["Indicador em abas", "Um gráfico por vez, sem rolagem.", "Nielsen 8 · minimalismo"],
+    ["Gráfico na largura toda", "É a informação principal da aba.", "Nielsen 8 · o que importa"],
+    ["Percentil/escore-z e idade corrigida", "Controles perto do gráfico que alteram.", "Nielsen 4 · padrões"],
+    ["Registrar medição", "Medidas da consulta entram pelo painel A8; aqui é para registrar fora dela.", "Nielsen 7 · eficiência"],
+    ["Tabela de medições", "Conferir e corrigir um valor digitado errado.", "Nielsen 3 · controle"],
+  ] });
+
+add({ id: "b8", g: "B · Rotina", t: "Ficha: Vacinas",
+  html: () => FICHA(3, {}, `
+    ${W(`<div class="row"><b>18 de 24 doses tomadas</b>${CH("1 atrasada", { o: 1 })}<span class="sp1"></span>${B("Gerar comprovante", { m: 5 })}</div>`, { m: 1 })}
+    ${BOX(`<b>Atrasadas</b><div class="row" style="margin-top:6px">Tríplice viral · 2ª dose · desde 10/06<span class="sp1"></span>${B("Marcar como tomada", { sm: 1 })}</div>`, { c: "strong", m: 2 })}
+    ${W(`<div class="row">${B("‹", { sm: 1 })}${["12m", "15m", "18m", "2a ● idade atual", "4a"].map((x, i) => CH(x, i === 3 ? { d: 1 } : {})).join("")}${B("›", { sm: 1 })}</div>`, { m: 3 })}
+    ${W(`<div class="g2">${["SUS / PNI", "Particular (SBIm)"].map(t => BOX(`<b>${t}</b>${[1, 2, 3].map(() => `<div class="row" style="padding:5px 0"><span class="chk"></span>${L(60)}</div>`).join("")}`, { c: "soft" })).join("")}</div>`, { m: 4 })}`),
+  obj: "Ver o que falta tomar e registrar doses.",
+  de: "Aba Vacinas, pendência em B4/B5", para: "—",
+  n: [
+    ["Contagem e alerta no topo", "A primeira pergunta é se está em dia.", "Nielsen 1 · status visível"],
+    ["Atrasadas primeiro, com a ação", "O que pede atenção vem antes do calendário completo.", "Nielsen 8 · o que importa agora"],
+    ["Faixa de idade com \"idade atual\"", "Situa o calendário na criança.", "Nielsen 6 · reconhecer"],
+    ["SUS e SBIm lado a lado", "As duas referências que o pediatra usa, como hoje.", "Nielsen 2 · mundo real"],
+    ["Gerar comprovante", "A escola e a creche pedem.", "Nielsen 7 · eficiência"],
+  ] });
+
+add({ id: "b9", g: "B · Rotina", t: "Ficha: Documentos",
+  html: () => FICHA(4, {}, `
+    <div class="row">${W(`<div class="row" style="gap:6px">${["Todos", "Receitas", "Atestados", "Pedidos", "Encaminhamentos", "Relatórios"].map((x, i) => CH(x, i === 0 ? { d: 1 } : {})).join("")}</div>`, { m: 1 })}<span class="sp1"></span>${B("+ Novo documento ▾", { m: 3, go: "c2" })}</div>
+    ${W(`<div class="tbl">${TR("100px 1fr 1fr 90px", ["Data", "Documento", "Consulta", ""], { h: 1 })}${TR("100px 1fr 1fr 90px", ["29/09", "Receita · 2 itens", "<u>IVAS</u>", B("Baixar", { sm: 1 })])}${TR("100px 1fr 1fr 90px", ["03/06", "Atestado · comparecimento", "<u>Otite</u>", B("Baixar", { sm: 1 })])}</div>`, { m: 2 })}`),
+  obj: "Reimprimir qualquer documento da criança.",
+  de: "Aba Documentos", para: "C2 (novo), B2 (consulta de origem)",
+  n: [
+    ["Filtro por tipo", "Os mesmos tipos do menu Documentos.", "Nielsen 4 · consistência"],
+    ["Lista com a consulta de origem", "Liga cada documento ao atendimento em que foi emitido.", "Nielsen 6 · reconhecer"],
+    ["Novo documento fora da consulta", "Abre o mesmo editor, com a criança já escolhida.", "Nielsen 7 · eficiência"],
+  ] });
+
+add({ id: "b10", g: "B · Rotina", t: "Ficha: Anexos e escalas",
+  html: () => FICHA(5, {}, `
+    <div class="g2">
+      ${BOX(`<div class="row"><b>Anexos</b><span class="sp1"></span>${B("+ Anexar arquivo", { sm: 1 })}</div><div class="row" style="padding:6px 0">Hemograma 02/10 · relatório + exame<span class="sp1"></span>${B("Abrir", { sm: 1 })}</div>`, { m: 1 })}
+      ${BOX(`<div class="row"><b>Exames lidos</b><span class="sp1"></span>${B("Ler exame", { sm: 1 })}</div><div class="row" style="padding:6px 0">Hemograma 02/10 ${CH("1 fora da faixa", { o: 1 })}</div>`, { m: 2 })}
+    </div>
+    ${BOX(`<div class="row"><b>Escalas aplicadas</b><span class="sp1"></span>${B("Aplicar escala", { sm: 1 })}</div>${["M-CHAT · 06/10 · escore 2 · baixo risco", "Denver · 12/08 · adequado"].map(x => `<div style="padding:6px 0;border-bottom:1px dashed var(--w3)">${x}</div>`).join("")}`, { m: 3 })}`),
+  obj: "Tudo o que foi anexado, lido e aplicado para esta criança, de todas as consultas.",
+  de: "Aba Anexos e escalas", para: "—",
+  n: [
+    ["Anexos agrupados", "O exame e o relatório da leitura aparecem como um item só, como hoje.", "Nielsen 6 · reconhecer"],
+    ["Exames lidos com fora da faixa", "Destaque para o que importa clinicamente.", "Nielsen 1 · status visível"],
+    ["Escalas com a evolução no tempo", "Comparar aplicações da mesma escala.", "Nielsen 6 · reconhecer"],
+  ] });
+
+add({ id: "b11", g: "B · Rotina", t: "Editar paciente (painel)",
+  html: () => DIM(S.find(s => s.id === "b5").html()) + `<div class="scrim"></div><div class="panel" style="width:48%"><div class="ph-h"><b style="font-size:15px">Editar · Helena Duarte</b><span class="sp1"></span>${B("✕", { sm: 1, go: "b5" })}</div><div class="ph-b">
+    ${W(`<div class="lbl">IDENTIFICAÇÃO E CONTATO</div><div class="g2">${IN("Helena Duarte", { l: "Nome" })}${IN("10/06/2024", { l: "Nascimento" })}${IN("38 semanas", { l: "Idade gestacional <small>(opcional)</small>" })}${IN("Feminino ▾", { l: "Sexo <small>(opcional)</small>" })}${IN("Carla Duarte", { l: "Responsável" })}${IN("(31) 98888-1111", { l: "Telefone" })}${IN("", { l: "Responsável legal <small>(se diferente)</small>" })}${IN("", { l: "Endereço <small>(opcional)</small>" })}</div>`, { m: 1 })}
+    ${W(`<div class="lbl">DADOS CLÍNICOS</div><div class="g2">${IN("amoxicilina", { l: "Alergias" })}${IN("", { l: "Medicação contínua" })}${IN("", { l: "Tipo sanguíneo" })}${IN("", { l: "Histórico médico" })}</div>`, { m: 2 })}
+    ${BOX(`<div class="row">${AV("HD", 40)}<div><b>Foto</b><div class="muted">Só com consentimento do responsável. Visível apenas para você.</div></div><span class="sp1"></span>${B("Enviar foto", { sm: 1 })}</div>`, { c: "soft", m: 3 })}
+    <div style="margin-top:auto">${B("Excluir paciente", { g: 1, m: 5 })}</div>
+  </div><div class="ph-f"><span class="sp1"></span>${B("Cancelar", { go: "b5" })}${B("Salvar", { p: 1, m: 4, go: "b5" })}</div></div>`,
+  obj: "Corrigir ou completar a ficha sem perder a ficha de vista.",
+  de: "B5 (Editar), pendência \"ficha incompleta\"", para: "B5",
+  n: [
+    ["Marcar o opcional, não o obrigatório", "Só 3 campos são obrigatórios; marcar os opcionais deixa claro o que pode ficar vazio.", "Nielsen 5 · campos claros"],
+    ["Dados clínicos agrupados", "A alergia daqui alimenta o alerta da consulta e da ficha.", "Nielsen 6 · reconhecer"],
+    ["Foto com consentimento", "Foto de criança é dado sensível; o aviso explica quem vê.", "Privacidade · CLAUDE.md"],
+    ["Painel em vez de trocar a página", "A ficha continua visível atrás.", "Nielsen 3 · controle"],
+    ["Excluir longe do Salvar", "Evita o clique errado na ação irreversível.", "Nielsen 5 · prevenção de erro"],
+  ] });
+
+/* C · FORA DO FLUXO */
+add({ id: "c1", g: "C · Fora do fluxo", t: "Documentos",
+  html: () => APP({ on: "documentos", docs: 1, mk: { docs: 6 } }, `
+    <div class="row">${H("Documentos", "Todos os documentos emitidos")}<span class="sp1"></span>${B("+ Novo documento ▾", { p: 1, m: 1, go: "c2" })}</div>
+    <div class="row">${W(`<div class="row" style="gap:6px">${["Todos", "Receitas", "Atestados", "Pedidos de exame", "Encaminhamentos", "Relatórios", "Orientações"].map((x, i) => CH(x, i === 1 ? { d: 1 } : {})).join("")}</div>`, { m: 2 })}<span class="sp1"></span>${IN("⌕ Paciente", { m: 3, st: "width:220px" })}${IN("Este mês ▾", { st: "width:130px" })}</div>
+    ${W(`<div class="tbl">${TR("24px 90px 110px 1fr 1fr 120px", [`<span class="chk"></span>`, "Data", "Tipo", "Paciente", "Consulta", ""], { h: 1 })}${["Helena Duarte|Otite", "Lara Pereira|Bronquiolite", "Theo Costa|Diarreia aguda"].map(x => { const [p, c] = x.split("|"); return TR("24px 90px 110px 1fr 1fr 120px", [`<span class="chk"></span>`, "06/10", "Receita", p, `<u>${c}</u>`, `<div class="row">${B("Baixar", { sm: 1 })}<span>⋯</span></div>`]); }).join("")}</div>`, { m: 4 })}
+    ${W(`<div class="box soft row"><span class="chk on"></span> 2 selecionados<span class="sp1"></span>${B("Baixar", { sm: 1 })}${B("Excluir", { sm: 1 })}</div>`, { m: 5 })}`),
+  obj: "Achar e reimprimir qualquer documento, de qualquer tipo, num lugar só.",
+  de: "Menu Documentos e seus subitens", para: "C2 · B2",
+  n: [
+    ["Novo documento com escolha do tipo", "Um botão para os 7 tipos.", "Nielsen 4 · consistência"],
+    ["Tipos como filtros da mesma lista", "Hoje são 7 telas quase iguais, cada uma com um detalhe diferente (ícones numa, menu ⋯ noutra).", "Nielsen 4 · consistência"],
+    ["Busca por paciente e período", "Hoje nenhuma lista de documentos tem busca.", "Nielsen 7 · eficiência"],
+    ["Coluna Consulta", "Liga o documento ao atendimento de origem.", "Nielsen 6 · reconhecer"],
+    ["Seleção em massa", "Mantida de hoje, para baixar ou excluir vários.", "Nielsen 7 · eficiência"],
+    ["Subitens do menu = filtros", "Clicar em \"Receitas\" no menu abre esta lista filtrada.", "Krug · cliques sem dúvida"],
+  ] });
+
+add({ id: "c2", g: "C · Fora do fluxo", t: "Novo documento fora da consulta",
+  html: () => APP({ on: "documentos", docs: 1 }, `
+    <div class="muted"><u data-go="c1">Documentos</u> › Nova receita</div>
+    ${W(`<div class="row">${["1 Paciente ✓", "2 Receita", "3 Emitir"].map((x, i) => CH(x, i === 1 ? { d: 1 } : {})).join('<span class="muted">—</span>')}</div>`, { m: 1 })}
+    ${BOX(`<div class="row">${AV("HD")}<b>Helena Duarte</b><span class="muted">· 2a 3m · 12,3 kg (29/09)</span><span class="sp1"></span>${B("Trocar", { sm: 1 })}${B("Sem paciente (receituário em branco)", { sm: 1, g: 1, m: 3 })}</div>`, { m: 2 })}
+    <div style="display:grid;grid-template-columns:1.2fr 1fr;gap:14px;flex:1;min-height:0">
+      ${W(`<div class="col">${IN("Usar modelo ▾")}${BOX(`<b>Medicamento</b>${L(70)}`, { c: "soft" })}${B("+ Adicionar medicamento", { dz: 1 })}${B("▸ Orientações e sinais de alerta", { g: 1 })}</div>`, { m: 4 })}
+      ${W(`<div class="a4" style="height:100%;aspect-ratio:auto">${L(40)}${L(90)}${L(80)}${L(85)}${L(50)}</div>`, { m: 5 })}
+    </div>
+    <div class="row"><span class="sp1"></span>${B("Emitir e imprimir", { p: 1, m: 6, go: "c1" })}</div>`),
+  obj: "Emitir qualquer documento sem uma consulta aberta (ex.: receita pedida por telefone). O editor é o mesmo do painel da consulta.",
+  de: "C1, B9, B2", para: "C1 com aviso \"Receita emitida · Baixar\" (ou de volta à consulta, se veio dela)",
+  n: [
+    ["Passos visíveis", "O médico sabe onde está e quanto falta.", "Krug · indicador de passos"],
+    ["Paciente primeiro, com o peso mais recente", "A posologia depende do peso.", "Nielsen 5 · prevenção de erro"],
+    ["Receituário em branco como opção", "Deixa de ser item do menu e vira uma variação da receita.", "Nielsen 8 · minimalismo"],
+    ["Mesmo editor do painel da consulta", "Aprendeu uma vez, usa em todo lugar.", "Nielsen 4 · consistência"],
+    ["Prévia ao vivo", "Substitui as etapas \"Revisar\" e \"Confirmar\" que só a receita tem hoje.", "Nielsen 1 · status visível"],
+    ["Volta para onde o médico estava", "Hoje só receita e atestado voltam ao caso; os outros 4 tipos vão sempre para a própria lista.", "Nielsen 4 · consistência"],
+  ] });
+
+add({ id: "c3", g: "C · Fora do fluxo", t: "Orientações",
+  html: () => APP({ on: "documentos", docs: 1 }, `
+    <div class="row">${H("Orientações", "Textos por marco do desenvolvimento, entregues à família")}<span class="sp1"></span>${B("Gerar para um paciente", { p: 1, m: 2 })}</div>
+    <div style="display:grid;grid-template-columns:260px 1fr;gap:14px;flex:1;min-height:0">
+      ${W(`<div class="col" style="border:1.5px solid var(--w3);border-radius:8px;padding:10px;height:100%"><b>Marcos</b>${["Recém-nascido", "2 meses", "6 meses", "Introdução alimentar", "1 ano"].map((x, i) => `<div class="nv ${i === 2 ? "on" : ""}"><span>${x}</span></div>`).join("")}${B("+ Novo marco", { sm: 1, dz: 1 })}</div>`, { m: 1 })}
+      ${BOX(`<b>6 meses</b>${L(95)}${L(90)}${L(92)}${L(70)}<div class="row" style="margin-top:10px">${B("Salvar texto", { sm: 1 })}</div>`, { c: "soft" })}
+    </div>
+    ${W(`<div class="muted">Orientações já entregues aparecem em Documentos (filtro Orientações). Os marcos também aparecem em Modelos.</div>`, { m: 3 })}`),
+  obj: "Manter a biblioteca de marcos e gerar a orientação para uma família.",
+  de: "Menu Documentos › Orientações", para: "C1 (entregues)",
+  n: [
+    ["Biblioteca à esquerda, texto à direita", "Editar um marco sem abrir um diálogo por item.", "Nielsen 6 · reconhecer"],
+    ["Gerar para um paciente", "A ação de emissão fica separada da configuração.", "Nielsen 8 · um CTA"],
+    ["Entregues na lista única de Documentos", "Hoje a tabela de orientações geradas fica nesta mesma página, diferente dos outros documentos.", "Nielsen 4 · consistência"],
+  ] });
+
+add({ id: "c4", g: "C · Fora do fluxo", t: "Calendário de vacinas (referência)",
+  html: () => APP({ on: "documentos", docs: 1 }, `
+    <div class="row">${H("Calendário de vacinas", "Referência SUS × SBIm")}<span class="sp1"></span>${IN("⌕ Ver para um paciente", { m: 2, st: "width:260px" })}</div>
+    ${TABS(["Criança (SUS × SBIm)", "Gestante"], 0, [], 1)}
+    ${W(`<div class="g2">${["SUS / PNI", "Particular (SBIm)"].map(t => BOX(`<b>${t}</b>${["Ao nascer", "2 meses", "3 meses", "4 meses"].map(x => `<div style="padding:6px 0;border-bottom:1px dashed var(--w3)"><b style="font-size:12px">${x}</b>${L(70)}</div>`).join("")}`, { c: "soft" })).join("")}</div>`, { m: 3 })}
+    ${W(`<div class="muted">Fonte e data de atualização de cada calendário</div>`, { m: 4 })}`),
+  obj: "Consultar o calendário de referência. A carteira de cada criança fica na ficha (B8).",
+  de: "Menu Documentos › Vacinas", para: "B8 (ao escolher um paciente)",
+  n: [
+    ["Criança e gestante em abas", "Duas referências diferentes, uma de cada vez.", "Nielsen 8 · minimalismo"],
+    ["Ver para um paciente", "Pula para a carteira da criança com a idade atual marcada.", "Nielsen 7 · eficiência"],
+    ["SUS e SBIm lado a lado", "Como o pediatra compara no dia a dia.", "Nielsen 2 · mundo real"],
+    ["Fonte visível", "Confiança na referência.", "Nielsen 10 · documentação"],
+  ] });
+
+add({ id: "c5", g: "C · Fora do fluxo", t: "Pergunte ao assistente",
+  html: () => APP({ on: "assistente", flush: 1 }, `
+    <div style="display:grid;grid-template-columns:270px 1fr;height:100%">
+      <div class="col" style="border-right:1.5px solid var(--w3);padding:14px">
+        ${B("+ Nova conversa", { p: 1, full: 1, m: 1 })}
+        ${W(`<div class="row">${IN("⌕ Buscar", { st: "flex:1" })}${IN("Período ▾")}</div>`, { m: 2 })}
+        ${["Dose de ondansetrona", "Febre sem foco < 3 meses", "Alergia à proteína do leite"].map((x, i) => `<div class="nv ${i === 0 ? "on" : ""}"><span>${x}</span></div>`).join("")}
+      </div>
+      <div class="col" style="padding:16px 22px">
+        ${W(`<div class="row"><b style="font-size:16px">Dose de ondansetrona</b>${B("✎", { sm: 1, g: 1 })}<span class="sp1"></span>${B("⋯ Encerrar · Excluir", { sm: 1 })}</div>`, { m: 3 })}
+        <div class="bub me">${L(80)}</div><div class="bub">${L(95)}${L(85)}${L(60)}</div>
+        <div class="sp1"></div>
+        ${W(`<div class="muted">Pergunta sobre uma criança específica? Faça dentro da consulta, onde peso e alergia já estão.</div>`, { m: 4 })}
+        <div class="in" style="min-height:52px">Pergunte sobre condutas, doses, diretrizes…</div>
+      </div>
+    </div>`),
+  obj: "Tirar dúvidas clínicas que não são de um paciente específico.",
+  de: "Menu Pergunte ao assistente", para: "—",
+  n: [
+    ["Nova conversa", "Hoje a tela só lista conversas antigas; nada aqui começa uma conversa nova.", "Nielsen 3 · controle"],
+    ["Busca e período", "Reencontrar uma resposta já dada.", "Nielsen 6 · reconhecer"],
+    ["Título editável e ações no ⋯", "Organizar sem poluir a conversa.", "Nielsen 8 · minimalismo"],
+    ["Aviso para usar a consulta", "Perguntas sobre uma criança têm mais contexto na consulta (peso, alergia, idade).", "Nielsen 10 · ajuda no contexto"],
+  ] });
+
+add({ id: "c6", g: "C · Fora do fluxo", t: "Financeiro",
+  html: () => APP({ on: "financeiro" }, `
+    <div class="row">${H("Financeiro", "O que você recebeu por atendimento")}<span class="sp1"></span>${B("+ Novo lançamento", { p: 1, m: 1 })}</div>
+    ${W(`<div class="g3">${["Hoje · R$ 700", "Esta semana · R$ 3.150", "Este mês · R$ 9.800"].map(x => BOX(`<b>${x}</b>`, { c: "soft" })).join("")}</div>`, { m: 2 })}
+    ${BOX(`<div class="row"><b>3 consultas sem valor lançado</b><span class="sp1"></span>${B("Lançar agora", { sm: 1 })}</div>`, { c: "strong", m: 6 })}
+    <div class="row">${W(`<div class="row">${B("‹", { sm: 1 })}<b>Outubro 2026</b>${B("›", { sm: 1 })}</div>`, { m: 3 })}<span class="sp1"></span><span class="muted">Total R$ 9.800 · média R$ 340</span><span class="chk"></span><span class="muted">mostrar anulados</span></div>
+    ${PH("Recebido por dia", 110, { m: 4 })}
+    ${W(`<div class="tbl">${TR("90px 1.6fr 100px 100px 60px", ["Data", "Descrição", "Forma", "Valor", ""], { h: 1 })}${TR("90px 1.6fr 100px 100px 60px", ["06/10", "<u>Consulta · Miguel Santos</u>", "Pix", "R$ 350", "Anular"])}</div>`, { m: 5 })}`),
+  obj: "Saber quanto entrou e corrigir lançamentos. Vira link direto no menu (hoje é um hub com um card só).",
+  de: "Menu Financeiro, A12", para: "B2 (consulta do lançamento)",
+  n: [
+    ["Novo lançamento", "Receita que não veio de uma consulta.", "Nielsen 7 · eficiência"],
+    ["Hoje, semana e mês fixos", "As três perguntas que o médico faz sempre.", "Nielsen 1 · status visível"],
+    ["Navegação por mês", "Comparar meses sem filtros complicados.", "Nielsen 6 · reconhecer"],
+    ["Gráfico por dia", "Ver os dias fortes e fracos de relance.", "Nielsen 8 · minimalismo"],
+    ["Lançamentos ligados à consulta, com Anular e Desfazer", "Corrigir sem medo; o aviso de desfazer já existe.", "Nielsen 3 · desfazer"],
+    ["Consultas sem valor", "Fecha o ciclo das consultas encerradas com \"Sem cobrança\" esquecido.", "Nielsen 1 · status visível"],
+  ] });
+
+add({ id: "c7", g: "C · Fora do fluxo", t: "Modelos",
+  html: () => APP({}, `
+    <div class="row">${H("Modelos", "Tudo o que você reaproveita, num lugar só")}<span class="sp1"></span>${B("Gerar com IA", { m: 3, go: "c8" })}${B("+ Novo modelo", { p: 1, go: "c8" })}</div>
+    ${TABS(["Receitas", "Relatório da consulta", "Pedidos de exame", "Encaminhamentos", "Relatórios médicos", "Orientações"], 1, [], 1)}
+    ${W(`<div class="tbl">${TR("1.6fr 1fr 1fr 40px", ["Nome", "Uso", "Atualizado", ""], { h: 1 })}${TR("1.6fr 1fr 1fr 40px", [`<div class="row"><b>Consulta pediátrica</b>${CH("Ativo", { d: 1, m: 4 })}</div>`, "212 consultas", "há 3 dias", "⋯"], { go: "c8" })}${TR("1.6fr 1fr 1fr 40px", ["Puericultura", "48 consultas", "há 1 mês", "⋯"], { go: "c8" })}${TR("1.6fr 1fr 1fr 40px", [`Padrão do Falaped ${CH("padrão")}`, "—", "—", "⋯"])}</div>`, { m: 2 })}`),
+  obj: "Gerenciar todos os modelos. Hoje estão espalhados: receita e relatório no menu do usuário, painéis de exame e marcos dentro de cada formulário.",
+  de: "Menu (rodapé) Modelos", para: "C8",
+  n: [
+    ["Um tipo por aba", "Todos os modelos num lugar só, com o mesmo padrão.", "Nielsen 4 · consistência"],
+    ["Uso e data de atualização", "Mostra o que vale a pena manter.", "Nielsen 1 · status visível"],
+    ["Gerar com IA", "Mantém o caminho que já existe para o relatório.", "Nielsen 7 · eficiência"],
+    ["Modelo ativo marcado", "O relatório da consulta usa o modelo ativo; hoje a escolha fica no Perfil, longe daqui.", "Nielsen 6 · reconhecer"],
+  ] });
+
+add({ id: "c8", g: "C · Fora do fluxo", t: "Editor de modelo de relatório",
+  html: () => APP({}, `
+    <div class="muted"><u data-go="c7">Modelos</u> › Consulta pediátrica</div>
+    <div style="display:grid;grid-template-columns:1.2fr 1fr;gap:14px;flex:1;min-height:0">
+      <div class="col">
+        ${IN("Consulta pediátrica", { l: "Nome do modelo" })}
+        ${W(`<div class="row" style="gap:6px">${CH("🔒 Paciente")}${CH("🔒 Dados clínicos")}<span class="muted">sempre incluídas</span></div>`, { m: 1 })}
+        ${W(`<div class="col" style="gap:6px">${["Queixa principal", "Exame físico", "Hipótese", "Conduta"].map(x => BOX(`<div class="row"><span class="muted">⋮⋮</span><b>${x}</b><span class="sp1"></span><span class="muted">descrição para a IA</span>${B("✕", { sm: 1, g: 1 })}</div>`, { c: "soft" })).join("")}${B("+ Adicionar seção", { dz: 1 })}</div>`, { m: 2 })}
+        ${BOX(`<b>Gerar com IA</b><div class="in ta" style="margin-top:6px">Descreva o relatório que você quer…</div>`, { c: "dash", m: 4 })}
+      </div>
+      ${W(`<div class="a4" style="height:100%;aspect-ratio:auto"><b style="font-size:12px">Prévia do relatório</b>${L(50)}${L(90)}${L(80)}${L(50)}${L(85)}</div>`, { m: 3 })}
+    </div>
+    <div class="row"><span class="sp1"></span>${B("Cancelar", { go: "c7" })}${B("Salvar modelo", { p: 1, go: "c7" })}</div>`),
+  obj: "Montar as seções que a IA preenche no relatório da consulta.",
+  de: "C7", para: "C7",
+  n: [
+    ["Seções fixas trancadas", "Deixa claro o que não pode sair do relatório.", "Nielsen 5 · prevenção de erro"],
+    ["Seções arrastáveis com descrição", "A descrição orienta a IA; a ordem é a do PDF.", "Nielsen 6 · reconhecer"],
+    ["Prévia ao lado", "Ver o resultado enquanto edita.", "Nielsen 1 · status visível"],
+    ["Gerar com IA no mesmo editor", "Hoje é uma página separada.", "Nielsen 7 · eficiência"],
+  ] });
+
+add({ id: "c9", g: "C · Fora do fluxo", t: "Novidades",
+  html: () => DIM(S.find(s => s.id === "a12").html()) + `<div class="scrim"></div><div class="modal" style="width:540px">
+    <div style="padding:16px 18px;border-bottom:1.5px solid var(--w3)"><b style="font-size:16px">Novidades do Falaped</b></div>
+    ${W(`<div class="col" style="padding:16px 18px">${["06/10 · Consulta sem sair do chat", "29/09 · Leitura de exames com IA"].map(x => BOX(`<b>${x}</b>${L(90)}${L(70)}`, { c: "soft" })).join("")}</div>`, { m: 1 })}
+    <div class="row" style="padding:12px 18px;border-top:1.5px solid var(--w3)"><span class="sp1"></span>${B("Entendi", { p: 1, m: 2, go: "a12" })}</div>
+  </div>`,
+  obj: "Contar o que mudou, sem atrapalhar.",
+  de: "Menu (rodapé) Novidades, com ponto quando há algo novo", para: "Tela anterior",
+  n: [
+    ["Lançamentos com data, do mais novo ao mais antigo", "Leitura rápida, como hoje.", "Krug · metade das palavras"],
+    ["Um botão para fechar", "Sem decisões.", "Nielsen 8 · minimalismo"],
+  ] });
+
+/* D · ESTRUTURA */
+add({ id: "d1", g: "D · Estrutura", t: "Menu lateral: estados",
+  html: () => `<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:18px;padding:20px;height:100%;background:var(--w1)">
+    ${[["Sem consulta aberta", sb({ on: "inicio", mk: { cta: 1, search: 2, nav: 3, foot: 5 } })], ["Consulta aberta", sb({ on: "pacientes", state: "active", mk: { nav: 7 } })], ["Documentos aberto", sb({ on: "documentos", docs: 1, mk: { docs: 4 } })], ["Durante a consulta (recolhido)", `<div style="display:grid;grid-template-columns:62px 1fr;height:100%">${sb({ mini: 1, state: "active", on: "consultas", mk: { cta: 6 } })}<div class="ph" style="border-radius:0">chat</div></div>`]].map(([t, h]) => `<div class="col" style="gap:6px;min-height:0"><b style="font-size:12px">${t}</b><div style="border:2px solid var(--ink);border-radius:8px;overflow:hidden;flex:1;display:flex;flex-direction:column;background:#fff">${h}</div></div>`).join("")}
+  </div>`,
+  obj: "O mesmo menu em todas as telas, mudando só o topo (consulta aberta ou não) e a largura (recolhido na consulta).",
+  de: "—", para: "Todas as telas",
+  n: [
+    ["Iniciar consulta no topo", "A ação mais importante do produto, sempre no mesmo lugar.", "Nielsen 4 · consistência"],
+    ["Buscar paciente (⌘K)", "Quase tudo começa pelo nome da criança.", "Nielsen 7 · atalhos"],
+    ["6 itens diretos, sem páginas de cards", "Hoje são 4 itens que abrem páginas de cards, e cada destino custa um clique a mais.", "Krug · teste do porta-malas"],
+    ["Documentos abre embaixo", "Os subitens são filtros da lista única (C1).", "Nielsen 6 · reconhecer"],
+    ["Rodapé: Modelos, Novidades, conta", "Configuração separada do uso diário.", "Nielsen 8 · minimalismo"],
+    ["Recolhido durante a consulta", "Mais espaço para o chat, com a consulta ainda marcada.", "Nielsen 8 · o que importa agora"],
+    ["Cartão da consulta aberta", "Em qualquer tela, um clique volta ao chat.", "Nielsen 1 · status visível"],
+  ] });
+
+add({ id: "d2", g: "D · Estrutura", t: "Busca ⌘K",
+  html: () => DIM(S.find(s => s.id === "a12").html()) + `<div class="scrim"></div><div class="modal" style="width:620px">
+    <div style="padding:14px 16px;border-bottom:1.5px solid var(--w3)">${W(`<div class="in" style="border:2px solid var(--ink);color:#111">⌕ hel|</div>`, { m: 1 })}</div>
+    <div class="col" style="padding:10px 12px;gap:4px">
+      ${W(`<div class="lbl" style="padding:0 6px">PACIENTES</div>${TR("34px 1fr auto", [AV("HD"), `<div><b>Helena Duarte</b> <span class="muted">· 2a 3m · Carla Duarte</span></div>`, `<span class="row"><span class="kbd">↵ Iniciar consulta</span><span class="kbd">⌘↵ Abrir ficha</span></span>`], { go: "b5" })}`, { m: 2 })}
+      ${W(`<div class="lbl" style="padding:6px 6px 0">AÇÕES</div>${["Nova receita", "Novo atestado", "Novo lançamento"].map(x => `<div class="nv"><span class="ic"></span><span>${x}</span></div>`).join("")}`, { m: 3 })}
+      ${W(`<div class="lbl" style="padding:6px 6px 0">PÁGINAS</div><div class="nv"><span class="ic"></span><span>Modelos › Relatório da consulta</span></div>`, { m: 4 })}
+    </div>
+    ${W(`<div class="row muted" style="padding:10px 16px;border-top:1.5px solid var(--w3)"><span class="kbd">↑↓</span> navegar <span class="kbd">↵</span> abrir <span class="kbd">Esc</span> fechar</div>`, { m: 5 })}
+  </div>`,
+  obj: "Ir a qualquer lugar pelo teclado: paciente, ação ou página.",
+  de: "⌘K em qualquer tela, busca do menu", para: "A5, B5, C2, C6, qualquer página",
+  n: [
+    ["Um campo para tudo", "O médico não precisa saber em que menu está cada coisa.", "Nielsen 7 · paleta de comandos"],
+    ["Pacientes com duas saídas", "Iniciar consulta ou abrir a ficha, sem passar pela lista.", "Nielsen 7 · eficiência"],
+    ["Ações", "Atalho para o documento ou lançamento mais comum.", "Nielsen 7 · atalhos"],
+    ["Páginas", "Navegação para quem prefere o teclado.", "Nielsen 7 · novato e experiente"],
+    ["Dicas de teclado", "Ensina os atalhos sem manual.", "Nielsen 10 · ajuda no contexto"],
+  ] });
+
+add({ id: "d3", g: "D · Estrutura", t: "Menu do usuário",
+  html: () => DIM(S.find(s => s.id === "a12").html()) + `<div class="box strong col" style="position:absolute;left:14px;bottom:60px;width:270px;z-index:11;gap:4px;padding:10px">
+    ${W(`<div class="row" style="padding:4px">${AV("AS", 36)}<div><b>Dra. Ana Souza</b><div class="muted">CRM 12345/MG · ana@clinica.com</div></div></div>`, { m: 1 })}
+    ${W(`<div class="box soft row" style="padding:8px"><b style="font-size:12px">Teste grátis</b><span class="muted">até 21/10</span><span class="sp1"></span>${B("Assinar", { sm: 1, go: "d6" })}</div>`, { m: 2 })}
+    <div class="nv" data-go="d4"><span class="ic"></span><span>Perfil</span></div>
+    ${W(`<div class="nv" data-go="d5"><span class="ic"></span><span>WhatsApp</span><span class="sp1"></span><span class="muted">vinculado</span></div>`, { m: 3 })}
+    <div class="nv"><span class="ic"></span><span>Aparência</span><span class="sp1"></span>${SEG(["Claro", "Escuro", "Sistema"], 0)}</div>
+    ${W(`<div style="border-top:1px solid var(--w3);margin-top:4px;padding-top:4px"><div class="nv" data-go="e1"><span class="ic"></span><span>Sair</span></div></div>`, { m: 4 })}
+  </div>`,
+  obj: "Conta e preferências, separadas do trabalho clínico.",
+  de: "Avatar no rodapé do menu", para: "D4, D5, D6, E1",
+  n: [
+    ["Identidade com CRM", "Confirma com que conta e registro os documentos saem.", "Krug · teste do porta-malas"],
+    ["Plano sempre visível", "Hoje o fim do teste só aparece no Perfil, e as ações falham com \"não pago\" sem aviso antes.", "Nielsen 1 · status visível"],
+    ["Status do WhatsApp", "Mostra se o assistente está ligado.", "Nielsen 1 · status visível"],
+    ["Sair separado, no fim", "Evita o clique sem querer.", "Nielsen 5 · prevenção de erro"],
+  ] });
+
+add({ id: "d4", g: "D · Estrutura", t: "Perfil",
+  html: () => APP({}, `
+    <div class="row">${H("Perfil")}</div>
+    <div style="display:grid;grid-template-columns:200px 1fr;gap:18px;flex:1;min-height:0">
+      ${W(`<div class="col" style="gap:2px">${["Dados profissionais", "Marca nos documentos", "Consulta e relatório", "Valores", "WhatsApp", "Aparência", "Plano e conta"].map((x, i) => `<div class="nv ${i === 0 ? "on" : ""}"><span>${x}</span></div>`).join("")}</div>`, { m: 1 })}
+      <div class="col" style="overflow:auto;gap:14px">
+        ${BOX(`<b>Dados profissionais</b><div class="g2" style="margin-top:8px">${IN("Ana Clara", { l: "Nome" })}${IN("Souza", { l: "Sobrenome" })}${IN("12345", { l: "CRM" })}${IN("", { l: "RQE <small>(opcional)</small>" })}${IN("Belo Horizonte", { l: "Cidade" })}${IN("MG", { l: "Estado" })}</div>`, { m: 2 })}
+        ${BOX(`<b>Marca nos documentos</b><div class="g2" style="margin-top:8px">${PH("Logo completa", 70)}${PH("Logo curta", 70)}</div><div class="a4" style="aspect-ratio:auto;height:80px;margin-top:8px">${L(40)}${L(80)}</div><div class="muted">Prévia do cabeçalho do documento</div>`, { m: 3 })}
+        ${BOX(`<b>Valores</b><div class="g2" style="margin-top:8px">${IN("R$ 350,00", { l: "Valor da consulta" })}<div></div></div><div class="muted" style="margin-top:6px">Procedimentos: Nebulização R$ 60 · Teste do pezinho R$ 90 · + adicionar</div>`, { m: 4 })}
+      </div>
+    </div>
+    ${W(`<div class="box strong row" style="padding:10px 14px">Você tem alterações não salvas<span class="sp1"></span>${B("Descartar")}${B("Salvar alterações", { p: 1 })}</div>`, { m: 5 })}`),
+  obj: "Tudo o que define como os documentos saem e como a consulta funciona.",
+  de: "Menu do usuário, A2 (logo)", para: "—",
+  n: [
+    ["Índice das seções", "Hoje é um formulário longo sem índice; aqui cada seção fica a um clique.", "Krug · teste do porta-malas"],
+    ["Dados profissionais no topo", "É o que sai em todo documento.", "Nielsen 8 · o que importa"],
+    ["Logo com prévia do cabeçalho", "O médico vê o resultado antes de emitir uma receita (já existe hoje).", "Nielsen 1 · status visível"],
+    ["Valores", "O valor da consulta preenche o encerramento (A10).", "Nielsen 6 · reconhecer"],
+    ["Barra de salvar só quando há mudança", "Mantida de hoje: evita perder alterações.", "Nielsen 5 · prevenção de erro"],
+  ] });
+
+add({ id: "d5", g: "D · Estrutura", t: "Vincular WhatsApp",
+  html: () => APP({}, `
+    ${H("Vincular WhatsApp", "Use o assistente do Falaped pelo seu WhatsApp")}
+    ${W(`<div class="row">${["1 Gerar código", "2 Enviar ao Falaped", "3 Pronto"].map((x, i) => CH(x, i === 0 ? { d: 1 } : {})).join('<span class="muted">—</span>')}</div>`, { m: 1 })}
+    <div style="display:grid;place-items:center;flex:1">
+      ${BOX(`<div class="col" style="align-items:center;gap:12px;padding:10px 20px">${W(`<div class="row" style="gap:8px">${[4, 8, 1, 5, 9, 2].map(n => `<span class="box" style="font-size:22px;font-weight:700;padding:8px 14px">${n}</span>`).join("")}</div>`, { m: 2 })}${W(`<div class="muted">Válido por 5 min · expira em 04:32</div>`, { m: 3 })}<div class="row">${B("Copiar código")}${B("Abrir WhatsApp com o código", { p: 1, m: 4 })}</div></div>`, { c: "strong" })}
+    </div>
+    ${W(`<div class="muted">Depois de vinculado: número, data e "Desvincular" aparecem aqui.</div>`, { m: 5 })}`),
+  obj: "Ligar o WhatsApp do médico ao Falaped.",
+  de: "Menu do usuário, primeiros passos", para: "—",
+  n: [
+    ["Passos visíveis", "O médico sabe o que vem depois do código.", "Krug · indicador de passos"],
+    ["Código grande", "Ler e digitar sem errar.", "Nielsen 5 · prevenção de erro"],
+    ["Contagem regressiva", "Já existe hoje: avisa antes de o código expirar.", "Nielsen 1 · status visível"],
+    ["Abrir WhatsApp com o código pronto", "Funcionalidade nova: elimina copiar e colar.", "Nielsen 7 · eficiência"],
+    ["Estado vinculado", "Mostra o número e permite desvincular.", "Nielsen 3 · controle"],
+  ] });
+
+add({ id: "d6", g: "D · Estrutura", t: "Teste encerrado",
+  html: () => APP({ on: "inicio" }, `<div style="display:grid;place-items:center;height:100%"><div class="box strong col" style="width:560px;padding:24px">
+    ${W(`<b style="font-size:18px">Seu teste grátis terminou em 21/10</b><div class="muted">Seus pacientes, consultas e documentos continuam guardados.</div>`, { m: 1 })}
+    ${BOX(`<div class="row"><b>Plano Falaped</b><span class="sp1"></span><b>R$ —/mês</b></div><div class="muted">Consultas, documentos e assistente sem limite</div>`, { c: "soft" })}
+    <div class="row">${B("Assinar", { p: 1, lg: 1, m: 2 })}${B("Falar com a gente", { m: 3 })}</div>
+    ${W(`<div class="muted">Enquanto isso, você pode ver e baixar o que já emitiu.</div>`, { m: 4 })}
+  </div></div>`),
+  obj: "Dizer com clareza que o teste acabou e como continuar. Hoje a conta não paga é mandada para Vincular WhatsApp, e as ações falham com \"não pago\".",
+  de: "Qualquer ação com o teste vencido; menu do usuário", para: "Pagamento (a definir) · contato",
+  n: [
+    ["O que aconteceu e que os dados estão seguros", "Sem susto e sem culpa.", "Nielsen 9 · recuperar de erros"],
+    ["Assinar como ação principal", "O caminho para continuar, sem ambiguidade.", "Nielsen 8 · um CTA"],
+    ["Falar com a gente", "Hoje é o único caminho (e-mail); continua disponível.", "Nielsen 10 · ajuda"],
+    ["Acesso de leitura ao que já foi emitido", "Proposta: não prender documentos de pacientes.", "Ética · sem padrão obscuro"],
+  ] });
+
+/* E · ACESSO E AVISOS */
+add({ id: "e1", g: "E · Acesso e avisos", t: "Entrar",
+  html: () => APP({ nosb: 1 }, `<div style="display:grid;place-items:center;height:100%"><div class="box strong col" style="width:400px;padding:24px">
+    <b style="letter-spacing:.06em">FALAPED</b>${H("Entrar")}
+    ${W(`${IN("ana@clinica.com", { l: "E-mail" })}${IN("••••••••", { l: "Senha" })}`, { m: 1 })}
+    <div class="row"><span class="sp1"></span>${B("Esqueci a senha", { g: 1, sm: 1, m: 2, go: "e2" })}</div>
+    ${B("Entrar", { p: 1, full: 1, lg: 1, m: 3, go: "a12" })}
+    <div class="muted" style="text-align:center">Novo por aqui? ${B("Criar conta", { g: 1, sm: 1, m: 4, go: "a1" })}</div>
+  </div></div>`),
+  obj: "Entrar e cair direto no Início do dia (A12).",
+  de: "Link de login, sessão expirada", para: "A12",
+  n: [
+    ["Só e-mail e senha", "Nada mais na tela.", "Krug · metade das palavras"],
+    ["Esqueci a senha perto do campo", "Onde o problema aparece.", "Nielsen 9 · recuperar de erros"],
+    ["Entrar como CTA único", "Sem ambiguidade.", "Nielsen 8 · um CTA"],
+    ["Criar conta", "Saída para quem chegou aqui sem conta.", "Nielsen 3 · controle"],
+  ] });
+
+add({ id: "e2", g: "E · Acesso e avisos", t: "Esqueci a senha / Nova senha",
+  html: () => APP({ nosb: 1 }, `<div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;place-items:center;height:100%;padding:20px">
+    <div class="box strong col" style="width:380px;padding:22px">${H("Redefinir senha")}${IN("ana@clinica.com", { l: "E-mail" })}${B("Enviar link", { p: 1, full: 1 })}${W(`<div class="box soft">Enviamos um link para a***@clinica.com. Vale por 1 hora.</div>`, { m: 1 })}${B("Voltar para Entrar", { g: 1, sm: 1, go: "e1" })}</div>
+    <div class="box strong col" style="width:380px;padding:22px">${H("Nova senha")}${IN("••••••••", { l: "Nova senha" })}<div class="muted">Mínimo 8 caracteres</div>${B("Salvar e entrar", { p: 1, full: 1, m: 2, go: "a12" })}</div>
+  </div>`),
+  obj: "Recuperar o acesso em dois passos, entrando direto ao final.",
+  de: "E1", para: "A12",
+  n: [
+    ["Confirmação com o e-mail mascarado e a validade", "O médico sabe para onde foi o link e até quando vale.", "Nielsen 1 · status visível"],
+    ["Salvar e entrar", "Hoje, depois de salvar a nova senha, o médico ainda precisa fazer login.", "Nielsen 7 · eficiência"],
+  ] });
+
+add({ id: "e3", g: "E · Acesso e avisos", t: "Avisos: 404, erro, link expirado, tela pequena",
+  html: () => `<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:16px;padding:20px;height:100%;background:var(--w1)">
+    ${[["Página não encontrada", "Voltar para o início"], ["Algo saiu do lugar", "Tentar de novo"], ["Este link expirou", "Pedir um novo link"], ["O Falaped pede uma tela maior", "Enviar link para o computador"]].map(([t, b], i) => `<div class="box strong col" style="align-items:center;text-align:center;justify-content:center">${PH("ilustração", 110, { st: "width:100%" })}${W(`<b>${t}</b><div class="muted">${i === 3 ? "Abra no computador para atender com tudo à vista." : "O que aconteceu, em uma frase."}</div>`, { m: i === 0 ? 1 : 0 })}${B(b, { p: 1, m: i === 0 ? 2 : 0 })}${i === 1 ? W(`<div class="muted">contato@falaped.com.br</div>`, { m: 3 }) : ""}</div>`).join("")}
+  </div>`,
+  obj: "Quando algo dá errado, dizer o que houve e oferecer a saída. Ilustrações já existem (PR #74).",
+  de: "Qualquer tela", para: "Início, login, nova tentativa",
+  n: [
+    ["O que aconteceu, em linguagem simples", "Sem códigos de erro.", "Nielsen 9 · recuperar de erros"],
+    ["Uma ação para sair", "Sempre um caminho de volta.", "Nielsen 3 · controle e saída"],
+    ["Contato no erro inesperado", "Para quando tentar de novo não resolve.", "Nielsen 10 · ajuda"],
+  ] });
+
+/* ---------- mapa ---------- */
+function renderMap() {
+  const groups = [...new Set(S.filter(s => s.id !== "mapa").map(s => s.g))];
+  document.getElementById("mapgrid").innerHTML = groups.map(g => `<div class="lane"><h4>${g}</h4><div class="flow">${S.filter(s => s.g === g).map(s => `<span class="node" data-go="${s.id}"><i>${s.id.toUpperCase()}</i>${s.t}</span>`).join(g.startsWith("A") ? '<span class="arr">→</span>' : "")}</div></div>`).join("")
+    + `<div class="box dash muted">${S[0].extra}</div>`;
+}
+
+/* ---------- navegação ---------- */
+const sel = document.getElementById("sel");
+[...new Set(S.map(s => s.g))].forEach(g => {
+  const og = document.createElement("optgroup"); og.label = g;
+  S.filter(s => s.g === g).forEach(s => og.append(new Option(`${s.id === "mapa" ? "" : s.id.toUpperCase() + " · "}${s.t}`, s.id)));
+  sel.append(og);
+});
+let cur = 0;
+function go(id) {
+  const i = S.findIndex(s => s.id === id);
+  if (i < 0) return;
+  cur = i;
+  const s = S[i];
+  document.getElementById("wf").innerHTML = s.html();
+  if (s.id === "mapa") renderMap();
+  document.getElementById("code").textContent = s.id === "mapa" ? "MAPA" : s.id.toUpperCase();
+  document.getElementById("title").textContent = s.t;
+  document.getElementById("grp").textContent = s.g;
+  document.getElementById("pos").textContent = `${i + 1} / ${S.length}`;
+  sel.value = s.id;
+  const same = S.filter(x => x.g === s.g);
+  document.getElementById("trail").innerHTML = same.length > 1 ? same.map(x => `<span class="${x.id === s.id ? "on" : ""}" data-go="${x.id}">${x.id === "mapa" ? "Mapa" : x.id.toUpperCase()} ${x.t}</span>`).join("") : "";
+  const rows = s.n.map((r, k) => `<tr><td><b>${k + 1}</b></td><td>${r[0]}</td><td>${r[1]}</td><td>${r[2]}</td></tr>`).join("");
+  document.getElementById("notes").innerHTML = `
+    <div class="card"><h3>Objetivo da tela</h3><p>${s.obj}</p><h3>Chega de</h3><p>${s.de}</p><h3>Vai para</h3><p>${s.para}</p></div>
+    <div class="card">${s.n.length ? `<h3>Por que cada elemento está aqui</h3><table class="why"><tr><th>#</th><th>Elemento</th><th>Por que está aqui (fluxo novo)</th><th>Regra de usabilidade</th></tr>${rows}</table>` : `<h3>Como usar</h3><p>Use o seletor no topo, as setas do teclado (← →) ou clique nos elementos marcados como clicáveis dentro do wireframe. Os números em cada tela correspondem à tabela abaixo dela.</p>`}</div>`;
+  history.replaceState(null, "", "#" + s.id);
+  window.scrollTo({ top: 0 });
+}
+sel.onchange = () => go(sel.value);
+document.getElementById("prev").onclick = () => go(S[Math.max(0, cur - 1)].id);
+document.getElementById("next").onclick = () => go(S[Math.min(S.length - 1, cur + 1)].id);
+document.getElementById("hot").onchange = e => document.getElementById("wf").classList.toggle("show-hot", e.target.checked);
+document.getElementById("mk").onchange = e => document.getElementById("wf").classList.toggle("nomk", !e.target.checked);
+document.addEventListener("click", e => { const t = e.target.closest("[data-go]"); if (t) { e.preventDefault(); go(t.dataset.go); } });
+document.addEventListener("keydown", e => {
+  if (e.target.tagName === "SELECT" || document.body.classList.contains("tab-off")) return;
+  if (e.key === "ArrowRight") go(S[Math.min(S.length - 1, cur + 1)].id);
+  if (e.key === "ArrowLeft") go(S[Math.max(0, cur - 1)].id);
+});
+function tab(t) {
+  document.body.classList.toggle("tab-off", t !== "wf");
+  document.getElementById("pane-audit").hidden = t !== "audit";
+  document.getElementById("pane-comp").hidden = t !== "comp";
+  document.getElementById("pane-ficha").hidden = t !== "ficha";
+  document.getElementById("pane-proto").hidden = t !== "proto";
+  document.querySelectorAll(".ptabs button").forEach(b => b.classList.toggle("on", b.dataset.tab === t));
+  if (t === "wf") go(S[cur].id); else history.replaceState(null, "", {audit: "#auditoria", comp: "#componentes", ficha: "#ficha", proto: "#prototipo"}[t]);
+  window.scrollTo({ top: 0 });
+}
+document.querySelectorAll(".ptabs button").forEach(b => b.onclick = () => tab(b.dataset.tab));
+const h0 = location.hash.slice(1);
+go(h0 && !["auditoria", "componentes", "ficha", "prototipo"].includes(h0) ? h0 : "mapa");
+if (h0 === "auditoria") tab("audit");
+if (h0 === "componentes") tab("comp");
+if (h0 === "ficha") tab("ficha");
+if (h0 === "prototipo") tab("proto");
+</script>
+</body>
+</html>
