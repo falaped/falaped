@@ -1,7 +1,7 @@
 "use client"
 
-import { useState } from "react"
-import { Loader2, Plus, Trash2 } from "lucide-react"
+import { useEffect, useState } from "react"
+import { Bell, Loader2, Plus, Trash2 } from "lucide-react"
 import { toast } from "sonner"
 
 import { addCaseReminderAction, deleteCaseReminderAction } from "@/actions"
@@ -13,6 +13,10 @@ import type { CaseReminder } from "@/modules/cases/types"
 type CaseRemindersFormProps = {
   caseId: string
   initialReminders: CaseReminder[]
+  /** O campo fica atrás de "Adicionar lembrete" (consulta encerrada: mais lida que escrita). */
+  collapsed?: boolean
+  /** Avisa a lista atual a cada mudança (o drawer de encerrar conta os lembretes). */
+  onChange?: (reminders: CaseReminder[]) => void
 }
 
 /**
@@ -26,8 +30,15 @@ type CaseRemindersFormProps = {
 export function CaseRemindersForm({
   caseId,
   initialReminders,
+  collapsed = false,
+  onChange,
 }: CaseRemindersFormProps) {
+  const [isAdding, setIsAdding] = useState(!collapsed)
   const [reminders, setReminders] = useState<CaseReminder[]>(initialReminders)
+  useEffect(() => {
+    onChange?.(reminders)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [reminders])
   const [text, setText] = useState("")
   const [isSaving, setIsSaving] = useState(false)
   const [deletingId, setDeletingId] = useState<string | null>(null)
@@ -42,6 +53,7 @@ export function CaseRemindersForm({
       if (result.ok) {
         setReminders((prev) => [...prev, result.reminder])
         setText("")
+        toast.success("Lembrete salvo.")
       } else {
         toast.error(getFriendlyToastMessage(result.error))
       }
@@ -83,15 +95,17 @@ export function CaseRemindersForm({
           {reminders.map((reminder) => (
             <li
               key={reminder.id}
-              className="flex items-start justify-between gap-2 rounded-lg border border-border px-3 py-2"
+              className="flex items-start gap-2"
             >
-              <span className="min-w-0 flex-1 wrap-break-word text-sm">
+              <Bell className="mt-1 size-3.5 shrink-0 text-primary-ink" aria-hidden />
+              <span className="min-w-0 flex-1 wrap-break-word">
                 {reminder.text}
               </span>
               <Button
                 type="button"
                 variant="ghost"
-                size="sm"
+                size="icon-xs"
+                className="text-muted-foreground"
                 onClick={() => handleDelete(reminder.id)}
                 disabled={deletingId === reminder.id}
                 aria-label={`Apagar lembrete: ${reminder.text}`}
@@ -102,13 +116,15 @@ export function CaseRemindersForm({
           ))}
         </ul>
       ) : (
-        <p className="text-sm text-muted-foreground">
-          Nenhum lembrete neste atendimento.
+        <p className="text-muted-foreground">
+          Nenhum lembrete nesta consulta.
         </p>
       )}
 
+      {isAdding ? (
       <div className="flex items-center gap-2">
         <Input
+          autoFocus={collapsed}
           value={text}
           maxLength={500}
           placeholder="Ex.: reavaliar em 15 dias"
@@ -134,6 +150,18 @@ export function CaseRemindersForm({
           Adicionar
         </Button>
       </div>
+      ) : (
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          className="-ml-2 self-start text-primary-ink"
+          onClick={() => setIsAdding(true)}
+        >
+          <Plus aria-hidden />
+          Adicionar lembrete
+        </Button>
+      )}
     </div>
   )
 }

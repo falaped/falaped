@@ -39,7 +39,7 @@ export async function restoreFinancialEntryAction(
 
   try {
     await restoreFinancialEntry(supabase, parsed.data, profile.id)
-    revalidatePath("/dashboard/earnings")
+    revalidatePath("/dashboard/financial")
     if (caseId) revalidatePath(`/dashboard/cases/${caseId}`)
     return { ok: true }
   } catch (e) {

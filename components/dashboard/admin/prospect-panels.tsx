@@ -54,18 +54,18 @@ export function StageStepper({ id, stage }: { id: string; stage: FunnelStage }) 
         const current = stage === s
         return (
           <React.Fragment key={s}>
-            {i > 0 ? <ChevronRightIcon className="size-4 text-muted-foreground/50" aria-hidden /> : null}
+            {i > 0 ? <ChevronRightIcon className="size-4 text-subtle-foreground" aria-hidden /> : null}
             <button
               type="button"
               disabled={auto || saving || current}
               onClick={() => save({ status: s as (typeof MANUAL)[number] }, `Etapa: ${STAGE_LABEL[s]}.`)}
               aria-current={current ? "step" : undefined}
               className={cn(
-                "flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-[13px] ring-1 ring-border transition-colors",
-                done && "bg-primary/10 text-primary-ink ring-primary/30",
-                current && "bg-primary/20 font-semibold text-primary-ink ring-2 ring-primary",
-                !done && !current && !auto && "hover:ring-primary/60",
-                auto && !current && "text-muted-foreground/70",
+                "flex h-8 items-center gap-1.5 rounded-full border border-border bg-card px-3 text-label transition-colors",
+                done && "border-primary-soft-border bg-primary-soft text-primary-ink-strong",
+                current && "border-foreground bg-foreground font-semibold text-background",
+                !done && !current && !auto && "hover:bg-accent",
+                auto && !current && "text-subtle-foreground",
               )}
               title={auto ? "Muda sozinha quando a pessoa cria conta ou paga" : undefined}
             >
@@ -83,7 +83,7 @@ export function StageStepper({ id, stage }: { id: string; stage: FunnelStage }) 
       ) : !(AUTO as readonly string[]).includes(stage) ? (
         <Popover open={lostOpen} onOpenChange={setLostOpen}>
           <PopoverTrigger asChild>
-            <Button variant="ghost" size="sm" className="text-orange-700 hover:text-orange-700 dark:text-orange-400">
+            <Button variant="destructive" size="sm">
               <XCircleIcon aria-hidden />
               Marcar como perdido
             </Button>

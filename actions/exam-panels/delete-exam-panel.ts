@@ -24,7 +24,7 @@ export async function deleteExamPanelAction(
 
   try {
     await deleteExamPanel(supabase, panelId, profile.id)
-    revalidatePath("/dashboard/exam-requests")
+    revalidatePath("/dashboard/templates")
     return { ok: true }
   } catch (e) {
     console.error("[EXAM_PANELS] delete failed", e)

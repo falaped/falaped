@@ -5,13 +5,11 @@ import {
   ArrowLeftIcon,
   BadgeCheckIcon,
   Building2Icon,
-  ContactIcon,
   ExternalLinkIcon,
   FlameIcon,
   GitCommitHorizontalIcon,
   GlobeIcon,
   HandshakeIcon,
-  HistoryIcon,
   MailCheckIcon,
   MailIcon,
   MailOpenIcon,
@@ -38,7 +36,7 @@ import { cn } from "@/lib/utils"
 import { getProspect, type ProspectEvent, type ProspectEventKind } from "@/modules/admin/get-prospect"
 import { listMessageTemplates } from "@/modules/admin/list-message-templates"
 import type { ProspectRow } from "@/modules/admin/list-prospects"
-import { GradientCard, Initials, PanelCard, Pill } from "@/components/dashboard/admin/admin-ui"
+import { Initials, PanelCard, Pill } from "@/components/dashboard/admin/admin-ui"
 import { StagePill, TemperaturePill } from "@/components/dashboard/admin/funnel-badges"
 import { CallButton, ContactForm, NextContactButtons, NoteComposer, StageStepper } from "@/components/dashboard/admin/prospect-panels"
 import { EmailComposerButton, WhatsappMenu, WhatsappQuickSend } from "@/components/dashboard/admin/whatsapp-menu"
@@ -143,9 +141,9 @@ function alertFor(p: ProspectRow, stage: FunnelStage, now: Date): Alert {
 }
 
 const TONE_ICON = {
-  blue: "bg-primary/12 text-primary-ink",
-  green: "bg-emerald-500/12 text-emerald-700 dark:text-emerald-400",
-  red: "bg-orange-600/12 text-orange-700 dark:text-orange-400",
+  blue: "bg-primary-soft text-primary-ink-strong",
+  green: "bg-success-soft text-success-text",
+  red: "bg-danger-soft text-danger-text",
 } as const
 
 export default async function AdminLeadPage({ params }: { params: Promise<{ id: string }> }) {
@@ -200,86 +198,81 @@ export default async function AdminLeadPage({ params }: { params: Promise<{ id: 
   ].filter((l): l is { href: string; label: string; icon: LucideIcon } => l !== null)
 
   return (
-    <div className="flex flex-col gap-5">
-      <Link href="/dashboard/admin/funil" className="flex w-fit items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground">
-        <ArrowLeftIcon className="size-4" aria-hidden />
-        Funil
-      </Link>
+    <div className="flex flex-col gap-6">
+      <Button asChild variant="ghost" size="sm" className="-mb-3 -ml-2.5 self-start text-muted-foreground">
+        <Link href="/dashboard/admin/funil">
+          <ArrowLeftIcon data-icon="inline-start" />
+          Voltar ao funil
+        </Link>
+      </Button>
 
-      <GradientCard className="flex flex-wrap items-center justify-between gap-5 px-7 py-6">
-        <div className="flex items-center gap-5">
-          <Initials name={p.full_name} dim={!p.profile_id} className="size-[72px] rounded-2xl bg-card text-2xl shadow-xs ring-1 ring-foreground/10" />
-          <div>
-            <h1 className="text-[26px] font-semibold leading-tight tracking-tight">{p.full_name}</h1>
-            <p className="mt-1 flex flex-wrap gap-x-4 gap-y-1 text-sm text-muted-foreground">
-              {p.clinic ? <span className="flex items-center gap-1.5"><Building2Icon className="size-4" aria-hidden />{p.clinic}</span> : null}
-              {p.city ? <span className="flex items-center gap-1.5"><MapPinIcon className="size-4" aria-hidden />{p.city}</span> : null}
-              {p.crm ? <span className="flex items-center gap-1.5"><StethoscopeIcon className="size-4" aria-hidden />CRM {p.crm}</span> : null}
-              {!p.clinic && !p.city && p.email ? <span className="flex items-center gap-1.5"><MailIcon className="size-4" aria-hidden />{p.email}</span> : null}
-            </p>
-            <div className="mt-2.5 flex flex-wrap items-center gap-1.5">
-              <StagePill stage={stage} />
-              {temp ? <TemperaturePill temp={temp.temp} /> : null}
-              <Pill tone="gray" dot={false}>{p.referred_by ? `Indicação da ${p.referred_by}` : p.lead_at ? "Veio pela landing" : p.origin === "manual" ? "Cadastro manual" : "Captação"}</Pill>
-            </div>
+      <section className="flex flex-wrap items-center gap-5 rounded-xl border border-primary-soft-border bg-highlight px-8 py-6 shadow-sm">
+        <Initials name={p.full_name} dim={!p.profile_id} className="size-16 text-section" />
+        <div className="min-w-0">
+          <h1 className="font-display text-page font-semibold">{p.full_name}</h1>
+          <p className="mt-1 flex flex-wrap gap-x-4 gap-y-1 text-muted-foreground">
+            {p.clinic ? <span className="flex items-center gap-1.5"><Building2Icon className="size-4" aria-hidden />{p.clinic}</span> : null}
+            {p.city ? <span className="flex items-center gap-1.5"><MapPinIcon className="size-4" aria-hidden />{p.city}</span> : null}
+            {p.crm ? <span className="flex items-center gap-1.5"><StethoscopeIcon className="size-4" aria-hidden />CRM {p.crm}</span> : null}
+            {!p.clinic && !p.city && p.email ? <span className="flex items-center gap-1.5"><MailIcon className="size-4" aria-hidden />{p.email}</span> : null}
+          </p>
+          <div className="mt-2 flex flex-wrap items-center gap-1.5">
+            <StagePill stage={stage} />
+            {temp ? <TemperaturePill temp={temp.temp} /> : null}
+            <Pill tone="gray">{p.referred_by ? `Indicação da ${p.referred_by}` : p.lead_at ? "Veio pela landing" : p.origin === "manual" ? "Cadastro manual" : "Captação"}</Pill>
           </div>
         </div>
-        <div className="flex flex-wrap gap-2">
+        <div className="ml-auto flex flex-wrap gap-2">
           <WhatsappMenu {...send} />
           <EmailComposerButton {...send} />
           <CallButton id={p.id} />
         </div>
-      </GradientCard>
+      </section>
 
       {p.profile ? (
-        <GradientCard className="flex flex-wrap items-center gap-4 px-5 py-4">
-          <span className="flex size-9 items-center justify-center rounded-[10px] bg-primary/15 text-primary-ink">
-            <BadgeCheckIcon className="size-5" aria-hidden />
-          </span>
+        <div className="flex flex-wrap items-center gap-4 rounded-xl border border-primary-soft-border bg-primary-soft px-5 py-4">
+          <BadgeCheckIcon className="size-5 shrink-0 text-primary-ink-strong" aria-hidden />
           <div className="min-w-0 flex-1">
-            <p className="text-[15px] font-semibold">
+            <p className="font-semibold">
               {stage === "cliente" ? "Já é assinante" : "Já criou conta"} {formatRelativeTime(p.profile.created_at)}
             </p>
-            <p className="text-[13px] text-muted-foreground">
-              {p.profile.cases > 0 ? `${p.profile.cases} ${p.profile.cases === 1 ? "atendimento" : "atendimentos"} registrados.` : "Ainda sem atendimentos."} Pagamento e uso ficam em Clientes.
+            <p className="text-caption text-muted-foreground">
+              {p.profile.cases > 0 ? `${p.profile.cases} ${p.profile.cases === 1 ? "consulta registrada" : "consultas registradas"}.` : "Ainda sem consultas."} Pagamento e uso ficam em Clientes.
             </p>
           </div>
-          <Button asChild variant="outline">
+          <Button asChild variant="outline" size="sm">
             <Link href={`/dashboard/admin/users/${p.profile.id}`}>Abrir em Clientes</Link>
           </Button>
-        </GradientCard>
+        </div>
       ) : null}
 
       {alert ? (
-        <GradientCard tone="amber" className="flex flex-wrap items-center gap-4 px-5 py-4">
-          <span className="flex size-9 items-center justify-center rounded-[10px] bg-card text-amber-700 shadow-xs ring-1 ring-amber-300/70 dark:text-amber-400">
-            <alert.icon className="size-5" aria-hidden />
-          </span>
+        <div className="flex flex-wrap items-center gap-4 rounded-xl border border-warning-border bg-warning-soft px-5 py-4">
+          <alert.icon className="size-5 shrink-0 text-warning-text" aria-hidden />
           <div className="min-w-0 flex-1">
-            <p className="text-[15px] font-semibold">{alert.title}</p>
-            <p className="text-[13px] text-amber-800/80 dark:text-amber-300/80">{alert.detail}</p>
+            <p className="font-semibold">{alert.title}</p>
+            <p className="text-caption text-muted-foreground">{alert.detail}</p>
           </div>
           <WhatsappQuickSend {...send} defaultMoment={alert.moment} label={alert.action} templateName={alert.templateName} />
-        </GradientCard>
+        </div>
       ) : null}
 
-      <div className="grid items-start gap-5 lg:grid-cols-[minmax(0,1fr)_360px]">
-        <div className="flex flex-col gap-5">
+      <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_380px]">
+        <div className="flex flex-col gap-6">
           <PanelCard
-            icon={GitCommitHorizontalIcon}
             title="Etapa"
             description="Em teste e Cliente mudam sozinhas quando a pessoa cria conta ou paga"
           >
             <StageStepper id={p.id} stage={stage} />
             {stage === "perdido" && p.lost_reason ? (
-              <p className="mt-3 text-[13px] text-muted-foreground">Motivo: {p.lost_reason}</p>
+              <p className="mt-3 text-label text-muted-foreground">Motivo: {p.lost_reason}</p>
             ) : null}
           </PanelCard>
 
-          <PanelCard icon={HistoryIcon} title="Linha do tempo" description="Contatos, e-mails e notas, do mais novo para o mais antigo">
+          <PanelCard title="Linha do tempo" description="Contatos, e-mails e notas, do mais novo para o mais antigo">
             <NoteComposer id={p.id} />
             {p.events.length === 0 ? (
-              <p className="py-4 text-center text-sm text-muted-foreground">Nada registrado ainda.</p>
+              <p className="py-4 text-center text-muted-foreground">Nada registrado ainda.</p>
             ) : (
               <ol className="relative flex flex-col">
                 {p.events.map((e, i) => {
@@ -288,14 +281,14 @@ export default async function AdminLeadPage({ params }: { params: Promise<{ id: 
                   return (
                     <li key={e.id} className="relative grid grid-cols-[28px_minmax(0,1fr)_auto] gap-3 pb-4">
                       {i < p.events.length - 1 ? <span className="absolute top-7 bottom-0 left-[13.5px] w-px bg-border" aria-hidden /> : null}
-                      <span className={cn("flex size-7 items-center justify-center rounded-lg bg-muted text-muted-foreground", meta.tone && TONE_ICON[meta.tone])}>
+                      <span className={cn("grid size-7 place-items-center rounded-full bg-muted text-muted-foreground", meta.tone && TONE_ICON[meta.tone])}>
                         <meta.icon className="size-3.5" aria-hidden />
                       </span>
                       <div className="min-w-0 pt-0.5">
-                        <p className={cn("text-sm", e.kind === "nota" && "whitespace-pre-line")}>{title}</p>
-                        {sub ? <p className="text-xs text-muted-foreground">{sub}</p> : null}
+                        <p className={cn(e.kind === "nota" && "whitespace-pre-line")}>{title}</p>
+                        {sub ? <p className="text-caption text-muted-foreground">{sub}</p> : null}
                       </div>
-                      <time className="pt-0.5 text-xs whitespace-nowrap text-muted-foreground" dateTime={e.created_at} title={formatDateTime(e.created_at)}>
+                      <time className="num pt-0.5 text-caption whitespace-nowrap text-subtle-foreground" dateTime={e.created_at} title={formatDateTime(e.created_at)}>
                         {formatDateTime(e.created_at)}
                       </time>
                     </li>
@@ -306,24 +299,24 @@ export default async function AdminLeadPage({ params }: { params: Promise<{ id: 
           </PanelCard>
         </div>
 
-        <div className="flex flex-col gap-5">
-          <PanelCard icon={AlarmClockIcon} iconTone="amber" title="Próximo contato" description="Entra na fila do Painel quando vencer">
+        <div className="flex flex-col gap-6">
+          <PanelCard title="Próximo contato" description="Entra na fila do Painel quando vencer">
             {p.next_contact_at ? (
               <p className="flex items-baseline gap-2">
-                <span className={cn("text-2xl font-semibold tracking-tight", due && "text-orange-700 dark:text-orange-400")}>
+                <span className={cn("num font-display text-page font-semibold", due && "text-danger-text")}>
                   {due ? "Venceu" : formatDate(p.next_contact_at).slice(0, 5)}
                 </span>
-                <span className="text-[13px] text-muted-foreground">
+                <span className="text-muted-foreground">
                   {due ? `${formatRelativeTime(p.next_contact_at)}, em ${formatDate(p.next_contact_at).slice(0, 5)}` : formatRelativeTime(p.next_contact_at)}
                 </span>
               </p>
             ) : (
-              <p className="text-sm text-muted-foreground">Sem data marcada.</p>
+              <p className="text-muted-foreground">Sem data marcada.</p>
             )}
             <NextContactButtons id={p.id} value={p.next_contact_at} />
           </PanelCard>
 
-          <PanelCard icon={ContactIcon} title="Contato">
+          <PanelCard title="Contato">
             <ContactForm
               id={p.id}
               initial={{
@@ -338,10 +331,10 @@ export default async function AdminLeadPage({ params }: { params: Promise<{ id: 
           </PanelCard>
 
           {facts.length > 0 || links.length > 0 ? (
-            <PanelCard icon={RadarIcon} title={p.lead_at && !p.sources.length ? "Origem" : "Dados da captação"}>
-              <dl className="divide-y text-[13px]">
+            <PanelCard title={p.lead_at && !p.sources.length ? "Origem" : "Dados da captação"}>
+              <dl className="divide-y divide-border">
                 {facts.map((f) => (
-                  <div key={f.k} className="flex justify-between gap-4 py-2">
+                  <div key={f.k} className="flex justify-between gap-4 py-2.5 first:pt-0 last:pb-0">
                     <dt className="text-muted-foreground">{f.k}</dt>
                     <dd className="text-right font-medium">{f.v}</dd>
                   </div>

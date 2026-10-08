@@ -1,0 +1,79 @@
+import test from "node:test"
+import assert from "node:assert/strict"
+
+import { closeTiming, consultClock, resumeByActivity, summarizeIdle } from "@/lib/consult-idle"
+
+const at = (hhmm: string) => `2026-10-08T${hhmm}:00.000Z`
+const t = (hhmm: string) => Date.parse(at(hhmm))
+const MIN = 60_000
+
+test("consulta viva: sem pausa e sem idle", () => {
+  assert.deepEqual(summarizeIdle(at("09:10"), [at("09:25"), at("09:42")], t("10:00")), { gapsMs: 0, idleSince: null })
+})
+
+test("2h30 sem atividade: idle desde a última atividade", () => {
+  assert.deepEqual(summarizeIdle(at("09:10"), [at("09:42")], t("12:13")), { gapsMs: 0, idleSince: at("09:42") })
+})
+
+test("sem nenhuma atividade: idle desde o início", () => {
+  assert.equal(summarizeIdle(at("09:10"), [], t("12:00")).idleSince, at("09:10"))
+})
+
+test("voltou depois do intervalo: o intervalo vira pausa e o cronômetro segue", () => {
+  const s = summarizeIdle(at("09:10"), [at("09:42"), at("14:00")], t("14:10"))
+  assert.deepEqual(s, { gapsMs: t("14:00") - t("09:42"), idleSince: null })
+})
+
+test("atividade antes do início (consulta reaberta) não conta", () => {
+  assert.equal(summarizeIdle(at("09:10"), [at("08:00")], t("09:20")).gapsMs, 0)
+})
+
+test("encerrar esquecida: termina na última atividade", () => {
+  const r = closeTiming({ startedAt: at("09:10"), pausedMs: 0, pausedAt: null }, [at("09:42")], t("19:00"))
+  assert.deepEqual(r, { endedAt: at("09:42"), pausedMs: 0 })
+})
+
+test("encerrar depois de voltar: desconta o intervalo", () => {
+  const r = closeTiming({ startedAt: at("09:10"), pausedMs: 0, pausedAt: null }, [at("09:42"), at("14:00")], t("14:10"))
+  assert.equal(Date.parse(r.endedAt) - t("09:10") - r.pausedMs, 42 * MIN)
+})
+
+test("horário informado pela médica manda", () => {
+  const r = closeTiming({ startedAt: at("09:10"), pausedMs: 0, pausedAt: null }, [], t("19:00"), at("09:30"))
+  assert.deepEqual(r, { endedAt: at("09:30"), pausedMs: 0 })
+})
+
+test("pausa manual aberta: termina onde pausou", () => {
+  const r = closeTiming({ startedAt: at("09:10"), pausedMs: 0, pausedAt: at("09:40") }, [at("09:30")], t("10:00"))
+  assert.deepEqual(r, { endedAt: at("09:40"), pausedMs: 0 })
+})
+
+test("relógio da tela: parada congela na última atividade", () => {
+  const timer = { startedAt: at("09:10"), pausedMs: 0, pausedAt: null }
+  assert.deepEqual(consultClock(timer, [at("09:42")], t("19:00")), { elapsedMs: 32 * MIN, idleSince: at("09:42"), paused: false })
+  assert.deepEqual(consultClock(timer, [at("09:42")], t("10:00")), { elapsedMs: 50 * MIN, idleSince: null, paused: false })
+})
+
+test("pausada à mão depois de esquecida: continua esquecida", () => {
+  const timer = { startedAt: at("09:10"), pausedMs: 0, pausedAt: at("19:00") }
+  assert.deepEqual(consultClock(timer, [at("09:42")], t("20:00")), { elapsedMs: 32 * MIN, idleSince: at("09:42"), paused: false })
+})
+
+test("pausada à mão no meio da consulta: congela na pausa", () => {
+  const timer = { startedAt: at("09:10"), pausedMs: 0, pausedAt: at("09:50") }
+  assert.deepEqual(consultClock(timer, [at("09:42")], t("20:00")), { elapsedMs: 40 * MIN, idleSince: null, paused: true })
+})
+
+test("salvou algo depois de pausar: a pausa termina nessa atividade", () => {
+  const timer = { startedAt: at("09:10"), pausedMs: 0, pausedAt: at("09:40") }
+  assert.deepEqual(resumeByActivity(timer, [at("09:30"), at("09:50")]), { pausedMs: 10 * MIN, pausedAt: null })
+  assert.equal(resumeByActivity(timer, [at("09:30")]), null)
+})
+
+test("esquecida, pausada tarde e retomada com uma escala: só conta o tempo ativo", () => {
+  // Caso real: 20:30 início, 20:31 relatório, pausa às 06:39, escala às 07:12.
+  const timer = { startedAt: "2026-10-07T20:30:00.000Z", pausedMs: 0, pausedAt: "2026-10-08T06:39:00.000Z" }
+  const acts = ["2026-10-07T20:31:00.000Z", "2026-10-08T07:12:00.000Z"]
+  const clock = consultClock(timer, acts, Date.parse("2026-10-08T07:15:00.000Z"))
+  assert.deepEqual(clock, { elapsedMs: 4 * MIN, idleSince: null, paused: false })
+})

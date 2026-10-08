@@ -19,3 +19,4 @@ export { createDashboardCaseWithPatientAction } from "./create-dashboard-case-wi
 export { sendCaseAssistantMessageAction } from "./send-case-assistant-message"
 export { transcribeNewCaseAudioAction } from "./transcribe-new-case-audio"
 export { suggestCaseChatChipsAction } from "./suggest-case-chat-chips"
+export { getActiveConsultAction, type ActiveConsult } from "./get-active-consult"

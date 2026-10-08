@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { SparklesIcon } from "lucide-react"
+import { MegaphoneIcon, SparklesIcon } from "lucide-react"
 
 import {
   Dialog,
@@ -15,7 +15,7 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar"
-import { CHANGELOG, LATEST_RELEASE } from "@/lib/changelog"
+import { LATEST_RELEASE } from "@/lib/changelog"
 import { formatDate } from "@/lib/formatters"
 
 // v2: antes bastava fechar o modal para marcar como lido, o que apagava o
@@ -76,82 +76,46 @@ export function ChangelogMenuItem() {
         <SidebarMenuButton
           tooltip={`${LATEST_RELEASE.entries.length} novidades no app`}
           onClick={() => setOpen(true)}
-          className="relative overflow-hidden bg-primary/15 text-primary ring-1 ring-primary/50 shadow-sm hover:bg-primary/20 hover:text-primary"
         >
-          {/* Brilho varrendo a linha, sem condição de "reduzir movimento": o
-              dono do produto pediu o item sempre animado. Se algum dia isso
-              incomodar, é devolver o prefixo motion-safe: nesta classe. */}
+          <MegaphoneIcon />
+          <span>Novidades</span>
+          {/* Guia 2.0: o destaque é só o ponto azul, sem brilho nem pulso. */}
           <span
             aria-hidden
-            className="pointer-events-none absolute inset-0 bg-gradient-to-r from-transparent via-primary/30 to-transparent bg-[length:380px_100%] bg-no-repeat animate-shimmer"
+            className="ml-auto size-2 shrink-0 rounded-full bg-primary group-data-[collapsible=icon]:absolute group-data-[collapsible=icon]:top-1.5 group-data-[collapsible=icon]:right-1.5"
           />
-
-          <SparklesIcon className="relative animate-pulse" />
-          <span className="relative font-semibold">Novidades</span>
-
-          <span className="relative ml-auto flex shrink-0 items-center gap-1.5">
-            <span className="relative flex h-2 w-2">
-              <span className="absolute inline-flex h-full w-full rounded-full bg-primary opacity-75 animate-ping" />
-              <span className="relative inline-flex h-2 w-2 rounded-full bg-primary" />
-            </span>
-            {/* Pulso, não salto: a linha precisa de overflow-hidden para o
-                brilho não vazar, e qualquer animação que desloque o selo o
-                faria ser cortado na borda. Piscar chama atenção sem sair. */}
-            <span className="rounded-full bg-primary px-1.5 py-0.5 text-[10px] font-bold uppercase leading-none tracking-wide text-primary-foreground animate-pulse">
-              Novo
-            </span>
-          </span>
         </SidebarMenuButton>
       </SidebarMenuItem>
 
       <Dialog open={open} onOpenChange={handleOpenChange}>
-        <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-2xl">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <SparklesIcon className="h-5 w-5 text-primary" aria-hidden />
-              Novidades do Falaped
-            </DialogTitle>
-            <DialogDescription>
-              O que mudou no app desde a sua última visita.
-            </DialogDescription>
+        <DialogContent className="flex max-h-[85vh] flex-col gap-0 overflow-hidden p-0 sm:max-w-2xl">
+          {/* Protótipo i1: só a versão nova, em destaque, e uma lista curta do que mudou. */}
+          <DialogHeader className="m-2 mb-0 rounded-xl border border-primary-soft-border bg-highlight px-6 py-5 text-left">
+            <p className="flex items-center gap-2 text-caption font-medium text-primary-ink-strong">
+              <SparklesIcon className="size-4" aria-hidden />
+              Novidade · {formatDate(LATEST_RELEASE.date)}
+            </p>
+            <DialogTitle className="font-display text-page font-semibold">{LATEST_RELEASE.title}</DialogTitle>
+            <DialogDescription>{LATEST_RELEASE.summary}</DialogDescription>
           </DialogHeader>
 
-          <div className="flex flex-col gap-8">
-            {CHANGELOG.map((release) => (
-              <section key={release.id} className="flex flex-col gap-4">
+          <ul className="flex-1 divide-y divide-border overflow-y-auto px-6">
+            {LATEST_RELEASE.entries.map((entry) => (
+              <li key={entry.title} className="flex gap-4 py-4">
+                <span className="grid size-9 shrink-0 place-items-center rounded-lg bg-primary-soft text-primary-ink-strong">
+                  <entry.icon className="size-4" aria-hidden />
+                </span>
                 <div>
-                  <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                    {formatDate(release.date)}
-                  </p>
-                  <h3 className="mt-1 text-lg font-semibold tracking-tight">
-                    {release.title}
-                  </h3>
-                  <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
-                    {release.summary}
-                  </p>
+                  <p className="font-semibold">{entry.title}</p>
+                  <p className="mt-0.5 text-muted-foreground">{entry.description}</p>
                 </div>
-
-                <ul className="flex flex-col gap-4">
-                  {release.entries.map((entry) => (
-                    <li
-                      key={entry.title}
-                      className="rounded-lg border border-border bg-muted/15 px-4 py-3"
-                    >
-                      <p className="text-sm font-medium text-foreground">
-                        {entry.title}
-                      </p>
-                      <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
-                        {entry.description}
-                      </p>
-                    </li>
-                  ))}
-                </ul>
-              </section>
+              </li>
             ))}
-          </div>
+          </ul>
 
-          <div className="flex justify-end">
-            <Button type="button" onClick={() => handleOpenChange(false)}>
+          <div className="flex items-center gap-3 border-t border-border px-6 py-4">
+            <span className="text-caption text-subtle-foreground">Abre de novo pelo item Novidades no menu.</span>
+            <Button type="button" className="ml-auto" onClick={() => handleOpenChange(false)}>
               Entendi
             </Button>
           </div>

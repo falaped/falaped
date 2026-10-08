@@ -18,7 +18,6 @@ function formValues(consultation_price_cents: string) {
   return {
     first_name: "",
     surname: "",
-    email: "",
     crm: "",
     rqe: "",
     social_media_handle: "",

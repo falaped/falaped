@@ -34,7 +34,7 @@ export function caseReportGenerateDisabledReason(params: {
     return "Já existe um relatório gerado pela web para este caso."
   }
   if (!params.hasMessages) {
-    return "É necessário haver mensagens no histórico do caso para gerar o relatório."
+    return "Registre algo na consulta (conversa, documento, medida ou escala) para gerar o relatório."
   }
   if (params.templateSectionCount === 0) {
     return "O modelo de relatório não possui seções configuradas."

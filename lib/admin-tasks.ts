@@ -236,24 +236,3 @@ export function prospectTask(p: ProspectRow, sender: string): AdminTask | null {
     ),
   }
 }
-
-const KIND_PHRASE: Record<TaskKind, (n: number) => string> = {
-  "pagou-sem-uso": (n) => (n === 1 ? "1 cliente pagou e ainda não usou" : `${n} clientes pagaram e ainda não usaram`),
-  "teste-acabando": (n) => (n === 1 ? "1 teste acaba nesta semana" : `${n} testes acabam nesta semana`),
-  "teste-acabou": (n) => (n === 1 ? "1 teste acabou sem pagamento" : `${n} testes acabaram sem pagamento`),
-  "teste-sem-uso": (n) => (n === 1 ? "1 conta em teste ainda não usou" : `${n} contas em teste ainda não usaram`),
-  renovacao: (n) => (n === 1 ? "1 assinatura precisa de renovação" : `${n} assinaturas precisam de renovação`),
-  parada: (n) => (n === 1 ? "1 conta esfriou" : `${n} contas esfriaram`),
-  lead: (n) => (n === 1 ? "chegou 1 lead novo" : `chegaram ${n} leads novos`),
-  quente: (n) => (n === 1 ? "1 prospect abriu o convite" : `${n} prospects abriram o convite`),
-}
-
-/** "1 cliente pagou e ainda não usou, 1 teste acaba nesta semana e chegou 1 lead novo." */
-export function summarizeTasks(tasks: AdminTask[]): string {
-  const counts = new Map<TaskKind, number>()
-  for (const t of tasks) counts.set(t.kind, (counts.get(t.kind) ?? 0) + 1)
-  const parts = [...counts].map(([kind, n]) => KIND_PHRASE[kind](n))
-  if (parts.length === 0) return "Nada pendente hoje. Bom momento para prospectar."
-  const text = parts.length === 1 ? parts[0] : `${parts.slice(0, -1).join(", ")} e ${parts.at(-1)}`
-  return `${text[0].toUpperCase()}${text.slice(1)}.`
-}

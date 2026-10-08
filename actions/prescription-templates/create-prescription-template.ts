@@ -29,6 +29,7 @@ export async function createPrescriptionTemplateAction(params: {
   const supabase = await createClient()
   const { profile } = await getAuthenticatedUser(supabase)
   if (!profile?.id) return { ok: false, error: "Sessão não encontrada." }
+  if (profile.status !== "paid") return { ok: false, error: "Perfil não ativo. Conclua a configuração da conta em Perfil." }
 
   const parsed = createPrescriptionTemplateSchema.safeParse(params)
   if (!parsed.success) {
@@ -45,7 +46,7 @@ export async function createPrescriptionTemplateAction(params: {
       name: parsed.data.name,
       snapshot: parsed.data.snapshot,
     })
-    revalidatePath("/dashboard/prescription-templates")
+    revalidatePath("/dashboard/templates")
     return { ok: true, id }
   } catch (e) {
     console.error("[PRESCRIPTION_TEMPLATES] create failed", e)

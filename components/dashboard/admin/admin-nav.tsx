@@ -1,55 +1,33 @@
 "use client"
 
-import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { ChartLineIcon, FilterIcon, LayoutDashboardIcon, MailsIcon, UsersIcon } from "lucide-react"
 
-import { cn } from "@/lib/utils"
+import { LinkTab } from "@/components/dashboard/admin/admin-ui"
 
 const LINKS = [
-  { href: "/dashboard/admin", label: "Painel", icon: LayoutDashboardIcon, exact: true },
-  { href: "/dashboard/admin/funil", label: "Funil", icon: FilterIcon },
-  { href: "/dashboard/admin/users", label: "Clientes", icon: UsersIcon },
-  { href: "/dashboard/admin/uso", label: "Uso", icon: ChartLineIcon },
-  { href: "/dashboard/admin/mensagens", label: "Mensagens", icon: MailsIcon },
+  { href: "/dashboard/admin", label: "Painel", exact: true },
+  { href: "/dashboard/admin/funil", label: "Funil" },
+  { href: "/dashboard/admin/users", label: "Clientes" },
+  { href: "/dashboard/admin/uso", label: "Uso" },
+  { href: "/dashboard/admin/mensagens", label: "Mensagens" },
+  { href: "/dashboard/admin/feedback", label: "Feedback" },
 ]
 
 /**
- * Abas do admin em controle segmentado: a sidebar só leva à seção, daqui se navega entre as telas.
- * `newLeads` vira o aviso no Funil: leads da landing ainda sem contato (só admin vê esta barra).
+ * Abas sublinhadas do admin: o menu só leva à seção, daqui se navega entre as telas.
+ * Selos: `newLeads` no Funil (leads da landing sem contato) e `newFeedback` no Feedback (status novo).
  */
-export function AdminNav({ newLeads = 0 }: { newLeads?: number }) {
+export function AdminNav({ newLeads = 0, newFeedback = 0 }: { newLeads?: number; newFeedback?: number }) {
   const pathname = usePathname()
   return (
-    <nav className="flex w-fit gap-1 rounded-xl bg-muted p-1" aria-label="Admin">
+    <nav className="flex gap-5 border-b border-border" aria-label="Admin">
       {LINKS.map((link) => {
-        const active = link.exact
-          ? pathname === link.href
-          : pathname === link.href || pathname.startsWith(`${link.href}/`)
-        const Icon = link.icon
+        const active = link.exact ? pathname === link.href : pathname === link.href || pathname.startsWith(`${link.href}/`)
+        const badge = link.label === "Funil" ? newLeads : link.label === "Feedback" ? newFeedback : 0
         return (
-          <Link
-            key={link.href}
-            href={link.href}
-            aria-current={active ? "page" : undefined}
-            className={cn(
-              "flex items-center gap-2 rounded-[9px] px-3.5 py-1.5 text-sm transition-colors",
-              active
-                ? "bg-card font-medium text-foreground shadow-xs ring-1 ring-foreground/10"
-                : "text-muted-foreground hover:text-foreground",
-            )}
-          >
-            <Icon className="size-4" aria-hidden />
+          <LinkTab key={link.href} href={link.href} active={active} count={badge > 0 ? badge : undefined} warn>
             {link.label}
-            {link.label === "Funil" && newLeads > 0 ? (
-              <span
-                className="rounded-full bg-orange-600 px-1.5 text-[11px] font-semibold leading-[18px] text-white tabular-nums"
-                aria-label={`${newLeads} ${newLeads === 1 ? "lead novo" : "leads novos"}`}
-              >
-                {newLeads}
-              </span>
-            ) : null}
-          </Link>
+          </LinkTab>
         )
       })}
     </nav>

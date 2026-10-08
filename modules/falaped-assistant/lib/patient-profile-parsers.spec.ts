@@ -12,7 +12,9 @@ import {
   parseSexFromMessage,
   detectPatientProfileUpdateCandidate,
   looksLikePatientProfileDictation,
+  parseAllergyAddition,
 } from "@/modules/falaped-assistant/lib/patient-profile-parsers"
+import { parseWeightHeightForBmi } from "@/lib/parse-anthropometrics-for-bmi"
 
 const EMPTY_PROFILE = {
   id: "p-1",
@@ -137,15 +139,20 @@ test("parseSexFromMessage returns null when unspecified", () => {
   assert.equal(parseSexFromMessage("paciente com febre"), null)
 })
 
-test("detectPatientProfileUpdateCandidate detects weight and height updates", () => {
-  const result = detectPatientProfileUpdateCandidate({
-    userMessage: "peso 5kg altura 51cm",
-    patientProfile: EMPTY_PROFILE,
-  })
-  assert.ok(result)
-  assert.ok(result.updates.weight)
-  assert.ok(result.updates.height)
-  assert.ok(result.summaryLines.length >= 2)
+test("chat não altera na ficha peso, estatura, nome, nascimento, responsáveis, telefone, sexo, medicações e histórico", () => {
+  for (const userMessage of [
+    "peso 5kg altura 51cm",
+    "sexo: feminino",
+    "nome do paciente: Ana",
+    "responsável: Maria",
+    "responsável legal: Mãe",
+    "telefone: 31999998888",
+    "data de nascimento: 01/02/2024",
+    "medicações em uso: vitamina D",
+    "histórico médico: asma",
+  ]) {
+    assert.equal(detectPatientProfileUpdateCandidate({ userMessage, patientProfile: EMPTY_PROFILE }), null, userMessage)
+  }
 })
 
 test("detectPatientProfileUpdateCandidate returns null without profile id", () => {
@@ -164,16 +171,6 @@ test("detectPatientProfileUpdateCandidate returns null when no parseable data", 
   assert.equal(result, null)
 })
 
-test("detectPatientProfileUpdateCandidate updates sex to enum key", () => {
-  const result = detectPatientProfileUpdateCandidate({
-    userMessage: "sexo: feminino",
-    patientProfile: { ...EMPTY_PROFILE, sex: "masculino" },
-  })
-  assert.ok(result)
-  assert.equal(result.updates.sex, "feminino")
-  assert.ok(result.summaryLines.some((line) => line.includes("Feminino")))
-})
-
 test("looksLikePatientProfileDictation detects weight/height patterns", () => {
   assert.equal(looksLikePatientProfileDictation("peso 5kg altura 51cm"), true)
 })
@@ -184,4 +181,31 @@ test("looksLikePatientProfileDictation detects blood type patterns", () => {
 
 test("looksLikePatientProfileDictation returns false for plain text", () => {
   assert.equal(looksLikePatientProfileDictation("boa tarde doutor"), false)
+})
+
+test("adicionar alergia sem dois-pontos soma à lista da ficha", () => {
+  assert.equal(parseAllergyAddition("adicionar alergia  amendoim"), "amendoim")
+  assert.equal(parseAllergyAddition("incluir alergia a dipirona"), "dipirona")
+  assert.equal(parseAllergyAddition("nega alergias"), null)
+
+  const added = detectPatientProfileUpdateCandidate({
+    userMessage: "adicionar alergia amendoim",
+    patientProfile: { ...EMPTY_PROFILE, allergies: "Dipirona" },
+  })
+  assert.equal(added?.updates.allergies, "Dipirona, amendoim")
+
+  const repeated = detectPatientProfileUpdateCandidate({
+    userMessage: "adicionar alergia dipirona",
+    patientProfile: { ...EMPTY_PROFILE, allergies: "Dipirona" },
+  })
+  assert.equal(repeated?.updates.allergies, undefined)
+})
+
+test("alterar altura e PC no chat: estatura acima de 130 cm com rótulo e PC com preposição", () => {
+  assert.deepEqual(parseWeightHeightForBmi("altere a altura para 140cm e o PC para 23"), { weightKg: null, heightM: 1.4 })
+  assert.equal(parseHeadCircumferenceCmFromMessage("altere a altura para 140cm e o PC para 23"), 23)
+  assert.equal(parseHeadCircumferenceCmFromMessage("perímetro cefálico 47"), 47)
+  assert.deepEqual(parseWeightHeightForBmi("pc de 46,5 cm"), { weightKg: null, heightM: null })
+  // Sem rótulo, "cm" solto do ditado não vira estatura de adolescente.
+  assert.deepEqual(parseWeightHeightForBmi("lesão de 150 cm"), { weightKg: null, heightM: null })
 })

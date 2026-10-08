@@ -9,12 +9,12 @@ const WEEKS = 6
 
 /** Funcionalidades medidas pelas tabelas clínicas: o que conta como "usou" em cada uma. */
 const FEATURES = [
-  { key: "cases", label: "Atendimentos", table: "cases", at: "started_at", document: false },
+  { key: "cases", label: "Consultas", table: "cases", at: "started_at", document: false },
   { key: "patients", label: "Pacientes cadastrados", table: "patients", at: "created_at", document: false },
   { key: "prescriptions", label: "Receitas", table: "prescriptions", at: "created_at", document: true },
   { key: "certificates", label: "Atestados", table: "medical_certificates", at: "created_at", document: true },
   { key: "reports", label: "Laudos e relatórios", table: "medical_reports", at: "created_at", document: true },
-  { key: "case_reports", label: "Relatórios de caso", table: "case_reports", at: "created_at", document: true },
+  { key: "case_reports", label: "Relatórios da consulta", table: "case_reports", at: "created_at", document: true },
   { key: "exam_requests", label: "Pedidos de exame", table: "exam_requests", at: "created_at", document: true },
   { key: "referrals", label: "Encaminhamentos", table: "referrals", at: "created_at", document: true },
   { key: "guidance", label: "Orientações", table: "guidance_documents", at: "created_at", document: true },
@@ -40,6 +40,8 @@ export const AI_FEATURE_LABEL: Record<AiFeature, string> = {
   "exam-report": "Relatório de exames",
   "exam-pages": "Leitura de exames",
   "report-sections": "Seções de relatório",
+  "prescription-template": "Modelo de receita",
+  "exam-panel-template": "Modelo de exames",
   "improve-section": "Melhorar seção",
   transcription: "Transcrição",
   "assistant-actions": "Ações do assistente",
@@ -155,7 +157,7 @@ export async function getProductUsage(supabase: SupabaseClient, now: Date = new 
     adoption: [
       { label: "Criaram conta", count: clients.length },
       { label: "Cadastraram paciente", count: clients.filter((r) => r.patients > 0).length },
-      { label: "Abriram atendimento", count: clients.filter((r) => r.cases > 0).length },
+      { label: "Iniciaram consulta", count: clients.filter((r) => r.cases > 0).length },
       { label: "Emitiram documento", count: clients.filter(hasDocument).length },
     ],
     features: features

@@ -7,7 +7,7 @@ export type AssistantTurnContext = {
   pendingAction: string | null
   patientContext: string | null
   conversationSummary: string | null
-  patientMetrics?: { weight: number | null; height: number | null }
+  patientMetrics?: { weight: number | null; height: number | null; headCircumference?: number | null }
   patientProfile?: PatientProfileSnapshot
   turnQueue?: unknown | null
 }

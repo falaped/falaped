@@ -1,7 +1,14 @@
-import { SectionHub } from "@/components/dashboard/section-hub"
+import { Suspense } from "react"
 
-export const metadata = { title: "Serviços" }
+import { DocumentsContent } from "@/components/dashboard/documents/documents-content"
+import { PatientsLoading } from "@/components/dashboard/patients/patients-loading"
 
-export default function ServicesPage() {
-  return <SectionHub url="/dashboard/services" />
+export const metadata = { title: "Documentos" }
+
+export default function DocumentsPage() {
+  return (
+    <Suspense fallback={<PatientsLoading label="Carregando documentos" />}>
+      <DocumentsContent />
+    </Suspense>
+  )
 }

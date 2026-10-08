@@ -2,18 +2,17 @@
 
 import { useEffect, useMemo, useRef, useState, useTransition } from "react"
 import Link from "next/link"
-import { useRouter } from "next/navigation"
 import {
-  BotIcon,
+  ArrowUpIcon,
+  ClipboardListIcon,
   CheckIcon,
   FileTextIcon,
+  HistoryIcon,
   InfoIcon,
   Loader2Icon,
   MicIcon,
   PauseIcon,
   PlayIcon,
-  SendIcon,
-  StethoscopeIcon,
   TriangleAlertIcon,
   XCircleIcon,
   XIcon,
@@ -21,6 +20,9 @@ import {
 import { toast } from "sonner"
 import { cn } from "@/lib/utils"
 import { formatDate, formatTime } from "@/lib/formatters"
+import { computePediatricAge } from "@/lib/compute-pediatric-age"
+import { formatPediatricAgeFull, formatPediatricAgeShort } from "@/lib/format-pediatric-age"
+import { getPatientInitials } from "@/lib/get-patient-initials"
 import { getFriendlyToastMessage } from "@/lib/get-friendly-toast-message"
 import { useAudioRecorder } from "@/hooks/use-audio-recorder"
 import { getFallbackCaseChatChips, type CaseChatChipSuggestion } from "@/lib/dashboard-case-chat-chips"
@@ -31,10 +33,10 @@ import { downloadCaseReportPdfAction } from "@/actions/cases/download-case-repor
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Avatar, AvatarFallback } from "@/components/ui/avatar"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
-import { Separator } from "@/components/ui/separator"
-import { Skeleton } from "@/components/ui/skeleton"
+import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet"
+import { useSidebar } from "@/components/ui/sidebar"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -51,11 +53,26 @@ import {
   ASSISTANT_TYPING_MIN_DISPLAY_MS,
 } from "@/lib/constants"
 import { CLINICAL_NOTATION_SUMMARY_MESSAGE } from "@/lib/format-clinical-assistant-sections"
-import { ConsultationTimerWidget } from "@/components/dashboard/cases/consultation-timer-widget"
-import { CaseRemindersDialog } from "@/components/dashboard/cases/case-reminders-dialog"
-import { PreviousCaseSummaryDialog } from "@/components/dashboard/cases/previous-case-summary-dialog"
+import { CloseConsultSheet } from "@/components/dashboard/cases/close-consult-sheet"
+import type { CaseReport as CaseReportType } from "@/modules/cases/get-case-report"
+import type { ReportTemplateWithSections } from "@/modules/report-templates/get-report-template-by-id"
+import { toCaseDocuments } from "@/components/dashboard/cases/case-detail-documents"
+import { ConsultRail } from "@/components/dashboard/cases/consult-rail"
+import { clinicDay, countConsultRecords, type ConsultDocuments, type ConsultRecords } from "@/lib/consult-records"
+import { ConsultTimer } from "@/components/dashboard/cases/consult-timer"
+import { closeTiming } from "@/lib/consult-idle"
+import type { ConsultDoctor } from "@/components/dashboard/cases/consult-prescription-panel"
+import { ConsultTools, openConsultTool } from "@/components/dashboard/cases/consult-tools"
+import type { ExamReadingWithPages } from "@/components/dashboard/exam-readings/exam-reading-card"
 import type { CaseCarryover } from "@/modules/cases/get-previous-case-carryover"
+import type { CasePatientDetail } from "@/modules/cases/get-case-by-id"
 import type { CaseReminder } from "@/modules/cases/types"
+import type { PatientAttachment } from "@/modules/patient-attachments/types"
+import type { ExamCatalogItem } from "@/modules/exam-catalog/types"
+import type { ExamPanel } from "@/modules/exam-panels/types"
+import type { Measurement } from "@/modules/patient-growth/types"
+import type { PrescriptionTemplateOption } from "@/modules/prescription-templates/types"
+import type { ScaleResult } from "@/modules/patient-scales/types"
 
 type WorkspaceMessage = {
   id: string
@@ -260,9 +277,55 @@ function delayMs(ms: number): Promise<void> {
 function DateSeparator({ label }: { label: string }) {
   return (
     <div className="flex justify-center py-1">
-      <span className="rounded-full border border-border bg-muted/40 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.08em] text-muted-foreground">
+      <span className="rounded-full bg-muted px-3 py-0.5 text-caption font-medium text-muted-foreground">
         {label}
       </span>
+    </div>
+  )
+}
+
+/** Marca do assistente na conversa: a logo compacta do Falaped. */
+function AssistantMark({ className }: { className?: string }) {
+  return (
+    <>
+      {/* eslint-disable-next-line @next/next/no-img-element -- SVG estático, sem ganho com next/image */}
+      <img src="/falaped-icon.svg" alt="" className={cn("size-5 dark:hidden", className)} />
+      {/* eslint-disable-next-line @next/next/no-img-element -- SVG estático, sem ganho com next/image */}
+      <img src="/falaped-icon-dark.svg" alt="" className={cn("hidden size-5 dark:block", className)} />
+    </>
+  )
+}
+
+function AssistantStatus({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="flex items-center gap-2 text-caption text-subtle-foreground">
+      <AssistantMark className="animate-pulse" />
+      {children}
+    </div>
+  )
+}
+
+/** O que a consulta anterior deixou, no topo da conversa (antes era um modal na abertura). */
+function CarryoverCard({ carryover, onDismiss }: { carryover: CaseCarryover; onDismiss: () => void }) {
+  return (
+    <div className="flex gap-3 rounded-xl bg-muted p-4">
+      <HistoryIcon className="mt-0.5 size-4 shrink-0 text-subtle-foreground" aria-hidden />
+      <div className="min-w-0 flex-1">
+        <p className="text-label font-semibold">
+          Da última consulta · <span className="num">{formatDate(carryover.endedAt ?? carryover.startedAt)}</span>
+        </p>
+        {carryover.summary ? (
+          <p className="mt-0.5 whitespace-pre-wrap text-muted-foreground">{carryover.summary}</p>
+        ) : null}
+        {carryover.reminders.length ? (
+          <p className="mt-1 text-muted-foreground">
+            <span className="font-medium text-foreground">Lembretes:</span> {carryover.reminders.join(" · ")}
+          </p>
+        ) : null}
+      </div>
+      <Button variant="ghost" size="icon-xs" aria-label="Dispensar" onClick={onDismiss}>
+        <XIcon />
+      </Button>
     </div>
   )
 }
@@ -272,7 +335,6 @@ const buttonPressFeedbackClass =
 
 function ThreadBubble({
   message,
-  userDisplayName,
   onAssistantAction,
   onDownloadReport,
   assistantActionsDisabled,
@@ -281,7 +343,6 @@ function ThreadBubble({
   isHighlighted,
 }: {
   message: WorkspaceMessage
-  userDisplayName: string
   onAssistantAction: (actionId: string) => void
   onDownloadReport: (reportId: string) => void
   assistantActionsDisabled: boolean
@@ -291,9 +352,7 @@ function ThreadBubble({
 }) {
   const isUser = message.role === "user"
   const payload = !isUser ? parseAssistantPayload(message.content) : null
-  const bubbleShapeClass = isUser
-    ? "rounded-xl rounded-tr-none"
-    : "rounded-xl rounded-tl-none"
+  const bubbleShapeClass = "gap-0 rounded-xl py-3 shadow-none"
   const hasStoredData = Boolean(payload?.storedData?.items.length)
   const shouldShowInfoPopover = hasStoredData
   const popoverItems = hasStoredData
@@ -306,36 +365,26 @@ function ThreadBubble({
     <div
       data-thread-message-id={message.id}
       className={cn(
-        "flex gap-3 rounded-xl transition-colors",
-        isUser ? "justify-end" : "justify-start",
-        isHighlighted && "ring-2 ring-primary/60 ring-offset-2 ring-offset-sidebar",
+        "rounded-xl transition-colors",
+        isUser ? "ml-auto max-w-[85%]" : "max-w-[92%]",
+        isHighlighted && "ring-2 ring-ring ring-offset-4 ring-offset-background",
       )}
     >
-      {!isUser && (
-        <Avatar className="h-8 w-8">
-          <AvatarFallback className="bg-primary/15 text-primary">
-            <BotIcon className="h-4 w-4" />
-          </AvatarFallback>
-        </Avatar>
-      )}
-
-      <div className={cn("max-w-[78%] space-y-1", isUser && "items-end")}>
-        <div className={cn("flex items-center gap-2 text-xs text-muted-foreground", isUser && "justify-end")}>
-          <span className="font-medium">{isUser ? userDisplayName : "Falaped"}</span>
-          <span>{formatTime(message.created_at)}</span>
-        </div>
+      <div className="flex flex-col gap-1.5">
+        {isUser ? null : (
+          <div className="flex items-center gap-2 text-caption text-subtle-foreground">
+            <AssistantMark />
+            Assistente
+            <span className="num">{formatTime(message.created_at)}</span>
+          </div>
+        )}
 
         {isUser ? (
-          <div
-            className={cn(
-              bubbleShapeClass,
-              "border border-primary/30 bg-primary px-4 py-3 text-sm leading-relaxed text-primary-foreground shadow-sm",
-            )}
-          >
+          <div className="rounded-2xl rounded-br-md bg-primary-soft px-4 py-3 text-read">
             <p className="whitespace-pre-wrap">{message.content}</p>
           </div>
         ) : payload ? (
-          <Card className={cn(bubbleShapeClass, "border-border/70 shadow-sm")}>
+          <Card className={bubbleShapeClass}>
             {payload.type === "assistant_report_file" ? (
               <CardHeader className={cn("pb-2", shouldShowInfoPopover && "pr-10")}>
                 <CardTitle className="flex items-center gap-2 text-lg text-primary">
@@ -438,7 +487,7 @@ function ThreadBubble({
                 </div>
               ) : null}
 
-              <p className="whitespace-pre-wrap text-sm leading-relaxed text-foreground">
+              <p className="whitespace-pre-wrap text-read text-foreground">
                 {mergeLegacyAssistantDisplay(payload)}
               </p>
 
@@ -496,21 +545,13 @@ function ThreadBubble({
             </CardContent>
           </Card>
         ) : (
-          <Card className={cn(bubbleShapeClass, "border-border/70 shadow-sm")}>
-            <CardContent className="py-3">
-              <p className="whitespace-pre-wrap text-sm leading-relaxed">{message.content}</p>
+          <Card className={bubbleShapeClass}>
+            <CardContent>
+              <p className="whitespace-pre-wrap text-read">{message.content}</p>
             </CardContent>
           </Card>
         )}
       </div>
-
-      {isUser && (
-        <Avatar className="h-8 w-8">
-          <AvatarFallback className="bg-primary/10 text-primary">
-            <StethoscopeIcon className="h-4 w-4" />
-          </AvatarFallback>
-        </Avatar>
-      )}
     </div>
   )
 }
@@ -519,34 +560,62 @@ export function NewCaseWorkspace({
   caseId,
   initialMessages,
   patient,
-  userDisplayName,
+  photoUrl,
   startedAt,
-  endedAt,
   consultationPausedMs,
   consultationPausedAt,
   reminders = [],
   previousCarryover = null,
+  documents,
+  scaleResults,
+  attachments,
+  examReadings,
+  measurements,
+  ageMonths,
+  todayIso,
+  todayLabel,
+  doctor,
+  prescriptionTemplates,
+  examCatalog,
+  examPanels,
+  reportTemplate,
+  caseReports,
+  activityAts,
 }: {
   caseId: string
   initialMessages: WorkspaceMessage[]
-  patient: {
-    id: string
-    name: string
-    birth_date: string | null
-    responsible: string | null
-    contact_phone: string | null
-  } | null
-  userDisplayName: string
+  patient: CasePatientDetail | null
+  /** Signed URL da foto, resolvida no servidor; null cai nas iniciais. */
+  photoUrl: string | null
   startedAt: string
-  endedAt: string | null
   consultationPausedMs: number
   consultationPausedAt: string | null
   /** Lembretes já escritos neste atendimento. */
   reminders?: CaseReminder[]
   /** O que a consulta anterior desta criança deixou; null quando não há. */
   previousCarryover?: CaseCarryover | null
+  /** Documentos emitidos nesta consulta. */
+  documents: ConsultDocuments
+  scaleResults: ScaleResult[]
+  attachments: PatientAttachment[]
+  examReadings: ExamReadingWithPages[]
+  /** Medidas da criança; a coluna mostra só as de hoje. */
+  measurements: Measurement[]
+  /** Idade em meses inteiros, para filtrar as escalas; null sem nascimento. */
+  ageMonths: number | null
+  /** Hoje no fuso da clínica: "yyyy-MM-dd" e "dd/MM/yyyy". */
+  todayIso: string
+  todayLabel: string
+  doctor: ConsultDoctor
+  prescriptionTemplates: PrescriptionTemplateOption[]
+  examCatalog: ExamCatalogItem[]
+  examPanels: ExamPanel[]
+  /** Para a revisão do Encerrar. */
+  reportTemplate: ReportTemplateWithSections | null
+  caseReports: CaseReportType[]
+  /** Datas do que foi salvo na consulta: mostram se ela ficou esquecida aberta. */
+  activityAts: string[]
 }) {
-  const router = useRouter()
   const scrollRef = useRef<HTMLDivElement | null>(null)
   const sendInFlightRef = useRef(false)
   const transcribeInFlightRef = useRef(false)
@@ -564,9 +633,21 @@ export function NewCaseWorkspace({
   const [isFinalizeAudioBusy, setIsFinalizeAudioBusy] = useState(false)
   const [isAssistantResponding, setIsAssistantResponding] = useState(false)
   const [isSlowNetworkExpanded, setIsSlowNetworkExpanded] = useState(false)
-  const [showDiscardDialog, setShowDiscardDialog] = useState(false)
+  // Subtítulo do Encerrar ("… · 27 min"), fixado no clique; null = fechado.
+  const [closeOpen, setCloseOpen] = useState<string | null>(null)
+  const [railOpen, setRailOpen] = useState(false)
+  const [showCarryover, setShowCarryover] = useState(true)
   const [transcriptionPreview, setTranscriptionPreview] = useState<string | null>(null)
   const [highlightedMessageId, setHighlightedMessageId] = useState<string | null>(null)
+
+  // Durante a consulta o menu recolhe para ícones; ao sair, volta como estava.
+  const { open: sidebarOpen, setOpen: setSidebarOpen } = useSidebar()
+  const sidebarWasOpenRef = useRef(sidebarOpen)
+  useEffect(() => {
+    const wasOpen = sidebarWasOpenRef.current
+    setSidebarOpen(false)
+    return () => setSidebarOpen(wasOpen)
+  }, [setSidebarOpen])
 
   const recorder = useAudioRecorder()
   const isTurnLocked =
@@ -840,327 +921,311 @@ export function NewCaseWorkspace({
     })
   }
 
-  const userHasSentMessages = messages.some((message) => message.role === "user")
+  const allergies = (patient?.allergies ?? "")
+    .split(/[\n;,]+/)
+    .map((item) => item.trim())
+    .filter(Boolean)
+  const age = patient?.birth_date
+    ? formatPediatricAgeShort(computePediatricAge(patient.birth_date))
+    : null
+  const fullAge = formatPediatricAgeFull(patient?.birth_date ?? null, new Date())
+  const lastWeight = measurements.findLast((m) => m.weight_grams !== null)
+  const weightLabel = lastWeight
+    ? `${(lastWeight.weight_grams! / 1000).toFixed(2).replace(".", ",")} kg · ${
+        lastWeight.measured_on === todayIso ? "hoje" : formatDate(lastWeight.measured_on)
+      }`
+    : null
+  // Dia da consulta no fuso da clínica: a medida é ligada à data, não ao caso.
+  const consultDay = clinicDay(startedAt)
+  const consultRecords: ConsultRecords = {
+    documents,
+    measurements: measurements.filter((m) => m.measured_on === consultDay),
+    measurementHistory: measurements,
+    scaleResults: scaleResults.filter((r) => r.case_id === caseId),
+    examReadings,
+    attachments: attachments.filter((a) => a.case_id === caseId),
+  }
+  const docCount = countConsultRecords(consultRecords)
+  const panelSubtitle = [patient?.name ?? "Paciente não associado", age].filter(Boolean).join(" · ")
 
   return (
     <section
-      aria-label="Área do novo caso"
-      className="-m-8 flex h-[calc(100dvh-2rem)] flex-col overflow-hidden bg-sidebar"
+      aria-label="Consulta em andamento"
+      className="-m-8 flex h-dvh flex-col overflow-hidden bg-background"
     >
-      {previousCarryover && patient ? (
-        <PreviousCaseSummaryDialog
-          carryover={previousCarryover}
-          patientName={patient.name}
-        />
-      ) : null}
-      <ConsultationTimerWidget
-        caseId={caseId}
-        startedAt={startedAt}
-        endedAt={endedAt}
-        consultationPausedMs={consultationPausedMs}
-        consultationPausedAt={consultationPausedAt}
-      />
-      <header className="shrink-0 border-b border-border/60 bg-transparent px-8 py-4 backdrop-blur-md">
-        <div className="flex items-center justify-between gap-4 rounded-xl border border-border/60 bg-card/80 px-4 py-3 shadow-xs backdrop-blur-sm">
-          <div className="min-w-0 space-y-2">
-            <div className="flex items-center gap-2">
-              <Badge variant="secondary" className="h-6 rounded-full px-2.5 text-[11px]">
-                Workspace ativo
-              </Badge>
-              <span className="truncate text-xs text-muted-foreground">
-                Atendimento pediátrico em andamento
-              </span>
-            </div>
-
-            <div>
-              <h1 className="truncate text-xl font-semibold tracking-tight">
-                {patient?.name ?? "Paciente não associado"}
-              </h1>
-              <p className="truncate text-sm text-muted-foreground">
-                {patient?.responsible
-                  ? `Responsável: ${patient.responsible}`
-                  : "Responsável não informado"}
-              </p>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-2">
-            <CaseRemindersDialog caseId={caseId} initialReminders={reminders} />
-            <Button asChild variant="outline" size="sm" className={buttonPressFeedbackClass}>
-              <Link href="/dashboard/cases/select-patient">Trocar paciente</Link>
-            </Button>
-            <Button
-              variant="destructive"
-              size="sm"
-              className={buttonPressFeedbackClass}
-              onClick={() => {
-                if (userHasSentMessages) {
-                  router.push(`/dashboard/cases/${caseId}`)
-                  return
-                }
-                setShowDiscardDialog(true)
-              }}
-            >
-              Sair do workspace
-            </Button>
-          </div>
+      <header className="flex shrink-0 items-center gap-4 border-b border-border bg-card px-6 py-3">
+        <Avatar className="size-10">
+          {photoUrl ? <AvatarImage src={photoUrl} alt={`Foto de ${patient?.name ?? "paciente"}`} /> : null}
+          <AvatarFallback className="bg-primary-soft font-semibold text-primary-ink-strong">
+            {patient ? getPatientInitials(patient.name) : "?"}
+          </AvatarFallback>
+        </Avatar>
+        <div className="min-w-0">
+          <h1 className="truncate font-display text-section font-semibold">
+            {patient?.name ?? "Paciente não associado"}
+          </h1>
+          {patient ? (
+            <p className="truncate text-caption text-muted-foreground">
+              {fullAge ? <span className="num">{fullAge} · </span> : null}
+              <Link href={`/dashboard/patients/${patient.id}`} className="text-primary-ink hover:underline">
+                Ver ficha
+              </Link>
+            </p>
+          ) : null}
+        </div>
+        <div className="ml-auto flex shrink-0 items-center gap-2">
+          <ConsultTimer
+            caseId={caseId}
+            startedAt={startedAt}
+            pausedMs={consultationPausedMs}
+            pausedAt={consultationPausedAt}
+            activityAts={activityAts}
+          />
+          <Button variant="outline" onClick={() => setRailOpen(true)}>
+            <ClipboardListIcon data-icon="inline-start" />
+            Nesta consulta
+            {docCount ? <span className="num text-caption text-subtle-foreground">{docCount}</span> : null}
+            {allergies.length ? (
+              <span className="size-2 rounded-full bg-destructive" aria-label="A criança tem alergia" />
+            ) : null}
+          </Button>
+          <Button
+            onClick={() => {
+              const timing = closeTiming(
+                { startedAt, pausedMs: consultationPausedMs, pausedAt: consultationPausedAt },
+                activityAts,
+                Date.now(),
+              )
+              const minutes = Math.max(1, Math.round((Date.parse(timing.endedAt) - Date.parse(startedAt) - timing.pausedMs) / 60_000))
+              setCloseOpen(
+                [panelSubtitle, lastWeight ? `${(lastWeight.weight_grams! / 1000).toFixed(1).replace(".", ",")} kg` : null, `${minutes} min`]
+                  .filter(Boolean)
+                  .join(" · "),
+              )
+            }}
+          >
+            <CheckIcon data-icon="inline-start" />
+            Encerrar consulta
+          </Button>
         </div>
       </header>
 
-      <div
-        ref={scrollRef}
-        role="log"
-        aria-live="polite"
-        aria-label="Histórico da conversa do caso"
-        className="flex-1 min-h-0 overflow-y-auto px-8 py-6"
-      >
-        <div className="mx-auto flex max-w-5xl flex-col space-y-6">
-          {grouped.map(([label, dayMessages]) => (
-            <div key={label} className="space-y-4">
-              <DateSeparator label={label} />
-              {dayMessages.map((message) => (
-                <ThreadBubble
-                  key={message.id}
-                  message={message}
-                  userDisplayName={userDisplayName}
-                  onAssistantAction={handleAssistantAction}
-                  onDownloadReport={handleDownloadReport}
-                  assistantActionsDisabled={isInteractionLocked}
-                  actionMessageResolved={resolvedAssistantActionMessageIds.has(message.id)}
-                  downloadBusy={isDownloadingReport}
-                  isHighlighted={highlightedMessageId === message.id}
-                />
+      <ConsultTools
+        caseId={caseId}
+        patient={patient}
+        subtitle={panelSubtitle}
+        ageMonths={ageMonths}
+        scaleResults={scaleResults}
+        attachments={attachments}
+        examReadings={examReadings}
+        measurements={measurements}
+        documentData={{
+          allergies,
+          weightLabel,
+          startedAt,
+          doctor,
+          prescriptionTemplates,
+          examCatalog,
+          examPanels,
+        }}
+      />
+
+      <div className="flex min-h-0 flex-1 flex-col">
+          <div
+            ref={scrollRef}
+            role="log"
+            aria-live="polite"
+            aria-label="Conversa com o assistente"
+            className="min-h-0 flex-1 overflow-y-auto px-6 py-5"
+          >
+            <div className="mx-auto flex max-w-[760px] flex-col gap-4">
+              {previousCarryover && showCarryover ? (
+                <CarryoverCard carryover={previousCarryover} onDismiss={() => setShowCarryover(false)} />
+              ) : null}
+              {grouped.map(([label, dayMessages]) => (
+                <div key={label} className="flex flex-col gap-4">
+                  {grouped.length > 1 ? <DateSeparator label={label} /> : null}
+                  {dayMessages.map((message) => (
+                    <ThreadBubble
+                      key={message.id}
+                      message={message}
+                      onAssistantAction={handleAssistantAction}
+                      onDownloadReport={handleDownloadReport}
+                      assistantActionsDisabled={isInteractionLocked}
+                      actionMessageResolved={resolvedAssistantActionMessageIds.has(message.id)}
+                      downloadBusy={isDownloadingReport}
+                      isHighlighted={highlightedMessageId === message.id}
+                    />
+                  ))}
+                </div>
               ))}
+              {isTranscribing ? (
+                <AssistantStatus>
+                  Transcrevendo o áudio… A prévia aparece para você conferir antes de ir para a mensagem.
+                </AssistantStatus>
+              ) : isAssistantResponding && !recorder.error ? (
+                <AssistantStatus>
+                  {isSlowNetworkExpanded ? "Ainda respondendo, a conexão está lenta…" : "Respondendo…"}
+                </AssistantStatus>
+              ) : null}
             </div>
-          ))}
-          {isTranscribing ? (
-            <div className="flex gap-3">
-              <Avatar className="h-8 w-8">
-                <AvatarFallback className="bg-primary/15 text-primary">
-                  <BotIcon className="h-4 w-4" />
-                </AvatarFallback>
-              </Avatar>
-              <Card className="border-border/70 shadow-sm">
-                <CardContent className="flex items-center gap-3 py-3">
-                  <Loader2Icon className="h-4 w-4 animate-spin text-primary" />
-                  <p className="text-sm font-medium">Transcrevendo áudio...</p>
-                  <button
-                    type="button"
-                    className="text-xs text-muted-foreground underline underline-offset-2"
-                    onClick={() => setIsSlowNetworkExpanded((value) => !value)}
-                  >
-                    Ver detalhes
-                  </button>
-                </CardContent>
-                {isSlowNetworkExpanded ? (
-                  <CardContent className="pt-0">
-                    <p className="text-xs text-muted-foreground">
-                      O áudio está sendo processado no servidor. Em seguida, a prévia será exibida
-                      para confirmação antes de inserir no rascunho.
-                    </p>
-                  </CardContent>
-                ) : null}
-              </Card>
-            </div>
-          ) : isAssistantResponding && !recorder.error ? (
-            <div className="flex gap-3">
-              <Avatar className="h-8 w-8">
-                <AvatarFallback className="bg-primary/15 text-primary">
-                  <BotIcon className="h-4 w-4" />
-                </AvatarFallback>
-              </Avatar>
-              <div className="flex items-center gap-2 pt-1 text-sm text-muted-foreground">
-                <Loader2Icon className="h-3.5 w-3.5 animate-spin text-muted-foreground" />
-                <p>Falaped está respondendo...</p>
-              </div>
-            </div>
-          ) : null}
-        </div>
-      </div>
-
-      <Separator />
-
-      <footer className="shrink-0 border-t border-border/60 bg-transparent px-8 py-4 backdrop-blur-md">
-        <div className="mx-auto flex max-w-5xl flex-col gap-3 rounded-xl border border-border/60 bg-card/80 p-4 shadow-xs backdrop-blur-sm">
-          <div className="flex gap-2 overflow-x-auto pb-1">
-            {chips.slice(0, 4).map((chip) => {
-              const chipBusy = chipsLoading || submittingChipId === chip.id
-              return (
-                <Button
-                  key={chip.id}
-                  type="button"
-                  size="sm"
-                  variant="outline"
-                  disabled={isInteractionLocked}
-                  aria-label={chip.label}
-                  aria-busy={chipBusy}
-                  className={cn(
-                    "h-8 shrink-0",
-                    buttonPressFeedbackClass,
-                    chipBusy && "relative overflow-hidden",
-                  )}
-                  onClick={() => handleSend(chip.label, { chipId: chip.id })}
-                >
-                  {chipBusy ? (
-                    <span className="relative flex min-w-25 items-center justify-center py-0.5">
-                      <Skeleton
-                        className="pointer-events-none absolute inset-0 rounded-[inherit] opacity-70"
-                        aria-hidden
-                      />
-                      <span className="relative z-10 text-[0.7rem] font-normal leading-none text-muted-foreground">
-                        {submittingChipId === chip.id ? "Enviando…" : "Carregando…"}
-                      </span>
-                    </span>
-                  ) : (
-                    chip.label
-                  )}
-                </Button>
-              )
-            })}
           </div>
 
-          <div className="relative">
-            <Textarea
-              aria-label="Mensagem para o Falaped"
-              value={draft}
-              onChange={(event) => setDraft(event.target.value)}
-              onKeyDown={handleComposerKeyDown}
-              placeholder={
-                awaitingPendingActionConfirmation
-                  ? "Confirme ou cancele a ação acima para continuar…"
-                  : "Descreva os achados clínicos ou peça uma análise…"
-              }
-              className="field-sizing-fixed h-[88px] min-h-[88px] max-h-[88px] resize-none overflow-y-auto pr-32 text-sm leading-relaxed"
-              disabled={isComposerBlocked}
-            />
-            <div className="absolute bottom-3 right-3 flex items-center gap-2">
-              {recorder.isRecording || recorder.isPaused ? (
-                <>
-                  <div className="flex h-8 items-center gap-2 overflow-hidden rounded-full border border-border bg-background px-3 shadow-sm">
-                    <span className="h-2 w-2 rounded-full bg-red-500" />
-                    <span className="text-sm font-medium tabular-nums">
-                      {formatElapsed(recorder.elapsedSeconds)}
-                    </span>
-                    <div className="flex h-4 items-end gap-0.5">
-                      {recorder.waveformBars.map((height, index) => (
-                        <span
-                          key={index}
-                          className="w-0.5 rounded-full bg-primary/80"
-                          style={{ height: `${height}px` }}
-                        />
-                      ))}
-                    </div>
-                  </div>
-                  <Button
-                    size="icon"
-                    type="button"
-                    variant="ghost"
-                    className={buttonPressFeedbackClass}
-                    onClick={recorder.cancel}
-                  >
-                    <XIcon className="h-4 w-4" />
-                  </Button>
-                  {recorder.isRecording ? (
-                    <Button
-                      size="icon"
-                      type="button"
-                      variant="outline"
-                      className={buttonPressFeedbackClass}
-                      onClick={recorder.pause}
-                    >
-                      <PauseIcon className="h-4 w-4" />
-                    </Button>
+          <footer className="shrink-0 border-t border-border bg-card px-6 py-3">
+            <div className="mx-auto flex max-w-[760px] flex-col gap-2">
+              {chips.length ? (
+                <div className="flex flex-wrap gap-1.5">
+                  {chips.slice(0, 4).map((chip) => {
+                    const chipBusy = chipsLoading || submittingChipId === chip.id
+                    return (
+                      <Button
+                        key={chip.id}
+                        type="button"
+                        size="xs"
+                        variant="outline"
+                        disabled={isInteractionLocked || chipBusy}
+                        aria-busy={chipBusy}
+                        className="shrink-0 rounded-full font-normal text-muted-foreground"
+                        onClick={() => handleSend(chip.label, { chipId: chip.id })}
+                      >
+                        {submittingChipId === chip.id ? "Enviando…" : chip.label}
+                      </Button>
+                    )
+                  })}
+                </div>
+              ) : null}
+              <div className="rounded-xl border border-input bg-card p-2 focus-within:border-ring">
+                <Textarea
+                  aria-label="Mensagem para o assistente"
+                  value={draft}
+                  onChange={(event) => setDraft(event.target.value)}
+                  onKeyDown={handleComposerKeyDown}
+                  placeholder={
+                    awaitingPendingActionConfirmation
+                      ? "Confirme ou cancele a ação acima para continuar…"
+                      : "Descreva a consulta ou grave o áudio…"
+                  }
+                  className="field-sizing-fixed h-16 min-h-16 resize-none border-0 bg-transparent px-2 py-1.5 text-read shadow-none focus-visible:ring-0 dark:bg-transparent"
+                  disabled={isComposerBlocked}
+                />
+                <div className="flex items-center gap-1">
+                  {recorder.isRecording || recorder.isPaused ? (
+                    <>
+                      <span className="flex h-8 items-center gap-2 rounded-full border border-border px-3">
+                        <span className="size-2 rounded-full bg-destructive" aria-hidden />
+                        <span className="num text-label font-medium">{formatElapsed(recorder.elapsedSeconds)}</span>
+                        <span className="flex h-4 items-end gap-0.5" aria-hidden>
+                          {recorder.waveformBars.map((height, index) => (
+                            <span key={index} className="w-0.5 rounded-full bg-primary" style={{ height: `${height}px` }} />
+                          ))}
+                        </span>
+                      </span>
+                      <Button size="icon-sm" type="button" variant="ghost" aria-label="Descartar gravação" onClick={recorder.cancel}>
+                        <XIcon />
+                      </Button>
+                      <Button
+                        size="icon-sm"
+                        type="button"
+                        variant="ghost"
+                        aria-label={recorder.isRecording ? "Pausar gravação" : "Continuar gravação"}
+                        onClick={recorder.isRecording ? recorder.pause : recorder.resume}
+                      >
+                        {recorder.isRecording ? <PauseIcon /> : <PlayIcon />}
+                      </Button>
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="outline"
+                        disabled={isFinalizeAudioBusy || isTranscribing}
+                        aria-busy={isFinalizeAudioBusy || isTranscribing}
+                        onClick={handleFinalizeAudio}
+                      >
+                        {isFinalizeAudioBusy || isTranscribing ? (
+                          <Loader2Icon data-icon="inline-start" className="animate-spin" />
+                        ) : (
+                          <CheckIcon data-icon="inline-start" />
+                        )}
+                        Concluir gravação
+                      </Button>
+                    </>
                   ) : (
                     <Button
-                      size="icon"
                       type="button"
-                      variant="outline"
-                      className={buttonPressFeedbackClass}
-                      onClick={recorder.resume}
+                      size="sm"
+                      variant="ghost"
+                      disabled={isComposerBlocked}
+                      onClick={() => recorder.start()}
                     >
-                      <PlayIcon className="h-4 w-4" />
+                      <MicIcon data-icon="inline-start" />
+                      Gravar
                     </Button>
                   )}
+                  <span className="ml-auto text-caption text-subtle-foreground">
+                    <kbd className="font-sans">↵</kbd> envia · <kbd className="font-sans">⇧↵</kbd> nova linha
+                  </span>
                   <Button
                     type="button"
                     size="sm"
-                    className={buttonPressFeedbackClass}
-                    disabled={isFinalizeAudioBusy || isTranscribing}
-                    aria-busy={isFinalizeAudioBusy || isTranscribing}
-                    onClick={handleFinalizeAudio}
+                    variant="outline"
+                    disabled={isComposerBlocked || !draft.trim()}
+                    aria-busy={isSendingMessage || isAssistantResponding}
+                    onClick={() => handleSend(draft)}
                   >
-                    {isFinalizeAudioBusy || isTranscribing ? (
-                      <>
-                        <Loader2Icon className="h-3.5 w-3.5 animate-spin" aria-hidden />
-                        Processando…
-                      </>
+                    {isSendingMessage || isAssistantResponding ? (
+                      <Loader2Icon data-icon="inline-start" className="animate-spin" />
                     ) : (
-                      "Finalizar"
+                      <ArrowUpIcon data-icon="inline-start" />
                     )}
+                    Enviar
                   </Button>
-                </>
-              ) : null}
-              <Button
-                size="icon"
-                type="button"
-                variant="ghost"
-                aria-label="Gravar áudio"
-                className={buttonPressFeedbackClass}
-                disabled={isComposerBlocked}
-                onClick={() => recorder.start()}
-              >
-                <MicIcon className="h-4 w-4" />
-              </Button>
-              <Button
-                size="icon"
-                type="button"
-                aria-label="Enviar mensagem"
-                className={buttonPressFeedbackClass}
-                disabled={isComposerBlocked || !draft.trim()}
-                aria-busy={isSendingMessage || isAssistantResponding}
-                onClick={() => handleSend(draft)}
-              >
-                {isSendingMessage || isAssistantResponding ? (
-                  <Loader2Icon className="h-4 w-4 animate-spin" aria-hidden />
-                ) : (
-                  <SendIcon className="h-4 w-4" />
-                )}
-              </Button>
-            </div>
-          </div>
-
-          {recorder.error && (
-            <div className="rounded-md border border-border bg-muted/40 px-3 py-2 text-sm">
-              <div className="flex items-center justify-between gap-3">
-                <p role="alert" className="text-destructive">
-                  {recorder.error}
-                </p>
-                <Button variant="outline" size="sm" onClick={() => recorder.start()}>
-                  Tentar novamente
-                </Button>
+                </div>
               </div>
+              {recorder.error ? (
+                <div className="flex items-center justify-between gap-3 rounded-lg bg-danger-soft px-3 py-2 text-label">
+                  <p role="alert" className="text-danger-text">{recorder.error}</p>
+                  <Button variant="outline" size="xs" onClick={() => recorder.start()}>
+                    Tentar de novo
+                  </Button>
+                </div>
+              ) : null}
             </div>
-          )}
-        </div>
-      </footer>
+          </footer>
+      </div>
 
-      <AlertDialog open={showDiscardDialog} onOpenChange={setShowDiscardDialog}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Descartar consulta sem mensagens?</AlertDialogTitle>
-            <AlertDialogDescription>
-              Ainda não há mensagens do pediatra neste caso. Se sair agora, este início de
-              atendimento será descartado.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Salvar e continuar</AlertDialogCancel>
-            <AlertDialogAction asChild>
-              <Link href="/dashboard/cases">Descartar e sair</Link>
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      <Sheet open={railOpen} onOpenChange={setRailOpen}>
+        <SheetContent className="gap-0 rounded-l-2xl bg-card data-[side=right]:w-[380px] data-[side=right]:sm:max-w-[380px]">
+          <SheetHeader className="border-b border-border px-6 py-4">
+            <SheetTitle className="font-display text-section font-semibold">Nesta consulta</SheetTitle>
+            <SheetDescription className="text-caption text-subtle-foreground">{panelSubtitle}</SheetDescription>
+          </SheetHeader>
+          <div className="flex-1 overflow-auto px-6 py-5">
+            <ConsultRail
+              caseId={caseId}
+              records={consultRecords}
+              reminders={reminders}
+              allergies={allergies}
+              patientId={patient?.id ?? null}
+            />
+          </div>
+        </SheetContent>
+      </Sheet>
+
+      <CloseConsultSheet
+        caseId={caseId}
+        open={closeOpen !== null}
+        onOpenChange={(open) => !open && setCloseOpen(null)}
+        subtitle={closeOpen ?? panelSubtitle}
+        todayLabel={todayLabel}
+        template={reportTemplate}
+        caseReports={caseReports}
+        // O relatório sai da conversa ou do que foi feito no app.
+        hasMessages={messages.length > 0 || docCount > 0}
+        documents={toCaseDocuments(documents)}
+        reminders={reminders}
+        startedAt={startedAt}
+        activityAts={activityAts}
+        onOpenTool={openConsultTool}
+      />
 
       <AlertDialog
         open={Boolean(transcriptionPreview)}

@@ -20,6 +20,7 @@ export async function setActiveReportTemplateAction(
   const supabase = await createClient()
   const { profile } = await getAuthenticatedUser(supabase)
   if (!profile?.id) return { ok: false, error: "Sessão não encontrada." }
+  if (profile.status !== "paid") return { ok: false, error: "Perfil não ativo. Conclua a configuração da conta em Perfil." }
 
   if (!templateId || typeof templateId !== "string")
     return { ok: false, error: "ID do template inválido." }
@@ -31,7 +32,7 @@ export async function setActiveReportTemplateAction(
 
   try {
     await updateProfile(supabase, profile.id, { report_template_id: templateId })
-    revalidatePath("/dashboard/report-templates")
+    revalidatePath("/dashboard/templates")
     revalidatePath("/dashboard/profile")
     return { ok: true }
   } catch (e) {

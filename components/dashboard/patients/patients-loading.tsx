@@ -1,65 +1,33 @@
-import { Card } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table"
 
-/**
- * Skeleton for the patients list (Suspense fallback). Mirrors PatientsToolbarAndList + PatientsTable.
- */
-export function PatientsLoading() {
+/** Suspense fallback das listas (Pacientes, Documentos): os mesmos blocos da tela, para nada pular ao carregar. */
+export function PatientsLoading({ label = "Carregando pacientes" }: { label?: string }) {
   return (
-    <div
-      className="flex flex-col gap-3"
-      aria-busy="true"
-      aria-label="Carregando pacientes"
-    >
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-end">
-        <Skeleton className="h-8 w-full max-w-xl rounded-lg" />
+    <div className="flex w-full max-w-[1440px] flex-col gap-6" aria-busy="true" aria-label={label}>
+      <div className="rounded-xl border border-border bg-card px-8 py-7">
+        <Skeleton className="h-9 w-48 rounded-md" />
+        <Skeleton className="mt-2 h-5 w-64 rounded-md" />
       </div>
-
-      <Card className="overflow-hidden border-border/70 p-0">
-        <div className="overflow-x-auto">
-          <Table>
-            <TableHeader>
-              <TableRow className="hover:bg-transparent">
-                <TableHead className="min-w-[140px]">Paciente</TableHead>
-                <TableHead className="min-w-[160px]">Responsável</TableHead>
-                <TableHead className="min-w-[120px] whitespace-nowrap">Nascimento</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {Array.from({ length: 6 }).map((_, index) => (
-                <TableRow
-                  key={index}
-                  className="border-border/60 hover:bg-transparent"
-                >
-                  <TableCell className="py-4">
-                    <div className="flex min-w-0 items-center gap-3">
-                      <Skeleton className="size-6 shrink-0 rounded-full" />
-                      <div className="min-w-0 flex-1 space-y-2">
-                        <Skeleton className="h-4 w-36 max-w-full rounded-md" />
-                        <Skeleton className="h-3 w-28 max-w-full rounded-md" />
-                      </div>
-                    </div>
-                  </TableCell>
-                  <TableCell className="py-4">
-                    <Skeleton className="h-4 w-32 max-w-full rounded-md" />
-                  </TableCell>
-                  <TableCell className="py-4">
-                    <Skeleton className="h-4 w-28 rounded-md" />
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+      <div className="rounded-xl border border-border bg-card">
+        <div className="flex items-center gap-5 px-5 pt-4 pb-2.5">
+          {[176, 40, 168].map((width) => (
+            <Skeleton key={width} className="h-5 rounded-md" style={{ width }} />
+          ))}
+          <Skeleton className="ml-auto h-9 w-80 rounded-lg" />
         </div>
-      </Card>
+        <div className="divide-y divide-border border-t border-border">
+          {Array.from({ length: 6 }).map((_, row) => (
+            <div key={row} className="flex items-center gap-4 px-5 py-3">
+              <Skeleton className="size-9 rounded-full" />
+              <div className="flex-1 space-y-1.5">
+                <Skeleton className="h-4 w-48 rounded-md" />
+                <Skeleton className="h-3 w-32 rounded-md" />
+              </div>
+              <Skeleton className="h-4 w-24 rounded-md" />
+            </div>
+          ))}
+        </div>
+      </div>
     </div>
   )
 }

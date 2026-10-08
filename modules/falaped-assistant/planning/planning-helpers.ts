@@ -2,6 +2,7 @@ import {
   parseWeightHeightForBmi,
   stripNeonatalBirthMeasuresFromParsedAnthropometrics,
 } from "@/lib/parse-anthropometrics-for-bmi"
+import { parseHeadCircumferenceCmFromMessage } from "@/modules/falaped-assistant/lib/patient-profile-parsers"
 import {
   buildClinicalAlertItemsFromUserMessage,
   hasExplicitGuardianQuotedOrShoutSignal,
@@ -9,13 +10,14 @@ import {
 
 export function hasAnthropometricDivergence(
   userMessage: string,
-  patientMetrics?: { weight: number | null; height: number | null },
+  patientMetrics?: { weight: number | null; height: number | null; headCircumference?: number | null },
 ): { diverges: boolean; hasInput: boolean } {
   const parsed = stripNeonatalBirthMeasuresFromParsedAnthropometrics(
     userMessage,
     parseWeightHeightForBmi(userMessage),
   )
-  const hasInput = parsed.weightKg != null || parsed.heightM != null
+  const headCm = parseHeadCircumferenceCmFromMessage(userMessage)
+  const hasInput = parsed.weightKg != null || parsed.heightM != null || headCm != null
   if (!hasInput) return { diverges: false, hasInput: false }
 
   const weightDiffers =
@@ -27,7 +29,12 @@ export function hasAnthropometricDivergence(
     patientMetrics?.height != null &&
     Math.abs(parsed.heightM - patientMetrics.height) >= 0.005
 
-  return { diverges: weightDiffers || heightDiffers, hasInput: true }
+  const headDiffers =
+    headCm != null &&
+    patientMetrics?.headCircumference != null &&
+    Math.abs(headCm - patientMetrics.headCircumference) >= 0.1
+
+  return { diverges: weightDiffers || heightDiffers || headDiffers, hasInput: true }
 }
 
 export function shouldInjectGuardianAlertReview(userMessage: string): boolean {

@@ -8,24 +8,14 @@ import { useTheme } from "next-themes"
 import { toast } from "sonner"
 import { getFriendlyToastMessage } from "@/lib/get-friendly-toast-message"
 import {
-  AlertTriangleIcon,
   BadgeCheckIcon,
-  ChevronsUpDownIcon,
-  BanknoteIcon,
-  FileTextIcon,
-  ImageIcon,
-  ImageUpIcon,
-  Laptop,
+  ImagePlusIcon,
+  LayoutTemplateIcon,
   Loader2Icon,
-  MapPin,
-  Moon,
-  PaletteIcon,
-  ShieldIcon,
-  StethoscopeIcon,
-  Sun,
+  MailIcon,
+  MapPinIcon,
   Trash2Icon,
 } from "lucide-react"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -37,13 +27,6 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import {
-  Field,
-  FieldContent,
-  FieldDescription,
-  FieldError,
-  FieldLabel,
-} from "@/components/ui/field"
-import {
   AlertDialog,
   AlertDialogCancel,
   AlertDialogContent,
@@ -53,7 +36,16 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
-import { deleteMyAccountAction, updateProfileAction, uploadProfileLogoAction, clearProfileLogoAction } from "@/actions"
+import {
+  clearProfileLogoAction,
+  deleteMyAccountAction,
+  updateProfileAction,
+  uploadProfileLogoAction,
+} from "@/actions"
+import { FieldShell, FormCard, joinPtBr } from "@/components/dashboard/form-layout"
+import { SectionTab } from "@/components/dashboard/section-tab"
+import { Tabs, TabsContent, TabsList } from "@/components/ui/tabs"
+import { SegmentedToggle } from "@/components/segmented-toggle"
 import { isInTrial } from "@/lib/account-status"
 import { formatDate } from "@/lib/formatters"
 import { cn } from "@/lib/utils"
@@ -68,11 +60,57 @@ import { formatCentsToInputValue } from "@/lib/money"
 import { ProcedureCatalogCard } from "@/components/dashboard/profile/procedure-catalog-card"
 import type { ProcedureCatalogItemOption } from "@/modules/procedure-catalog/list-procedure-catalog-items"
 
-const THEME_OPTIONS: { value: "light" | "dark" | "system"; label: string; icon: typeof Sun }[] = [
-  { value: "light", label: "Claro", icon: Sun },
-  { value: "dark", label: "Escuro", icon: Moon },
-  { value: "system", label: "Igual ao sistema", icon: Laptop },
+const THEME_OPTIONS: { value: "light" | "dark" | "system"; label: string }[] = [
+  { value: "light", label: "Claro" },
+  { value: "dark", label: "Escuro" },
+  { value: "system", label: "Igual ao sistema" },
 ]
+
+/** Nome de cada campo na barra de salvar ("Você alterou CRM e cidade"). */
+const FIELD_LABELS: Partial<Record<keyof UpdateProfileFormValues, string>> = {
+  first_name: "nome",
+  surname: "sobrenome",
+  crm: "CRM",
+  rqe: "RQE",
+  default_location_city: "cidade",
+  default_location_state: "estado",
+  social_media_handle: "Instagram",
+  website: "site",
+  report_template_id: "modelo de relatório",
+  consultation_price_cents: "valor da consulta",
+}
+
+type ProfileTab = "documentos" | "consulta" | "conta"
+
+const TABS: { value: ProfileTab; label: string }[] = [
+  { value: "documentos", label: "Informações" },
+  { value: "consulta", label: "Consulta" },
+  { value: "conta", label: "Conta" },
+]
+
+/** Em que aba cada campo do form mora: a barra de salvar leva até o erro. */
+const TAB_OF_FIELD: Record<keyof UpdateProfileFormValues, ProfileTab> = {
+  first_name: "documentos",
+  surname: "documentos",
+  crm: "documentos",
+  rqe: "documentos",
+  default_location_city: "documentos",
+  default_location_state: "documentos",
+  social_media_handle: "documentos",
+  website: "documentos",
+  report_template_id: "consulta",
+  consultation_price_cents: "consulta",
+}
+
+/** Nome completo, como já está gravado nos perfis e sai nos documentos. */
+const BRAZIL_STATES = [
+  "Acre", "Alagoas", "Amapá", "Amazonas", "Bahia", "Ceará", "Distrito Federal", "Espírito Santo", "Goiás",
+  "Maranhão", "Mato Grosso", "Mato Grosso do Sul", "Minas Gerais", "Pará", "Paraíba", "Paraná", "Pernambuco",
+  "Piauí", "Rio de Janeiro", "Rio Grande do Norte", "Rio Grande do Sul", "Rondônia", "Roraima", "Santa Catarina",
+  "São Paulo", "Sergipe", "Tocantins",
+]
+
+const PLAN_BADGE = { default: "success", secondary: "warning", destructive: "destructive" } as const
 
 /** Espelho das regras de `uploadProfileLogo`, para validar antes do upload. */
 const LOGO_TYPES = ["image/png", "image/jpeg", "image/webp"]
@@ -105,82 +143,50 @@ function planInfo(
   return { badge: "Sem acesso", tone: "destructive", trial: false, text: "Seu acesso ainda não foi liberado. Fale com a gente." }
 }
 
-function initials(first: string, last: string): string {
-  return `${first.trim()[0] ?? ""}${last.trim()[0] ?? ""}`.toUpperCase() || "?"
-}
 
-/** Cabeçalho de seção: ícone, título e o que aquilo muda na prática. */
-function SectionHeader({
-  icon: Icon,
-  title,
-  description,
-}: {
-  icon: typeof Sun
-  title: string
-  description: React.ReactNode
-}) {
-  return (
-    <CardHeader>
-      <div className="flex items-center gap-2">
-        <span className="flex size-8 items-center justify-center rounded-lg bg-primary/10 text-primary">
-          <Icon className="size-4" />
-        </span>
-        <CardTitle>{title}</CardTitle>
-      </div>
-      <CardDescription className="max-w-2xl">{description}</CardDescription>
-    </CardHeader>
-  )
-}
+const OPTIONAL = <span className="font-normal text-subtle-foreground">(opcional)</span>
 
-/** Campo de texto ligado ao form do perfil: rótulo, ajuda e erro no mesmo padrão. */
+
+/** Campo de texto ligado ao form do perfil: rótulo, ajuda e erro no padrão do guia. */
 function TextField({
   form,
   name,
   label,
   placeholder,
-  description,
+  help,
   type = "text",
   inputMode,
-  disabled,
   className,
 }: {
   form: ProfileForm
   name: keyof UpdateProfileFormValues
-  label: string
+  label: React.ReactNode
   placeholder?: string
-  description?: React.ReactNode
+  help?: React.ReactNode
   type?: string
   inputMode?: React.HTMLAttributes<HTMLInputElement>["inputMode"]
-  disabled?: boolean
   className?: string
 }) {
-  const error = form.formState.errors[name]
+  const error = form.formState.errors[name]?.message
   return (
-    <Field data-invalid={!!error} className={className}>
-      <FieldLabel htmlFor={name}>{label}</FieldLabel>
-      <FieldContent>
-        <Input
-          id={name}
-          type={type}
-          inputMode={inputMode}
-          autoComplete="off"
-          placeholder={placeholder}
-          disabled={disabled}
-          aria-invalid={!!error}
-          {...form.register(name)}
-        />
-        {description ? <FieldDescription className="text-xs text-muted-foreground/80">{description}</FieldDescription> : null}
-        <FieldError errors={error ? [error] : undefined} />
-      </FieldContent>
-    </Field>
+    <FieldShell htmlFor={name} label={label} help={help} error={error} className={className}>
+      <Input
+        id={name}
+        type={type}
+        inputMode={inputMode}
+        autoComplete="off"
+        placeholder={placeholder}
+        aria-invalid={!!error}
+        {...form.register(name)}
+      />
+    </FieldShell>
   )
 }
 
-/** Um espaço de logo: miniatura clicável, estado de envio, ações e o erro logo abaixo. */
+/** Um espaço de logo (protótipo d4): a logo num quadro, Trocar e Remover ao lado. */
 function LogoSlot({
-  kind,
   title,
-  hint,
+  help,
   url,
   uploading,
   removing,
@@ -188,9 +194,8 @@ function LogoSlot({
   onPick,
   onRemove,
 }: {
-  kind: LogoKind
-  title: string
-  hint: string
+  title: React.ReactNode
+  help: string
   url: string | null
   uploading: boolean
   removing: boolean
@@ -200,61 +205,48 @@ function LogoSlot({
 }) {
   const busy = uploading || removing
   return (
-    <div className="flex flex-col gap-3">
-      <div>
-        <p className="text-sm font-medium">{title}</p>
-        <p className="text-xs text-muted-foreground/80">{hint}</p>
-      </div>
-      <button
-        type="button"
-        onClick={onPick}
-        disabled={busy}
-        aria-label={url ? `Trocar ${title.toLowerCase()}` : `Enviar ${title.toLowerCase()}`}
-        className={cn(
-          "relative flex items-center justify-center overflow-hidden rounded-xl border border-dashed bg-muted/30 transition-colors hover:border-primary hover:bg-primary/5 disabled:cursor-wait",
-          kind === "full" ? "aspect-[3/1]" : "aspect-square w-full max-w-40",
-          url && "border-solid bg-white hover:bg-white dark:bg-white",
-        )}
-      >
-        {url ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img src={url} alt={title} className="h-full w-full object-contain p-3" />
-        ) : (
-          <span className="flex flex-col items-center gap-1.5 text-muted-foreground">
-            <ImageUpIcon className="size-6" />
-            <span className="text-xs font-medium">Clique para enviar</span>
-          </span>
-        )}
-        {busy ? (
-          <span className="absolute inset-0 flex items-center justify-center gap-2 bg-background/80 text-sm font-medium text-foreground">
-            <Loader2Icon className="size-4 animate-spin" />
-            {uploading ? "Enviando…" : "Removendo…"}
-          </span>
-        ) : null}
-      </button>
-      <div className="flex gap-2">
-        <Button type="button" variant="outline" size="sm" onClick={onPick} disabled={busy}>
-          {url ? "Trocar" : "Enviar"}
-        </Button>
-        {url ? (
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            className="text-muted-foreground hover:text-destructive"
-            onClick={onRemove}
-            disabled={busy}
-          >
-            <Trash2Icon className="mr-1 size-4" />
-            Remover
-          </Button>
-        ) : null}
-      </div>
+    <div className="flex flex-col gap-1.5">
+      <span className="text-label font-medium">{title}</span>
+      {url ? (
+        <div className="relative flex h-28 items-center gap-4 rounded-xl border border-border px-4">
+          <div className="grid h-16 flex-1 place-items-center overflow-hidden rounded-lg bg-white">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={url} alt="" className="max-h-14 w-auto object-contain" />
+          </div>
+          <div className="flex flex-col gap-1">
+            <Button type="button" variant="outline" size="xs" disabled={busy} onClick={onPick}>
+              Trocar
+            </Button>
+            <Button type="button" variant="ghost" size="xs" className="text-danger-text" disabled={busy} onClick={onRemove}>
+              Remover
+            </Button>
+          </div>
+          {busy ? (
+            <span className="absolute inset-0 flex items-center justify-center gap-2 rounded-xl bg-background/80 font-medium">
+              <Loader2Icon className="size-4 animate-spin" />
+              {uploading ? "Enviando…" : "Removendo…"}
+            </span>
+          ) : null}
+        </div>
+      ) : (
+        <button
+          type="button"
+          onClick={onPick}
+          disabled={busy}
+          className="flex h-28 flex-col items-center justify-center gap-1 rounded-xl border border-dashed border-border-strong text-muted-foreground hover:bg-accent hover:text-foreground disabled:cursor-wait"
+        >
+          {busy ? <Loader2Icon className="size-5 animate-spin" /> : <ImagePlusIcon className="size-5" />}
+          <span className="font-medium">{busy ? "Enviando…" : "Clique para enviar"}</span>
+          <span className="text-caption text-subtle-foreground">PNG, JPEG ou WebP até 2 MB</span>
+        </button>
+      )}
       {error ? (
-        <p className="text-sm text-destructive" role="alert">
+        <span role="alert" className="text-caption text-danger-text">
           {error}
-        </p>
-      ) : null}
+        </span>
+      ) : (
+        <span className="text-caption text-subtle-foreground">{help}</span>
+      )}
     </div>
   )
 }
@@ -271,6 +263,7 @@ export function ProfileContent({
   const [deleteError, setDeleteError] = useState<string | null>(null)
   const [profileError, setProfileError] = useState<string | null>(null)
   const [geoLoading, setGeoLoading] = useState(false)
+  const [tab, setTab] = useState<ProfileTab>("documentos")
 
   const [logoUploading, setLogoUploading] = useState<LogoKind | null>(null)
   const [logoRemoving, setLogoRemoving] = useState<LogoKind | null>(null)
@@ -303,7 +296,6 @@ export function ProfileContent({
     defaultValues: {
       first_name: profile.first_name ?? "",
       surname: profile.surname ?? "",
-      email: profile.email ?? "",
       crm: profile.crm ?? "",
       rqe: profile.rqe ?? "",
       social_media_handle: profile.social_media_handle ?? "",
@@ -319,15 +311,7 @@ export function ProfileContent({
   })
   const { isDirty, isSubmitting } = form.formState
 
-  const firstName = form.watch("first_name") ?? ""
-  const surname = form.watch("surname") ?? ""
-  const crm = form.watch("crm") ?? ""
-  const rqe = form.watch("rqe") ?? ""
-  const city = form.watch("default_location_city") ?? ""
   const state = form.watch("default_location_state") ?? ""
-  const fullName = `${firstName} ${surname}`.trim()
-  const credentials = [crm && `CRM ${crm}`, rqe && `RQE ${rqe}`].filter(Boolean).join(" · ")
-  const place = city && state ? `${city} - ${state}` : city || state
   const plan = planInfo(profile.status, profile.trial_ends_at)
   const shortLogo = logoUrl("short")
   const fullLogo = logoUrl("full")
@@ -485,406 +469,284 @@ export function ProfileContent({
     }
   }
 
+  const dirtyKeys = Object.keys(form.formState.dirtyFields) as (keyof UpdateProfileFormValues)[]
+  const changed = dirtyKeys.map((key) => FIELD_LABELS[key]).filter((label): label is string => !!label)
+  const errorKeys = (Object.keys(form.formState.errors) as (keyof UpdateProfileFormValues)[]).filter((key) => FIELD_LABELS[key])
+  const tabHasError = (value: ProfileTab) => errorKeys.some((key) => TAB_OF_FIELD[key] === value)
+  const stateOptions = state && !BRAZIL_STATES.includes(state) ? [state, ...BRAZIL_STATES] : BRAZIL_STATES
+
   return (
-    <form
-      onSubmit={form.handleSubmit(handleProfileSubmit)}
-      className="flex w-full max-w-4xl flex-col gap-6"
-    >
-      {/* Identidade: como você aparece no Falaped e a situação da conta. */}
-      <Card className="gap-0 overflow-hidden py-0">
-        <div className="h-16 bg-gradient-to-r from-primary/25 via-primary/10 to-transparent" />
-        <CardContent className="-mt-8 flex flex-col gap-4 pb-6 sm:flex-row sm:items-end sm:justify-between">
-          <div className="flex min-w-0 items-end gap-4">
-            <div className="flex size-20 shrink-0 items-center justify-center overflow-hidden rounded-2xl border-4 border-card bg-white shadow-sm">
-              {shortLogo ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img src={shortLogo} alt="" className="h-full w-full object-contain p-1.5" />
-              ) : (
-                <span className="text-xl font-semibold text-primary">{initials(firstName, surname)}</span>
-              )}
-            </div>
-            <div className="min-w-0 pb-1">
-              <p className="truncate text-lg font-semibold leading-tight">
-                {fullName || "Seu nome"}
-              </p>
-              <p className="truncate text-sm text-muted-foreground">
-                {credentials || "Pediatria"}
-                {profile.email ? ` · ${profile.email}` : ""}
-              </p>
-            </div>
-          </div>
-          <div className="flex flex-col items-start gap-1 sm:items-end sm:pb-1">
-            <Badge variant={plan.tone}>{plan.badge}</Badge>
-            {plan.trial ? (
-              <span className="text-xs text-muted-foreground">até {formatDate(profile.trial_ends_at)}</span>
-            ) : null}
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Dados profissionais */}
-      <Card>
-        <SectionHeader
-          icon={StethoscopeIcon}
-          title="Dados profissionais"
-          description="Seu nome, CRM, RQE e cidade saem impressos em receitas, atestados, pedidos de exame e relatórios. Escreva como estão no seu carimbo."
+    <Tabs value={tab} onValueChange={(value) => setTab(value as ProfileTab)} className="gap-0">
+      <form onSubmit={form.handleSubmit(handleProfileSubmit)} noValidate>
+        <input
+          ref={fullInputRef}
+          type="file"
+          accept="image/png,image/jpeg,image/webp"
+          className="sr-only"
+          aria-hidden
+          tabIndex={-1}
+          onChange={(e) => handleLogoChange("full", e)}
         />
-        <CardContent className="grid gap-4 sm:grid-cols-2">
-          <TextField form={form} name="first_name" label="Nome" placeholder="Ex.: Mariana" />
-          <TextField form={form} name="surname" label="Sobrenome" placeholder="Ex.: Souza Lima" />
-          <TextField form={form} name="crm" label="CRM" placeholder="Ex.: 12345 MG" description="Número e estado, como no carimbo." />
-          <TextField form={form} name="rqe" label="RQE" placeholder="Ex.: 6789" description="Registro de especialista. Deixe em branco se não tiver." />
-          <div className="rounded-xl border bg-muted/20 p-4 sm:col-span-2">
-            <div className="mb-1 flex flex-wrap items-center justify-between gap-2">
-              <div className="flex items-center gap-2">
-                <MapPin className="size-4 text-muted-foreground" />
-                <p className="text-sm font-medium">Onde você atende</p>
-              </div>
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={handleUseGeolocation}
-                disabled={geoLoading}
-              >
-                {geoLoading ? <Loader2Icon className="mr-2 size-4 animate-spin" /> : <MapPin className="mr-2 size-4" />}
-                {geoLoading ? "Buscando…" : "Usar minha localização"}
-              </Button>
-            </div>
-            <p className="mb-4 text-xs text-muted-foreground/80">
-              A cidade sai junto da data nos documentos.
-            </p>
-            <div className="grid gap-4 sm:grid-cols-2">
-              <TextField form={form} name="default_location_city" label="Cidade" placeholder="Ex.: Belo Horizonte" />
-              <TextField form={form} name="default_location_state" label="Estado" placeholder="Ex.: Minas Gerais" />
-            </div>
-          </div>
-          <TextField
-            form={form}
-            name="email"
-            label="E-mail de acesso"
-            type="email"
-            disabled
-            className="sm:col-span-2"
-            description="É o seu login e não muda por aqui. Para trocar, escreva para contato@falaped.com.br."
-          />
-          <TextField form={form} name="social_media_handle" label="Instagram" placeholder="Ex.: @dra.mariana" description="Opcional. Fica guardado no seu perfil." />
-          <TextField form={form} name="website" label="Site" type="url" placeholder="https://..." description="Opcional. Fica guardado no seu perfil." />
-        </CardContent>
-      </Card>
-
-      {/* Sua marca nos documentos */}
-      <Card>
-        <SectionHeader
-          icon={PaletteIcon}
-          title="Sua marca nos documentos"
-          description="Cada documento que você gera sai com a sua cara. A logo completa vai no cabeçalho de receitas, atestados, pedidos de exame, orientações, encaminhamentos e relatórios. A logo curta aparece no menu do Falaped. Veja as duas prévias logo abaixo."
+        <input
+          ref={shortInputRef}
+          type="file"
+          accept="image/png,image/jpeg,image/webp"
+          className="sr-only"
+          aria-hidden
+          tabIndex={-1}
+          onChange={(e) => handleLogoChange("short", e)}
         />
-        <CardContent className="flex flex-col gap-6">
-          <input
-            ref={fullInputRef}
-            type="file"
-            accept="image/png,image/jpeg,image/webp"
-            className="sr-only"
-            aria-hidden
-            tabIndex={-1}
-            onChange={(e) => handleLogoChange("full", e)}
-          />
-          <input
-            ref={shortInputRef}
-            type="file"
-            accept="image/png,image/jpeg,image/webp"
-            className="sr-only"
-            aria-hidden
-            tabIndex={-1}
-            onChange={(e) => handleLogoChange("short", e)}
-          />
-          <div className="grid gap-6 sm:grid-cols-[2fr_1fr]">
-            <LogoSlot
-              kind="full"
-              title="Logo completa"
-              hint="Horizontal, com fundo transparente de preferência. PNG, JPEG ou WebP até 2 MB."
-              url={fullLogo}
-              uploading={logoUploading === "full"}
-              removing={logoRemoving === "full"}
-              error={logoError.full}
-              onPick={() => fullInputRef.current?.click()}
-              onRemove={() => handleClearLogo("full")}
-            />
-            <LogoSlot
-              kind="short"
-              title="Logo curta"
-              hint="Quadrada: o símbolo ou as suas iniciais."
-              url={shortLogo}
-              uploading={logoUploading === "short"}
-              removing={logoRemoving === "short"}
-              error={logoError.short}
-              onPick={() => shortInputRef.current?.click()}
-              onRemove={() => handleClearLogo("short")}
-            />
-          </div>
 
-          {/* Prévias com as logos que existem de verdade: documento usa só a completa, menu só a curta. */}
-          <div className="grid gap-6 sm:grid-cols-[2fr_1fr]">
-            <div>
-              <p className="mb-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                Nos documentos
-              </p>
-              <div className="rounded-xl border bg-white p-5 text-neutral-900 shadow-sm">
-                <div className="flex items-center justify-between gap-4 border-b border-neutral-200 pb-4">
-                  <div className="flex h-12 max-w-[50%] items-center">
-                    {fullLogo ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img src={fullLogo} alt="" className="max-h-12 w-auto object-contain" />
-                    ) : (
-                      <span className="flex items-center gap-1.5 text-xs text-neutral-400">
-                        <ImageIcon className="size-4" /> Sem logo
-                      </span>
-                    )}
-                  </div>
-                  <div className="min-w-0 text-right">
-                    <p className="truncate text-sm font-semibold">{fullName || "Seu nome"}</p>
-                    <p className="truncate text-xs text-neutral-500">{credentials || "CRM"}</p>
-                  </div>
-                </div>
-                <div className="space-y-1.5 pt-4" aria-hidden>
-                  <div className="h-2 w-3/4 rounded bg-neutral-100" />
-                  <div className="h-2 w-2/3 rounded bg-neutral-100" />
-                  <div className="h-2 w-1/2 rounded bg-neutral-100" />
-                </div>
-                <p className="pt-4 text-right text-xs text-neutral-500">
-                  {place || "Cidade - Estado"}
-                </p>
-              </div>
-              <p className="mt-2 text-xs text-muted-foreground/80">
-                {fullLogo
-                  ? "Uma aproximação. A posição de cada item muda um pouco entre os tipos de documento."
-                  : shortLogo
-                    ? "Os documentos usam a logo completa. Só com a curta, eles saem sem logo no cabeçalho."
-                    : "Envie a logo completa para ela aparecer no cabeçalho dos documentos."}
-              </p>
-            </div>
-            <div>
-              <p className="mb-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                No menu do Falaped
-              </p>
-              <div className="flex items-center gap-2 rounded-lg border bg-sidebar p-2 text-sidebar-foreground">
-                <span className="flex size-8 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-white text-sm font-medium text-neutral-900">
-                  {shortLogo ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img src={shortLogo} alt="" className="size-6 object-contain" />
-                  ) : (
-                    initials(firstName, surname)
-                  )}
-                </span>
-                <span className="grid min-w-0 flex-1 text-left text-sm leading-tight">
-                  <span className="truncate font-medium">{fullName || "Seu nome"}</span>
-                  <span className="truncate text-xs text-muted-foreground">{profile.email}</span>
-                </span>
-                <ChevronsUpDownIcon className="size-4 shrink-0 opacity-50" />
-              </div>
-              <p className="mt-2 text-xs text-muted-foreground/80">
-                {shortLogo ? "Assim você aparece no canto do menu." : "Sem logo curta, o menu mostra suas iniciais."}
-              </p>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Relatório da consulta */}
-      <Card>
-        <SectionHeader
-          icon={FileTextIcon}
-          title="Relatório da consulta"
-          description={
-            <>
-              O modelo define as seções e a ordem que a IA segue ao escrever o relatório no fim do
-              atendimento. Crie e edite modelos em{" "}
-              <Link href="/dashboard/report-templates" className="font-medium text-primary underline-offset-4 hover:underline">
-                Modelos de relatório
-              </Link>
-              .
-            </>
-          }
-        />
-        <CardContent>
-          <Field data-invalid={!!form.formState.errors.report_template_id} className="max-w-md">
-            <FieldLabel htmlFor="report_template_id">Modelo usado</FieldLabel>
-            <FieldContent>
-              <Select
-                value={(form.watch("report_template_id") as string) || REPORT_TEMPLATE_NONE_VALUE}
-                onValueChange={(v) =>
-                  form.setValue("report_template_id", v === REPORT_TEMPLATE_NONE_VALUE ? "" : v, {
-                    shouldDirty: true,
-                  })
-                }
-              >
-                <SelectTrigger id="report_template_id" aria-invalid={!!form.formState.errors.report_template_id}>
-                  <SelectValue placeholder="Modelo padrão do Falaped" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value={REPORT_TEMPLATE_NONE_VALUE}>Modelo padrão do Falaped</SelectItem>
-                  {reportTemplateOptions.map((t) => (
-                    <SelectItem key={t.id} value={t.id}>
-                      {t.name}
-                      {t.is_default ? " (padrão)" : ""}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <FieldError
-                errors={form.formState.errors.report_template_id ? [form.formState.errors.report_template_id] : undefined}
-              />
-            </FieldContent>
-          </Field>
-        </CardContent>
-      </Card>
-
-      {/* Valores */}
-      <Card>
-        <SectionHeader
-          icon={BanknoteIcon}
-          title="Valores"
-          description="Ao encerrar um atendimento, o Falaped já sugere o valor da consulta e lista seus procedimentos para você marcar o que foi feito. Tudo entra no seu financeiro, e dá para ajustar na hora."
-        />
-        <CardContent className="flex flex-col gap-6">
-          <TextField
-            form={form}
-            name="consultation_price_cents"
-            label="Valor da consulta (R$)"
-            placeholder="Ex.: 250,00"
-            inputMode="decimal"
-            className="max-w-xs"
-            description="Deixe em branco se cada consulta tem um valor diferente."
-          />
-          <div className="flex flex-col gap-2">
-            <div>
-              <p className="text-sm font-medium">Procedimentos</p>
-              <p className="text-sm text-muted-foreground">
-                O que você cobra além da consulta, como frenectomia ou laserterapia. Cada
-                procedimento é salvo na hora, sem precisar do botão de salvar.
-              </p>
-            </div>
-            <ProcedureCatalogCard items={procedureCatalogItems} />
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Aparência */}
-      <Card>
-        <SectionHeader
-          icon={Sun}
-          title="Aparência"
-          description="Como o Falaped aparece para você neste aparelho. Os documentos impressos não mudam."
-        />
-        <CardContent>
-          {mounted ? (
-            <div role="radiogroup" aria-label="Tema" className="grid grid-cols-3 gap-3">
-              {THEME_OPTIONS.map((opt) => {
-                const Icon = opt.icon
-                const isSelected = theme === opt.value
-                return (
-                  <button
-                    key={opt.value}
-                    type="button"
-                    role="radio"
-                    aria-checked={isSelected}
-                    onClick={() => setTheme(opt.value)}
-                    className={cn(
-                      "flex flex-col items-center gap-2 rounded-xl border p-4 text-sm transition-colors hover:bg-muted/50",
-                      isSelected ? "border-primary bg-primary/5 ring-2 ring-primary/20" : "border-border",
-                    )}
-                  >
-                    <Icon className={cn("size-5", isSelected ? "text-primary" : "text-muted-foreground")} />
-                    <span className="font-medium">{opt.label}</span>
-                  </button>
-                )
-              })}
-            </div>
-          ) : (
-            <div className="grid grid-cols-3 gap-3">
-              {[1, 2, 3].map((i) => (
-                <div key={i} className="h-[78px] animate-pulse rounded-xl border bg-muted/30" />
+        <header className="-mx-8 -mt-8 border-b border-border bg-card">
+          <div className="max-w-[1440px] px-8 pt-6">
+            <h1 className="font-display text-page font-semibold">Seu perfil</h1>
+            <p className="mt-1 text-muted-foreground">Como você aparece nos documentos e o que entra em cada consulta.</p>
+            <TabsList className="mt-5 h-auto w-auto gap-5 rounded-none bg-transparent p-0">
+              {TABS.map((t) => (
+                <SectionTab key={t.value} value={t.value}>
+                  {t.label}
+                  {tabHasError(t.value) ? <span className="size-2 rounded-full bg-danger-text" aria-label="Tem erro" /> : null}
+                </SectionTab>
               ))}
-            </div>
-          )}
-        </CardContent>
-      </Card>
+            </TabsList>
+          </div>
+        </header>
 
-      {/* Conta */}
-      <Card>
-        <SectionHeader icon={ShieldIcon} title="Conta" description="Seu plano e a exclusão da conta." />
-        <CardContent className="flex flex-col gap-4">
-          <div className="flex flex-col gap-3 rounded-xl border p-4 sm:flex-row sm:items-center sm:justify-between">
-            <div className="flex items-start gap-3">
-              <BadgeCheckIcon className="mt-0.5 size-5 shrink-0 text-primary" />
-              <div>
-                <div className="flex items-center gap-2">
-                  <p className="text-sm font-medium">Plano</p>
-                  <Badge variant={plan.tone}>{plan.badge}</Badge>
+        <div className="flex w-full max-w-[1440px] flex-col pt-8 pb-24">
+          {/* Mudanças em outra aba continuam no form: as abas só escondem, não desmontam. */}
+          <TabsContent value="documentos" forceMount className="mt-0 data-[state=inactive]:hidden">
+            <div className="grid gap-6 lg:grid-cols-2">
+              <div className="flex flex-col gap-6">
+                <FormCard id="dados" title="Dados profissionais" description="Saem em todo documento, como estão no seu carimbo.">
+                  <div className="grid grid-cols-2 gap-4">
+                    <TextField form={form} name="first_name" label="Nome" placeholder="Ex.: Mariana" />
+                    <TextField form={form} name="surname" label="Sobrenome" placeholder="Ex.: Souza Lima" />
+                    <TextField form={form} name="crm" label="CRM" placeholder="Ex.: 12345 MG" help="Número e estado, como no carimbo." />
+                    <TextField form={form} name="rqe" label={<>RQE {OPTIONAL}</>} placeholder="Ex.: 6789" help="Registro de especialista." />
+                    <TextField form={form} name="default_location_city" label="Cidade" placeholder="Ex.: Belo Horizonte" help="Sai junto da data." />
+                    <FieldShell
+                      htmlFor="default_location_state"
+                      label="Estado"
+                      error={form.formState.errors.default_location_state?.message}
+                      help={
+                        <button
+                          type="button"
+                          onClick={handleUseGeolocation}
+                          disabled={geoLoading}
+                          className="inline-flex items-center gap-1 text-primary-ink hover:underline disabled:opacity-60"
+                        >
+                          {geoLoading ? <Loader2Icon className="size-3 animate-spin" /> : <MapPinIcon className="size-3" />}
+                          {geoLoading ? "Buscando…" : "Preencher cidade e estado pela minha localização"}
+                        </button>
+                      }
+                    >
+                      <Select
+                        value={state}
+                        onValueChange={(v) => form.setValue("default_location_state", v, { shouldDirty: true })}
+                      >
+                        <SelectTrigger id="default_location_state" className="w-full">
+                          <SelectValue placeholder="Escolha o estado" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {stateOptions.map((name) => (
+                            <SelectItem key={name} value={name}>
+                              {name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </FieldShell>
+                  </div>
+                </FormCard>
+                <FormCard id="contato" title="Contato profissional" description="Fica no seu perfil do Falaped.">
+                  <div className="grid grid-cols-2 gap-4">
+                    <TextField form={form} name="social_media_handle" label={<>Instagram {OPTIONAL}</>} placeholder="Ex.: @dra.mariana" />
+                    <TextField form={form} name="website" label={<>Site {OPTIONAL}</>} type="url" placeholder="https://…" />
+                  </div>
+                </FormCard>
+              </div>
+              <FormCard id="logos" title="Marcas" className="h-full" description="Cada logo é salva assim que você envia.">
+                <div className="flex flex-col gap-4">
+                  <LogoSlot
+                    title="Logo completa"
+                    help="Vai no cabeçalho dos documentos. Horizontal, de preferência com fundo transparente."
+                    url={fullLogo}
+                    uploading={logoUploading === "full"}
+                    removing={logoRemoving === "full"}
+                    error={logoError.full}
+                    onPick={() => fullInputRef.current?.click()}
+                    onRemove={() => handleClearLogo("full")}
+                  />
+                  <LogoSlot
+                    title={<>Logo curta {OPTIONAL}</>}
+                    help="Aparece no menu do Falaped. Quadrada: o símbolo ou as iniciais."
+                    url={shortLogo}
+                    uploading={logoUploading === "short"}
+                    removing={logoRemoving === "short"}
+                    error={logoError.short}
+                    onPick={() => shortInputRef.current?.click()}
+                    onRemove={() => handleClearLogo("short")}
+                  />
                 </div>
-                <p className="mt-1 text-sm text-muted-foreground">{plan.text}</p>
+              </FormCard>
+            </div>
+          </TabsContent>
+
+          <TabsContent value="consulta" forceMount className="mt-0 data-[state=inactive]:hidden">
+            <div className="grid items-start gap-6 lg:grid-cols-2">
+              <div className="flex flex-col gap-6">
+                <FormCard id="relatorio" title="Relatório da consulta" description="As seções e a ordem que o assistente segue quando você pede o relatório.">
+                  <div className="grid grid-cols-2 items-start gap-4">
+                    <FieldShell htmlFor="report_template_id" label="Modelo usado" error={form.formState.errors.report_template_id?.message}>
+                      <Select
+                        value={(form.watch("report_template_id") as string) || REPORT_TEMPLATE_NONE_VALUE}
+                        onValueChange={(v) =>
+                          form.setValue("report_template_id", v === REPORT_TEMPLATE_NONE_VALUE ? "" : v, { shouldDirty: true })
+                        }
+                      >
+                        <SelectTrigger id="report_template_id" className="w-full">
+                          <SelectValue placeholder="Modelo padrão do Falaped" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value={REPORT_TEMPLATE_NONE_VALUE}>Modelo padrão do Falaped</SelectItem>
+                          {reportTemplateOptions.map((t) => (
+                            <SelectItem key={t.id} value={t.id}>
+                              {t.name}
+                              {t.is_default ? " (padrão)" : ""}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </FieldShell>
+                    <Button type="button" variant="link" size="sm" className="mt-7 justify-self-start" asChild>
+                      <Link href="/dashboard/templates?aba=relatorio">
+                        <LayoutTemplateIcon data-icon="inline-start" />
+                        Ver meus modelos
+                      </Link>
+                    </Button>
+                  </div>
+                </FormCard>
+                <FormCard id="valores" title="Valores" description="Já vêm preenchidos na cobrança ao encerrar a consulta.">
+                  <div className="grid grid-cols-2 gap-4">
+                    <TextField
+                      form={form}
+                      name="consultation_price_cents"
+                      label="Valor da consulta"
+                      placeholder="Ex.: 250,00"
+                      inputMode="decimal"
+                      help="Em branco se cada consulta tem um valor diferente."
+                    />
+                  </div>
+                </FormCard>
+              </div>
+              <div className="flex flex-col gap-6">
+                <FormCard id="procedimentos" title="Procedimentos" description="O que você cobra além da consulta. Cada mudança aqui é salva na hora.">
+                  <ProcedureCatalogCard items={procedureCatalogItems} />
+                </FormCard>
               </div>
             </div>
-            <Button type="button" variant="outline" size="sm" asChild className="shrink-0">
-              <a href="mailto:contato@falaped.com.br?subject=Plano%20do%20Falaped">Falar com a gente</a>
-            </Button>
-          </div>
+          </TabsContent>
 
-          <div className="flex flex-col gap-3 rounded-xl border border-destructive/40 bg-destructive/5 p-4 sm:flex-row sm:items-center sm:justify-between">
-            <div className="flex items-start gap-3">
-              <AlertTriangleIcon className="mt-0.5 size-5 shrink-0 text-destructive" />
-              <div>
-                <p className="text-sm font-medium text-destructive">Excluir conta</p>
-                <p className="mt-1 text-sm text-muted-foreground">
-                  Apaga para sempre seus pacientes, atendimentos, documentos e o vínculo com o
-                  WhatsApp. Não dá para desfazer.
+          <TabsContent value="conta" forceMount className="mt-0 data-[state=inactive]:hidden">
+            <div className="flex flex-col gap-6">
+              <div className="grid items-start gap-6 lg:grid-cols-2">
+                <FormCard id="acesso" title="Acesso e plano" description="Seu login e a situação da sua assinatura.">
+                  <div className="grid grid-cols-2 gap-4">
+                    <FieldShell htmlFor="email" label="E-mail de acesso" help="É o seu login. Para trocar, escreva para contato@falaped.com.br.">
+                      <Input id="email" type="email" value={profile.email ?? ""} disabled readOnly />
+                    </FieldShell>
+                    <div className="flex flex-col gap-1.5">
+                      <span className="text-label font-medium">Plano</span>
+                      <div className="flex h-9 items-center">
+                        <Badge variant={PLAN_BADGE[plan.tone]}>
+                          {plan.tone === "default" ? <BadgeCheckIcon aria-hidden /> : null}
+                          {plan.badge}
+                        </Badge>
+                      </div>
+                      <span className="text-caption text-subtle-foreground">{plan.text}</span>
+                    </div>
+                  </div>
+                  <div>
+                    <Button type="button" variant="outline" size="sm" asChild>
+                      <a href="mailto:contato@falaped.com.br?subject=Plano%20do%20Falaped">
+                        <MailIcon data-icon="inline-start" />
+                        Falar com a gente
+                      </a>
+                    </Button>
+                  </div>
+                </FormCard>
+                <FormCard id="aparencia" title="Aparência" description="Muda só o app neste aparelho, na hora. Os documentos não mudam.">
+                  <div role="radiogroup" aria-label="Tema" className="flex max-w-md gap-1.5">
+                    {THEME_OPTIONS.map((opt) => (
+                      <SegmentedToggle key={opt.value} active={mounted && theme === opt.value} onClick={() => setTheme(opt.value)}>
+                        {opt.label}
+                      </SegmentedToggle>
+                    ))}
+                  </div>
+                </FormCard>
+              </div>
+
+
+
+              {/* Ação rara e sem volta: à vista, mas sem peso. */}
+              <div className="flex items-center gap-3 px-1">
+                <p className="flex-1 text-caption text-subtle-foreground">
+                  Excluir a conta apaga para sempre pacientes, consultas e documentos.
                 </p>
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button type="button" variant="ghost" size="sm" className="text-muted-foreground hover:bg-danger-soft hover:text-danger-text">
+                      <Trash2Icon data-icon="inline-start" />
+                      Excluir conta
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent className="max-w-md">
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Excluir sua conta para sempre?</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        Seus pacientes, consultas, documentos e o vínculo com o WhatsApp serão apagados. Não dá para
+                        recuperar depois.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    {deleteError ? (
+                      <p className="px-1 text-danger-text" role="alert">
+                        {deleteError}
+                      </p>
+                    ) : null}
+                    <AlertDialogFooter>
+                      <AlertDialogCancel disabled={deleteLoading}>Cancelar</AlertDialogCancel>
+                      <Button type="button" variant="destructive" disabled={deleteLoading} onClick={handleConfirmDelete}>
+                        {deleteLoading ? <Loader2Icon className="animate-spin" /> : null}
+                        {deleteLoading ? "Excluindo…" : "Sim, excluir"}
+                      </Button>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
               </div>
             </div>
-            <AlertDialog>
-              <AlertDialogTrigger asChild>
-                <Button type="button" variant="destructive" size="sm" className="shrink-0">
-                  Excluir conta
-                </Button>
-              </AlertDialogTrigger>
-              <AlertDialogContent className="max-w-md">
-                <AlertDialogHeader>
-                  <AlertDialogTitle>Excluir sua conta para sempre?</AlertDialogTitle>
-                  <AlertDialogDescription>
-                    Seus pacientes, atendimentos, documentos e o vínculo com o WhatsApp serão
-                    apagados. Não dá para recuperar depois.
-                  </AlertDialogDescription>
-                </AlertDialogHeader>
-                {deleteError ? (
-                  <p className="px-1 text-sm text-destructive" role="alert">
-                    {deleteError}
-                  </p>
-                ) : null}
-                <AlertDialogFooter>
-                  <AlertDialogCancel disabled={deleteLoading}>Cancelar</AlertDialogCancel>
-                  <Button type="button" variant="destructive" disabled={deleteLoading} onClick={handleConfirmDelete}>
-                    {deleteLoading ? <Loader2Icon className="mr-2 size-4 animate-spin" /> : null}
-                    {deleteLoading ? "Excluindo…" : "Sim, excluir"}
-                  </Button>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
-          </div>
-        </CardContent>
-      </Card>
+          </TabsContent>
 
-      {/* Barra de salvar: aparece com alteração pendente e fica presa no rodapé. */}
-      {isDirty || isSubmitting || profileError ? (
-        <div className="sticky bottom-4 z-20">
-          <div className="flex flex-col gap-3 rounded-xl border bg-card/95 p-3 shadow-lg backdrop-blur sm:flex-row sm:items-center sm:justify-between">
-            <p
-              className={cn("px-1 text-sm", profileError ? "text-destructive" : "text-muted-foreground")}
-              role={profileError ? "alert" : undefined}
-            >
-              {profileError ?? "Você tem alterações que ainda não foram salvas."}
-            </p>
-            <div className="flex gap-2">
+          {/* Barra de salvar do guia: só com mudança, vale para todas as abas. */}
+          {isDirty || isSubmitting || profileError ? (
+            <div className="sticky bottom-6 z-20 mt-6 flex items-center gap-3 rounded-2xl border border-border bg-popover px-4 py-3 shadow-lg">
+              <span className={cn("size-2 rounded-full", profileError || errorKeys.length ? "bg-danger-text" : "bg-warning")} aria-hidden />
+              <span className="flex-1" aria-live="polite">
+                {profileError ??
+                  (errorKeys.length ? (
+                    <>
+                      Falta corrigir {FIELD_LABELS[errorKeys[0]]}
+                      {TAB_OF_FIELD[errorKeys[0]] !== tab ? (
+                        <Button type="button" variant="link" size="sm" className="ml-1 h-auto p-0" onClick={() => setTab(TAB_OF_FIELD[errorKeys[0]])}>
+                          Ver
+                        </Button>
+                      ) : null}
+                    </>
+                  ) : changed.length ? (
+                    `Você alterou ${joinPtBr(changed)}`
+                  ) : (
+                    "Você tem alterações não salvas"
+                  ))}
+              </span>
               <Button
                 type="button"
                 variant="ghost"
@@ -898,13 +760,12 @@ export function ProfileContent({
                 Descartar
               </Button>
               <Button type="submit" size="sm" disabled={isSubmitting}>
-                {isSubmitting ? <Loader2Icon className="mr-2 size-4 animate-spin" /> : null}
                 {isSubmitting ? "Salvando…" : "Salvar alterações"}
               </Button>
             </div>
-          </div>
+          ) : null}
         </div>
-      ) : null}
-    </form>
+      </form>
+    </Tabs>
   )
 }

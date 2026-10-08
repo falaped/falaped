@@ -19,6 +19,7 @@ export async function updateReportTemplateAction(
   const supabase = await createClient()
   const { profile } = await getAuthenticatedUser(supabase)
   if (!profile) return { ok: false, error: "Sessão não encontrada." }
+  if (profile.status !== "paid") return { ok: false, error: "Perfil não ativo. Conclua a configuração da conta em Perfil." }
 
   const parsed = updateReportTemplateSchema.safeParse(data)
   if (!parsed.success) {
@@ -34,7 +35,7 @@ export async function updateReportTemplateAction(
   try {
     const updated = await updateReportTemplate(supabase, templateId, profile.id, payload)
     if (!updated) return { ok: false, error: "Template não encontrado ou você não tem permissão para editá-lo." }
-    revalidatePath("/dashboard/report-templates")
+    revalidatePath("/dashboard/templates")
     revalidatePath("/dashboard/profile")
     return { ok: true }
   } catch (e) {

@@ -11,14 +11,14 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-  AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
 import { deleteCaseAction } from "@/actions"
 import { formatCentsToBRL } from "@/lib/formatters"
-import { Trash2Icon } from "lucide-react"
 
 type CaseDetailActionsProps = {
   caseId: string
+  open: boolean
+  onOpenChange: (open: boolean) => void
   /**
    * Lançamentos NÃO-anulados do caso e quanto somam. `> 0` = aviso do que a exclusão vai
    * APAGAR junto (a FK é `on delete cascade`). `null` = a leitura falhou, e aí a exclusão
@@ -28,15 +28,16 @@ type CaseDetailActionsProps = {
   earningsTotalCents?: number | null
 }
 
-/** Excluir caso: o único destrutivo do cabeçalho; encerrar/reabrir vivem no card de status. */
+/** Confirmação de excluir a consulta, aberta pelo ⋯ do cabeçalho. */
 export function CaseDetailActions({
   caseId,
+  open,
+  onOpenChange,
   earningsCount = 0,
   earningsTotalCents = 0,
 }: CaseDetailActionsProps) {
   const router = useRouter()
   const [isPendingDelete, startTransitionDelete] = useTransition()
-  const [deleteOpen, setDeleteOpen] = useState(false)
   const [deleteError, setDeleteError] = useState<string | null>(null)
 
   function handleDeleteCase() {
@@ -44,7 +45,7 @@ export function CaseDetailActions({
     startTransitionDelete(async () => {
       const result = await deleteCaseAction(caseId)
       if (result?.ok) {
-        setDeleteOpen(false)
+        onOpenChange(false)
         router.push("/dashboard/cases")
       } else if (result && !result.ok) {
         setDeleteError(result.error ?? "Erro ao excluir.")
@@ -63,23 +64,13 @@ export function CaseDetailActions({
   const hasEarnings = earningsCount !== null && earningsCount > 0
 
   return (
-      <AlertDialog open={deleteOpen} onOpenChange={(open) => { setDeleteOpen(open); if (!open) setDeleteError(null); }}>
-        <AlertDialogTrigger asChild>
-          <Button
-            variant="outline"
-            className="gap-2 text-destructive hover:bg-destructive/10 hover:text-destructive"
-            disabled={isPendingDelete}
-          >
-            <Trash2Icon className="h-4 w-4" />
-            Excluir caso
-          </Button>
-        </AlertDialogTrigger>
+      <AlertDialog open={open} onOpenChange={(next) => { onOpenChange(next); if (!next) setDeleteError(null); }}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Excluir caso?</AlertDialogTitle>
+            <AlertDialogTitle>Excluir consulta?</AlertDialogTitle>
             <AlertDialogDescription>
-              Esta ação não pode ser desfeita. As mensagens do caso serão
-              removidas.
+              Esta ação não pode ser desfeita. O relatório, a conversa e os
+              lembretes desta consulta serão apagados.
             </AlertDialogDescription>
           </AlertDialogHeader>
           {(earningsUnknown || hasEarnings) && (

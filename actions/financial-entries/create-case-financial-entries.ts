@@ -126,7 +126,7 @@ export async function createCaseFinancialEntriesAction(
     // este atendimento. Marcado também quando `ids` é vazio: cortesia é resposta.
     await markCaseEarningsPrompted(supabase, ownedCaseId)
 
-    revalidatePath("/dashboard/earnings")
+    revalidatePath("/dashboard/financial")
     revalidatePath(`/dashboard/cases/${ownedCaseId}`)
     return { ok: true, created: ids.length }
   } catch (e) {

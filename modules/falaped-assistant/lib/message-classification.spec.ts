@@ -1,6 +1,7 @@
 import test from "node:test"
 import assert from "node:assert/strict"
 import {
+  parseReminderRequest,
   isCommandLikeMessage,
   isQuestionLikeMessage,
   isLikelyDictationMessage,
@@ -133,4 +134,16 @@ test("messageRequestsBmi detects BMI requests", () => {
 
 test("messageRequestsBmi returns false for non-BMI messages", () => {
   assert.equal(messageRequestsBmi("peso 5kg"), false)
+})
+
+test("parseReminderRequest lê o pedido de lembrete e ignora perguntas", () => {
+  assert.equal(parseReminderRequest("adicionar lembrete: reavaliar em 15 dias"), "reavaliar em 15 dias")
+  assert.equal(parseReminderRequest("Lembrete - pedir hemograma na volta"), "pedir hemograma na volta")
+  assert.equal(parseReminderRequest("registrar lembrete de checar a vacina"), "checar a vacina")
+  assert.equal(parseReminderRequest("me lembre de ver o resultado do exame"), "ver o resultado do exame")
+  assert.equal(parseReminderRequest("quais os lembretes desta consulta?"), null)
+  assert.equal(parseReminderRequest("adicionar lembrete reavaliar em 15 dias"), "reavaliar em 15 dias")
+  assert.equal(parseReminderRequest("lembrete"), null)
+  assert.equal(parseReminderRequest("lembrete da vacina foi esquecido"), null)
+  assert.equal(parseReminderRequest("mãe relata que esqueceu o lembrete da vacina"), null)
 })

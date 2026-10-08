@@ -1,7 +1,7 @@
 import assert from "node:assert/strict"
 import { test } from "node:test"
 
-import { accountTask, leadTask, prospectTask, summarizeTasks, whatsappDigits } from "./admin-tasks"
+import { accountTask, leadTask, prospectTask, whatsappDigits } from "./admin-tasks"
 
 const now = new Date("2026-10-01T12:00:00Z")
 const account = {
@@ -48,14 +48,6 @@ test("whatsappDigits normaliza com DDI", () => {
   assert.equal(whatsappDigits("(31) 98888-7777"), "5531988887777")
   assert.equal(whatsappDigits("553791290679"), "553791290679")
   assert.equal(whatsappDigits("123"), null)
-})
-
-test("resumo junta os tipos em uma frase", () => {
-  const t1 = accountTask(account, "F", now)!
-  const t2 = { ...t1, key: "b" }
-  const lead = leadTask({ id: "l", name: "P", email: "p@x", phone: null, detail: null, created_at: "2026-10-01T10:00:00Z" }, "F", now)!
-  assert.equal(summarizeTasks([t1, t2, lead]), "2 clientes pagaram e ainda não usaram e chegou 1 lead novo.")
-  assert.equal(summarizeTasks([]), "Nada pendente hoje. Bom momento para prospectar.")
 })
 
 test("whatsappDigits escolhe o celular quando o campo tem vários números", () => {

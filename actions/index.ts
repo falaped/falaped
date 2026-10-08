@@ -14,6 +14,8 @@ export {
   improveReportSectionAction,
   updateCaseReportAction,
   deleteCaseReportAction,
+  getActiveConsultAction,
+  type ActiveConsult,
 } from "./cases"
 export {
   updateDiscussionStatusAction,
@@ -32,6 +34,10 @@ export {
   type UploadPatientPhotoResult,
   removePatientPhotoAction,
   type RemovePatientPhotoResult,
+  listPatientsForSearchAction,
+  type PatientSearchItem,
+  getPatientDocumentContextAction,
+  type PatientDocumentContext,
 } from "./patients"
 export {
   uploadAttachmentAction,
@@ -111,8 +117,12 @@ export {
 export {
   createPrescriptionTemplateAction,
   deletePrescriptionTemplateAction,
+  updatePrescriptionTemplateAction,
+  generatePrescriptionTemplateAction,
   type CreatePrescriptionTemplateResult,
   type DeletePrescriptionTemplateResult,
+  type UpdatePrescriptionTemplateResult,
+  type GeneratePrescriptionTemplateResult,
 } from "./prescription-templates"
 export {
   generateReferralAction,
@@ -153,8 +163,12 @@ export {
 export {
   createExamPanelAction,
   deleteExamPanelAction,
+  updateExamPanelAction,
+  generateExamPanelAction,
   type CreateExamPanelResult,
   type DeleteExamPanelResult,
+  type UpdateExamPanelResult,
+  type GenerateExamPanelResult,
 } from "./exam-panels"
 export {
   createExamRequestTemplateAction,
@@ -220,7 +234,10 @@ export {
   type UpdateAccountAccessResult,
   addSubscriptionPaymentAction,
   type AddSubscriptionPaymentResult,
+  countNewFeedbackAction,
+  updateFeedbackStatusAction,
 } from "./admin"
+export { sendFeedbackAction, type SendFeedbackResult } from "./feedback"
 export {
   createExamReadingAction,
   type CreateExamReadingResult,

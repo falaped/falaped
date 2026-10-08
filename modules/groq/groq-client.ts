@@ -14,6 +14,8 @@ export type AiFeature =
   | "exam-report"
   | "exam-pages"
   | "report-sections"
+  | "prescription-template"
+  | "exam-panel-template"
   | "improve-section"
   | "transcription"
   | "assistant-actions"

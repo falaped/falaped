@@ -11,15 +11,28 @@ import { updateCaseSummary } from "@/modules/cases/update-case-summary"
 import { getPhoneByProfileId } from "@/modules/authenticated-users/get-phone-by-profile-id"
 import { listCaseReminders } from "@/modules/cases/list-case-reminders"
 import { env } from "@/lib/env"
+import { formatConsultRecordsForAi } from "@/lib/consult-records"
+import { getConsultRecords } from "@/modules/cases/get-consult-records"
+import { assistantMessageToModelText } from "@/modules/falaped-assistant/assistant-model-message"
 import type { SupabaseClient } from "@supabase/supabase-js"
 
 export type UpdateCaseStatusResult =
   | { ok: true }
   | { ok: false; error: string }
 
+/**
+ * `deferRevalidate`: quem chama faz o `router.refresh()` depois. Existe para o encerrar
+ * em duas etapas da Consulta: revalidar aqui re-renderia a página da consulta no meio do
+ * diálogo, ela veria o caso encerrado e redirecionaria para o caso, desmontando a etapa
+ * de cobrança antes de ela aparecer.
+ *
+ * `endedAt`: horário de término informado pela médica ao encerrar uma consulta
+ * esquecida aberta (ISO, entre o início e agora).
+ */
 export async function updateCaseStatusAction(
   caseId: string,
   status: "active" | "closed",
+  options: { deferRevalidate?: boolean; endedAt?: string } = {},
 ): Promise<UpdateCaseStatusResult> {
   const supabase = await createClient()
   const { profile } = await getAuthenticatedUser(supabase)
@@ -27,8 +40,13 @@ export async function updateCaseStatusAction(
   if (profile.status !== "paid")
     return { ok: false, error: "Perfil não ativo. Conclua a configuração da conta em Perfil." }
 
+  if (options.endedAt !== undefined) {
+    const t = Date.parse(options.endedAt)
+    if (Number.isNaN(t) || t > Date.now()) return { ok: false, error: "Horário de término inválido." }
+  }
+
   try {
-    await updateCaseStatus(supabase, caseId, profile.id, status)
+    await updateCaseStatus(supabase, caseId, profile.id, status, options.endedAt)
 
     // Resumo para a PRÓXIMA consulta, gerado uma vez ao fechar esta. Depois do
     // update de propósito e sem poder derrubá-lo: fechar a consulta é a ação do
@@ -42,6 +60,7 @@ export async function updateCaseStatusAction(
       )
     }
 
+    if (options.deferRevalidate) return { ok: true }
     revalidatePath("/dashboard/cases")
     revalidatePath(`/dashboard/cases/${caseId}`)
     // Workspace route is cached (cacheComponents); without this, reopening a case
@@ -56,7 +75,7 @@ export async function updateCaseStatusAction(
 }
 
 /**
- * Monta o material do atendimento (conversa + relatório + lembretes), pede o
+ * Monta o material do atendimento (registros do app + conversa + relatório + lembretes), pede o
  * mini resumo e grava. Carimba `summary_generated_at` mesmo sem texto: "tentou e
  * não saiu" é diferente de "nunca tentou".
  */
@@ -71,8 +90,21 @@ async function generateAndStoreCarryoverSummary(
   const caseDetail = await getCaseById(supabase, caseId, profileId)
   if (!caseDetail) return
 
-  const conversationText = caseDetail.messages
-    .map((m) => `${m.role === "user" ? "Médico" : "Assistente"}: ${m.content}`)
+  // O que foi feito no app (documentos, medidas, escalas...) abre o material:
+  // o resumo da próxima consulta precisa saber, por exemplo, que houve receita.
+  const recordsText = formatConsultRecordsForAi(
+    await getConsultRecords(supabase, profileId, caseDetail),
+  )
+  const conversationText = [
+    recordsText ? `Feito nesta consulta pelo app:\n${recordsText}` : null,
+    ...caseDetail.messages.map(
+      (m) =>
+        `${m.role === "user" ? "Médico" : "Assistente"}: ${
+          m.role === "assistant" ? assistantMessageToModelText(m.content) : m.content
+        }`,
+    ),
+  ]
+    .filter(Boolean)
     .join("\n")
     .trim()
 

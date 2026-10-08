@@ -1,17 +1,11 @@
 "use server"
 
 import { revalidatePath } from "next/cache"
-import { z } from "zod"
 import { createClient } from "@/lib/supabase/server"
 import { getAuthenticatedUser } from "@/modules/supabase/get-authenticated-user"
 import { createExamPanel } from "@/modules/exam-panels/create-exam-panel"
+import { createExamPanelSchema } from "@/lib/schemas/exam-panel"
 
-const createExamPanelSchema = z.object({
-  name: z.string().trim().min(1, "Informe o nome do painel."),
-  panelItems: z
-    .array(z.string().trim().min(1))
-    .min(1, "Adicione pelo menos um exame ao painel."),
-})
 
 export type CreateExamPanelResult =
   | { ok: true; id: string }
@@ -45,7 +39,7 @@ export async function createExamPanelAction(params: {
       name: parsed.data.name,
       panelItems: parsed.data.panelItems,
     })
-    revalidatePath("/dashboard/exam-requests")
+    revalidatePath("/dashboard/templates")
     return { ok: true, id }
   } catch (e) {
     console.error("[EXAM_PANELS] create failed", e)

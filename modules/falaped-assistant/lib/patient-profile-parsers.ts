@@ -4,15 +4,8 @@ import type {
   PatientProfileUpdatePayload,
 } from "@/modules/falaped-assistant/contracts/assistant-types"
 import type { PatientSex } from "@/modules/patients/patient-sex"
-import {
-  normalizePatientSexFromDb,
-  PATIENT_SEX_LABELS,
-} from "@/modules/patients/patient-sex"
 import { normalizeText } from "@/modules/falaped-assistant/lib/normalize-text"
-import {
-  parseWeightHeightForBmi,
-  stripNeonatalBirthMeasuresFromParsedAnthropometrics,
-} from "@/lib/parse-anthropometrics-for-bmi"
+import { parseWeightHeightForBmi } from "@/lib/parse-anthropometrics-for-bmi"
 
 export function parseNumericValue(labelValue: string): number | null {
   const match = labelValue.replace(",", ".").match(/(\d+(?:\.\d+)?)/)
@@ -36,7 +29,7 @@ export function normalizePatientHeightToCm(value: string | null | undefined): nu
 export function parseHeadCircumferenceCmFromMessage(userMessage: string): number | null {
   const normalized = normalizeText(userMessage).replace(",", ".")
   const directMatch = normalized.match(
-    /\b(pc|perimetro\s+cefalico(?:\s+atual)?)\s*[:=]?\s*(\d+(?:\.\d+)?)\s*cm?\b/i,
+    /\b(pc|perimetro\s+cefalico(?:\s+atual)?)\s*(?:[:=]|\s(?:para|de|em)\s)?\s*(\d+(?:\.\d+)?)(?:\s*cm)?\b/i,
   )
   if (directMatch) {
     const value = Number(directMatch[2])
@@ -82,6 +75,19 @@ export function parseLabeledTextValue(
   }
 
   return null
+}
+
+/**
+ * Pedido explícito para acrescentar uma alergia ("adicionar alergia amendoim",
+ * "incluir alergia a dipirona"). Só com verbo de comando: ditado como "nega
+ * alergias" não vira atualização da ficha.
+ */
+export function parseAllergyAddition(userMessage: string): string | null {
+  const match = userMessage.match(
+    /\b(?:adicion|acrescent|inclu|registr|anot|cadastr|coloc)\w*\s+(?:uma\s+|a\s+)?alergias?(?:\s*[:=]|\s+(?:a|ao|aos|à|às|as|de|do|da)(?=\s))?\s*([^\n.;]+)/i,
+  )
+  const value = match?.[1]?.trim()
+  return value ? value : null
 }
 
 export function parseContactPhoneFromMessage(userMessage: string): string | null {
@@ -140,39 +146,9 @@ export function detectPatientProfileUpdateCandidate(params: {
   const updates: PatientProfileUpdatePayload = {}
   const summaryLines: string[] = []
 
-  const parsedAnthro = stripNeonatalBirthMeasuresFromParsedAnthropometrics(
-    params.userMessage,
-    parseWeightHeightForBmi(params.userMessage),
-  )
-  if (parsedAnthro.weightKg != null) {
-    const nextWeight = parsedAnthro.weightKg.toFixed(3).replace(/\.?0+$/, "")
-    const currentWeight = profile.weight ? parseNumericValue(profile.weight) : null
-    if (currentWeight == null || Math.abs(parsedAnthro.weightKg - currentWeight) >= 0.01) {
-      updates.weight = nextWeight
-      summaryLines.push(`Peso: ${nextWeight} kg`)
-    }
-  }
-
-  if (parsedAnthro.heightM != null) {
-    const nextHeightCm = parsedAnthro.heightM * 100
-    const nextHeight = nextHeightCm.toFixed(1).replace(/\.0$/, "")
-    const currentHeightCm = normalizePatientHeightToCm(profile.height)
-    if (currentHeightCm == null || Math.abs(nextHeightCm - currentHeightCm) >= 0.1) {
-      updates.height = nextHeight
-      summaryLines.push(`Comprimento/altura: ${nextHeight} cm`)
-    }
-  }
-
-  const nextHeadCircumferenceCm = parseHeadCircumferenceCmFromMessage(params.userMessage)
-  if (nextHeadCircumferenceCm != null) {
-    const nextHead = nextHeadCircumferenceCm.toFixed(1).replace(/\.0$/, "")
-    const currentHeadCm = normalizePatientHeightToCm(profile.head_circumference)
-    if (currentHeadCm == null || Math.abs(nextHeadCircumferenceCm - currentHeadCm) >= 0.1) {
-      updates.head_circumference = nextHead
-      summaryLines.push(`Perímetro cefálico: ${nextHead} cm`)
-    }
-  }
-
+  // O chat só altera alergias e tipo sanguíneo. Peso, estatura e PC viram medida da
+  // consulta (revisão própria); nome, nascimento, responsáveis, telefone, sexo,
+  // medicações em uso e histórico só pela ficha.
   const nextBloodType = parseBloodTypeFromMessage(params.userMessage)
   if (nextBloodType != null) {
     const currentBloodType = profile.blood_type?.trim().toUpperCase() ?? null
@@ -182,105 +158,21 @@ export function detectPatientProfileUpdateCandidate(params: {
     }
   }
 
-  const nextName = parseLabeledTextValue(params.userMessage, ["nome do paciente", "paciente"])
-  if (nextName) {
-    const current = normalizeComparableText(profile.name)
-    const next = normalizeComparableText(nextName)
-    if (next && current !== next) {
-      updates.name = nextName.trim()
-      summaryLines.push(`Nome: ${nextName.trim()}`)
-    }
-  }
-
-  const nextBirthDate = parseBirthDateFromMessage(params.userMessage)
-  if (nextBirthDate) {
-    if (profile.birth_date !== nextBirthDate) {
-      updates.birth_date = nextBirthDate
-      summaryLines.push(`Data de nascimento: ${nextBirthDate}`)
-    }
-  }
-
-  const nextResponsible = parseLabeledTextValue(params.userMessage, [
-    "responsavel",
-    "nome do responsavel",
-  ])
-  if (nextResponsible) {
-    const current = normalizeComparableText(profile.responsible)
-    const next = normalizeComparableText(nextResponsible)
-    if (next && current !== next) {
-      updates.responsible = nextResponsible.trim()
-      summaryLines.push(`Responsável: ${nextResponsible.trim()}`)
-    }
-  }
-
-  const nextContactPhone = parseContactPhoneFromMessage(params.userMessage)
-  if (nextContactPhone) {
-    const currentDigits = profile.contact_phone?.replace(/\D/g, "") ?? null
-    if (currentDigits !== nextContactPhone) {
-      updates.contact_phone = nextContactPhone
-      summaryLines.push(`Telefone de contato: ${nextContactPhone}`)
-    }
-  }
-
-  const nextSex = parseSexFromMessage(params.userMessage)
-  if (nextSex) {
-    const currentKey = normalizePatientSexFromDb(profile.sex)
-    if (currentKey !== nextSex) {
-      updates.sex = nextSex
-      summaryLines.push(`Sexo: ${PATIENT_SEX_LABELS[nextSex]}`)
-    }
-  }
-
-  const nextLegalGuardian = parseLabeledTextValue(params.userMessage, [
-    "responsavel legal",
-    "guardiao legal",
-    "legal guardian",
-  ])
-  if (nextLegalGuardian) {
-    const current = normalizeComparableText(profile.legal_guardian)
-    const next = normalizeComparableText(nextLegalGuardian)
-    if (next && current !== next) {
-      updates.legal_guardian = nextLegalGuardian.trim()
-      summaryLines.push(`Responsável legal: ${nextLegalGuardian.trim()}`)
-    }
-  }
-
-  const nextAllergies = parseLabeledTextValue(params.userMessage, ["alergias", "alergia"])
+  const labeledAllergies = parseLabeledTextValue(params.userMessage, ["alergias", "alergia"])
+  const addedAllergy = labeledAllergies ? null : parseAllergyAddition(params.userMessage)
+  // "Adicionar" soma à lista da ficha; "alergias: X" substitui, como antes.
+  const nextAllergies =
+    addedAllergy && profile.allergies?.trim()
+      ? (normalizeComparableText(profile.allergies) ?? "").includes(normalizeComparableText(addedAllergy) ?? "")
+        ? profile.allergies.trim()
+        : `${profile.allergies.trim()}, ${addedAllergy}`
+      : (labeledAllergies ?? addedAllergy)
   if (nextAllergies) {
     const current = normalizeComparableText(profile.allergies)
     const next = normalizeComparableText(nextAllergies)
     if (next && current !== next) {
       updates.allergies = nextAllergies.trim()
       summaryLines.push(`Alergias: ${nextAllergies.trim()}`)
-    }
-  }
-
-  const nextCurrentMeds = parseLabeledTextValue(params.userMessage, [
-    "medicacoes em uso",
-    "medicacao em uso",
-    "medicamentos em uso",
-    "medicamento em uso",
-  ])
-  if (nextCurrentMeds) {
-    const current = normalizeComparableText(profile.current_medications)
-    const next = normalizeComparableText(nextCurrentMeds)
-    if (next && current !== next) {
-      updates.current_medications = nextCurrentMeds.trim()
-      summaryLines.push(`Medicações em uso: ${nextCurrentMeds.trim()}`)
-    }
-  }
-
-  const nextMedicalHistory = parseLabeledTextValue(params.userMessage, [
-    "historico medico",
-    "historia pregressa",
-    "antecedentes",
-  ])
-  if (nextMedicalHistory) {
-    const current = normalizeComparableText(profile.medical_history)
-    const next = normalizeComparableText(nextMedicalHistory)
-    if (next && current !== next) {
-      updates.medical_history = nextMedicalHistory.trim()
-      summaryLines.push(`Histórico médico: ${nextMedicalHistory.trim()}`)
     }
   }
 

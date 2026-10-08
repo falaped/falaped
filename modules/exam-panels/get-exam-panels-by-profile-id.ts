@@ -11,7 +11,7 @@ export async function getExamPanelsByProfileId(
 ): Promise<ExamPanel[]> {
   const { data, error } = await supabase
     .from("exam_panels")
-    .select("id, name, panel_items")
+    .select("id, name, panel_items, created_at")
     .eq("profile_id", profileId)
     .order("name", { ascending: true })
 

@@ -55,7 +55,7 @@ function pickWeightKg(normalizedFlat: string): number | null {
 function findPcCutoffIndex(lower: string): number {
   const withColon = lower.search(/\bpc\s*[:=]/)
   if (withColon >= 0) return withColon
-  const withDigit = lower.search(/\bpc\s+\d/)
+  const withDigit = lower.search(/\bpc\s+(?:(?:para|de|em)\s+)?\d/)
   if (withDigit >= 0) return withDigit
   const full = lower.search(/\bperimetro\s+cefalico\b/)
   if (full >= 0) return full
@@ -98,7 +98,9 @@ function extractLengthCmFromLine(line: string): number | null {
     ...beforePerimeters.matchAll(/\b(\d+(?:\.\d+)?)\s*cm\b/gi),
   ]
     .map((match) => Number(match[1]))
-    .filter((cm) => cm >= 25 && cm <= 130 && (prefersLength || cm >= 35))
+    // Com rótulo (altura/estatura/comprimento) vale a faixa do formulário de medidas (até 220 cm);
+    // sem rótulo, só valores típicos de criança pequena, para não pegar outro "cm" do ditado.
+    .filter((cm) => cm >= 25 && (prefersLength ? cm <= 220 : cm >= 35 && cm <= 130))
 
   if (matches.length === 0) return null
   return Math.max(...matches)
@@ -117,8 +119,8 @@ function pickHeightMeters(rawLines: string[], normalizedFlat: string): number | 
   }
 
   const stripped = normalizedFlat
-    .replace(/\bpc\s*[:=,]?\s*\d+(?:\.\d+)?\s*cm\b/gi, "")
-    .replace(/\bperimetro\s+cefalico\s*[:=,]?\s*\d+(?:\.\d+)?\s*cm\b/gi, "")
+    .replace(/\bpc\s*(?:[:=,]|\s(?:para|de|em)\s)?\s*\d+(?:\.\d+)?\s*cm\b/gi, "")
+    .replace(/\bperimetro\s+cefalico\s*(?:[:=,]|\s(?:para|de|em)\s)?\s*\d+(?:\.\d+)?\s*cm\b/gi, "")
     .replace(/\b\d+(?:\.\d+)?\s*cm\s+(?:e\s+)?de\s+pc\b/gi, "")
   const stripped2 = stripped.replace(/\bpa\s*:\s*[^.\n]*?\b\d+(?:\.\d+)?\s*cm/gi, "")
   const fallbackMatches = [...stripped2.matchAll(/\b(\d+(?:\.\d+)?)\s*cm\b/gi)]

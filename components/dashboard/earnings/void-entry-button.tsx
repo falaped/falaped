@@ -27,6 +27,9 @@ type VoidEntryButtonProps = {
   amountCents: number
   /** `received_on` cru (`yyyy-MM-dd`). O rótulo sai de fatias da string, sem construir data. */
   receivedOn: string
+  /** "Anular" escrito ao lado do ícone (lista do Financeiro); sem ele, só o ícone. */
+  withLabel?: boolean
+  className?: string
 }
 
 /**
@@ -49,6 +52,8 @@ export function VoidEntryButton({
   caseId,
   amountCents,
   receivedOn,
+  withLabel = false,
+  className,
 }: VoidEntryButtonProps) {
   const router = useRouter()
   const [open, setOpen] = useState(false)
@@ -90,11 +95,13 @@ export function VoidEntryButton({
       <AlertDialogTrigger asChild>
         <Button
           variant="ghost"
-          size="icon"
+          size={withLabel ? "sm" : "icon"}
           aria-label="Anular lançamento"
           disabled={isPending}
+          className={className}
         >
           <BanIcon className="size-4" />
+          {withLabel ? "Anular" : null}
         </Button>
       </AlertDialogTrigger>
       <AlertDialogContent>

@@ -13,6 +13,20 @@ const nextConfig: NextConfig = {
     return [
       { source: "/dashboard/admin/leads", destination: "/dashboard/admin/funil", permanent: true },
       { source: "/dashboard/admin/prospects", destination: "/dashboard/admin/funil", permanent: true },
+      // Ganhos virou o Financeiro, sem o hub de um card só (o ?mes= segue junto).
+      { source: "/dashboard/earnings", destination: "/dashboard/financial", permanent: false },
+      // Documentos virou uma lista só, com a emissão no painel; relatório médico e orientação saíram.
+      {
+        source: "/dashboard/:section(prescriptions|medical-certificates|exam-requests|referrals|medical-reports|guidance)/:path*",
+        destination: "/dashboard/services",
+        permanent: false,
+      },
+      // Modelos virou uma tela só (receitas, exames e relatório).
+      { source: "/dashboard/prescription-templates", destination: "/dashboard/templates", permanent: false },
+      { source: "/dashboard/report-templates", destination: "/dashboard/templates?aba=relatorio", permanent: false },
+      { source: "/dashboard/report-templates/new", destination: "/dashboard/templates/reports/new", permanent: false },
+      { source: "/dashboard/report-templates/gerar-com-ia", destination: "/dashboard/templates/reports/generate", permanent: false },
+      { source: "/dashboard/report-templates/:id", destination: "/dashboard/templates/reports/:id", permanent: false },
     ];
   },
   experimental: {

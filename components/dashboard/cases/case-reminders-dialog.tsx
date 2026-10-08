@@ -8,6 +8,7 @@ import {
   Dialog,
   DialogContent,
   DialogDescription,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
@@ -28,9 +29,9 @@ export function CaseRemindersDialog({
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button type="button" variant="outline" size="sm">
-          <NotebookPenIcon className="h-4 w-4" aria-hidden />
-          Lembretes
+        <Button type="button" variant="outline" size="sm" className="w-full">
+          <NotebookPenIcon data-icon="inline-start" />
+          {initialReminders.length ? "Editar lembretes" : "Escrever lembrete"}
         </Button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-lg">
@@ -42,6 +43,11 @@ export function CaseRemindersDialog({
           </DialogDescription>
         </DialogHeader>
         <CaseRemindersForm caseId={caseId} initialReminders={initialReminders} />
+        <DialogFooter>
+          <Button type="button" variant="outline" onClick={() => setOpen(false)}>
+            Fechar
+          </Button>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   )

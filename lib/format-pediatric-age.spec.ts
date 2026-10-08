@@ -1,7 +1,7 @@
 import test from "node:test"
 import assert from "node:assert/strict"
 
-import { formatPediatricAge, formatPediatricAgeAbbrev } from "@/lib/format-pediatric-age"
+import { formatPediatricAge, formatPediatricAgeAbbrev, formatPediatricAgeFull, formatPediatricAgeShort } from "@/lib/format-pediatric-age"
 import type { PediatricAge } from "@/lib/compute-pediatric-age"
 
 // The formatter NEVER does date math — it renders a PediatricAge result.
@@ -182,4 +182,23 @@ test("abbrev years+days, 0 months → '2a 5d'", () => {
 
 test("abbrev non-ok status → empty string", () => {
   assert.equal(formatPediatricAgeAbbrev({ status: "invalid" }), "")
+})
+
+test("formatPediatricAgeShort tira os dias quando já há meses ou anos", () => {
+  const ok = (band: string, parts: Record<string, number>) => ({ status: "ok", band, parts }) as unknown as Parameters<typeof formatPediatricAgeShort>[0]
+  assert.equal(formatPediatricAgeShort(ok("years_months", { years: 2, months: 3, days: 6 })), "2a 3m")
+  assert.equal(formatPediatricAgeShort(ok("years_months", { years: 4, months: 0, days: 6 })), "4a")
+  assert.equal(formatPediatricAgeShort(ok("months_days", { months: 8, days: 6 })), "8m")
+  assert.equal(formatPediatricAgeShort(ok("weeks", { weeks: 6 })), "6 sem")
+  assert.equal(formatPediatricAgeShort(ok("days", { days: 5 })), "5 d")
+})
+
+test("formatPediatricAgeFull: anos, meses, semanas e dias, sem partes zeradas", () => {
+  const now = new Date("2026-10-07T15:00:00")
+  assert.equal(formatPediatricAgeFull("2022-03-22", now), "4 anos, 6 meses, 2 semanas e 1 dia")
+  assert.equal(formatPediatricAgeFull("2026-09-07", now), "1 mês")
+  assert.equal(formatPediatricAgeFull("2026-09-27", now), "1 semana e 3 dias")
+  assert.equal(formatPediatricAgeFull("2026-10-07", now), "Nasceu hoje")
+  assert.equal(formatPediatricAgeFull("2027-01-01", now), "")
+  assert.equal(formatPediatricAgeFull(null, now), "")
 })

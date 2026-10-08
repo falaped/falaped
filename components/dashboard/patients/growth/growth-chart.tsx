@@ -129,7 +129,7 @@ export function GrowthChart({
   measurements,
 }: {
   indicator: GrowthIndicator
-  patient: Patient
+  patient: Pick<Patient, "sex" | "birth_date" | "gestational_age_weeks">
   measurements: Measurement[]
 }) {
   const isPreterm =
