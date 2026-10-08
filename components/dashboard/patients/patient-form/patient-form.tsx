@@ -1,5 +1,6 @@
 "use client"
 
+import { useEffect } from "react"
 import { useRouter } from "next/navigation"
 import {
   useForm,
@@ -10,6 +11,7 @@ import {
 import { zodResolver } from "@hookform/resolvers/zod"
 import { toast } from "sonner"
 import { getFriendlyToastMessage } from "@/lib/get-friendly-toast-message"
+import { takePatientDraft } from "@/lib/patient-draft"
 import { Button } from "@/components/ui/button"
 import {
   createPatientSchema,
@@ -55,6 +57,13 @@ export function PatientForm(props: PatientFormProps) {
     ) as Resolver<CreatePatientFormInput>,
     defaultValues: { ...CREATE_PATIENT_DEFAULT_VALUES },
   })
+
+  // Dados vindos do cadastro rápido da busca ("Abrir a ficha completa").
+  useEffect(() => {
+    if (props.mode !== "create") return
+    const draft = takePatientDraft()
+    if (draft) createForm.reset({ ...CREATE_PATIENT_DEFAULT_VALUES, ...draft })
+  }, [props.mode, createForm])
 
   const editForm = useForm<UpdatePatientFormInput>({
     mode: "onSubmit",
