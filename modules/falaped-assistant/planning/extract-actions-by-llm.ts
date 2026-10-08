@@ -59,6 +59,9 @@ export async function extractActionsByLlm(userMessage: string): Promise<Extracte
       model: MODEL,
       temperature: 0,
       max_tokens: MAX_COMPLETION_TOKENS,
+      // Classificação curta: com o raciocínio padrão, pedido fora das categorias
+      // (ex.: "adicionar alergia") gastava os tokens pensando e voltava vazio.
+      reasoning_effort: "low",
       response_format: { type: "json_object" },
       messages: [
         { role: "system", content: SYSTEM_PROMPT },

@@ -23,6 +23,15 @@ import { stripAssistantUiLabelsFromReply } from "@/lib/format-clinical-assistant
 import { polishAssistantReplyForDisplay } from "@/modules/groq/assistant-polish-reply"
 import { updatePatient, type UpdatePatientPayload } from "@/modules/patients/update-patient"
 import { assistantMessageToModelText } from "@/modules/falaped-assistant/assistant-model-message"
+import { getConsultRecords } from "@/modules/cases/get-consult-records"
+import { clinicDay, formatConsultRecordsForAi, latestAnthropometry } from "@/lib/consult-records"
+import { createMeasurement } from "@/modules/patient-growth/create-measurement"
+import { updateMeasurement } from "@/modules/patient-growth/update-measurement"
+import { computePediatricBmi } from "@/lib/parse-anthropometrics-for-bmi"
+import type { Measurement } from "@/modules/patient-growth/types"
+import { createCaseReminder } from "@/modules/cases/create-case-reminder"
+import { listCaseReminders } from "@/modules/cases/list-case-reminders"
+import { parseReminderRequest } from "@/modules/falaped-assistant/lib/message-classification"
 import { processAssistantTurn } from "@/modules/falaped-assistant/orchestrator/process-turn"
 import { updateCaseAssistantTurnQueue } from "@/modules/cases/update-case-assistant-turn-queue"
 import { withBlockedAssistantMessageId } from "@/modules/falaped-assistant/pipeline/assistant-turn-queue"
@@ -73,6 +82,67 @@ type AssistantPayload = {
     items: AssistantStoredData[]
   }
   blockedAssistantMessageId?: string
+  /** O chat perguntou o dado de um atalho; a próxima mensagem do médico é a resposta. */
+  awaiting?: ChatShortcut
+}
+
+/** Atalhos dos chips: o chat pergunta o dado e completa a frase que o assistente entende. */
+type ChatShortcut = "allergy" | "measures" | "weight" | "height" | "head" | "reminder"
+
+const CHANGE_VERB = "(?:alterar|atualizar|mudar|corrigir|registrar|informar|adicionar|novo|nova)"
+const trigger = (subject: string) => new RegExp(`^(?:${CHANGE_VERB}\\s+)?(?:o\\s+|a\\s+)?(?:${subject})$`)
+/** Só o número ("30") vira a medida com rótulo e unidade, para o assistente reconhecer. */
+const measureCommand = (label: string, unit: string) => (answer: string) =>
+  `alterar medidas: ${/^\d+(?:[.,]\d+)?$/.test(answer) ? `${label} ${answer} ${unit}` : answer}`
+
+const SHORTCUT_PROMPTS: Record<ChatShortcut, { trigger: RegExp; question: string; toCommand: (answer: string) => string }> = {
+  allergy: {
+    trigger: new RegExp(`^${CHANGE_VERB}\\s+(?:uma\\s+)?alergias?$`),
+    question: "Qual alergia você quer adicionar à ficha? Ex.: dipirona, amendoim, proteína do leite.",
+    toCommand: (answer) => `adicionar alergia a ${answer}`,
+  },
+  measures: {
+    trigger: new RegExp(`^${CHANGE_VERB}\\s+(?:as\\s+)?medidas?$`),
+    question: "Quais medidas mudaram? Ex.: peso 13 kg, altura 88 cm, PC 47 cm.",
+    toCommand: (answer) => `alterar medidas: ${answer}`,
+  },
+  weight: {
+    trigger: trigger("peso"),
+    question: "Qual o novo peso, em kg? Ex.: 13,2.",
+    toCommand: measureCommand("peso", "kg"),
+  },
+  height: {
+    trigger: trigger("altura|estatura|comprimento"),
+    question: "Qual a nova estatura, em cm? Ex.: 88.",
+    toCommand: measureCommand("altura", "cm"),
+  },
+  head: {
+    trigger: trigger("pc|perimetro cefalico"),
+    question: "Qual o novo perímetro cefálico, em cm? Ex.: 47.",
+    toCommand: measureCommand("PC", "cm"),
+  },
+  reminder: {
+    trigger: new RegExp(`^(?:${CHANGE_VERB}\\s+|criar\\s+)?(?:um\\s+)?lembrete$`),
+    question: "Qual o lembrete para a próxima consulta? Ex.: reavaliar em 15 dias.",
+    toCommand: (answer) => `lembrete: ${answer}`,
+  },
+}
+
+/** Atalho pedido sem o dado ("Adicionar alergia", "Alterar altura", "Adicionar lembrete"). */
+function shortcutTriggeredBy(content: string): ChatShortcut | null {
+  const normalized = content.trim().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[.!]+$/, "").replace(/\s+/g, " ")
+  return (Object.keys(SHORTCUT_PROMPTS) as ChatShortcut[]).find((key) => SHORTCUT_PROMPTS[key].trigger.test(normalized)) ?? null
+}
+
+/** Atalho que a última resposta do chat deixou esperando resposta. */
+function pendingShortcut(lastMessage: { role: string; content: string } | undefined): ChatShortcut | null {
+  if (lastMessage?.role !== "assistant" || !lastMessage.content.startsWith(PAYLOAD_PREFIX)) return null
+  try {
+    const awaiting = (JSON.parse(lastMessage.content.slice(PAYLOAD_PREFIX.length)) as AssistantPayload).awaiting
+    return awaiting && awaiting in SHORTCUT_PROMPTS ? awaiting : null
+  } catch {
+    return null
+  }
 }
 
 function serializeAssistantPayload(payload: AssistantPayload): string {
@@ -101,6 +171,9 @@ type PatientContextSnapshot = {
   responsible: string | null
   weight: string | null
   height: string | null
+  allergies: string | null
+  current_medications: string | null
+  medical_history: string | null
 }
 
 function formatPatientAgeFromBirthDate(birthDate: string | null): string | null {
@@ -132,8 +205,31 @@ function buildPatientContext(patient: PatientContextSnapshot | null): string | n
   if (patient.responsible?.trim()) parts.push(`Responsável: ${patient.responsible.trim()}`)
   if (patient.weight?.trim()) parts.push(`Peso: ${patient.weight.trim()}`)
   if (patient.height?.trim()) parts.push(`Altura/comprimento: ${patient.height.trim()}`)
+  if (patient.allergies?.trim()) parts.push(`Alergias: ${patient.allergies.trim()}`)
+  if (patient.current_medications?.trim()) parts.push(`Medicações em uso: ${patient.current_medications.trim()}`)
+  if (patient.medical_history?.trim()) parts.push(`Histórico: ${patient.medical_history.trim()}`)
 
   return `Contexto do paciente: ${parts.join(" | ")}`
+}
+
+/** Junta o que a consulta já produziu no app e os lembretes ao contexto do paciente. */
+function withConsultRecords(
+  patientContext: string | null,
+  records: string | null,
+  reminders: string[],
+): string | null {
+  if (!records && !reminders.length) return patientContext
+  return [
+    patientContext,
+    records
+      ? `Feito nesta consulta pelo app (o médico já gerou ou registrou; considere ao responder e não peça de novo):\n${records}`
+      : null,
+    reminders.length
+      ? `Lembretes registrados nesta consulta (pendências para a próxima):\n${reminders.map((text) => `• ${text}`).join("\n")}`
+      : null,
+  ]
+    .filter(Boolean)
+    .join("\n\n")
 }
 
 function parseMetricToNumber(value: string | null | undefined): number | null {
@@ -144,31 +240,67 @@ function parseMetricToNumber(value: string | null | undefined): number | null {
   return Number(match[1])
 }
 
-function buildAnthropometricPatientUpdateFromStoredData(
-  items: Array<{ section: string; label: string; value: string; status: string }>,
-): UpdatePatientPayload {
-  const out: UpdatePatientPayload = {}
-  for (const item of items) {
-    if (item.section !== "DADOS_ANTROPOMETRICOS" || item.status !== "confirmado") {
-      continue
-    }
-    const label = item.label
-      .normalize("NFD")
-      .replace(/[\u0300-\u036f]/g, "")
-      .toLowerCase()
-    const match = item.value.replace(",", ".").match(/(\d+(?:\.\d+)?)/)
-    if (!match) continue
-    const num = Number(match[1])
-    if (!Number.isFinite(num)) continue
-    if (label === "peso") {
-      out.weight = num.toFixed(3).replace(/\.?0+$/, "")
-    }
-    if (label.includes("comprimento") && label.includes("altura")) {
-      const cm = num <= 3.5 ? num * 100 : num
-      out.height = cm.toFixed(1).replace(/\.0$/, "")
-    }
+/**
+ * Grava peso/estatura/PC confirmados no chat na medida do dia da consulta e devolve a resposta.
+ * Se o dia já tem medida, completa a mais recente (o IMC da ficha vem de peso e estatura da
+ * MESMA medida); senão cria uma a partir dos últimos valores. A resposta traz o IMC novo.
+ */
+async function saveChatMeasurement(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  profileId: string,
+  consult: { started_at: string; patient_id: string | null },
+  patientMeasurements: Measurement[],
+  update: { weightKg: number | null; heightM: number | null; headCm: number | null } | undefined,
+): Promise<string> {
+  const weightKg = update?.weightKg != null && update.weightKg >= 0.3 && update.weightKg <= 180 ? update.weightKg : null
+  const heightCm = update?.heightM != null && update.heightM * 100 >= 20 && update.heightM * 100 <= 220 ? update.heightM * 100 : null
+  const headCm = update?.headCm != null && update.headCm >= 20 && update.headCm <= 70 ? update.headCm : null
+  if (!consult.patient_id || (weightKg == null && heightCm == null && headCm == null)) {
+    return "Não consegui registrar: confira o valor e use o botão Medidas."
   }
-  return out
+  const values = {
+    ...(weightKg != null ? { weight_grams: Math.round(weightKg * 1000) } : {}),
+    ...(heightCm != null ? { length_height_mm: Math.round(heightCm * 10) } : {}),
+    ...(headCm != null ? { head_circumference_mm: Math.round(headCm * 10) } : {}),
+  }
+  const day = clinicDay(consult.started_at)
+  const sameDay = patientMeasurements.findLast((m) => m.measured_on === day)
+  // A medida fica completa com o último peso/estatura/PC registrado: alterar só um
+  // valor não deixa a medida pela metade, e o IMC sai com o valor novo.
+  const last = <K extends "weight_grams" | "length_height_mm" | "head_circumference_mm">(key: K) =>
+    patientMeasurements.findLast((m) => m[key] != null)?.[key] ?? null
+  const complete = {
+    weight_grams: sameDay?.weight_grams ?? last("weight_grams"),
+    length_height_mm: sameDay?.length_height_mm ?? last("length_height_mm"),
+    head_circumference_mm: sameDay?.head_circumference_mm ?? last("head_circumference_mm"),
+    ...values,
+  }
+  const saved = sameDay
+    ? await updateMeasurement(supabase, sameDay.id, profileId, consult.patient_id, complete)
+    : await createMeasurement(supabase, profileId, consult.patient_id, {
+        measured_on: day,
+        systolic_bp: null,
+        diastolic_bp: null,
+        ...complete,
+      })
+  revalidatePath(`/dashboard/patients/${consult.patient_id}`)
+
+  const decimal = new Intl.NumberFormat("pt-BR", { maximumFractionDigits: 2 })
+  const parts = [
+    weightKg != null ? `peso ${decimal.format(weightKg)} kg` : null,
+    heightCm != null ? `estatura ${decimal.format(heightCm)} cm` : null,
+    headCm != null ? `PC ${decimal.format(headCm)} cm` : null,
+  ].filter(Boolean)
+  const bmi =
+    saved.weight_grams != null && saved.length_height_mm != null
+      ? computePediatricBmi(saved.weight_grams / 1000, saved.length_height_mm / 1000)
+      : null
+  const bmiText = bmi?.ok
+    ? ` IMC atualizado: ${decimal.format(Math.round(bmi.bmi * 10) / 10)} kg/m².`
+    : bmi
+      ? " O IMC não foi atualizado: peso e estatura dão um valor fora do esperado."
+      : " Para o IMC, registre também o peso e a estatura."
+  return `Medida registrada na consulta: ${parts.join(", ")}.${bmiText} Já aparece na ficha e na curva de crescimento.`
 }
 
 function truncateConversationWindow(messages: Array<{ role: "user" | "assistant"; content: string }>): {
@@ -320,8 +452,8 @@ export async function sendCaseAssistantMessageAction(
   caseId: string,
   userInput: string,
 ): Promise<SendCaseAssistantMessageActionResult> {
-  const content = userInput.trim()
-  if (!content) return { ok: false, error: "Digite uma mensagem para enviar." }
+  const typed = userInput.trim()
+  if (!typed) return { ok: false, error: "Digite uma mensagem para enviar." }
 
   const supabase = await createClient()
   const { profile } = await getAuthenticatedUser(supabase)
@@ -342,19 +474,86 @@ export async function sendCaseAssistantMessageAction(
   try {
     if (
       caseRow.pending_action &&
-      /cancelar acao|cancelar ação|cancelar/.test(content.toLowerCase())
+      /cancelar acao|cancelar ação|cancelar/.test(typed.toLowerCase())
     ) {
       await updateCasePendingAction(supabase, caseId, profile.id, null)
     }
+
+    // Resposta à pergunta de um atalho vira a frase completa ("dipirona" → "adicionar
+    // alergia a dipirona") e é gravada assim, para a confirmação achar o dado no fio.
+    const awaiting = pendingShortcut((await listCaseMessagesByCaseId(supabase, caseId)).at(-1))
+    const content =
+      awaiting && !/^cancel/i.test(typed) ? SHORTCUT_PROMPTS[awaiting].toCommand(typed) : typed
 
     const insertedUserMessage = await insertCaseMessage(supabase, {
       caseId,
       role: "user",
       content,
     })
+    const userMessageResult = {
+      id: insertedUserMessage.id,
+      role: "user" as const,
+      content: insertedUserMessage.content,
+      created_at: insertedUserMessage.created_at,
+    }
+
+    // Chip de atalho: o chat só pergunta o dado; a próxima mensagem completa o pedido.
+    const shortcut = shortcutTriggeredBy(content)
+    if (shortcut || (awaiting && content === typed)) {
+      const question = await insertCaseMessage(supabase, {
+        caseId,
+        role: "assistant",
+        content: serializeAssistantPayload(
+          shortcut
+            ? { type: "assistant_reply", content: SHORTCUT_PROMPTS[shortcut].question, awaiting: shortcut }
+            : { type: "assistant_reply", content: "Certo, cancelado." },
+        ),
+      })
+      revalidatePath(`/dashboard/cases/new/${caseId}`)
+      return { ok: true, userMessage: userMessageResult, assistantMessage: question, assistantMessages: [question] }
+    }
+
+    // Lembrete pedido no chat é gravado direto (é só uma pendência; apaga-se no painel).
+    const reminderText = parseReminderRequest(content)
+    if (reminderText) {
+      await createCaseReminder(supabase, profile.id, caseId, reminderText)
+      const reminderReply = await insertCaseMessage(supabase, {
+        caseId,
+        role: "assistant",
+        content: serializeAssistantPayload({
+          type: "assistant_reply",
+          content: `Lembrete salvo: ${reminderText}. Ele aparece em "Nesta consulta" e na abertura da próxima consulta.`,
+        }),
+      })
+      revalidatePath(`/dashboard/cases/${caseId}`)
+      revalidatePath(`/dashboard/cases/new/${caseId}`)
+      return {
+        ok: true,
+        userMessage: userMessageResult,
+        assistantMessage: reminderReply,
+        assistantMessages: [reminderReply],
+      }
+    }
 
     const threadMessages = await listCaseMessagesByCaseId(supabase, caseId)
     const caseDetail = await getCaseById(supabase, caseId, profile.id)
+    const [consultRecords, reminders] = caseDetail
+      ? await Promise.all([
+          getConsultRecords(supabase, profile.id, caseDetail),
+          listCaseReminders(supabase, profile.id, caseId).catch(() => []),
+        ])
+      : [null, []]
+    // Peso, altura e PC vêm das medidas registradas (consulta ou ficha); o campo do
+    // cadastro antigo só vale quando não há medida.
+    const latest = latestAnthropometry(consultRecords?.patientMeasurements ?? [])
+    const patient = caseDetail?.patient
+      ? {
+          ...caseDetail.patient,
+          weight: latest.weight ?? caseDetail.patient.weight,
+          height: latest.height ?? caseDetail.patient.height,
+          head_circumference: latest.head_circumference ?? caseDetail.patient.head_circumference,
+        }
+      : null
     const normalizedMessages = threadMessages.map((message) => ({
       role: message.role,
       content: message.content,
@@ -385,42 +584,50 @@ export async function sendCaseAssistantMessageAction(
         created_at: message.created_at,
       })),
       pendingAction: caseRow.pending_action,
-      patientContext: buildPatientContext(
-        caseDetail?.patient
-          ? {
-              name: caseDetail.patient.name,
-              birth_date: caseDetail.patient.birth_date,
-              responsible: caseDetail.patient.responsible,
-              weight: caseDetail.patient.weight,
-              height: caseDetail.patient.height,
-            }
-          : null,
+      patientContext: withConsultRecords(
+        buildPatientContext(
+          patient
+            ? {
+                name: patient.name,
+                birth_date: patient.birth_date,
+                responsible: patient.responsible,
+                weight: patient.weight,
+                height: patient.height,
+                allergies: patient.allergies,
+                current_medications: patient.current_medications,
+                medical_history: patient.medical_history,
+              }
+            : null,
+        ),
+        consultRecords ? formatConsultRecordsForAi(consultRecords) : null,
+        reminders.map((reminder) => reminder.text),
       ),
       conversationSummary: caseRow.dashboard_chat_context_summary,
       patientMetrics: {
-        weight: parseMetricToNumber(caseDetail?.patient?.weight),
+        weight: parseMetricToNumber(patient?.weight),
         height: (() => {
-          const parsed = parseMetricToNumber(caseDetail?.patient?.height)
+          const parsed = parseMetricToNumber(patient?.height)
           if (!parsed) return null
           return parsed > 3 ? parsed / 100 : parsed
         })(),
+        headCircumference: parseMetricToNumber(patient?.head_circumference),
       },
-      patientProfile: caseDetail?.patient
+      patientProfile: patient
         ? {
-          id: caseDetail.patient.id,
-          name: caseDetail.patient.name,
-          birth_date: caseDetail.patient.birth_date,
-          responsible: caseDetail.patient.responsible,
-          contact_phone: caseDetail.patient.contact_phone,
-          sex: caseDetail.patient.sex,
-          legal_guardian: caseDetail.patient.legal_guardian,
-          weight: caseDetail.patient.weight,
-          height: caseDetail.patient.height,
-          head_circumference: caseDetail.patient.head_circumference,
-          blood_type: caseDetail.patient.blood_type,
-          allergies: caseDetail.patient.allergies,
-          current_medications: caseDetail.patient.current_medications,
-          medical_history: caseDetail.patient.medical_history,
+          id: patient.id,
+          name: patient.name,
+          birth_date: patient.birth_date,
+          responsible: patient.responsible,
+          contact_phone: patient.contact_phone,
+          sex: patient.sex,
+          legal_guardian: patient.legal_guardian,
+          weight: patient.weight,
+          height: patient.height,
+          head_circumference: patient.head_circumference,
+          blood_type: patient.blood_type,
+          allergies: patient.allergies,
+          current_medications: patient.current_medications,
+          medical_history: patient.medical_history,
         }
         : undefined,
       turnQueue: caseRow.assistant_turn_queue,
@@ -431,6 +638,7 @@ export async function sendCaseAssistantMessageAction(
     let reportGeneratedAtSegmentIndex: number | null = null
     const reportHasMinimumData = hasMinimumConversationForReport(normalizedMessages)
 
+    const measurementReplies = new Map<number, string>()
     for (let segmentIndex = 0; segmentIndex < pipelineResults.length; segmentIndex++) {
       const routed = pipelineResults[segmentIndex]
       if (routed.action === "confirm_close_case") {
@@ -471,13 +679,13 @@ export async function sendCaseAssistantMessageAction(
         }
       }
 
+      // Peso/estatura confirmados no chat viram medida do dia da consulta: é o que a
+      // ficha, a curva e o painel "Nesta consulta" leem (o campo do cadastro não).
       if (routed.action === "confirm_anthropometric_reference" && caseDetail?.patient?.id) {
-        const anthropometricPayload = buildAnthropometricPatientUpdateFromStoredData(
-          routed.storedData,
+        measurementReplies.set(
+          segmentIndex,
+          await saveChatMeasurement(supabase, profile.id, caseDetail, consultRecords?.patientMeasurements ?? [], routed.anthropometricUpdate),
         )
-        if (anthropometricPayload.weight !== undefined || anthropometricPayload.height !== undefined) {
-          await updatePatient(supabase, caseDetail.patient.id, profile.id, anthropometricPayload)
-        }
       }
 
       if (routed.action === "none" && routed.intent === "CLOSE_CASE") {
@@ -527,7 +735,7 @@ export async function sendCaseAssistantMessageAction(
           caseDetail?.patient?.id &&
           routed.patientProfileUpdatePayload
           ? formatPatientProfileUpdateSuccessReply(routed.patientProfileUpdatePayload)
-          : undefined
+          : measurementReplies.get(segmentIndex)
 
       const isReportInsufficientGate =
         routed.intent === "GENERATE_REPORT" &&

@@ -150,3 +150,23 @@ export function messageRequestsBmi(userMessage: string): boolean {
     /\bindice\s+de\s+massa(\s+corporal)?\b/.test(normalized)
   )
 }
+
+/**
+ * Texto do lembrete num pedido explícito ao chat ("adicionar lembrete: reavaliar em 15 dias",
+ * "lembrete: pedir hemograma", "me lembre de checar a vacina"). Pergunta ("quais os
+ * lembretes?") não é pedido: devolve null.
+ */
+export function parseReminderRequest(userMessage: string): string | null {
+  const text = userMessage.trim()
+  if (!text || text.endsWith("?")) return null
+  const match =
+    // Com verbo ("adicionar lembrete reavaliar…") o resto da frase é o lembrete; sem verbo,
+    // só com ":" ou "de/para/que" logo depois, para ditado que cita a palavra não virar lembrete.
+    text.match(
+      /^(?:adicion|registr|anot|cri|salv|coloc|inclu|escrev)\w*\s+(?:um\s+|o\s+|novo\s+)?lembrete(?:\s*[:\-–]|\s+(?:de|para|que)(?=\s))?\s*([\s\S]+)$/i,
+    ) ??
+    text.match(/^lembrete\s*(?:[:\-–]|\s(?:de|para|que)\s)\s*([\s\S]+)$/i) ??
+    text.match(/^(?:me\s+)?lembr(?:ar|e|ete)(?:-me)?\s+(?:de|que)\s+([\s\S]+)$/i)
+  const value = match?.[1]?.trim().replace(/\s+/g, " ")
+  return value ? value.slice(0, 500) : null
+}

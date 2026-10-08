@@ -33,6 +33,10 @@ export const handleCalculateBmi: AssistantIntentHandler = async (context) => {
     if (heightM == null) heightM = fromThread.heightM
   }
 
+  // Sem medida no texto, vale a medida registrada (painel Medir ou ficha).
+  if (weightKg == null) weightKg = context.patientMetrics?.weight ?? null
+  if (heightM == null) heightM = context.patientMetrics?.height ?? null
+
   if (weightKg == null || heightM == null) {
     const missing = []
     if (weightKg == null) missing.push("peso")

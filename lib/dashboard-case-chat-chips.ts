@@ -4,11 +4,13 @@ import {
   CASE_CHAT_SUBSTANTIVE_USER_MESSAGE_MIN_CHARS,
 } from "@/lib/constants"
 
+// "Adicionar alergia" e "Alterar medidas" abrem a pergunta do chat (o IMC sai junto com as
+// medidas; o relatório fica no Encerrar).
 export const CASE_CHAT_PRIMARY_CHIPS = [
+  "Adicionar alergia",
+  "Alterar medidas",
   "Resumir principais pontos do atendimento",
-  "Calcular IMC com os dados informados",
   "Sugerir perguntas para o responsável",
-  "Gerar relatório deste caso",
 ]
 
 export const CASE_CHAT_CRITICAL_CHIPS = [

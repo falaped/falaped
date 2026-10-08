@@ -57,7 +57,8 @@ import { CloseConsultSheet } from "@/components/dashboard/cases/close-consult-sh
 import type { CaseReport as CaseReportType } from "@/modules/cases/get-case-report"
 import type { ReportTemplateWithSections } from "@/modules/report-templates/get-report-template-by-id"
 import { toCaseDocuments } from "@/components/dashboard/cases/case-detail-documents"
-import { ConsultRail, type ConsultDocuments } from "@/components/dashboard/cases/consult-rail"
+import { ConsultRail } from "@/components/dashboard/cases/consult-rail"
+import { clinicDay, countConsultRecords, type ConsultDocuments, type ConsultRecords } from "@/lib/consult-records"
 import { ConsultTimer } from "@/components/dashboard/cases/consult-timer"
 import { closeTiming } from "@/lib/consult-idle"
 import type { ConsultDoctor } from "@/components/dashboard/cases/consult-prescription-panel"
@@ -928,15 +929,23 @@ export function NewCaseWorkspace({
     ? formatPediatricAgeShort(computePediatricAge(patient.birth_date))
     : null
   const fullAge = formatPediatricAgeFull(patient?.birth_date ?? null, new Date())
-  const todayMeasurement =
-    measurements.findLast((m) => m.measured_on === todayIso) ?? null
   const lastWeight = measurements.findLast((m) => m.weight_grams !== null)
   const weightLabel = lastWeight
     ? `${(lastWeight.weight_grams! / 1000).toFixed(2).replace(".", ",")} kg · ${
         lastWeight.measured_on === todayIso ? "hoje" : formatDate(lastWeight.measured_on)
       }`
     : null
-  const docCount = Object.values(documents).reduce((total, list) => total + list.length, 0)
+  // Dia da consulta no fuso da clínica: a medida é ligada à data, não ao caso.
+  const consultDay = clinicDay(startedAt)
+  const consultRecords: ConsultRecords = {
+    documents,
+    measurements: measurements.filter((m) => m.measured_on === consultDay),
+    measurementHistory: measurements,
+    scaleResults: scaleResults.filter((r) => r.case_id === caseId),
+    examReadings,
+    attachments: attachments.filter((a) => a.case_id === caseId),
+  }
+  const docCount = countConsultRecords(consultRecords)
   const panelSubtitle = [patient?.name ?? "Paciente não associado", age].filter(Boolean).join(" · ")
 
   return (
@@ -1192,8 +1201,7 @@ export function NewCaseWorkspace({
           <div className="flex-1 overflow-auto px-6 py-5">
             <ConsultRail
               caseId={caseId}
-              documents={documents}
-              todayMeasurement={todayMeasurement}
+              records={consultRecords}
               reminders={reminders}
               allergies={allergies}
               patientId={patient?.id ?? null}
@@ -1210,7 +1218,8 @@ export function NewCaseWorkspace({
         todayLabel={todayLabel}
         template={reportTemplate}
         caseReports={caseReports}
-        hasMessages={messages.length > 0}
+        // O relatório sai da conversa ou do que foi feito no app.
+        hasMessages={messages.length > 0 || docCount > 0}
         documents={toCaseDocuments(documents)}
         reminders={reminders}
         startedAt={startedAt}

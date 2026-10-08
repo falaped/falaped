@@ -1,6 +1,6 @@
 import type { CaseMessage } from "@/modules/cases/get-case-by-id"
 import { normalizeText, normalizeForNearDuplicate } from "@/modules/falaped-assistant/lib/normalize-text"
-import { parseNumericValue } from "@/modules/falaped-assistant/lib/patient-profile-parsers"
+import { parseHeadCircumferenceCmFromMessage, parseNumericValue } from "@/modules/falaped-assistant/lib/patient-profile-parsers"
 import { isCommandLikeMessage, isGuardianAlertConfirmOrDeclineMessage } from "@/modules/falaped-assistant/lib/message-classification"
 import { assistantMessageToModelText } from "@/modules/falaped-assistant/assistant-model-message"
 import {
@@ -316,16 +316,17 @@ export function formatLatestAnthropometricsHint(params: {
 
 export function detectAnthropometricReferenceChange(params: {
   userMessage: string
-  patientMetrics?: { weight: number | null; height: number | null }
-}): { hasChange: boolean; weightKg: number | null; heightM: number | null } {
+  patientMetrics?: { weight: number | null; height: number | null; headCircumference?: number | null }
+}): { hasChange: boolean; weightKg: number | null; heightM: number | null; headCm: number | null } {
   const parsed = stripNeonatalBirthMeasuresFromParsedAnthropometrics(
     params.userMessage,
     parseWeightHeightForBmi(params.userMessage),
   )
   const weightKg = parsed.weightKg ?? null
   const heightM = parsed.heightM ?? null
-  if (weightKg == null && heightM == null) {
-    return { hasChange: false, weightKg: null, heightM: null }
+  const headCm = parseHeadCircumferenceCmFromMessage(params.userMessage)
+  if (weightKg == null && heightM == null && headCm == null) {
+    return { hasChange: false, weightKg: null, heightM: null, headCm: null }
   }
 
   const currentWeight = params.patientMetrics?.weight ?? null
@@ -336,10 +337,14 @@ export function detectAnthropometricReferenceChange(params: {
   const heightChanged =
     heightM != null && currentHeight != null && Math.abs(heightM - currentHeight) >= 0.005
 
+  const currentHead = params.patientMetrics?.headCircumference ?? null
+  const headChanged = headCm != null && currentHead != null && Math.abs(headCm - currentHead) >= 0.1
+
   return {
-    hasChange: weightChanged || heightChanged,
+    hasChange: weightChanged || heightChanged || headChanged,
     weightKg,
     heightM,
+    headCm,
   }
 }
 
