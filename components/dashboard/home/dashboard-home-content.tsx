@@ -21,6 +21,7 @@ import { getDashboardHomeData } from "@/modules/dashboard/get-dashboard-home-dat
 import { computePediatricAge } from "@/lib/compute-pediatric-age"
 import { formatPediatricAge } from "@/lib/format-pediatric-age"
 import { getAuthenticatedUser } from "@/modules/supabase/get-authenticated-user"
+import { applySignupMetadata } from "@/modules/profiles/apply-signup-metadata"
 
 import type { CaseOrigin } from "@/modules/cases/types"
 
@@ -38,6 +39,14 @@ export async function DashboardHomeContent() {
   const supabase = await createClient()
   const { profile } = await getAuthenticatedUser(supabase)
   if (!profile?.id) redirect("/auth/login")
+
+  // 1º acesso: CRM e nome separado vêm do cadastro. Se falhar, o Início abre igual
+  // e tenta de novo na próxima visita.
+  try {
+    Object.assign(profile, await applySignupMetadata(supabase, profile.id))
+  } catch (error: unknown) {
+    console.error(error)
+  }
 
   const home = await getDashboardHomeData(supabase, profile)
   const activeContextSummaryDisplay =
