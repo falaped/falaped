@@ -2,19 +2,23 @@ import type { AssistantIntentHandler } from "@/modules/falaped-assistant/handler
 import { detectAnthropometricReferenceChange } from "@/modules/falaped-assistant/lib/thread-scanning"
 import { isCommandLikeMessage } from "@/modules/falaped-assistant/lib/message-classification"
 import { parseWeightHeightForBmi, stripNeonatalBirthMeasuresFromParsedAnthropometrics } from "@/lib/parse-anthropometrics-for-bmi"
+import { parseHeadCircumferenceCmFromMessage } from "@/modules/falaped-assistant/lib/patient-profile-parsers"
 import type { CaseMessage } from "@/modules/cases/get-case-by-id"
 import { normalizeText } from "@/modules/falaped-assistant/lib/normalize-text"
 import { formatPtDecimal } from "@/modules/falaped-assistant/lib/formatters"
 
-/** Peso e estatura da última mensagem do médico que trouxe medida (a que gerou a revisão). */
-function latestReviewedAnthropometrics(messages: CaseMessage[]): { weightKg: number | null; heightM: number | null } {
+/** Peso, estatura e PC da última mensagem do médico que trouxe medida (a que gerou a revisão). */
+function latestReviewedAnthropometrics(messages: CaseMessage[]): { weightKg: number | null; heightM: number | null; headCm: number | null } {
   for (let i = messages.length - 1; i >= 0; i -= 1) {
     const message = messages[i]
     if (message.role !== "user" || isCommandLikeMessage(message.content)) continue
     const parsed = stripNeonatalBirthMeasuresFromParsedAnthropometrics(message.content, parseWeightHeightForBmi(message.content))
-    if (parsed.weightKg != null || parsed.heightM != null) return { weightKg: parsed.weightKg ?? null, heightM: parsed.heightM ?? null }
+    const headCm = parseHeadCircumferenceCmFromMessage(message.content)
+    if (parsed.weightKg != null || parsed.heightM != null || headCm != null) {
+      return { weightKg: parsed.weightKg ?? null, heightM: parsed.heightM ?? null, headCm }
+    }
   }
-  return { weightKg: null, heightM: null }
+  return { weightKg: null, heightM: null, headCm: null }
 }
 
 export const handleReviewAnthropometricReference: AssistantIntentHandler = async (context) => {
@@ -32,10 +36,10 @@ export const handleReviewAnthropometricReference: AssistantIntentHandler = async
   }
   if (normalized.includes("confirmar novos dados antropometricos") || normalized.includes("usar novos dados antropometricos")) {
     const latest = latestReviewedAnthropometrics(context.messages)
-    const hasValue = latest.weightKg != null || latest.heightM != null
+    const hasValue = latest.weightKg != null || latest.heightM != null || latest.headCm != null
     return {
       intent: "REVIEW_ANTHROPOMETRIC_REFERENCE",
-      reply: hasValue ? "" : "Não encontrei peso ou estatura para registrar. Informe os valores (ex.: peso 12 kg).",
+      reply: hasValue ? "" : "Não encontrei peso, estatura ou PC para registrar. Informe os valores (ex.: peso 12 kg).",
       action: hasValue ? "confirm_anthropometric_reference" : "keep_previous_anthropometric_reference",
       anthropometricUpdate: hasValue ? latest : undefined,
       showStructuredCard: false,
@@ -62,7 +66,8 @@ export const handleReviewAnthropometricReference: AssistantIntentHandler = async
 
   const parts: string[] = []
   if (change.weightKg != null) parts.push(`peso ${change.weightKg.toFixed(3).replace(/\.?0+$/, "")} kg`)
-  if (change.heightM != null) parts.push(`comprimento ${formatPtDecimal(change.heightM * 100, 1)} cm`)
+  if (change.heightM != null) parts.push(`estatura ${formatPtDecimal(change.heightM * 100, 1)} cm`)
+  if (change.headCm != null) parts.push(`PC ${formatPtDecimal(change.headCm, 1)} cm`)
 
   return {
     intent: "REVIEW_ANTHROPOMETRIC_REFERENCE",

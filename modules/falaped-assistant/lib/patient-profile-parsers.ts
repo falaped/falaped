@@ -36,7 +36,7 @@ export function normalizePatientHeightToCm(value: string | null | undefined): nu
 export function parseHeadCircumferenceCmFromMessage(userMessage: string): number | null {
   const normalized = normalizeText(userMessage).replace(",", ".")
   const directMatch = normalized.match(
-    /\b(pc|perimetro\s+cefalico(?:\s+atual)?)\s*[:=]?\s*(\d+(?:\.\d+)?)\s*cm?\b/i,
+    /\b(pc|perimetro\s+cefalico(?:\s+atual)?)\s*(?:[:=]|\s(?:para|de|em)\s)?\s*(\d+(?:\.\d+)?)(?:\s*cm)?\b/i,
   )
   if (directMatch) {
     const value = Number(directMatch[2])

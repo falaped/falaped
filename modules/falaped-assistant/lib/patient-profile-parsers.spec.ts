@@ -14,6 +14,7 @@ import {
   looksLikePatientProfileDictation,
   parseAllergyAddition,
 } from "@/modules/falaped-assistant/lib/patient-profile-parsers"
+import { parseWeightHeightForBmi } from "@/lib/parse-anthropometrics-for-bmi"
 
 const EMPTY_PROFILE = {
   id: "p-1",
@@ -203,4 +204,13 @@ test("adicionar alergia sem dois-pontos soma à lista da ficha", () => {
     patientProfile: { ...EMPTY_PROFILE, allergies: "Dipirona" },
   })
   assert.equal(repeated?.updates.allergies, undefined)
+})
+
+test("alterar altura e PC no chat: estatura acima de 130 cm com rótulo e PC com preposição", () => {
+  assert.deepEqual(parseWeightHeightForBmi("altere a altura para 140cm e o PC para 23"), { weightKg: null, heightM: 1.4 })
+  assert.equal(parseHeadCircumferenceCmFromMessage("altere a altura para 140cm e o PC para 23"), 23)
+  assert.equal(parseHeadCircumferenceCmFromMessage("perímetro cefálico 47"), 47)
+  assert.deepEqual(parseWeightHeightForBmi("pc de 46,5 cm"), { weightKg: null, heightM: null })
+  // Sem rótulo, "cm" solto do ditado não vira estatura de adolescente.
+  assert.deepEqual(parseWeightHeightForBmi("lesão de 150 cm"), { weightKg: null, heightM: null })
 })

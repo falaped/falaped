@@ -169,18 +169,19 @@ async function saveChatMeasurement(
   supabase: Awaited<ReturnType<typeof createClient>>,
   profileId: string,
   consult: { started_at: string; patient_id: string | null },
-  update: { weightKg: number | null; heightM: number | null } | undefined,
+  update: { weightKg: number | null; heightM: number | null; headCm: number | null } | undefined,
 ): Promise<string> {
   const weightKg = update?.weightKg != null && update.weightKg >= 0.3 && update.weightKg <= 180 ? update.weightKg : null
   const heightCm = update?.heightM != null && update.heightM * 100 >= 20 && update.heightM * 100 <= 220 ? update.heightM * 100 : null
-  if (!consult.patient_id || (weightKg == null && heightCm == null)) {
+  const headCm = update?.headCm != null && update.headCm >= 20 && update.headCm <= 70 ? update.headCm : null
+  if (!consult.patient_id || (weightKg == null && heightCm == null && headCm == null)) {
     return "Não consegui registrar: confira o valor e use o botão Medidas."
   }
   await createMeasurement(supabase, profileId, consult.patient_id, {
     measured_on: clinicDay(consult.started_at),
     weight_grams: weightKg != null ? Math.round(weightKg * 1000) : null,
     length_height_mm: heightCm != null ? Math.round(heightCm * 10) : null,
-    head_circumference_mm: null,
+    head_circumference_mm: headCm != null ? Math.round(headCm * 10) : null,
     systolic_bp: null,
     diastolic_bp: null,
   })
@@ -189,6 +190,7 @@ async function saveChatMeasurement(
   const parts = [
     weightKg != null ? `peso ${decimal.format(weightKg)} kg` : null,
     heightCm != null ? `estatura ${decimal.format(heightCm)} cm` : null,
+    headCm != null ? `PC ${decimal.format(headCm)} cm` : null,
   ].filter(Boolean)
   return `Medida registrada na consulta: ${parts.join(", ")}. Já aparece na ficha e na curva de crescimento.`
 }
@@ -446,6 +448,7 @@ export async function sendCaseAssistantMessageAction(
           if (!parsed) return null
           return parsed > 3 ? parsed / 100 : parsed
         })(),
+        headCircumference: parseMetricToNumber(patient?.head_circumference),
       },
       patientProfile: patient
         ? {
