@@ -1,7 +1,7 @@
 import assert from "node:assert/strict"
 import { test } from "node:test"
 
-import { clinicDay, countConsultRecords, formatConsultRecordsForAi, type ConsultRecords } from "./consult-records"
+import { clinicDay, countConsultRecords, formatConsultRecordsForAi, latestAnthropometry, type ConsultRecords } from "./consult-records"
 
 const empty: ConsultRecords = {
   documents: { prescriptions: [], certificates: [], examRequests: [], referrals: [] },
@@ -46,4 +46,15 @@ test("a IA recebe cada documento com a hora da clínica, mesmo sem o conteúdo",
 
 test("o dia da consulta é o da clínica, não o UTC", () => {
   assert.equal(clinicDay("2026-10-09T01:30:00Z"), "2026-10-08")
+})
+
+test("peso, altura e PC mais recentes vêm de medidas diferentes quando preciso", () => {
+  const m = (weight_grams: number | null, length_height_mm: number | null, head_circumference_mm: number | null) =>
+    ({ weight_grams, length_height_mm, head_circumference_mm }) as never
+  assert.deepEqual(latestAnthropometry([m(10000, 800, 450), m(12345, null, null)]), {
+    weight: "12,3",
+    height: "80",
+    head_circumference: "45",
+  })
+  assert.deepEqual(latestAnthropometry([]), { weight: null, height: null, head_circumference: null })
 })

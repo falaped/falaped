@@ -24,7 +24,7 @@ import { polishAssistantReplyForDisplay } from "@/modules/groq/assistant-polish-
 import { updatePatient, type UpdatePatientPayload } from "@/modules/patients/update-patient"
 import { assistantMessageToModelText } from "@/modules/falaped-assistant/assistant-model-message"
 import { getConsultRecords } from "@/modules/cases/get-consult-records"
-import { formatConsultRecordsForAi } from "@/lib/consult-records"
+import { formatConsultRecordsForAi, latestAnthropometry } from "@/lib/consult-records"
 import { processAssistantTurn } from "@/modules/falaped-assistant/orchestrator/process-turn"
 import { updateCaseAssistantTurnQueue } from "@/modules/cases/update-case-assistant-turn-queue"
 import { withBlockedAssistantMessageId } from "@/modules/falaped-assistant/pipeline/assistant-turn-queue"
@@ -374,6 +374,20 @@ export async function sendCaseAssistantMessageAction(
 
     const threadMessages = await listCaseMessagesByCaseId(supabase, caseId)
     const caseDetail = await getCaseById(supabase, caseId, profile.id)
+    const consultRecords = caseDetail
+      ? await getConsultRecords(supabase, profile.id, caseDetail)
+      : null
+    // Peso, altura e PC vêm das medidas registradas (consulta ou ficha); o campo do
+    // cadastro antigo só vale quando não há medida.
+    const latest = latestAnthropometry(consultRecords?.patientMeasurements ?? [])
+    const patient = caseDetail?.patient
+      ? {
+          ...caseDetail.patient,
+          weight: latest.weight ?? caseDetail.patient.weight,
+          height: latest.height ?? caseDetail.patient.height,
+          head_circumference: latest.head_circumference ?? caseDetail.patient.head_circumference,
+        }
+      : null
     const normalizedMessages = threadMessages.map((message) => ({
       role: message.role,
       content: message.content,
@@ -406,46 +420,46 @@ export async function sendCaseAssistantMessageAction(
       pendingAction: caseRow.pending_action,
       patientContext: withConsultRecords(
         buildPatientContext(
-          caseDetail?.patient
+          patient
             ? {
-                name: caseDetail.patient.name,
-                birth_date: caseDetail.patient.birth_date,
-                responsible: caseDetail.patient.responsible,
-                weight: caseDetail.patient.weight,
-                height: caseDetail.patient.height,
-                allergies: caseDetail.patient.allergies,
-                current_medications: caseDetail.patient.current_medications,
-                medical_history: caseDetail.patient.medical_history,
+                name: patient.name,
+                birth_date: patient.birth_date,
+                responsible: patient.responsible,
+                weight: patient.weight,
+                height: patient.height,
+                allergies: patient.allergies,
+                current_medications: patient.current_medications,
+                medical_history: patient.medical_history,
               }
             : null,
         ),
-        caseDetail ? formatConsultRecordsForAi(await getConsultRecords(supabase, profile.id, caseDetail)) : null,
+        consultRecords ? formatConsultRecordsForAi(consultRecords) : null,
       ),
       conversationSummary: caseRow.dashboard_chat_context_summary,
       patientMetrics: {
-        weight: parseMetricToNumber(caseDetail?.patient?.weight),
+        weight: parseMetricToNumber(patient?.weight),
         height: (() => {
-          const parsed = parseMetricToNumber(caseDetail?.patient?.height)
+          const parsed = parseMetricToNumber(patient?.height)
           if (!parsed) return null
           return parsed > 3 ? parsed / 100 : parsed
         })(),
       },
-      patientProfile: caseDetail?.patient
+      patientProfile: patient
         ? {
-          id: caseDetail.patient.id,
-          name: caseDetail.patient.name,
-          birth_date: caseDetail.patient.birth_date,
-          responsible: caseDetail.patient.responsible,
-          contact_phone: caseDetail.patient.contact_phone,
-          sex: caseDetail.patient.sex,
-          legal_guardian: caseDetail.patient.legal_guardian,
-          weight: caseDetail.patient.weight,
-          height: caseDetail.patient.height,
-          head_circumference: caseDetail.patient.head_circumference,
-          blood_type: caseDetail.patient.blood_type,
-          allergies: caseDetail.patient.allergies,
-          current_medications: caseDetail.patient.current_medications,
-          medical_history: caseDetail.patient.medical_history,
+          id: patient.id,
+          name: patient.name,
+          birth_date: patient.birth_date,
+          responsible: patient.responsible,
+          contact_phone: patient.contact_phone,
+          sex: patient.sex,
+          legal_guardian: patient.legal_guardian,
+          weight: patient.weight,
+          height: patient.height,
+          head_circumference: patient.head_circumference,
+          blood_type: patient.blood_type,
+          allergies: patient.allergies,
+          current_medications: patient.current_medications,
+          medical_history: patient.medical_history,
         }
         : undefined,
       turnQueue: caseRow.assistant_turn_queue,

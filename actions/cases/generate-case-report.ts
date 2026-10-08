@@ -26,7 +26,7 @@ import {
   formatScaleResultsSectionContent,
 } from "@/modules/report-templates/format-scale-results-section"
 import { getConsultRecords } from "@/modules/cases/get-consult-records"
-import { formatConsultRecordsForAi } from "@/lib/consult-records"
+import { formatConsultRecordsForAi, latestAnthropometry } from "@/lib/consult-records"
 import { assistantMessageToModelText } from "@/modules/falaped-assistant/assistant-model-message"
 
 export type GenerateCaseReportResult =
@@ -76,6 +76,16 @@ export async function generateCaseReportAction(
       return { ok: false, error: "Caso não encontrado ou você não tem acesso." }
     const consultRecords = await getConsultRecords(supabase, profile.id, caseDetail)
     const recordsText = formatConsultRecordsForAi(consultRecords)
+    // Peso, altura e PC vêm das medidas registradas; o cadastro antigo só sem medida.
+    const latest = latestAnthropometry(consultRecords.patientMeasurements)
+    const patient = caseDetail.patient
+      ? {
+          ...caseDetail.patient,
+          weight: latest.weight ?? caseDetail.patient.weight,
+          height: latest.height ?? caseDetail.patient.height,
+          head_circumference: latest.head_circumference ?? caseDetail.patient.head_circumference,
+        }
+      : null
     if (caseDetail.messages.length === 0 && !recordsText)
       return { ok: false, error: "Registre algo na consulta antes de gerar o relatório." }
 
@@ -105,7 +115,7 @@ export async function generateCaseReportAction(
     const normalizedSections = normalizeReportTemplateSections(template.sections)
     const middleForAi = partitionSectionsForAi(template.sections)
 
-    const patientContext = toPatientReportContext(caseDetail.patient)
+    const patientContext = toPatientReportContext(patient)
 
     let contentBySection: Record<string, string> = {}
     if (middleForAi.length > 0) {
@@ -124,9 +134,9 @@ export async function generateCaseReportAction(
     const sections: Omit<CaseReportSection, "order">[] = normalizedSections.map((s) => {
       let content: string
       if (s.slot === "patient_identity") {
-        content = formatPatientIdentitySectionContent(caseDetail.patient)
+        content = formatPatientIdentitySectionContent(patient)
       } else if (s.slot === "patient_clinical") {
-        content = formatPatientClinicalSectionContent(caseDetail.patient)
+        content = formatPatientClinicalSectionContent(patient)
       } else {
         content = contentBySection[s.name]?.trim() || emptyMsg
       }

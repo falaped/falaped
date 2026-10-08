@@ -179,3 +179,24 @@ export function formatConsultRecordsForAi(records: ConsultRecords): string | nul
     )
     .join("\n")
 }
+
+/**
+ * Peso (kg), altura e PC (cm) mais recentes do histórico de medidas, no formato texto do
+ * cadastro antigo (`patient.weight`/`height`/`head_circumference`). Null no campo sem medida,
+ * para quem chama cair no valor do cadastro.
+ */
+export function latestAnthropometry(measurements: Measurement[]): {
+  weight: string | null
+  height: string | null
+  head_circumference: string | null
+} {
+  const latest = (pick: (m: Measurement) => number | null, divisor: number) => {
+    const value = measurements.findLast((m) => pick(m) != null)
+    return value ? decimal.format(pick(value)! / divisor) : null
+  }
+  return {
+    weight: latest((m) => m.weight_grams, 1000),
+    height: latest((m) => m.length_height_mm, 10),
+    head_circumference: latest((m) => m.head_circumference_mm, 10),
+  }
+}
