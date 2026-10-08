@@ -209,7 +209,7 @@ export function ExamRequestWizard({
       return next
     })
     setPanelPickerOpen(false)
-    toast.success(`Painel "${panel.name}" aplicado.`)
+    toast.success(`Modelo "${panel.name}" aplicado.`)
   }
 
   function handleSelectPatient(patient: Patient) {
@@ -297,12 +297,12 @@ export function ExamRequestWizard({
   async function handleSavePanel() {
     const cleanExams = exams.map((e) => e.trim()).filter(Boolean)
     if (cleanExams.length === 0) {
-      toast.error("Adicione pelo menos um exame ao painel.")
+      toast.error("Adicione pelo menos um exame ao modelo.")
       return
     }
     const name = panelName.trim()
     if (!name) {
-      toast.error("Informe o nome do painel.")
+      toast.error("Informe o nome do modelo.")
       return
     }
     setSavingPanel(true)
@@ -312,7 +312,7 @@ export function ExamRequestWizard({
     })
     setSavingPanel(false)
     if (result.ok) {
-      toast.success("Painel salvo.")
+      toast.success("Modelo salvo.")
       setPanelName("")
       setSavePanelOpen(false)
       router.refresh()
@@ -489,7 +489,7 @@ export function ExamRequestWizard({
                 </CardTitle>
                 <CardDescription className="mt-1">
                   Busque exames no catálogo, digite exames fora do catálogo e
-                  aplique painéis reutilizáveis.
+                  use um modelo salvo.
                 </CardDescription>
               </div>
               <Button
@@ -501,7 +501,7 @@ export function ExamRequestWizard({
                 disabled={examPanels.length === 0}
               >
                 <LayoutGrid className="mr-2 h-4 w-4" />
-                Aplicar painel
+                Usar modelo
               </Button>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -574,19 +574,19 @@ export function ExamRequestWizard({
             <DialogTrigger asChild>
               <Button type="button" variant="outline">
                 <LayoutGrid className="mr-2 h-4 w-4" />
-                Salvar painel
+                Salvar como modelo
               </Button>
             </DialogTrigger>
             <DialogContent>
               <DialogHeader>
-                <DialogTitle>Salvar painel</DialogTitle>
+                <DialogTitle>Salvar como modelo</DialogTitle>
               </DialogHeader>
               <p className="text-sm text-muted-foreground">
-                Salve os exames atuais como um painel reutilizável para aplicar
+                Salve os exames atuais como um modelo para usar
                 em outros pedidos.
               </p>
               <Field>
-                <FieldLabel>Nome do painel</FieldLabel>
+                <FieldLabel>Nome do modelo</FieldLabel>
                 <FieldContent>
                   <Input
                     value={panelName}
@@ -728,13 +728,13 @@ export function ExamRequestWizard({
       <Sheet open={panelPickerOpen} onOpenChange={setPanelPickerOpen}>
         <SheetContent side="right" className="flex flex-col sm:max-w-md">
           <SheetHeader className="px-6">
-            <SheetTitle>Aplicar painel</SheetTitle>
+            <SheetTitle>Usar modelo</SheetTitle>
           </SheetHeader>
           <div className="flex flex-1 flex-col gap-1 overflow-auto px-6 py-4">
             {examPanels.length === 0 ? (
               <p className="text-sm text-muted-foreground">
-                Nenhum painel salvo. Adicione exames e use &quot;Salvar
-                painel&quot; para reutilizar depois.
+                Nenhum modelo salvo. Adicione exames e use &quot;Salvar
+                como modelo&quot; para reutilizar depois.
               </p>
             ) : (
               examPanels.map((panel) => (

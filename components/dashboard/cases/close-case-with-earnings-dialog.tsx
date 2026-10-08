@@ -173,7 +173,9 @@ export function CloseCaseWithEarningsDialog({
 
   function handleConfirmClose() {
     startClosing(async () => {
-      const closed = await updateCaseStatusAction(caseId, "closed")
+      // Sem revalidar no servidor: na Consulta isso redirecionaria antes da etapa 2.
+      // Todo caminho de saída daqui chama router.refresh().
+      const closed = await updateCaseStatusAction(caseId, "closed", { deferRevalidate: true })
       if (!closed.ok) {
         // O caso simplesmente não foi encerrado — a etapa 2 nunca é atingida.
         resetForm()

@@ -67,7 +67,7 @@ const GROUP_ROLE_LABEL: Record<NonNullable<PatientAttachment["group_role"]>, str
  * Anexos na ordem da lista, mas os que nasceram juntos (leitura de exames,
  * mesmo group_id) viram UM item com os arquivos dentro. Upload avulso segue só.
  */
-function groupAttachments(
+export function groupAttachments(
   attachments: PatientAttachment[],
 ): Array<{ key: string; items: PatientAttachment[] }> {
   const groups: Array<{ key: string; items: PatientAttachment[] }> = []

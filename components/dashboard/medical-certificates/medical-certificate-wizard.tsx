@@ -87,7 +87,7 @@ const TYPES: {
     },
   ]
 
-type WizardPayload = {
+export type WizardPayload = {
   comparecimento?: {
     patientName: string
     birthDate: string
@@ -124,7 +124,7 @@ type WizardPayload = {
   }
 }
 
-const initialPayload: WizardPayload = {
+export const initialPayload: WizardPayload = {
   comparecimento: {
     patientName: "",
     birthDate: "",
@@ -165,14 +165,18 @@ type CertificateFormCardProps = {
   type: MedicalCertificateType
   currentPayload: NonNullable<WizardPayload[MedicalCertificateType]>
   setPayload: React.Dispatch<React.SetStateAction<WizardPayload>>
-  selectedPatient: Patient | null
+  /** Só o responsável é usado (atalho "Usar nome do responsável"). */
+  selectedPatient: Pick<Patient, "responsible"> | null
+  /** Sem o cartão e o título de passo: dentro do painel da Consulta. */
+  embedded?: boolean
 }
 
-function CertificateFormCard({
+export function CertificateFormCard({
   type,
   currentPayload,
   setPayload,
   selectedPatient,
+  embedded = false,
 }: CertificateFormCardProps) {
   const isComparecimento = type === "comparecimento"
   const isAptidao = type === "aptidao_fisica"
@@ -180,20 +184,12 @@ function CertificateFormCard({
   const isAcompanhante = type === "acompanhante"
   const responsibleName = selectedPatient?.responsible?.trim() ?? ""
 
-  return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="text-base">Passo 3 — Dados do atestado</CardTitle>
-        <CardDescription className="mt-1">
-          Preencha os campos. Use a localização do navegador ou digite o Estado no perfil.
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-6">
+  const fields = (
         <section className="space-y-4">
-          <h4 className="text-sm font-medium text-muted-foreground">Dados do atestado</h4>
+          {embedded ? null : <h4 className="text-sm font-medium text-muted-foreground">Dados do atestado</h4>}
           {isComparecimento && (
             <>
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+              <div className="grid grid-cols-1 gap-4 sm:auto-cols-fr sm:grid-flow-col">
                 <DatePickerField
                   label="Data do atendimento"
                   value={(currentPayload as { attendanceDate?: string }).attendanceDate ?? ""}
@@ -282,45 +278,43 @@ function CertificateFormCard({
           )}
           {isAptidao && (
             <>
-              <div className="w-full min-w-0 sm:w-1/2 sm:max-w-[50%]">
-                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                  <Field>
-                    <FieldLabel>Atividades</FieldLabel>
-                    <FieldContent>
-                      <Input
-                        value={(currentPayload as { activities?: string }).activities ?? ""}
-                        onChange={(e) =>
-                          setPayload((prev) => ({
-                            ...prev,
-                            aptidao_fisica: {
-                              ...prev.aptidao_fisica!,
-                              activities: e.target.value,
-                            },
-                          }))
-                        }
-                        placeholder="Ex.: atividades escolares e Natação"
-                      />
-                    </FieldContent>
-                  </Field>
-                  <Field>
-                    <FieldLabel>Validade</FieldLabel>
-                    <FieldContent>
-                      <Input
-                        value={(currentPayload as { validity?: string }).validity ?? ""}
-                        onChange={(e) =>
-                          setPayload((prev) => ({
-                            ...prev,
-                            aptidao_fisica: {
-                              ...prev.aptidao_fisica!,
-                              validity: e.target.value,
-                            },
-                          }))
-                        }
-                        placeholder="3 meses, 6 meses ou 12 meses"
-                      />
-                    </FieldContent>
-                  </Field>
-                </div>
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <Field>
+                  <FieldLabel>Atividades</FieldLabel>
+                  <FieldContent>
+                    <Input
+                      value={(currentPayload as { activities?: string }).activities ?? ""}
+                      onChange={(e) =>
+                        setPayload((prev) => ({
+                          ...prev,
+                          aptidao_fisica: {
+                            ...prev.aptidao_fisica!,
+                            activities: e.target.value,
+                          },
+                        }))
+                      }
+                      placeholder="Ex.: atividades escolares e Natação"
+                    />
+                  </FieldContent>
+                </Field>
+                <Field>
+                  <FieldLabel>Validade</FieldLabel>
+                  <FieldContent>
+                    <Input
+                      value={(currentPayload as { validity?: string }).validity ?? ""}
+                      onChange={(e) =>
+                        setPayload((prev) => ({
+                          ...prev,
+                          aptidao_fisica: {
+                            ...prev.aptidao_fisica!,
+                            validity: e.target.value,
+                          },
+                        }))
+                      }
+                      placeholder="3 meses, 6 meses ou 12 meses"
+                    />
+                  </FieldContent>
+                </Field>
               </div>
               <Field>
                 <FieldLabel>Observações</FieldLabel>
@@ -424,28 +418,7 @@ function CertificateFormCard({
             <>
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <Field>
-                  <div className="flex flex-wrap items-center justify-between gap-2">
-                    <FieldLabel>Nome do acompanhante</FieldLabel>
-                    {responsibleName ? (
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        className="h-auto py-1 text-xs text-muted-foreground hover:text-foreground"
-                        onClick={() =>
-                          setPayload((prev) => ({
-                            ...prev,
-                            acompanhante: {
-                              ...prev.acompanhante!,
-                              companionName: responsibleName,
-                            },
-                          }))
-                        }
-                      >
-                        Usar nome do responsável
-                      </Button>
-                    ) : null}
-                  </div>
+                  <FieldLabel>Nome do acompanhante</FieldLabel>
                   <FieldContent>
                     <Input
                       value={(currentPayload as { companionName?: string }).companionName ?? ""}
@@ -461,6 +434,26 @@ function CertificateFormCard({
                       placeholder="Nome completo"
                     />
                   </FieldContent>
+                  {responsibleName &&
+                  (currentPayload as { companionName?: string }).companionName?.trim() !== responsibleName ? (
+                    <Button
+                      type="button"
+                      variant="link"
+                      size="sm"
+                      className="h-auto w-fit p-0 text-caption"
+                      onClick={() =>
+                        setPayload((prev) => ({
+                          ...prev,
+                          acompanhante: {
+                            ...prev.acompanhante!,
+                            companionName: responsibleName,
+                          },
+                        }))
+                      }
+                    >
+                      Usar nome do responsável
+                    </Button>
+                  ) : null}
                 </Field>
                 <Field>
                   <FieldLabel>Nome do paciente acompanhado</FieldLabel>
@@ -481,7 +474,7 @@ function CertificateFormCard({
                   </FieldContent>
                 </Field>
               </div>
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+              <div className="grid grid-cols-1 gap-4 sm:auto-cols-fr sm:grid-flow-col">
                 <DatePickerField
                   label="Data da consulta"
                   value={(currentPayload as { consultationDate?: string }).consultationDate ?? ""}
@@ -575,7 +568,18 @@ function CertificateFormCard({
             </>
           )}
         </section>
-      </CardContent>
+  )
+  if (embedded) return fields
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="text-base">Passo 3 — Dados do atestado</CardTitle>
+        <CardDescription className="mt-1">
+          Preencha os campos. Use a localização do navegador ou digite o Estado no perfil.
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-6">{fields}</CardContent>
     </Card>
   )
 }
@@ -589,19 +593,14 @@ type CertificatePreviewShortProfile = {
   default_location_city?: string | null
 }
 
-function CertificatePreviewShort({
-  type,
-  currentPayload,
-  profile,
-  issuedAt,
-  selectedPatient,
-}: {
-  type: MedicalCertificateType
-  currentPayload: NonNullable<WizardPayload[MedicalCertificateType]>
-  profile: CertificatePreviewShortProfile
-  issuedAt: string
-  selectedPatient: Patient | null
-}) {
+/** Título, bloco da criança, corpo e rodapé do atestado, com as datas já formatadas. */
+export function getCertificatePreview(
+  type: MedicalCertificateType,
+  currentPayload: NonNullable<WizardPayload[MedicalCertificateType]>,
+  profile: CertificatePreviewShortProfile,
+  issuedAt: string,
+  responsible: string | null,
+) {
   const location = getProfileDefaultLocation(profile)
   const issuedAtFormatted = issuedAt
     ? format(new Date(issuedAt + "T12:00:00"), "d 'de' MMMM 'de' yyyy", { locale: ptBR })
@@ -613,23 +612,34 @@ function CertificatePreviewShort({
     rqe: profile.rqe ?? null,
   }
   const formattedPayload = { ...currentPayload } as Record<string, unknown>
-  if (typeof formattedPayload.birthDate === "string" && formattedPayload.birthDate)
-    formattedPayload.birthDate = formatDate(formattedPayload.birthDate as string)
-  if (typeof formattedPayload.attendanceDate === "string" && formattedPayload.attendanceDate)
-    formattedPayload.attendanceDate = formatDate(formattedPayload.attendanceDate as string)
-  if (typeof formattedPayload.startDate === "string" && formattedPayload.startDate)
-    formattedPayload.startDate = formatDate(formattedPayload.startDate as string)
-  if (typeof formattedPayload.consultationDate === "string" && formattedPayload.consultationDate)
-    formattedPayload.consultationDate = formatDate(formattedPayload.consultationDate as string)
+  for (const key of ["birthDate", "attendanceDate", "startDate", "consultationDate"])
+    if (typeof formattedPayload[key] === "string" && formattedPayload[key])
+      formattedPayload[key] = formatDate(formattedPayload[key] as string)
 
-  const preview = getMedicalCertificatePreviewContent(
+  return getMedicalCertificatePreviewContent(
     type,
     formattedPayload as Parameters<typeof getMedicalCertificatePreviewContent>[1],
     doctor,
     location || "—",
     issuedAtFormatted,
-    selectedPatient?.responsible ?? null,
+    responsible,
   )
+}
+
+export function CertificatePreviewShort({
+  type,
+  currentPayload,
+  profile,
+  issuedAt,
+  selectedPatient,
+}: {
+  type: MedicalCertificateType
+  currentPayload: NonNullable<WizardPayload[MedicalCertificateType]>
+  profile: CertificatePreviewShortProfile
+  issuedAt: string
+  selectedPatient: Pick<Patient, "responsible"> | null
+}) {
+  const preview = getCertificatePreview(type, currentPayload, profile, issuedAt, selectedPatient?.responsible ?? null)
 
   return (
     <Card>
