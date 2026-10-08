@@ -28,7 +28,7 @@ export type ExamReading = {
 
 export type CreateExamReadingPayload = {
   patient_id: string
-  case_id: string
+  case_id: string | null
   title: string
   page_paths: string[]
   exam_info: ExamReadingInfo

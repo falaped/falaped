@@ -2,14 +2,13 @@
 
 import Link from "next/link"
 import { useMemo, useState } from "react"
-import { differenceInCalendarDays, differenceInMonths, format, subDays } from "date-fns"
+import { differenceInCalendarDays, differenceInMonths, format } from "date-fns"
 import { FileWarningIcon, InfoIcon, RulerIcon, SearchIcon, TriangleAlertIcon, XIcon } from "lucide-react"
 
 import { AttentionSymbol } from "@/components/dashboard/attention-symbol"
 import { openStartConsult } from "@/components/dashboard/patient-search"
-import { isPatientChartIncomplete } from "@/components/dashboard/patients/patient-chart-incomplete"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { SectionTab } from "@/components/dashboard/section-tab"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Tabs, TabsList } from "@/components/ui/tabs"
@@ -18,40 +17,13 @@ import { formatPediatricAgeShort } from "@/lib/format-pediatric-age"
 import { formatBrazilianPhone } from "@/lib/formatters"
 import { getPatientInitials } from "@/lib/get-patient-initials"
 import { matchPatientQuery } from "@/lib/match-patient-query"
+import { getPatientAttention, type PatientAttention } from "@/lib/patient-attention"
 import type { PatientOverview, PatientsOverview } from "@/modules/patients/get-patients-overview"
 
 type Tab = "recent" | "az" | "attention"
 export type PatientListRow = PatientOverview & { photoUrl: string | null }
 
-/** Mesma régua do Início: atendida nos últimos 90 dias e sem medida há mais de 180. */
-const RECENT_DAYS = 90
-const STALE_MEASURE_DAYS = 180
-
 const plural = (n: number, one: string, many: string) => `${n} ${n === 1 ? one : many}`
-
-/** O que pede atenção na criança; alergia é informação e não conta como pendência. */
-function attentionOf(row: PatientOverview, now: Date) {
-  const { patient } = row
-  const missing = [
-    !patient.birth_date ? "a data de nascimento" : null,
-    !patient.responsible?.trim() ? "o responsável" : null,
-    !patient.contact_phone?.trim() ? "o telefone" : null,
-  ].filter(Boolean)
-  const recent = !!row.lastConsultAt && row.lastConsultAt >= subDays(now, RECENT_DAYS).toISOString()
-  const staleMeasure =
-    recent && (!row.lastMeasuredOn || row.lastMeasuredOn < format(subDays(now, STALE_MEASURE_DAYS), "yyyy-MM-dd"))
-  const last = row.lastMeasuredOn ? new Date(`${row.lastMeasuredOn}T12:00:00`) : null
-  return {
-    incomplete: isPatientChartIncomplete(patient)
-      ? `Falta ${missing.join(", ").replace(/, ([^,]*)$/, " e $1")}.`
-      : null,
-    measure: staleMeasure
-      ? last
-        ? `Última medida de peso e altura há ${plural(differenceInMonths(now, last), "mês", "meses")}.`
-        : "Nenhuma medida de peso e altura registrada."
-      : null,
-  }
-}
 
 /**
  * Lista de Pacientes (protótipo b4): abas Atendidos recentemente, A–Z e Precisam de atenção,
@@ -70,7 +42,7 @@ export function PatientsList({
   const [query, setQuery] = useState("")
   const now = useMemo(() => new Date(nowIso), [nowIso])
 
-  const withAttention = useMemo(() => rows.map((row) => ({ row, attention: attentionOf(row, now) })), [rows, now])
+  const withAttention = useMemo(() => rows.map((row) => ({ row, attention: getPatientAttention(row, now) })), [rows, now])
   const attentionCount = withAttention.filter(({ attention }) => attention.incomplete || attention.measure).length
 
   const listed = useMemo(() => {
@@ -169,7 +141,7 @@ function Row({
   activeCase,
 }: {
   row: PatientListRow
-  attention: ReturnType<typeof attentionOf>
+  attention: PatientAttention
   now: Date
   activeCase: PatientsOverview["activeCase"]
 }) {

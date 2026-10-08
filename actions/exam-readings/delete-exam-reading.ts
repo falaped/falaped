@@ -26,6 +26,7 @@ export async function deleteExamReadingAction(
     const reading = await getExamReadingById(supabase, profile.id, readingId)
     if (!reading) return { ok: false, error: "Leitura não encontrada." }
     await deleteExamReading(supabase, profile.id, reading.id, reading.page_paths)
+    revalidatePath(`/dashboard/patients/${reading.patient_id}`)
     if (reading.case_id) revalidatePath(`/dashboard/cases/${reading.case_id}`)
     return { ok: true }
   } catch (e) {

@@ -49,7 +49,8 @@ export async function createExamReadingAction(
     return { ok: false, error: "Leitura de exames indisponível: IA não configurada." }
 
   const patientId = String(formData.get("patientId") ?? "")
-  const caseId = String(formData.get("caseId") ?? "")
+  // Sem caseId: leitura feita pela ficha, fora de uma consulta.
+  const caseId = String(formData.get("caseId") ?? "") || null
   const rawTitle = formData.get("title")
   const title =
     typeof rawTitle === "string" && rawTitle.trim() !== ""
@@ -58,7 +59,7 @@ export async function createExamReadingAction(
   const pages = formData.getAll("pages").filter((p): p is File => p instanceof File)
 
   if (!UUID_RE.test(patientId)) return { ok: false, error: "Paciente inválido." }
-  if (!UUID_RE.test(caseId)) return { ok: false, error: "Atendimento inválido." }
+  if (caseId && !UUID_RE.test(caseId)) return { ok: false, error: "Atendimento inválido." }
   if (pages.length === 0) return { ok: false, error: "Envie ao menos uma página." }
   if (pages.length > EXAM_READING_MAX_PAGES)
     return { ok: false, error: `Máximo de ${EXAM_READING_MAX_PAGES} páginas por exame.` }
@@ -68,8 +69,8 @@ export async function createExamReadingAction(
   try {
     const patient = await getPatientById(supabase, patientId, profile.id)
     if (!patient) return { ok: false, error: "Paciente não encontrado." }
-    const ownedCaseId = await findOwnedCaseId(supabase, caseId, profile.id)
-    if (!ownedCaseId) return { ok: false, error: "Atendimento não encontrado." }
+    if (caseId && !(await findOwnedCaseId(supabase, caseId, profile.id)))
+      return { ok: false, error: "Atendimento não encontrado." }
 
     const readingId = randomUUID()
     const pagePaths = await uploadExamReadingPages(
@@ -108,7 +109,8 @@ export async function createExamReadingAction(
       vision_model: env.GROQ_VISION_MODEL,
     })
 
-    revalidatePath(`/dashboard/cases/${caseId}`)
+    revalidatePath(`/dashboard/patients/${patientId}`)
+    if (caseId) revalidatePath(`/dashboard/cases/${caseId}`)
     return { ok: true, readingId, itemCount: extracted.items.length }
   } catch (e) {
     console.error("[EXAM_READINGS] create failed", e)

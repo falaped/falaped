@@ -67,18 +67,22 @@ function fail(label: string, error: { message: string } | null): void {
 /**
  * Consultas do médico com o que a lista precisa: motivo, documentos emitidos, relatório
  * em rascunho e valor lançado. A consulta em andamento mais recente vem à parte.
+ * Com `patientId`, só as consultas dessa criança (ficha).
  * @throws Error("[CASES] ...") se alguma consulta falhar
  */
-export async function getConsultations(supabase: SupabaseClient, profileId: string): Promise<Consultations> {
+export async function getConsultations(supabase: SupabaseClient, profileId: string, patientId?: string): Promise<Consultations> {
+  let casesQuery = supabase
+    .from("cases")
+    .select(
+      "id, status, origin, started_at, ended_at, consultation_paused_ms, summary, patient:patients(id, name, birth_date, responsible, contact_phone, allergies)",
+    )
+    .eq("profile_id", profileId)
+    .order("started_at", { ascending: false })
+  if (patientId) casesQuery = casesQuery.eq("patient_id", patientId)
+
   // ponytail: tudo de uma vez, sem paginar; paginar quando um médico passar de alguns milhares.
   const [casesResult, entriesResult, draftsResult, ...docResults] = await Promise.all([
-    supabase
-      .from("cases")
-      .select(
-        "id, status, origin, started_at, ended_at, consultation_paused_ms, summary, patient:patients(id, name, birth_date, responsible, contact_phone, allergies)",
-      )
-      .eq("profile_id", profileId)
-      .order("started_at", { ascending: false }),
+    casesQuery,
     supabase.from("financial_entries").select("case_id, amount_cents").eq("profile_id", profileId).is("voided_at", null).not("case_id", "is", null),
     supabase.from("case_reports").select("case_id").eq("profile_id", profileId).eq("is_finalized", false),
     ...DOCUMENT_TABLES.map(([table]) => supabase.from(table).select("case_id").eq("profile_id", profileId).not("case_id", "is", null)),

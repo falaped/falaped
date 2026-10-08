@@ -3,12 +3,14 @@ import { createClient } from "@/lib/supabase/server"
 import { getAuthenticatedUser } from "@/modules/supabase/get-authenticated-user"
 import { getPatientById } from "@/modules/patients/get-patient-by-id"
 import { getPatientPhotoSignedUrl } from "@/modules/patients/get-patient-photo-signed-url"
-import { getCasesByPatientId } from "@/modules/cases/get-cases-by-patient-id"
+import { getConsultations } from "@/modules/cases/get-consultations"
 import { getMedicalCertificatesByPatientId } from "@/modules/medical-certificates/get-medical-certificates-by-patient-id"
 import { getPrescriptionsByPatientId } from "@/modules/prescriptions/get-prescriptions-by-patient-id"
 import { getMeasurementsByPatient } from "@/modules/patient-growth/get-measurements-by-patient"
 import { getScaleResultsByPatient } from "@/modules/patient-scales/get-scale-results-by-patient"
 import { listAttachmentsByPatient } from "@/modules/patient-attachments/list-attachments-by-patient"
+import { listExamReadingsByPatient } from "@/modules/exam-readings/list-exam-readings-by-patient"
+import { getExamReadingPageUrls } from "@/modules/exam-readings/get-exam-reading-page-urls"
 import { getPhoneByProfileId } from "@/modules/authenticated-users/get-phone-by-profile-id"
 import { getPreviousCaseCarryover } from "@/modules/cases/get-previous-case-carryover"
 import { computePediatricAge } from "@/lib/compute-pediatric-age"
@@ -31,7 +33,7 @@ export async function PatientDetailContent({ id }: { id: string }) {
   // vaccine reads are isolated in a try/catch that resolves to null. The card
   // renders nothing / an empty state when the data is unavailable.
   const [
-    cases,
+    consultations,
     certificates,
     prescriptions,
     photoUrl,
@@ -40,8 +42,9 @@ export async function PatientDetailContent({ id }: { id: string }) {
     takenVaccineItemIds,
     scaleResults,
     attachments,
+    examReadings,
   ] = await Promise.all([
-    getCasesByPatientId(supabase, profile.id, patient.id),
+    getConsultations(supabase, profile.id, patient.id),
     getMedicalCertificatesByPatientId(supabase, profile.id, patient.id),
     getPrescriptionsByPatientId(supabase, profile.id, patient.id),
     getPatientPhotoSignedUrl(supabase, patient.photo_path),
@@ -50,7 +53,17 @@ export async function PatientDetailContent({ id }: { id: string }) {
     getTakenVaccineDoseIdsSafely(supabase, profile.id, patient.id),
     getScaleResultsByPatient(supabase, profile.id, patient.id),
     listAttachmentsByPatient(supabase, profile.id, patient.id),
+    // Falha vira lista vazia: a ficha não cai por causa dos exames.
+    listExamReadingsByPatient(supabase, profile.id, patient.id).catch(() => []),
   ])
+
+  // Páginas dos exames lidos: signed URLs inline, resolvidas aqui e nunca persistidas.
+  const examReadingsWithPages = await Promise.all(
+    examReadings.map(async (reading) => ({
+      ...reading,
+      pageUrls: await getExamReadingPageUrls(supabase, reading.page_paths),
+    })),
+  )
 
   // Idade em meses inteiros derivada aqui (servidor) e descida como prop: é o
   // filtro de quais escalas fazem sentido para esta criança.
@@ -68,7 +81,7 @@ export async function PatientDetailContent({ id }: { id: string }) {
     <PatientDetailView
       key={patient.id}
       patient={patient}
-      cases={cases}
+      consultations={consultations}
       certificates={certificates}
       prescriptions={prescriptions}
       photoUrl={photoUrl}
@@ -79,6 +92,7 @@ export async function PatientDetailContent({ id }: { id: string }) {
       scaleResults={scaleResults}
       ageMonths={ageMonths}
       attachments={attachments}
+      examReadings={examReadingsWithPages}
       lastCarryover={lastCarryover}
     />
   )

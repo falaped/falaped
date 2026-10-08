@@ -60,6 +60,7 @@ export async function generateExamReportAction(params: {
       report_text: reportText,
     })
 
+    revalidatePath(`/dashboard/patients/${reading.patient_id}`)
     if (reading.case_id) revalidatePath(`/dashboard/cases/${reading.case_id}`)
     return { ok: true, reportText }
   } catch (e) {
