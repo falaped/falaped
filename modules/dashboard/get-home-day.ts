@@ -30,7 +30,7 @@ export type HomeDay = {
     /** Formas de pagamento dos lançamentos do mês, da mais usada para a menos usada. */
     paymentMethods: PaymentMethodInput[]
   }
-  /** Encerradas no mês sem lançamento válido, mais recente primeiro. */
+  /** Encerradas no mês sem lançamento válido nem marcadas como cortesia, mais recente primeiro. */
   unbilled: HomeDayCase[]
   /** Encerradas com relatório da consulta ainda em rascunho. */
   drafts: HomeDayCase[]
@@ -58,7 +58,7 @@ const REMINDER_CASES = 3
 const OTHER_DOCUMENT_TABLES = ["exam_requests", "referrals", "guidance_documents", "medical_reports"] as const
 
 type PatientEmbed = { id: string; name: string; birth_date: string | null } | { id: string; name: string; birth_date: string | null }[] | null
-type CaseRow = { id: string; ended_at: string; summary: string | null; patient: PatientEmbed }
+type CaseRow = { id: string; ended_at: string; summary: string | null; earnings_prompted_at?: string | null; patient: PatientEmbed }
 const one = <T,>(row: T | T[] | null): T | null => (Array.isArray(row) ? (row[0] ?? null) : row)
 
 function toHomeDayCase(row: CaseRow): HomeDayCase {
@@ -94,7 +94,7 @@ export async function getHomeDay(supabase: SupabaseClient, profileId: string, wi
   const [monthResult, recentResult, lastResult, draftsResult, paymentsResult, ...docResults] = await Promise.all([
     supabase
       .from("cases")
-      .select("id, ended_at, summary, patient:patients(id, name, birth_date)")
+      .select("id, ended_at, summary, earnings_prompted_at, patient:patients(id, name, birth_date)")
       .eq("profile_id", profileId)
       .eq("status", "closed")
       .gte("ended_at", window.monthStartIso)
@@ -232,7 +232,8 @@ export async function getHomeDay(supabase: SupabaseClient, profileId: string, wi
       billedCount: monthRows.filter((row) => billed.has(row.id)).length,
       paymentMethods: [...methodCount].sort((a, b) => b[1] - a[1]).map(([method]) => method),
     },
-    unbilled: monthRows.filter((row) => !billed.has(row.id)).map(toHomeDayCase),
+    // Cortesia (earnings_prompted_at sem lançamento) já foi respondida: não é pendência.
+    unbilled: monthRows.filter((row) => !billed.has(row.id) && !row.earnings_prompted_at).map(toHomeDayCase),
     drafts,
     staleMeasure,
     reminders,

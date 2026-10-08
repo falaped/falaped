@@ -49,6 +49,7 @@ test("Início: dia, mês, sem valor, rascunho, medida antiga e lembretes", async
           { id: "c1", ended_at: "2026-10-07T13:00:00.000Z", summary: "• Diarreia aguda, sem sangue", patient: P("p1", "Davi") },
           { id: "c2", ended_at: "2026-10-07T12:00:00.000Z", summary: null, patient: P("p2", "Helena") },
           { id: "c3", ended_at: "2026-10-04T17:00:00.000Z", summary: "• Puericultura: ok", patient: P("p3", "Sofia") },
+          { id: "c4", ended_at: "2026-10-03T17:00:00.000Z", summary: null, earnings_prompted_at: "2026-10-03T17:01:00.000Z", patient: P("p4", "Gael") },
         ],
         [{ patient_id: "p2" }, { patient_id: "p3" }],
         [
@@ -77,7 +78,7 @@ test("Início: dia, mês, sem valor, rascunho, medida antiga e lembretes", async
   const result = await getHomeDay(supabase, "profile", WINDOW)
 
   assert.deepEqual(result.today, { closedCount: 2, billedCount: 2, prescriptions: 2, certificates: 1, otherDocuments: 3 })
-  assert.deepEqual(result.month, { closedCount: 3, billedCount: 2, paymentMethods: ["pix", "card"] })
+  assert.deepEqual(result.month, { closedCount: 4, billedCount: 2, paymentMethods: ["pix", "card"] })
   assert.deepEqual(result.unbilled.map((c) => [c.caseId, c.patientName, c.reason]), [["c3", "Sofia", "Puericultura"]])
   assert.deepEqual(result.drafts.map((c) => c.caseId), ["c2"])
   assert.deepEqual(result.staleMeasure.map((p) => [p.patientId, p.lastMeasuredOn]), [["p3", "2026-02-10"]])

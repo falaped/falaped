@@ -1,13 +1,9 @@
 "use client"
 
-import { useTransition } from "react"
-import { useRouter } from "next/navigation"
 import { ArrowDownIcon, CircleAlertIcon } from "lucide-react"
-import { toast } from "sonner"
 
-import { markCaseEarningsPromptedAction } from "@/actions"
+import { CourtesyButton } from "@/components/dashboard/cases/courtesy-button"
 import { LaunchEarningsButton } from "@/components/dashboard/cases/launch-earnings-button"
-import { Button } from "@/components/ui/button"
 
 /**
  * O que ficou por fechar na consulta encerrada (protótipo b2p). É por aqui que a Home
@@ -25,22 +21,8 @@ export function CasePendingStrip({
   reportDraft: boolean
   billingPending: boolean
 }) {
-  const router = useRouter()
-  const [isPending, startTransition] = useTransition()
   const count = Number(reportDraft) + Number(billingPending)
   if (count === 0) return null
-
-  function markCourtesy() {
-    startTransition(async () => {
-      const result = await markCaseEarningsPromptedAction(caseId)
-      if (!result.ok) {
-        toast.error("Não foi possível registrar. Tente novamente.")
-        return
-      }
-      toast.success("Registrado como cortesia.")
-      router.refresh()
-    })
-  }
 
   return (
     <section className="rounded-xl border border-warning-border bg-warning-soft/40">
@@ -66,9 +48,7 @@ export function CasePendingStrip({
               <div className="font-medium">Cobrança sem valor</div>
               <div className="text-caption text-muted-foreground">Nada foi lançado nesta consulta.</div>
             </div>
-            <Button variant="ghost" size="sm" disabled={isPending} onClick={markCourtesy}>
-              Foi cortesia
-            </Button>
+            <CourtesyButton caseId={caseId} />
             <LaunchEarningsButton caseId={caseId} todayLabel={todayLabel} variant="outline" />
           </div>
         ) : null}

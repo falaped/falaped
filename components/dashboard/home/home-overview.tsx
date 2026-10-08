@@ -28,6 +28,7 @@ import { computePediatricAge } from "@/lib/compute-pediatric-age"
 import { formatPediatricAgeShort } from "@/lib/format-pediatric-age"
 import { formatCentsToBRL } from "@/lib/formatters"
 import { getPatientInitials } from "@/lib/get-patient-initials"
+import { CourtesyButton } from "@/components/dashboard/cases/courtesy-button"
 import { PAYMENT_METHOD_LABEL } from "@/lib/schemas/financial-entry"
 import { cn } from "@/lib/utils"
 import type { DashboardHomeData } from "@/modules/dashboard/get-dashboard-home-data"
@@ -241,7 +242,7 @@ export function HomeOverview({ greeting, dateLabel, monthLabel, todayLabel, now,
               </CollapsibleTrigger>
             ) : null}
             <Button asChild variant="link" size="sm" className="ml-auto">
-              <Link href="/dashboard/earnings">
+              <Link href="/dashboard/financial">
                 Ver financeiro
                 <ArrowRightIcon data-icon="inline-end" />
               </Link>
@@ -261,6 +262,7 @@ export function HomeOverview({ greeting, dateLabel, monthLabel, todayLabel, now,
                     {c.reason ?? "Consulta"} · {consultLabel(c.endedAt, now, true)}
                   </div>
                 </div>
+                <CourtesyButton caseId={c.caseId} size="xs" />
                 <StandaloneEntryDialog todayLabel={todayLabel} caseId={c.caseId} triggerSize="xs" triggerLabel="Lançar valor" />
                 <Button asChild variant="outline" size="xs">
                   <Link href={caseHref(c.caseId)}>Abrir consulta</Link>

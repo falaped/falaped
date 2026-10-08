@@ -66,7 +66,7 @@ export async function createStandaloneFinancialEntryAction(
     if (!entryId)
       return { ok: false, error: "Não foi possível registrar o lançamento. Tente novamente." }
 
-    revalidatePath("/dashboard/earnings")
+    revalidatePath("/dashboard/financial")
     if (ownedCaseId) revalidatePath(`/dashboard/cases/${ownedCaseId}`)
     return { ok: true, entryId }
   } catch (e) {

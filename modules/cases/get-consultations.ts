@@ -23,6 +23,8 @@ export type ConsultationRow = {
   reportDraft: boolean
   /** Soma dos lançamentos válidos; null = nada lançado. */
   billedCents: number | null
+  /** Sem lançamento, mas a médica respondeu "Foi cortesia": não cobra mais. */
+  courtesy: boolean
 }
 
 export type Consultations = {
@@ -58,6 +60,7 @@ type CaseRow = {
   consultation_paused_ms: number | null
   consultation_paused_at: string | null
   summary: string | null
+  earnings_prompted_at: string | null
   patient: PatientEmbed | PatientEmbed[] | null
 }
 const one = <T,>(row: T | T[] | null): T | null => (Array.isArray(row) ? (row[0] ?? null) : row)
@@ -76,7 +79,7 @@ export async function getConsultations(supabase: SupabaseClient, profileId: stri
   let casesQuery = supabase
     .from("cases")
     .select(
-      "id, status, origin, started_at, ended_at, consultation_paused_ms, consultation_paused_at, summary, patient:patients(id, name, birth_date, responsible, contact_phone, allergies)",
+      "id, status, origin, started_at, ended_at, consultation_paused_ms, consultation_paused_at, summary, earnings_prompted_at, patient:patients(id, name, birth_date, responsible, contact_phone, allergies)",
     )
     .eq("profile_id", profileId)
     .order("started_at", { ascending: false })
@@ -158,6 +161,7 @@ export async function getConsultations(supabase: SupabaseClient, profileId: stri
           documents: documents.get(row.id) ?? [],
           reportDraft: drafts.has(row.id),
           billedCents: billed.get(row.id) ?? null,
+          courtesy: !billed.has(row.id) && !!row.earnings_prompted_at,
         }
       }),
   }
