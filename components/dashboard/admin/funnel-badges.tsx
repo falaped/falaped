@@ -12,12 +12,12 @@ export const STAGE_TONE: Record<FunnelStage, Tone> = {
 }
 
 export const STAGE_DOT: Record<FunnelStage, string> = {
-  novo: "bg-neutral-400",
-  contatado: "bg-amber-500",
-  respondeu: "bg-emerald-500",
+  novo: "bg-border-strong",
+  contatado: "bg-warning",
+  respondeu: "bg-success",
   "em-teste": "bg-primary",
   cliente: "bg-primary-ink",
-  perdido: "bg-orange-600",
+  perdido: "bg-danger-text",
 }
 
 const TEMP_TONE: Record<Temperature, Tone> = { quente: "red", morno: "amber", frio: "gray" }

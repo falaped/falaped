@@ -21,26 +21,26 @@ export function FunnelToolbar({ cities }: { cities: string[] }) {
   return (
     <>
       <form
-        className="flex h-9 w-72 items-center gap-2 rounded-lg px-3 ring-1 ring-border focus-within:ring-2 focus-within:ring-primary"
+        className="flex h-9 w-72 items-center gap-2 rounded-lg border border-input bg-card px-3 focus-within:border-ring focus-within:ring-3 focus-within:ring-ring/30"
         onSubmit={(e) => {
           e.preventDefault()
           go("q", String(new FormData(e.currentTarget).get("q") ?? "").trim())
         }}
       >
-        <SearchIcon className="size-4 text-muted-foreground" aria-hidden />
+        <SearchIcon className="size-4 text-subtle-foreground" aria-hidden />
         <input
           name="q"
           defaultValue={params.get("q") ?? ""}
           placeholder="Buscar por nome, clínica ou e-mail"
           aria-label="Buscar por nome, clínica ou e-mail"
-          className="w-full bg-transparent text-sm outline-none placeholder:text-muted-foreground"
+          className="w-full bg-transparent outline-none placeholder:text-subtle-foreground"
         />
       </form>
       <select
         aria-label="Cidade"
         value={params.get("cidade") ?? ""}
         onChange={(e) => go("cidade", e.target.value)}
-        className="h-9 rounded-lg bg-card px-3 text-sm ring-1 ring-border outline-none focus:ring-2 focus:ring-primary"
+        className="h-9 rounded-lg border border-input bg-card px-3 outline-none focus:border-ring focus:ring-3 focus:ring-ring/30"
       >
         <option value="">Todas as cidades</option>
         {cities.map((c) => (
@@ -53,7 +53,7 @@ export function FunnelToolbar({ cities }: { cities: string[] }) {
         aria-label="Canal"
         value={params.get("canal") ?? ""}
         onChange={(e) => go("canal", e.target.value)}
-        className="h-9 rounded-lg bg-card px-3 text-sm ring-1 ring-border outline-none focus:ring-2 focus:ring-primary"
+        className="h-9 rounded-lg border border-input bg-card px-3 outline-none focus:border-ring focus:ring-3 focus:ring-ring/30"
       >
         <option value="">Todos os canais</option>
         <option value="whatsapp">Com WhatsApp</option>

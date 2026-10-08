@@ -3,7 +3,7 @@
 import * as React from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { LayoutTemplateIcon, SyringeIcon } from "lucide-react"
+import { LayoutTemplateIcon, ShieldIcon, SyringeIcon } from "lucide-react"
 
 import {
   Sidebar,
@@ -27,7 +27,7 @@ import { countNewLeadsAction } from "@/actions"
 
 export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
   const pathname = usePathname()
-  // Só esconde o menu — cada página de /dashboard/admin tem seu próprio gate no servidor.
+  // Só esconde o item Admin — cada página de /dashboard/admin tem seu próprio gate no servidor.
   const [isAdmin, setIsAdmin] = React.useState(false)
 
   React.useEffect(() => {
@@ -77,9 +77,7 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
       <SidebarContent className="px-1 pt-2 group-data-[collapsible=icon]:items-center">
         <SidebarGroup>
           <SidebarMenu className="gap-0.5">
-            {dashboardNav
-              .filter((section) => !section.adminOnly || isAdmin)
-              .map((section) => (
+            {dashboardNav.map((section) => (
               <SidebarMenuItem key={section.url}>
                 <SidebarMenuButton
                   asChild
@@ -91,14 +89,6 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
                     <span>{section.title}</span>
                   </Link>
                 </SidebarMenuButton>
-                {section.adminOnly && newLeads > 0 ? (
-                  <SidebarMenuBadge
-                    className="bg-primary text-primary-foreground peer-data-[active=true]/menu-button:text-primary-foreground"
-                    aria-label={`${newLeads} ${newLeads === 1 ? "lead novo" : "leads novos"}`}
-                  >
-                    {newLeads}
-                  </SidebarMenuBadge>
-                ) : null}
               </SidebarMenuItem>
             ))}
           </SidebarMenu>
@@ -107,6 +97,24 @@ export function AppSidebar(props: React.ComponentProps<typeof Sidebar>) {
 
       <SidebarFooter className="border-t border-sidebar-border group-data-[collapsible=icon]:items-center">
         <SidebarMenu className="gap-0.5">
+          {isAdmin ? (
+            <SidebarMenuItem>
+              <SidebarMenuButton asChild tooltip="Admin" isActive={pathname.startsWith("/dashboard/admin")}>
+                <Link href="/dashboard/admin">
+                  <ShieldIcon />
+                  <span>Admin</span>
+                </Link>
+              </SidebarMenuButton>
+              {newLeads > 0 ? (
+                <SidebarMenuBadge
+                  className="border border-warning-border bg-warning-soft text-warning-text peer-data-[active=true]/menu-button:text-warning-text"
+                  aria-label={`${newLeads} ${newLeads === 1 ? "lead novo" : "leads novos"}`}
+                >
+                  {newLeads}
+                </SidebarMenuBadge>
+              ) : null}
+            </SidebarMenuItem>
+          ) : null}
           <SidebarMenuItem>
             <SidebarMenuButton asChild tooltip="Modelos" isActive={pathname.startsWith("/dashboard/templates")}>
               <Link href="/dashboard/templates">

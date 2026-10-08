@@ -1,11 +1,16 @@
+import { HouseIcon, LayoutTemplateIcon, SearchIcon, StethoscopeIcon, SyringeIcon, WalletIcon, type LucideIcon } from "lucide-react"
+
 /**
  * Novidades do app, como dado. Versão nova = uma entrada nova aqui em cima; a
  * tela não muda.
  *
  * O `id` é o que fica guardado no navegador para saber se o médico já viu esta
  * versão — muda o id, o modal reaparece uma vez. Por isso o id nunca é reusado.
+ *
+ * As versões de antes da 2.0 saíram: falavam de telas que não existem mais.
  */
 export type ChangelogEntry = {
+  icon: LucideIcon
   title: string
   description: string
 }
@@ -22,147 +27,42 @@ export type ChangelogRelease = {
 /** Da mais nova para a mais antiga — a primeira é a que abre o modal. */
 export const CHANGELOG: readonly ChangelogRelease[] = [
   {
-    id: "2026-09-27-tela-do-caso",
-    date: "2026-09-27",
-    title: "Nova tela do atendimento",
-    summary:
-      "A tela do caso ficou mais limpa: os dados da criança no topo, as ações do atendimento em destaque e cada registro num card que abre ao lado.",
+    id: "2026-10-08-falaped-2-0",
+    date: "2026-10-08",
+    title: "O Falaped de cara nova",
+    summary: "Menos cliques do início ao fim da consulta, e tudo no mesmo lugar de sempre.",
     entries: [
       {
-        title: "Dados da criança no topo",
+        icon: SearchIcon,
+        title: "Comece a consulta pela busca",
         description:
-          "Idade, nascimento, sexo, responsável, telefone e alergias aparecem junto do nome. Clique no nome para abrir a ficha do paciente.",
+          "No menu, \"Iniciar consulta\" ou ⌘K: digite o nome da criança, do responsável ou o telefone e aperte Enter. Sem cadastro? Cadastre ali mesmo, só com o essencial.",
       },
       {
-        title: "Retomar e encerrar em um clique",
+        icon: StethoscopeIcon,
+        title: "Consulta organizada",
         description:
-          "A seção Atendimento traz Retomar atendimento, para voltar à consulta em curso, e Encerrar ou Reabrir caso, conforme o status.",
+          "Receita, atestado, pedido de exame e encaminhamento abrem ao lado, sem sair da consulta. Encerrar mostra o que foi feito e a cobrança, em duas etapas.",
       },
       {
-        title: "Registros em cards",
-        description:
-          "Relatório, escalas, leitura de exames, anexos, documentos, lembretes e ganhos viram cards. Clique em um para abrir o conteúdo numa gaveta à direita, sem sair da tela.",
+        icon: HouseIcon,
+        title: "Seu dia no Início",
+        description: "A consulta em andamento, quem atender, o que não esquecer e como está o mês, numa tela só.",
       },
       {
-        title: "Documentos e ganhos direto do caso",
-        description:
-          "Crie atestado ou receita pela gaveta de Documentos e volte para ela assim que o PDF sair. Na gaveta de Ganhos, lance um valor extra já vinculado ao atendimento.",
-      },
-    ],
-  },
-  {
-    id: "2026-09-27-leitura-de-exames",
-    date: "2026-09-27",
-    title: "Leitura de exames com IA",
-    summary:
-      "Envie as fotos ou o PDF de um exame dentro do atendimento: a IA transcreve os resultados, você confere e o relatório sai como rascunho para revisar.",
-    entries: [
-      {
-        title: "Envie o exame na consulta",
-        description:
-          "Na seção Leitura de exames do atendimento, escolha fotos (JPG, PNG) ou o PDF do laudo, até 20 páginas. A leitura leva alguns segundos e as páginas ficam guardadas só para você.",
+        icon: LayoutTemplateIcon,
+        title: "Modelos com o assistente",
+        description: "Receitas, exames e relatório num lugar só. Diga o quadro e o assistente sugere um modelo para você revisar.",
       },
       {
-        title: "Confira antes de gerar",
-        description:
-          "Cada resultado aparece com valor, unidade, faixa de referência do laboratório e status. A faixa é sempre a impressa no laudo, escolhida pela idade e pelo sexo do paciente que consta no exame. Abra os campos para corrigir o que a leitura errou, remover ou acrescentar linhas.",
+        icon: WalletIcon,
+        title: "Financeiro por mês e por ano",
+        description: "Veja o mês, o ano ou desde o início, e quais consultas ainda estão sem valor.",
       },
       {
-        title: "Rascunho do relatório de exames",
-        description:
-          "Com os resultados conferidos, a IA redige um rascunho com os exames avaliados, os resultados alterados, os dentro da referência, uma interpretação cautelosa para a idade e sugestões. O texto é editável e o PDF sai com o registro de que houve apoio de IA revisado por você.",
-      },
-      {
-        title: "Tudo vai para os anexos",
-        description:
-          "Ao salvar, o relatório em PDF e o exame com todas as páginas entram juntos nos anexos do paciente, num card só com um link para cada. A seção de leitura fica limpa para o próximo exame.",
-      },
-    ],
-  },
-  {
-    id: "2026-09-23-escalas-uti-e-relatorio",
-    date: "2026-09-23",
-    title: "Mais escalas, e escalas no relatório",
-    summary:
-      "Escalas novas para UTI, neonatologia e pronto atendimento, e as escalas aplicadas agora aparecem no relatório do atendimento.",
-    entries: [
-      {
-        title: "Escalas de UTI e neonatologia",
-        description:
-          "Entraram COMFORT-B (em ventilação mecânica e em respiração espontânea), RASS, CAPD para delirium, pSOFA por faixa etária, PIPP para dor no prematuro e Capurro somático, que já mostra a idade gestacional estimada.",
-      },
-      {
-        title: "PECARN no trauma craniano",
-        description:
-          "Responda os achados e a regra indica TC recomendada, observação ou TC não recomendada, com o risco de cada faixa. São duas versões, para menores de 2 anos e para 2 anos ou mais.",
-      },
-      {
-        title: "Escalas no relatório",
-        description:
-          "Ao gerar o relatório, as escalas aplicadas no atendimento entram numa seção própria, logo depois dos dados clínicos, com o resultado e o horário de cada uma. Esse texto não passa pela IA: é exatamente o que ficou registrado.",
-      },
-    ],
-  },
-  {
-    id: "2026-09-22-menu-reorganizado",
-    date: "2026-09-22",
-    title: "Menu reorganizado",
-    summary:
-      "A barra lateral agora tem só quatro menus, sem submenus. O que era submenu virou card dentro da página de cada menu.",
-    entries: [
-      {
-        title: "Quatro menus na barra lateral",
-        description:
-          "Início, Atendimentos, Serviços e Financeiro. Um clique abre a página do menu — nada mais desdobra na lateral.",
-      },
-      {
-        title: "Os submenus viraram cards",
-        description:
-          "Ao entrar em Atendimentos, Serviços ou Financeiro, as opções daquele menu aparecem como cards na tela, cada um com uma linha explicando o que faz.",
-      },
-      {
-        title: "Templates no seu perfil",
-        description:
-          "Templates de relatório e de receita saíram da barra lateral e ficam agora no menu do seu nome, no rodapé, logo abaixo de Perfil. O atalho de vincular telefone, que não era mais usado, foi removido.",
-      },
-    ],
-  },
-  {
-    id: "2026-09-21-consulta-pediatrica",
-    date: "2026-09-21",
-    title: "Consulta pediátrica",
-    summary:
-      "Escalas na consulta, anexos no paciente, lembretes que atravessam para a próxima consulta, pressão arterial com percentis e correções no calendário vacinal.",
-    entries: [
-      {
-        title: "Escalas pediátricas na consulta",
-        description:
-          "Aplique escalas durante o atendimento e o resultado fica no histórico da criança. Já disponíveis: FLACC, Wong-Baker, McIsaac, STRONGkids, M-CHAT-R, M-CHAT-R/F, marcos da Caderneta, Apgar, Glasgow pediátrica, Silverman-Andersen, NIPS, Westley, Tal, PRAM e PEWS. A lista mostra só as escalas da idade da criança.",
-      },
-      {
-        title: "Pressão arterial com percentis",
-        description:
-          "A PA entra junto de peso, estatura e PC. A classificação sai na hora pela tabela do AAP 2017 — percentis por idade, sexo e estatura até os 12 anos, cortes fixos a partir dos 13. O histórico mostra a faixa de cada aferição.",
-      },
-      {
-        title: "Anexos no paciente e na consulta",
-        description:
-          "Anexe qualquer arquivo — exame, laudo, foto — com um nome seu. PDF e imagens abrem em outra aba; o resto baixa. Os arquivos ficam em armazenamento privado, acessíveis só por você.",
-      },
-      {
-        title: "Lembretes e resumo da última consulta",
-        description:
-          "Registre lembretes e pendências durante o atendimento, um por linha. Ao fechar a consulta, um resumo é gerado a partir da conversa, do relatório e dos lembretes — e aparece quando você abre a próxima consulta daquela criança.",
-      },
-      {
-        title: "Endereço e familiares na ficha",
-        description:
-          "Campo de endereço da criança e um campo livre para anotar outros familiares — útil quando a criança mora com a mãe, com o pai ou com a avó.",
-      },
-      {
-        title: "Correções no calendário vacinal",
-        description:
-          "A COVID-19 de 6 meses estava no calendário particular e passou para o SUS. A Pneumo 10 foi acrescentada aos 2 e aos 6 meses. Nenhuma marcação de dose já feita foi perdida.",
+        icon: SyringeIcon,
+        title: "Calendário vacinal",
+        description: "SUS e particular lado a lado, com a faixa de idade da criança em destaque.",
       },
     ],
   },
