@@ -323,7 +323,7 @@ export function FinancialView({
                 ))}
               </div>
             </div>
-            <DailyChart series={series} kind={chart} />
+            <DailyChart series={series} kind={chart} ym={month.ym} />
           </div>
         </section>
       </Collapsible>
@@ -470,14 +470,24 @@ function EntryRow({
 }
 
 /** Linhas (padrão, pedido do gestor) ou barras; a escolha fica no navegador. */
-function DailyChart({ series, kind }: { series: { day: number; cents: number }[]; kind: Chart }) {
+function DailyChart({ series, kind, ym }: { series: { day: number; cents: number }[]; kind: Chart; ym: string }) {
   const money = (value: unknown) => formatCentsToBRL(Number(value))
   const axes = (
     <>
       <CartesianGrid strokeDasharray="3 3" vertical={false} className="stroke-border" />
       <XAxis dataKey="day" tick={{ fontSize: 11 }} tickLine={false} axisLine={false} interval="preserveStartEnd" />
       <YAxis tick={{ fontSize: 11 }} width={88} tickFormatter={money} tickLine={false} axisLine={false} />
-      <Tooltip formatter={money} labelFormatter={(label) => `Dia ${label}`} />
+      <Tooltip
+        cursor={{ stroke: "var(--border-strong)", fill: "var(--accent)" }}
+        content={({ active, payload, label }) =>
+          active && payload?.length ? (
+            <div className="rounded-lg border border-border bg-popover px-3 py-2 shadow-md">
+              <div className="text-caption text-muted-foreground">{dayLabel(`${ym}-${String(label).padStart(2, "0")}`)}</div>
+              <div className="num font-semibold">{money(payload[0].value)}</div>
+            </div>
+          ) : null
+        }
+      />
     </>
   )
   return (
