@@ -35,7 +35,7 @@ export function parsePrescriptionTemplate(raw: string, fallbackName: string): Ge
   }
 }
 
-/** Mantém só exames do catálogo (sem diferenciar maiúsculas), com o nome do catálogo e sem repetir. */
+/** Usa o nome do catálogo quando o exame está nele (sem diferenciar maiúsculas); sem repetir. */
 export function parseExamPanel(raw: string, fallbackName: string, catalog: string[]): GeneratedExamPanel {
   let parsed: Record<string, unknown> = {}
   try {
@@ -45,13 +45,16 @@ export function parseExamPanel(raw: string, fallbackName: string, catalog: strin
     // resposta inválida: segue vazia
   }
   const byKey = new Map(catalog.map((name) => [name.trim().toLowerCase(), name]))
-  const exams = [
-    ...new Set(
-      (Array.isArray(parsed.exams) ? parsed.exams : [])
-        .map((exam) => (typeof exam === "string" ? byKey.get(exam.trim().toLowerCase()) : undefined))
-        .filter((exam): exam is string => !!exam),
-    ),
-  ].slice(0, MAX_SUGGESTED_EXAMS)
+  const seen = new Set<string>()
+  const exams: string[] = []
+  for (const item of Array.isArray(parsed.exams) ? parsed.exams : []) {
+    const exam = typeof item === "string" ? item.trim().slice(0, 200) : ""
+    const key = exam.toLowerCase()
+    if (!exam || seen.has(key)) continue
+    seen.add(key)
+    exams.push(byKey.get(key) ?? exam)
+  }
+  exams.splice(MAX_SUGGESTED_EXAMS)
   const name = typeof parsed.suggestedName === "string" ? parsed.suggestedName.trim().slice(0, 120) : ""
   return { suggestedName: name || fallbackName.slice(0, 120), exams }
 }

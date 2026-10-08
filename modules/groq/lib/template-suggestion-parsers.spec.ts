@@ -3,11 +3,11 @@ import assert from "node:assert/strict"
 
 import { parseExamPanel, parsePrescriptionTemplate } from "@/modules/groq/lib/template-suggestion-parsers"
 
-test("exames fora do catálogo são descartados e o nome vem do catálogo", () => {
-  const raw = '```json\n{"suggestedName":"Anemia","exams":["hemograma completo","Exame inventado","Ferritina","Ferritina"]}\n```'
+test("exame do catálogo usa o nome do catálogo; os outros ficam, sem repetir", () => {
+  const raw = '```json\n{"suggestedName":"Anemia","exams":["hemograma completo","Reticulócitos","Ferritina","ferritina",""]}\n```'
   assert.deepEqual(parseExamPanel(raw, "x", ["Hemograma completo", "Ferritina"]), {
     suggestedName: "Anemia",
-    exams: ["Hemograma completo", "Ferritina"],
+    exams: ["Hemograma completo", "Reticulócitos", "Ferritina"],
   })
 })
 

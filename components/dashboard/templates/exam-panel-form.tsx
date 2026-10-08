@@ -69,7 +69,7 @@ export function ExamPanelForm({
       title={isCreate ? "Novo modelo de exames" : `Editar ${initial.name}`}
       subtitle="Vira atalho em “Começar de um modelo” no pedido de exame."
       suggestion={suggestion}
-      suggestionNote="Só exames do seu catálogo. Confira antes de salvar."
+      suggestionNote="Confira cada exame antes de salvar: você é responsável pelo modelo."
       isCreate={isCreate}
       isDirty={nameChanged || examsChanged}
       missing={missing}

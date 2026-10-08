@@ -13,7 +13,7 @@ export type GenerateExamPanelResult = ({ ok: true } & GeneratedExamPanel) | { ok
 
 const schema = z.string().trim().min(1, "Diga para que são os exames.").max(300, "Use no máximo 300 caracteres.")
 
-/** Sugere um painel de exames só com itens do catálogo do médico; nada é salvo. */
+/** Sugere um painel de exames para o objetivo; nada é salvo. */
 export async function generateExamPanelAction(prompt: string): Promise<GenerateExamPanelResult> {
   const supabase = await createClient()
   const { profile } = await getAuthenticatedUser(supabase)
@@ -26,10 +26,9 @@ export async function generateExamPanelAction(prompt: string): Promise<GenerateE
 
   try {
     const catalog = (await getExamCatalogItems(supabase, profile.id)).map((item) => item.name)
-    if (!catalog.length) return { ok: false, error: "Seu catálogo de exames está vazio." }
     const result = await generateExamPanel(parsed.data, catalog)
     if (!result.exams.length) {
-      return { ok: false, error: "Não achei exames do catálogo para isso. Tente descrever de outro jeito." }
+      return { ok: false, error: "Não consegui sugerir exames para isso. Tente descrever de outro jeito." }
     }
     return { ok: true, ...result }
   } catch (e) {

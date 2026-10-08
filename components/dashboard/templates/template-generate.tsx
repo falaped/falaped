@@ -44,7 +44,7 @@ export function PrescriptionTemplateGenerate({ doctor }: { doctor: ConsultDoctor
   )
 }
 
-/** Gerar exames com IA (protótipo g8e/g7a): só exames do catálogo do médico. */
+/** Gerar exames com IA (protótipo g8e/g7a): exames usuais para o objetivo, com os nomes do catálogo quando houver. */
 export function ExamPanelGenerate({ catalog, doctor }: { catalog: ExamCatalogItem[]; doctor: ConsultDoctor }) {
   const [suggestion, setSuggestion] = useState<(GeneratedExamPanel & { prompt: string }) | null>(null)
 
@@ -65,7 +65,7 @@ export function ExamPanelGenerate({ catalog, doctor }: { catalog: ExamCatalogIte
     <TemplatePrompt
       backHref="/dashboard/templates?aba=exames"
       title="Para que são os exames?"
-      description="Diga o objetivo. O assistente escolhe exames do seu catálogo, e você revisa antes de salvar."
+      description="Diga o objetivo. O assistente sugere os exames usuais em pediatria, e você revisa antes de salvar."
       placeholder="Ex.: investigação de anemia"
       examples={["Rotina de 1 ano", "ITU", "Triagem de doença celíaca"]}
       maxLength={300}
