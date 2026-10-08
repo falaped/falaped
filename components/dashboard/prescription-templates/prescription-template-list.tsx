@@ -1,7 +1,7 @@
 "use client"
 
 import { useRouter } from "next/navigation"
-import { NewPrescriptionLink } from "@/app/dashboard/prescriptions/new/new-prescription-link"
+import Link from "next/link"
 import { FileText, Trash2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription } from "@/components/ui/card"
@@ -90,9 +90,9 @@ function PrescriptionTemplateCard({
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button variant="default" size="sm" asChild>
-                  <NewPrescriptionLink templateId={template.id}>
+                  <Link href="/dashboard/services?novo=prescription">
                     Usar
-                  </NewPrescriptionLink>
+                  </Link>
                 </Button>
               </TooltipTrigger>
               <TooltipContent side="left">

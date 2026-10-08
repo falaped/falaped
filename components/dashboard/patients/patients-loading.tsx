@@ -1,9 +1,9 @@
 import { Skeleton } from "@/components/ui/skeleton"
 
-/** Suspense fallback de Pacientes: os mesmos blocos da tela, para nada pular ao carregar. */
-export function PatientsLoading() {
+/** Suspense fallback das listas (Pacientes, Documentos): os mesmos blocos da tela, para nada pular ao carregar. */
+export function PatientsLoading({ label = "Carregando pacientes" }: { label?: string }) {
   return (
-    <div className="flex w-full max-w-[1440px] flex-col gap-6" aria-busy="true" aria-label="Carregando pacientes">
+    <div className="flex w-full max-w-[1440px] flex-col gap-6" aria-busy="true" aria-label={label}>
       <div className="rounded-xl border border-border bg-card px-8 py-7">
         <Skeleton className="h-9 w-48 rounded-md" />
         <Skeleton className="mt-2 h-5 w-64 rounded-md" />

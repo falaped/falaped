@@ -12,7 +12,7 @@ import {
   getCertificatePreview,
   initialPayload,
   type WizardPayload,
-} from "@/components/dashboard/medical-certificates/medical-certificate-wizard"
+} from "@/components/dashboard/cases/certificate-form"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 import type { MedicalCertificateType } from "@/modules/medical-certificates/get-medical-certificates-by-profile-id"
@@ -67,7 +67,8 @@ export function ConsultCertificatePanel({
   doctor,
   onDone,
 }: {
-  caseId: string
+  /** null = fora da consulta (Documentos). */
+  caseId: string | null
   patient: { id: string; name: string; birth_date: string | null; responsible: string | null }
   /** Início da consulta: vira o horário inicial do comparecimento e do acompanhante. */
   startedAt: string

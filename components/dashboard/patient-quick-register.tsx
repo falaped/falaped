@@ -39,6 +39,7 @@ export function PatientQuickRegister({
   onBack,
   onCreated,
   onFullForm,
+  forDocument = false,
 }: {
   initialName: string
   busy: boolean
@@ -46,6 +47,8 @@ export function PatientQuickRegister({
   onCreated: (patient: PatientSearchItem) => void
   /** Leva os dados digitados para a ficha completa (/dashboard/patients/new). */
   onFullForm: () => void
+  /** Em Documentos: cadastra e segue para o documento, sem consulta. */
+  forDocument?: boolean
 }) {
   const [name, setName] = useState(initialName)
   const [birthDate, setBirthDate] = useState("")
@@ -117,7 +120,9 @@ export function PatientQuickRegister({
   return (
     <form onSubmit={submit} noValidate>
       <div className="space-y-4 px-5 py-5">
-        <h2 className="text-title font-semibold">{title ? `Cadastrar ${title} e iniciar a consulta` : "Cadastrar e iniciar a consulta"}</h2>
+        <h2 className="text-title font-semibold">{forDocument
+            ? title ? `Cadastrar ${title} e continuar` : "Cadastrar e continuar"
+            : title ? `Cadastrar ${title} e iniciar a consulta` : "Cadastrar e iniciar a consulta"}</h2>
         <div className="grid grid-cols-2 gap-4">
           <div className="flex flex-col gap-1.5">
             <Label htmlFor="quick-name">Nome da criança</Label>
@@ -199,7 +204,7 @@ export function PatientQuickRegister({
           Voltar à busca
         </Button>
         <Button type="submit" className="ml-auto" disabled={saving || busy}>
-          {saving || busy ? "Abrindo…" : "Cadastrar e iniciar consulta"}
+          {saving || busy ? "Abrindo…" : forDocument ? "Cadastrar e continuar" : "Cadastrar e iniciar consulta"}
         </Button>
       </div>
     </form>

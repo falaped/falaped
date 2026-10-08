@@ -39,7 +39,8 @@ export function ConsultExamRequestPanel({
   doctor,
   onDone,
 }: {
-  caseId: string
+  /** null = fora da consulta (Documentos). */
+  caseId: string | null
   patient: { id: string; name: string; birth_date: string | null }
   catalog: ExamCatalogItem[]
   panels: ExamPanel[]

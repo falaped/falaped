@@ -7,7 +7,7 @@ import { PrescriptionTemplatesTableSection } from "@/components/dashboard/prescr
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Separator } from "@/components/ui/separator"
-import { NewPrescriptionLink } from "@/app/dashboard/prescriptions/new/new-prescription-link"
+import Link from "next/link"
 
 export default async function PrescriptionTemplatesPage() {
   const supabase = await createClient()
@@ -50,10 +50,10 @@ export default async function PrescriptionTemplatesPage() {
               guardar um modelo e reutilizá-lo depois.
             </p>
             <Button asChild className="mt-5">
-              <NewPrescriptionLink>
+              <Link href="/dashboard/services?novo=prescription">
                 <Plus className="mr-2 h-4 w-4" />
                 Criar receita
-              </NewPrescriptionLink>
+              </Link>
             </Button>
           </CardContent>
         </Card>

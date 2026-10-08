@@ -7,14 +7,30 @@ import { CheckIcon, PlusIcon, DownloadIcon } from "lucide-react"
 import { generateReferralAction } from "@/actions"
 import { ChoiceChip, DocLayout, DocPaper, DocStep, emitAndDownloadPdf, PanelFooter } from "@/components/dashboard/cases/consult-document"
 import type { ConsultDoctor } from "@/components/dashboard/cases/consult-prescription-panel"
-import { SPECIALTY_OPTIONS, URGENCY_OPTIONS } from "@/components/dashboard/referrals/referral-wizard"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { cn } from "@/lib/utils"
 import type { ReferralUrgency } from "@/modules/referrals/types"
 
-const SPECIALTIES = SPECIALTY_OPTIONS.filter((option) => option !== "Outro")
+const SPECIALTIES = [
+  "Otorrinolaringologia",
+  "Oftalmologia",
+  "Neuropediatria",
+  "Fonoaudiologia",
+  "Fisioterapia",
+  "Nutrição",
+  "Psicologia",
+  "Cardiologia pediátrica",
+  "Dermatologia",
+  "Ortopedia",
+]
+
+const URGENCY_OPTIONS: { value: ReferralUrgency; label: string }[] = [
+  { value: "rotina", label: "Rotina" },
+  { value: "prioritario", label: "Prioritário" },
+  { value: "urgente", label: "Urgente" },
+]
 
 const URGENCY_HINT: Record<ReferralUrgency, { dot: string; hint: string; paper: string }> = {
   rotina: { dot: "bg-subtle-foreground", hint: "Agendar normalmente", paper: "bg-neutral-100 text-neutral-700" },
@@ -29,7 +45,8 @@ export function ConsultReferralPanel({
   doctor,
   onDone,
 }: {
-  caseId: string
+  /** null = fora da consulta (Documentos). */
+  caseId: string | null
   patient: { id: string; name: string; birth_date: string | null }
   doctor: ConsultDoctor
   onDone: () => void
