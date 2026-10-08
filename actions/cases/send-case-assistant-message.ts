@@ -170,7 +170,7 @@ function parseMetricToNumber(value: string | null | undefined): number | null {
 /**
  * Grava peso/estatura/PC confirmados no chat na medida do dia da consulta e devolve a resposta.
  * Se o dia já tem medida, completa a mais recente (o IMC da ficha vem de peso e estatura da
- * MESMA medida); senão cria uma. A resposta traz o IMC quando a medida tem os dois.
+ * MESMA medida); senão cria uma a partir dos últimos valores. A resposta traz o IMC novo.
  */
 async function saveChatMeasurement(
   supabase: Awaited<ReturnType<typeof createClient>>,
@@ -192,13 +192,17 @@ async function saveChatMeasurement(
   }
   const day = clinicDay(consult.started_at)
   const sameDay = patientMeasurements.findLast((m) => m.measured_on === day)
+  // Medida nova parte do último peso/estatura/PC registrado: alterar só um valor
+  // ainda deixa a medida completa, e o IMC sai com o valor novo.
+  const last = <K extends "weight_grams" | "length_height_mm" | "head_circumference_mm">(key: K) =>
+    patientMeasurements.findLast((m) => m[key] != null)?.[key] ?? null
   const saved = sameDay
     ? await updateMeasurement(supabase, sameDay.id, profileId, consult.patient_id, values)
     : await createMeasurement(supabase, profileId, consult.patient_id, {
         measured_on: day,
-        weight_grams: null,
-        length_height_mm: null,
-        head_circumference_mm: null,
+        weight_grams: last("weight_grams"),
+        length_height_mm: last("length_height_mm"),
+        head_circumference_mm: last("head_circumference_mm"),
         systolic_bp: null,
         diastolic_bp: null,
         ...values,
@@ -219,7 +223,7 @@ async function saveChatMeasurement(
     ? ` IMC atualizado: ${decimal.format(Math.round(bmi.bmi * 10) / 10)} kg/m².`
     : bmi
       ? " O IMC não foi atualizado: peso e estatura dão um valor fora do esperado."
-      : " Para o IMC, registre também o peso e a estatura desta consulta."
+      : " Para o IMC, registre também o peso e a estatura."
   return `Medida registrada na consulta: ${parts.join(", ")}.${bmiText} Já aparece na ficha e na curva de crescimento.`
 }
 
