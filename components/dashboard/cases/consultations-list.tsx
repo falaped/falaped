@@ -236,6 +236,8 @@ function Row({ row, pending, onReopen, onDelete }: { row: ConsultationRow; pendi
           </Button>
         ) : row.billedCents !== null ? (
           <span className="num font-medium">{formatCentsToBRL(row.billedCents)}</span>
+        ) : row.courtesy ? (
+          <span className="text-caption text-subtle-foreground">Cortesia</span>
         ) : pending && row.status === "closed" ? (
           <Badge variant="warning">Sem valor</Badge>
         ) : (

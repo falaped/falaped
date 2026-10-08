@@ -35,7 +35,7 @@ export async function voidFinancialEntryAction(
 
   try {
     await voidFinancialEntry(supabase, parsed.data, profile.id)
-    revalidatePath("/dashboard/earnings")
+    revalidatePath("/dashboard/financial")
     if (caseId) revalidatePath(`/dashboard/cases/${caseId}`)
     return { ok: true }
   } catch (e) {

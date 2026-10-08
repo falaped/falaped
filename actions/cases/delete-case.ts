@@ -22,7 +22,7 @@ export async function deleteCaseAction(caseId: string): Promise<DeleteCaseResult
     // `financial_entries.case_id` é `on delete cascade`: os lançamentos do caso foram
     // apagados junto, então os totais do painel de Ganhos mudaram — revalidar aqui, ou o
     // painel mostra faturamento de um caso que não existe mais.
-    revalidatePath("/dashboard/earnings")
+    revalidatePath("/dashboard/financial")
     return { ok: true }
   } catch (e) {
     const message =

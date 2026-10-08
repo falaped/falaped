@@ -42,9 +42,13 @@ type StandaloneEntryDialogProps = {
   /** Quando presente, o lançamento fica vinculado a este caso em vez de avulso. */
   caseId?: string
   triggerVariant?: "default" | "outline"
-  triggerSize?: "default" | "xs" | "sm"
+  triggerSize?: "default" | "xs" | "sm" | "lg"
   /** Texto do botão que abre o diálogo. */
   triggerLabel?: string
+  /** Ícone antes do texto (o "+" do topo do Financeiro). */
+  triggerIcon?: React.ReactNode
+  /** Depois de salvar, antes do refresh: o Financeiro destaca a linha nova. */
+  onSaved?: () => void
 }
 
 /**
@@ -61,6 +65,8 @@ export function StandaloneEntryDialog({
   triggerVariant = "default",
   triggerSize = "default",
   triggerLabel = "Novo lançamento",
+  triggerIcon,
+  onSaved,
 }: StandaloneEntryDialogProps) {
   const router = useRouter()
   const [open, setOpen] = useState(false)
@@ -106,6 +112,7 @@ export function StandaloneEntryDialog({
       form.reset(defaultValues)
       setOpen(false)
       toast.success("Lançamento registrado.")
+      onSaved?.()
       // Sem isto o RSC da página atual não re-renderiza e o total não muda —
       // o revalidatePath do action sozinho não basta com cacheComponents ligado.
       router.refresh()
@@ -116,6 +123,7 @@ export function StandaloneEntryDialog({
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger asChild>
         <Button variant={triggerVariant} size={triggerSize}>
+          {triggerIcon}
           {triggerLabel}
         </Button>
       </DialogTrigger>

@@ -6,7 +6,6 @@ import {
   MailsIcon,
   ShieldIcon,
   StethoscopeIcon,
-  TrendingUpIcon,
   UsersIcon,
   WalletIcon,
 } from "lucide-react"
@@ -30,8 +29,8 @@ export type DashboardNavSection = {
 }
 
 /**
- * Menus da sidebar. Cada seção é um link direto; os antigos submenus viram
- * cards na própria página da seção (`items`), lidos desta mesma lista.
+ * Menus da sidebar. Cada seção é um link direto; `items` são as subpáginas que mantêm
+ * a seção acesa no menu (hoje só o Admin).
  */
 export const dashboardNav: DashboardNavSection[] = [
   {
@@ -67,14 +66,7 @@ export const dashboardNav: DashboardNavSection[] = [
     description: "O dinheiro que entra na sua prática.",
     url: "/dashboard/financial",
     icon: WalletIcon,
-    items: [
-      {
-        title: "Ganhos",
-        description: "Recebimentos por período, com gráfico e lançamentos.",
-        url: "/dashboard/earnings",
-        icon: TrendingUpIcon,
-      },
-    ],
+    items: [],
   },
   {
     title: "Admin",

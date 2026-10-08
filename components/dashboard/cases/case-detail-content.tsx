@@ -98,7 +98,7 @@ export async function CaseDetailContent({ id }: { id: string }) {
   // Hoje no fuso da CLÍNICA, derivado aqui e descido como prop até o campo
   // `Recebido em`. Um componente cliente num host em UTC derivaria o dia SEGUINTE
   // depois das 21h de Brasília, e o lançamento cairia no bucket errado — em silêncio,
-  // sem erro de tipo e sem falha de build. Mesma derivação de app/dashboard/earnings/page.tsx.
+  // sem erro de tipo e sem falha de build. Mesma derivação de components/dashboard/financial/financial-content.tsx.
   const todayLabel = format(new Date(), "dd/MM/yyyy", { in: tz(CLINIC_TIME_ZONE) })
 
   // Consulta aberta (WhatsApp): o Encerrar precisa saber se ela ficou esquecida.
