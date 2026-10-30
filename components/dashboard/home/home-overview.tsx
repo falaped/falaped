@@ -19,6 +19,7 @@ import {
 
 import { ActiveConsultBanner } from "@/components/dashboard/cases/active-consult-banner"
 import { StandaloneEntryDialog } from "@/components/dashboard/earnings/standalone-entry-dialog"
+import { HideFinanceButton, HomeFinanceVisibility } from "@/components/dashboard/home/home-finance-visibility"
 import { SectionTab } from "@/components/dashboard/section-tab"
 import { Button } from "@/components/ui/button"
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
@@ -44,6 +45,8 @@ export type HomeOverviewProps = {
   home: DashboardHomeData
   day: HomeDay
   earnings: { todayCents: number; weekCents: number; monthCents: number; averageCents: number }
+  /** O médico escolheu ocultar o financeiro do mês. */
+  financeHidden: boolean
 }
 
 /** Quantos itens cada aba de "Para não esquecer" mostra. */
@@ -60,7 +63,7 @@ const firstName = (name: string | null) => name?.split(" ")[0] ?? "Sem paciente"
  * o dia em números ao lado de lembretes e pendências, o financeiro do mês e as
  * últimas consultas.
  */
-export function HomeOverview({ greeting, dateLabel, monthLabel, todayLabel, now, home, day, earnings }: HomeOverviewProps) {
+export function HomeOverview({ greeting, dateLabel, monthLabel, todayLabel, now, home, day, earnings, financeHidden }: HomeOverviewProps) {
   const pendingCount = day.drafts.length + day.unbilled.length + day.staleMeasure.length
   const summary = [
     day.today.closedCount > 0 ? `você já atendeu ${plural(day.today.closedCount, "criança", "crianças")} hoje` : null,
@@ -230,71 +233,74 @@ export function HomeOverview({ greeting, dateLabel, monthLabel, todayLabel, now,
         </section>
       </div>
 
-      <Collapsible asChild>
-        <section className="rounded-xl border border-primary-soft-border bg-highlight shadow-sm">
-          <div className="flex flex-wrap items-center gap-2 px-6 pt-5">
-            <h2 className="font-display text-section font-semibold">Financeiro de {monthLabel}</h2>
-            {day.unbilled.length ? (
-              <CollapsibleTrigger className="group inline-flex h-6 cursor-pointer items-center gap-1 rounded-md border border-warning-border bg-warning-soft px-2 text-caption font-medium text-warning-text hover:border-warning-text/40 focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none">
-                <WalletIcon className="size-3.5" aria-hidden />
-                {plural(day.unbilled.length, "consulta sem valor", "consultas sem valor")}
-                <ChevronDownIcon className="size-3.5 transition-transform group-data-[state=open]:rotate-180" aria-hidden />
-              </CollapsibleTrigger>
-            ) : null}
-            <Button asChild variant="link" size="sm" className="ml-auto">
-              <Link href="/dashboard/financial">
-                Ver financeiro
-                <ArrowRightIcon data-icon="inline-end" />
-              </Link>
-            </Button>
-          </div>
-          <CollapsibleContent className="mx-6 mt-3 rounded-lg border border-warning-border bg-card">
-            <div className="px-4 py-2 text-caption font-medium text-warning-text">Consultas de {monthLabel} sem valor lançado</div>
-            {day.unbilled.map((c) => (
-              <div key={c.caseId} className="flex items-center gap-3 border-t border-border px-4 py-2.5">
-                <Initials name={c.patientName} small />
-                <div className="min-w-0 flex-1">
-                  <div className="truncate">
-                    <span className="font-semibold">{c.patientName ?? "Sem paciente"}</span>
-                    {c.birthDate ? <span className="text-subtle-foreground"> · {ageOf(c.birthDate)}</span> : null}
+      <HomeFinanceVisibility defaultHidden={financeHidden} title={`Financeiro de ${monthLabel}`}>
+        <Collapsible asChild>
+          <section className="rounded-xl border border-primary-soft-border bg-highlight shadow-sm">
+            <div className="flex flex-wrap items-center gap-2 px-6 pt-5">
+              <h2 className="font-display text-section font-semibold">Financeiro de {monthLabel}</h2>
+              {day.unbilled.length ? (
+                <CollapsibleTrigger className="group inline-flex h-6 cursor-pointer items-center gap-1 rounded-md border border-warning-border bg-warning-soft px-2 text-caption font-medium text-warning-text hover:border-warning-text/40 focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none">
+                  <WalletIcon className="size-3.5" aria-hidden />
+                  {plural(day.unbilled.length, "consulta sem valor", "consultas sem valor")}
+                  <ChevronDownIcon className="size-3.5 transition-transform group-data-[state=open]:rotate-180" aria-hidden />
+                </CollapsibleTrigger>
+              ) : null}
+              <Button asChild variant="link" size="sm" className="ml-auto">
+                <Link href="/dashboard/financial">
+                  Ver financeiro
+                  <ArrowRightIcon data-icon="inline-end" />
+                </Link>
+              </Button>
+              <HideFinanceButton />
+            </div>
+            <CollapsibleContent className="mx-6 mt-3 rounded-lg border border-warning-border bg-card">
+              <div className="px-4 py-2 text-caption font-medium text-warning-text">Consultas de {monthLabel} sem valor lançado</div>
+              {day.unbilled.map((c) => (
+                <div key={c.caseId} className="flex items-center gap-3 border-t border-border px-4 py-2.5">
+                  <Initials name={c.patientName} small />
+                  <div className="min-w-0 flex-1">
+                    <div className="truncate">
+                      <span className="font-semibold">{c.patientName ?? "Sem paciente"}</span>
+                      {c.birthDate ? <span className="text-subtle-foreground"> · {ageOf(c.birthDate)}</span> : null}
+                    </div>
+                    <div className="truncate text-caption text-muted-foreground">
+                      {c.reason ?? "Consulta"} · {consultLabel(c.endedAt, now, true)}
+                    </div>
                   </div>
-                  <div className="truncate text-caption text-muted-foreground">
-                    {c.reason ?? "Consulta"} · {consultLabel(c.endedAt, now, true)}
-                  </div>
+                  <CourtesyButton caseId={c.caseId} size="xs" />
+                  <StandaloneEntryDialog todayLabel={todayLabel} caseId={c.caseId} triggerSize="xs" triggerLabel="Lançar valor" />
+                  <Button asChild variant="outline" size="xs">
+                    <Link href={caseHref(c.caseId)}>Abrir consulta</Link>
+                  </Button>
                 </div>
-                <CourtesyButton caseId={c.caseId} size="xs" />
-                <StandaloneEntryDialog todayLabel={todayLabel} caseId={c.caseId} triggerSize="xs" triggerLabel="Lançar valor" />
-                <Button asChild variant="outline" size="xs">
-                  <Link href={caseHref(c.caseId)}>Abrir consulta</Link>
-                </Button>
-              </div>
-            ))}
-          </CollapsibleContent>
-          <div className="grid grid-cols-4 divide-x divide-primary-soft-border/70">
-            <Money
-              icon={WalletIcon}
-              label="Recebido no mês"
-              value={formatCentsToBRL(earnings.monthCents)}
-              note={`${formatCentsToBRL(earnings.weekCents)} nesta semana`}
-              big
-            />
-            <Money icon={StethoscopeIcon} label="Consultas" value={String(day.month.closedCount)} note={`${day.month.billedCount} com valor lançado`} />
-            <Money icon={ReceiptIcon} label="Média por consulta" value={formatCentsToBRL(earnings.averageCents)} note="das consultas lançadas" />
-            <Money
-              icon={CreditCardIcon}
-              label="Como recebeu"
-              value={methods.length ? methods.slice(0, 2).map((label, index) => (index ? label.toLowerCase() : label)).join(" · ") : "—"}
-              note={
-                methods.length > 2
-                  ? `e também ${methods.slice(2).join(", ").toLowerCase()}`
-                  : methods.length
-                    ? "formas usadas no mês"
-                    : "nenhum lançamento ainda"
-              }
-            />
-          </div>
-        </section>
-      </Collapsible>
+              ))}
+            </CollapsibleContent>
+            <div className="grid grid-cols-4 divide-x divide-primary-soft-border/70">
+              <Money
+                icon={WalletIcon}
+                label="Recebido no mês"
+                value={formatCentsToBRL(earnings.monthCents)}
+                note={`${formatCentsToBRL(earnings.weekCents)} nesta semana`}
+                big
+              />
+              <Money icon={StethoscopeIcon} label="Consultas" value={String(day.month.closedCount)} note={`${day.month.billedCount} com valor lançado`} />
+              <Money icon={ReceiptIcon} label="Média por consulta" value={formatCentsToBRL(earnings.averageCents)} note="das consultas lançadas" />
+              <Money
+                icon={CreditCardIcon}
+                label="Como recebeu"
+                value={methods.length ? methods.slice(0, 2).map((label, index) => (index ? label.toLowerCase() : label)).join(" · ") : "—"}
+                note={
+                  methods.length > 2
+                    ? `e também ${methods.slice(2).join(", ").toLowerCase()}`
+                    : methods.length
+                      ? "formas usadas no mês"
+                      : "nenhum lançamento ainda"
+                }
+              />
+            </div>
+          </section>
+        </Collapsible>
+      </HomeFinanceVisibility>
 
       <section className="rounded-xl border border-border bg-card">
         <div className="flex items-center gap-2 px-5 pt-4 pb-3">
