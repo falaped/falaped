@@ -19,7 +19,12 @@ import {
 
 import { ActiveConsultBanner } from "@/components/dashboard/cases/active-consult-banner"
 import { StandaloneEntryDialog } from "@/components/dashboard/earnings/standalone-entry-dialog"
-import { HideFinanceButton, HomeFinanceVisibility } from "@/components/dashboard/home/home-finance-visibility"
+import {
+  HideFinanceButton,
+  HomeFinanceProvider,
+  HomeFinanceSection,
+  WhenFinanceVisible,
+} from "@/components/dashboard/home/home-finance-visibility"
 import { SectionTab } from "@/components/dashboard/section-tab"
 import { Button } from "@/components/ui/button"
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
@@ -45,7 +50,7 @@ export type HomeOverviewProps = {
   home: DashboardHomeData
   day: HomeDay
   earnings: { todayCents: number; weekCents: number; monthCents: number; averageCents: number }
-  /** O médico escolheu ocultar o financeiro do mês. */
+  /** O médico escolheu ocultar os valores: o financeiro do mês e o recebido de hoje. */
   financeHidden: boolean
 }
 
@@ -120,220 +125,224 @@ export function HomeOverview({ greeting, dateLabel, monthLabel, todayLabel, now,
   ]
 
   return (
-    <div className="flex w-full max-w-[1440px] flex-col gap-6">
-      <section className="rounded-xl border border-primary-soft-border bg-highlight px-8 py-7 shadow-sm">
-        <h1 className="font-display text-display font-semibold">{greeting}</h1>
-        <p className="mt-1 text-read text-muted-foreground">
-          {dateLabel}
-          {summary.length ? ` · ${summary.join(" e ")}` : null}
-        </p>
-      </section>
-
-      {active ? <ActiveConsultBanner active={active} now={now} /> : null}
-
-      <div className="grid items-stretch gap-5 xl:grid-cols-12">
-        <section className="flex flex-col rounded-xl border border-border bg-card xl:col-span-4">
-          <div className="flex items-center px-5 pt-4 pb-3">
-            <h2 className="font-display text-section font-semibold">Hoje</h2>
-            <span className="ml-auto text-caption text-subtle-foreground">até agora</span>
-          </div>
-          <div className="flex flex-1 flex-col divide-y divide-border border-t border-border">
-            <TodayRow
-              icon={StethoscopeIcon}
-              label="Consultas"
-              note={active ? "+1 em andamento" : "encerradas hoje"}
-              value={String(day.today.closedCount)}
-            />
-            <TodayRow
-              icon={FileTextIcon}
-              label="Documentos emitidos"
-              note={
-                documentsToday
-                  ? [
-                      prescriptions ? plural(prescriptions, "receita", "receitas") : null,
-                      certificates ? plural(certificates, "atestado", "atestados") : null,
-                      otherDocuments ? plural(otherDocuments, "outro", "outros") : null,
-                    ]
-                      .filter(Boolean)
-                      .join(", ")
-                  : "nenhum ainda"
-              }
-              value={String(documentsToday)}
-            />
-            <TodayRow
-              icon={WalletIcon}
-              label="Recebido"
-              note={
-                day.today.closedCount
-                  ? `${day.today.billedCount} de ${plural(day.today.closedCount, "consulta lançada", "consultas lançadas")}`
-                  : "nenhuma consulta encerrada"
-              }
-              value={formatCentsToBRL(earnings.todayCents)}
-            />
-          </div>
+    <HomeFinanceProvider defaultHidden={financeHidden}>
+      <div className="flex w-full max-w-[1440px] flex-col gap-6">
+        <section className="rounded-xl border border-primary-soft-border bg-highlight px-8 py-7 shadow-sm">
+          <h1 className="font-display text-display font-semibold">{greeting}</h1>
+          <p className="mt-1 text-read text-muted-foreground">
+            {dateLabel}
+            {summary.length ? ` · ${summary.join(" e ")}` : null}
+          </p>
         </section>
 
-        <section className="flex flex-col rounded-xl border border-border bg-card xl:col-span-8">
-          <Tabs defaultValue="reminders" className="flex-1 gap-0">
-            <div className="flex items-end gap-6 px-5 pt-4">
-              <h2 className="mr-2 pb-2.5 font-display text-section font-semibold">Para não esquecer</h2>
-              <TabsList className="h-auto w-auto gap-5 rounded-none bg-transparent p-0 lg:w-auto">
-                <SectionTab value="reminders">
-                  Lembretes
-                  <span className="num text-caption text-subtle-foreground">{day.reminders.length}</span>
-                </SectionTab>
-                <SectionTab value="pending">
-                  Pendências
-                  {pendingCount ? (
-                    <span
-                      aria-label={plural(pendingCount, "pendência", "pendências")}
-                      className="num inline-flex items-center gap-1 rounded-full bg-warning-soft px-1.5 text-caption font-semibold text-warning-text"
-                    >
-                      <InfoIcon className="size-3" aria-hidden />
-                      {pendingCount}
-                    </span>
-                  ) : null}
-                </SectionTab>
-              </TabsList>
-            </div>
-            <TabsContent value="reminders" className="mt-0 divide-y divide-border border-t border-border">
-              {day.reminders.length === 0 ? (
-                <Empty>Os lembretes que você deixar nas últimas consultas aparecem aqui.</Empty>
-              ) : (
-                day.reminders.slice(0, MAX_TODO_ROWS).map((reminder) => (
-                  <TodoRow
-                    key={reminder.id}
-                    icon={BellIcon}
-                    who={firstName(reminder.patientName)}
-                    what={reminder.text}
-                    from={`Consulta ${consultLabel(reminder.endedAt, now)}`}
-                  >
-                    <Button asChild variant="outline" size="xs">
-                      <Link href={caseHref(reminder.caseId)}>Ver consulta</Link>
-                    </Button>
-                  </TodoRow>
-                ))
-              )}
-            </TabsContent>
-            <TabsContent value="pending" className="mt-0 divide-y divide-border border-t border-border">
-              {pendingCount === 0 ? (
-                <Empty>Nada pendente: relatórios finalizados, valores lançados e medidas em dia.</Empty>
-              ) : (
-                <>
-                  {pendingRows.slice(0, MAX_TODO_ROWS)}
-                  {pendingCount > MAX_TODO_ROWS ? (
-                    <p className="px-5 py-3 text-caption text-subtle-foreground">
-                      E mais {pendingCount - MAX_TODO_ROWS}. Resolva as de cima e as próximas aparecem aqui.
-                    </p>
-                  ) : null}
-                </>
-              )}
-            </TabsContent>
-          </Tabs>
-        </section>
-      </div>
+        {active ? <ActiveConsultBanner active={active} now={now} /> : null}
 
-      <HomeFinanceVisibility defaultHidden={financeHidden} title={`Financeiro de ${monthLabel}`}>
-        <Collapsible asChild>
-          <section className="rounded-xl border border-primary-soft-border bg-highlight shadow-sm">
-            <div className="flex flex-wrap items-center gap-2 px-6 pt-5">
-              <h2 className="font-display text-section font-semibold">Financeiro de {monthLabel}</h2>
-              {day.unbilled.length ? (
-                <CollapsibleTrigger className="group inline-flex h-6 cursor-pointer items-center gap-1 rounded-md border border-warning-border bg-warning-soft px-2 text-caption font-medium text-warning-text hover:border-warning-text/40 focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none">
-                  <WalletIcon className="size-3.5" aria-hidden />
-                  {plural(day.unbilled.length, "consulta sem valor", "consultas sem valor")}
-                  <ChevronDownIcon className="size-3.5 transition-transform group-data-[state=open]:rotate-180" aria-hidden />
-                </CollapsibleTrigger>
-              ) : null}
-              <Button asChild variant="link" size="sm" className="ml-auto">
-                <Link href="/dashboard/financial">
-                  Ver financeiro
-                  <ArrowRightIcon data-icon="inline-end" />
-                </Link>
-              </Button>
-              <HideFinanceButton />
+        <div className="grid items-stretch gap-5 xl:grid-cols-12">
+          <section className="flex flex-col rounded-xl border border-border bg-card xl:col-span-4">
+            <div className="flex items-center px-5 pt-4 pb-3">
+              <h2 className="font-display text-section font-semibold">Hoje</h2>
+              <span className="ml-auto text-caption text-subtle-foreground">até agora</span>
             </div>
-            <CollapsibleContent className="mx-6 mt-3 rounded-lg border border-warning-border bg-card">
-              <div className="px-4 py-2 text-caption font-medium text-warning-text">Consultas de {monthLabel} sem valor lançado</div>
-              {day.unbilled.map((c) => (
-                <div key={c.caseId} className="flex items-center gap-3 border-t border-border px-4 py-2.5">
-                  <Initials name={c.patientName} small />
-                  <div className="min-w-0 flex-1">
-                    <div className="truncate">
-                      <span className="font-semibold">{c.patientName ?? "Sem paciente"}</span>
-                      {c.birthDate ? <span className="text-subtle-foreground"> · {ageOf(c.birthDate)}</span> : null}
-                    </div>
-                    <div className="truncate text-caption text-muted-foreground">
-                      {c.reason ?? "Consulta"} · {consultLabel(c.endedAt, now, true)}
-                    </div>
-                  </div>
-                  <CourtesyButton caseId={c.caseId} size="xs" />
-                  <StandaloneEntryDialog todayLabel={todayLabel} caseId={c.caseId} triggerSize="xs" triggerLabel="Lançar valor" />
-                  <Button asChild variant="outline" size="xs">
-                    <Link href={caseHref(c.caseId)}>Abrir consulta</Link>
-                  </Button>
-                </div>
-              ))}
-            </CollapsibleContent>
-            <div className="grid grid-cols-4 divide-x divide-primary-soft-border/70">
-              <Money
-                icon={WalletIcon}
-                label="Recebido no mês"
-                value={formatCentsToBRL(earnings.monthCents)}
-                note={`${formatCentsToBRL(earnings.weekCents)} nesta semana`}
-                big
+            <div className="flex flex-1 flex-col divide-y divide-border border-t border-border">
+              <TodayRow
+                icon={StethoscopeIcon}
+                label="Consultas"
+                note={active ? "+1 em andamento" : "encerradas hoje"}
+                value={String(day.today.closedCount)}
               />
-              <Money icon={StethoscopeIcon} label="Consultas" value={String(day.month.closedCount)} note={`${day.month.billedCount} com valor lançado`} />
-              <Money icon={ReceiptIcon} label="Média por consulta" value={formatCentsToBRL(earnings.averageCents)} note="das consultas lançadas" />
-              <Money
-                icon={CreditCardIcon}
-                label="Como recebeu"
-                value={methods.length ? methods.slice(0, 2).map((label, index) => (index ? label.toLowerCase() : label)).join(" · ") : "—"}
+              <TodayRow
+                icon={FileTextIcon}
+                label="Documentos emitidos"
                 note={
-                  methods.length > 2
-                    ? `e também ${methods.slice(2).join(", ").toLowerCase()}`
-                    : methods.length
-                      ? "formas usadas no mês"
-                      : "nenhum lançamento ainda"
+                  documentsToday
+                    ? [
+                        prescriptions ? plural(prescriptions, "receita", "receitas") : null,
+                        certificates ? plural(certificates, "atestado", "atestados") : null,
+                        otherDocuments ? plural(otherDocuments, "outro", "outros") : null,
+                      ]
+                        .filter(Boolean)
+                        .join(", ")
+                    : "nenhum ainda"
                 }
+                value={String(documentsToday)}
               />
+              <WhenFinanceVisible>
+                <TodayRow
+                  icon={WalletIcon}
+                  label="Recebido"
+                  note={
+                    day.today.closedCount
+                      ? `${day.today.billedCount} de ${plural(day.today.closedCount, "consulta lançada", "consultas lançadas")}`
+                      : "nenhuma consulta encerrada"
+                  }
+                  value={formatCentsToBRL(earnings.todayCents)}
+                />
+              </WhenFinanceVisible>
             </div>
           </section>
-        </Collapsible>
-      </HomeFinanceVisibility>
 
-      <section className="rounded-xl border border-border bg-card">
-        <div className="flex items-center gap-2 px-5 pt-4 pb-3">
-          <h2 className="font-display text-section font-semibold">Últimas consultas</h2>
-          <Button asChild variant="link" size="sm" className="ml-auto">
-            <Link href="/dashboard/cases">
-              Ver todas
-              <ArrowRightIcon data-icon="inline-end" />
-            </Link>
-          </Button>
+          <section className="flex flex-col rounded-xl border border-border bg-card xl:col-span-8">
+            <Tabs defaultValue="reminders" className="flex-1 gap-0">
+              <div className="flex items-end gap-6 px-5 pt-4">
+                <h2 className="mr-2 pb-2.5 font-display text-section font-semibold">Para não esquecer</h2>
+                <TabsList className="h-auto w-auto gap-5 rounded-none bg-transparent p-0 lg:w-auto">
+                  <SectionTab value="reminders">
+                    Lembretes
+                    <span className="num text-caption text-subtle-foreground">{day.reminders.length}</span>
+                  </SectionTab>
+                  <SectionTab value="pending">
+                    Pendências
+                    {pendingCount ? (
+                      <span
+                        aria-label={plural(pendingCount, "pendência", "pendências")}
+                        className="num inline-flex items-center gap-1 rounded-full bg-warning-soft px-1.5 text-caption font-semibold text-warning-text"
+                      >
+                        <InfoIcon className="size-3" aria-hidden />
+                        {pendingCount}
+                      </span>
+                    ) : null}
+                  </SectionTab>
+                </TabsList>
+              </div>
+              <TabsContent value="reminders" className="mt-0 divide-y divide-border border-t border-border">
+                {day.reminders.length === 0 ? (
+                  <Empty>Os lembretes que você deixar nas últimas consultas aparecem aqui.</Empty>
+                ) : (
+                  day.reminders.slice(0, MAX_TODO_ROWS).map((reminder) => (
+                    <TodoRow
+                      key={reminder.id}
+                      icon={BellIcon}
+                      who={firstName(reminder.patientName)}
+                      what={reminder.text}
+                      from={`Consulta ${consultLabel(reminder.endedAt, now)}`}
+                    >
+                      <Button asChild variant="outline" size="xs">
+                        <Link href={caseHref(reminder.caseId)}>Ver consulta</Link>
+                      </Button>
+                    </TodoRow>
+                  ))
+                )}
+              </TabsContent>
+              <TabsContent value="pending" className="mt-0 divide-y divide-border border-t border-border">
+                {pendingCount === 0 ? (
+                  <Empty>Nada pendente: relatórios finalizados, valores lançados e medidas em dia.</Empty>
+                ) : (
+                  <>
+                    {pendingRows.slice(0, MAX_TODO_ROWS)}
+                    {pendingCount > MAX_TODO_ROWS ? (
+                      <p className="px-5 py-3 text-caption text-subtle-foreground">
+                        E mais {pendingCount - MAX_TODO_ROWS}. Resolva as de cima e as próximas aparecem aqui.
+                      </p>
+                    ) : null}
+                  </>
+                )}
+              </TabsContent>
+            </Tabs>
+          </section>
         </div>
-        <div className="divide-y divide-border border-t border-border">
-          {home.recentClosedCases.length === 0 ? (
-            <Empty>As consultas encerradas aparecem aqui.</Empty>
-          ) : (
-            home.recentClosedCases.map((row) => (
-              <Link key={row.id} href={caseHref(row.id)} className="flex items-center gap-3 px-5 py-3 hover:bg-accent">
-                <Initials name={row.patientName} />
-                <div className="min-w-0 flex-1">
-                  <div className="truncate">
-                    <span className="font-semibold">{row.patientName ?? "Sem paciente"}</span>
-                    {row.birthDate ? <span className="text-subtle-foreground"> · {ageOf(row.birthDate)}</span> : null}
+
+        <HomeFinanceSection title={`Financeiro de ${monthLabel}`}>
+          <Collapsible asChild>
+            <section className="rounded-xl border border-primary-soft-border bg-highlight shadow-sm">
+              <div className="flex flex-wrap items-center gap-2 px-6 pt-5">
+                <h2 className="font-display text-section font-semibold">Financeiro de {monthLabel}</h2>
+                {day.unbilled.length ? (
+                  <CollapsibleTrigger className="group inline-flex h-6 cursor-pointer items-center gap-1 rounded-md border border-warning-border bg-warning-soft px-2 text-caption font-medium text-warning-text hover:border-warning-text/40 focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none">
+                    <WalletIcon className="size-3.5" aria-hidden />
+                    {plural(day.unbilled.length, "consulta sem valor", "consultas sem valor")}
+                    <ChevronDownIcon className="size-3.5 transition-transform group-data-[state=open]:rotate-180" aria-hidden />
+                  </CollapsibleTrigger>
+                ) : null}
+                <Button asChild variant="link" size="sm" className="ml-auto">
+                  <Link href="/dashboard/financial">
+                    Ver financeiro
+                    <ArrowRightIcon data-icon="inline-end" />
+                  </Link>
+                </Button>
+                <HideFinanceButton />
+              </div>
+              <CollapsibleContent className="mx-6 mt-3 rounded-lg border border-warning-border bg-card">
+                <div className="px-4 py-2 text-caption font-medium text-warning-text">Consultas de {monthLabel} sem valor lançado</div>
+                {day.unbilled.map((c) => (
+                  <div key={c.caseId} className="flex items-center gap-3 border-t border-border px-4 py-2.5">
+                    <Initials name={c.patientName} small />
+                    <div className="min-w-0 flex-1">
+                      <div className="truncate">
+                        <span className="font-semibold">{c.patientName ?? "Sem paciente"}</span>
+                        {c.birthDate ? <span className="text-subtle-foreground"> · {ageOf(c.birthDate)}</span> : null}
+                      </div>
+                      <div className="truncate text-caption text-muted-foreground">
+                        {c.reason ?? "Consulta"} · {consultLabel(c.endedAt, now, true)}
+                      </div>
+                    </div>
+                    <CourtesyButton caseId={c.caseId} size="xs" />
+                    <StandaloneEntryDialog todayLabel={todayLabel} caseId={c.caseId} triggerSize="xs" triggerLabel="Lançar valor" />
+                    <Button asChild variant="outline" size="xs">
+                      <Link href={caseHref(c.caseId)}>Abrir consulta</Link>
+                    </Button>
                   </div>
-                  <div className="truncate text-caption text-muted-foreground">{row.reason ?? "Consulta"}</div>
-                </div>
-                <span className="num text-caption text-subtle-foreground">{consultLabel(row.endedAt ?? row.startedAt, now, true)}</span>
-                <ChevronRightIcon className="size-3.5 text-subtle-foreground" aria-hidden />
+                ))}
+              </CollapsibleContent>
+              <div className="grid grid-cols-4 divide-x divide-primary-soft-border/70">
+                <Money
+                  icon={WalletIcon}
+                  label="Recebido no mês"
+                  value={formatCentsToBRL(earnings.monthCents)}
+                  note={`${formatCentsToBRL(earnings.weekCents)} nesta semana`}
+                  big
+                />
+                <Money icon={StethoscopeIcon} label="Consultas" value={String(day.month.closedCount)} note={`${day.month.billedCount} com valor lançado`} />
+                <Money icon={ReceiptIcon} label="Média por consulta" value={formatCentsToBRL(earnings.averageCents)} note="das consultas lançadas" />
+                <Money
+                  icon={CreditCardIcon}
+                  label="Como recebeu"
+                  value={methods.length ? methods.slice(0, 2).map((label, index) => (index ? label.toLowerCase() : label)).join(" · ") : "—"}
+                  note={
+                    methods.length > 2
+                      ? `e também ${methods.slice(2).join(", ").toLowerCase()}`
+                      : methods.length
+                        ? "formas usadas no mês"
+                        : "nenhum lançamento ainda"
+                  }
+                />
+              </div>
+            </section>
+          </Collapsible>
+        </HomeFinanceSection>
+
+        <section className="rounded-xl border border-border bg-card">
+          <div className="flex items-center gap-2 px-5 pt-4 pb-3">
+            <h2 className="font-display text-section font-semibold">Últimas consultas</h2>
+            <Button asChild variant="link" size="sm" className="ml-auto">
+              <Link href="/dashboard/cases">
+                Ver todas
+                <ArrowRightIcon data-icon="inline-end" />
               </Link>
-            ))
-          )}
-        </div>
-      </section>
-    </div>
+            </Button>
+          </div>
+          <div className="divide-y divide-border border-t border-border">
+            {home.recentClosedCases.length === 0 ? (
+              <Empty>As consultas encerradas aparecem aqui.</Empty>
+            ) : (
+              home.recentClosedCases.map((row) => (
+                <Link key={row.id} href={caseHref(row.id)} className="flex items-center gap-3 px-5 py-3 hover:bg-accent">
+                  <Initials name={row.patientName} />
+                  <div className="min-w-0 flex-1">
+                    <div className="truncate">
+                      <span className="font-semibold">{row.patientName ?? "Sem paciente"}</span>
+                      {row.birthDate ? <span className="text-subtle-foreground"> · {ageOf(row.birthDate)}</span> : null}
+                    </div>
+                    <div className="truncate text-caption text-muted-foreground">{row.reason ?? "Consulta"}</div>
+                  </div>
+                  <span className="num text-caption text-subtle-foreground">{consultLabel(row.endedAt ?? row.startedAt, now, true)}</span>
+                  <ChevronRightIcon className="size-3.5 text-subtle-foreground" aria-hidden />
+                </Link>
+              ))
+            )}
+          </div>
+        </section>
+      </div>
+    </HomeFinanceProvider>
   )
 }
 
