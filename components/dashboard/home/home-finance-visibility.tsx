@@ -8,50 +8,58 @@ import { HOME_FINANCE_HIDDEN_COOKIE } from "@/lib/home-finance-cookie"
 
 const COOKIE_MAX_AGE = 60 * 60 * 24 * 365
 
-const HideContext = createContext<(() => void) | null>(null)
+type FinanceVisibility = { hidden: boolean; setHidden: (hidden: boolean) => void }
+
+const FinanceContext = createContext<FinanceVisibility | null>(null)
 
 /**
- * Financeiro do Início com opção de ocultar. A escolha fica num cookie para o
- * servidor já renderizar a seção oculta, sem os valores piscarem na tela.
+ * Escolha de ocultar os valores do Início: o financeiro do mês e o recebido de
+ * hoje. Fica num cookie para o servidor já renderizar oculto, sem os valores
+ * piscarem na tela.
  */
-export function HomeFinanceVisibility({
-  defaultHidden,
-  title,
-  children,
-}: {
-  defaultHidden: boolean
-  title: string
-  children: React.ReactNode
-}) {
-  const [hidden, setHidden] = useState(defaultHidden)
+export function HomeFinanceProvider({ defaultHidden, children }: { defaultHidden: boolean; children: React.ReactNode }) {
+  const [hidden, setHiddenState] = useState(defaultHidden)
 
-  const update = (next: boolean) => {
-    setHidden(next)
+  const setHidden = (next: boolean) => {
+    setHiddenState(next)
     document.cookie = `${HOME_FINANCE_HIDDEN_COOKIE}=${next ? "1" : "0"}; path=/; max-age=${COOKIE_MAX_AGE}; samesite=lax`
   }
 
-  if (hidden) {
-    return (
-      <section className="flex flex-wrap items-center gap-2 rounded-xl border border-border bg-card px-6 py-4">
-        <h2 className="font-display text-section font-semibold">{title}</h2>
-        <span className="text-caption text-subtle-foreground">oculto</span>
-        <Button variant="ghost" size="sm" className="ml-auto" onClick={() => update(false)}>
-          <EyeIcon data-icon="inline-start" />
-          Mostrar
-        </Button>
-      </section>
-    )
-  }
+  return <FinanceContext.Provider value={{ hidden, setHidden }}>{children}</FinanceContext.Provider>
+}
 
-  return <HideContext.Provider value={() => update(true)}>{children}</HideContext.Provider>
+function useFinanceVisibility() {
+  const context = useContext(FinanceContext)
+  if (!context) throw new Error("[HOME] useFinanceVisibility fora do HomeFinanceProvider")
+  return context
+}
+
+/** Financeiro do mês; oculto, vira uma barra com o título e o botão Mostrar. */
+export function HomeFinanceSection({ title, children }: { title: string; children: React.ReactNode }) {
+  const { hidden, setHidden } = useFinanceVisibility()
+  if (!hidden) return children
+  return (
+    <section className="flex flex-wrap items-center gap-2 rounded-xl border border-border bg-card px-6 py-4">
+      <h2 className="font-display text-section font-semibold">{title}</h2>
+      <span className="text-caption text-subtle-foreground">oculto</span>
+      <Button variant="ghost" size="sm" className="ml-auto" onClick={() => setHidden(false)}>
+        <EyeIcon data-icon="inline-start" />
+        Mostrar
+      </Button>
+    </section>
+  )
+}
+
+/** Mostra o conteúdo só com o financeiro visível (ex.: o recebido de hoje). */
+export function WhenFinanceVisible({ children }: { children: React.ReactNode }) {
+  return useFinanceVisibility().hidden ? null : children
 }
 
 /** Botão "Ocultar" no cabeçalho do financeiro do Início. */
 export function HideFinanceButton() {
-  const hide = useContext(HideContext)
-  if (!hide) return null
+  const { setHidden } = useFinanceVisibility()
   return (
-    <Button variant="ghost" size="sm" onClick={hide}>
+    <Button variant="ghost" size="sm" onClick={() => setHidden(true)}>
       <EyeOffIcon data-icon="inline-start" />
       Ocultar
     </Button>
