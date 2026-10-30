@@ -6,7 +6,7 @@ import { buildBrandEmail } from "./brand-email"
 test("parágrafos, destaque, P.S. e assinatura", () => {
   const { html, text } = buildBrandEmail({
     senderName: "Filipe",
-    body: "Olá, Dra. Paula,\n\nTexto <com> tag.\n\n• 15 dias grátis.\n• R$ 49,99 por mês.\n\nVeja https://falaped.com.br e https://www.falaped.com.br/ferramentas\n\nP.S.: Responda \"não\".",
+    body: "Olá, Dra. Paula,\n\nTexto <com> tag.\n\n• 15 dias grátis.\n• R$ 69,99 por mês.\n\nVeja https://falaped.com.br e https://www.falaped.com.br/ferramentas\n\nP.S.: Responda \"não\".",
   })
   assert.match(text, /^Olá, Dra\. Paula,/)
   assert.match(text, /Um abraço,\nFilipe\nCEO · Falaped\n\nP\.S\./)
