@@ -42,7 +42,7 @@ export type MessageChannel = (typeof MESSAGE_CHANNELS)[number]
 /** Oferta dita nas mensagens: teste curto, preço cheio como âncora e o de fundador como desconto. */
 export const TRIAL_DAYS = 15
 export const PLAN_PRICE = 149.99
-export const EARLY_PRICE = 49.99
+export const EARLY_PRICE = 69.99
 export const SITE_URL = "https://www.falaped.com.br"
 
 const brl = (v: number) => `R$ ${v.toFixed(2).replace(".", ",")}`
