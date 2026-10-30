@@ -1,3 +1,4 @@
+import { cookies } from "next/headers"
 import { redirect } from "next/navigation"
 import { tz } from "@date-fns/tz"
 import { addMonths, format, startOfDay, startOfMonth, subDays } from "date-fns"
@@ -6,6 +7,7 @@ import { ptBR } from "date-fns/locale/pt-BR"
 import { FirstAccessHome } from "@/components/dashboard/home/first-access-home"
 import { HomeOverview } from "@/components/dashboard/home/home-overview"
 import { CLINIC_TIME_ZONE } from "@/lib/clinic-timezone"
+import { HOME_FINANCE_HIDDEN_COOKIE } from "@/lib/home-finance-cookie"
 import { createClient } from "@/lib/supabase/server"
 import { getDashboardHomeData } from "@/modules/dashboard/get-dashboard-home-data"
 import { getHomeDay } from "@/modules/dashboard/get-home-day"
@@ -50,6 +52,8 @@ export async function DashboardHomeContent() {
   const greeting = `${hour < 12 ? "Bom dia" : hour < 18 ? "Boa tarde" : "Boa noite"}${firstName ? `, ${firstName}` : ""}`
   const dateLabel = format(now, "EEEE, d 'de' MMMM", { ...context, locale: ptBR })
 
+  const financeHidden = (await cookies()).get(HOME_FINANCE_HIDDEN_COOKIE)?.value === "1"
+
   const [day, earnings] = await Promise.all([
     getHomeDay(supabase, profile.id, {
       todayStartIso: startOfDay(now, context).toISOString(),
@@ -76,6 +80,7 @@ export async function DashboardHomeContent() {
       now={now}
       home={home}
       day={day}
+      financeHidden={financeHidden}
       earnings={{
         todayCents: earnings.today_cents,
         weekCents: earnings.week_cents,
